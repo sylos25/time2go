@@ -2,14 +2,14 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState,useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
-import { Eye, EyeOff, Mail, Lock, User, Chrome, Facebook, Phone } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock, User, Chrome, Facebook, Phone, IdCard } from "lucide-react"
 
 
 interface AuthModalProps {
@@ -23,8 +23,11 @@ export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalP
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [formData, setFormData] = useState({
+    tipDoc:"",
+    document:"",
     firstName: "",
     lastName: "",
+    pais:"",
     telefono: "",
     email: "",
     password: "",
@@ -33,16 +36,40 @@ export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalP
     acceptTerms: false,
   })
 
+  useEffect(() => {
+    fetch("/api/llamar_pais")
+      .then((res) => res.json())
+      .then((data) => setListaPaises(data))
+      .catch((err) => console.error("Error al cargar países:", err));
+  }, []);
+
+  const [listaPaises, setListaPaises] = useState<{ value: number; label: string }[]>([]);
+
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Handle form submission
-    console.log("Form submitted:", formData)
-  }
-
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+  
+    try {
+      const res = await fetch("/api/usuario-formulario", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+  
+      if (!res.ok) {
+        throw new Error("Error al crear usuario");
+      }
+  
+      const data = await res.json();
+      console.log("Usuario creado:", data);
+      // Aquí puedes limpiar el formulario o cerrar el modal si quieres
+    } catch (error) {
+      console.error("Error en el registro:", error);
+    }
+  };
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto ">
@@ -58,6 +85,42 @@ export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalP
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+        {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="tipoDoc" className="text-sm font-medium">
+                  Tipo de Documento
+                </Label>
+                <select
+                  id="tipDoc"
+                  value={formData.tipDoc}
+                  onChange={(e) => handleInputChange("tipDoc", e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Selecciona una opción</option>
+                  <option value="Tarjeta_de_Identidad">Tarjeta de Identidad</option>
+                  <option value="Cedula_de_Ciudadania">Cédula de Ciudadanía</option>
+                  <option value="Cedula_de_Extranjeria">Cédula de Extranjería</option>
+                  <option value="Pasaporte">Pasaporte</option>
+                </select>
+              </div>
+            )}
+          {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="documento" className="text-sm font-medium">
+                  Número de Documento
+                </Label>
+                <div className="relative">
+                  <IdCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    id="document"
+                    placeholder="123456789"
+                    value={formData.document}
+                    onChange={(e) => handleInputChange("document", e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+            )}
           {!isLogin && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -92,7 +155,28 @@ export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalP
               </div>
             </div>
           )}
-
+          {!isLogin && (
+            <div className="space-y-2">
+            <label htmlFor="pais" className="text-sm font-medium">
+              País
+            </label>
+            <div className="relative">
+              <select
+                id="pais"
+                value={formData.pais}
+                onChange={(e) => handleInputChange("pais", e.target.value)}
+                className="pl-3 pr-4 py-2 w-full border rounded-md text-sm bg-white"
+              >
+                <option value="">Selecciona un país</option>
+                {listaPaises.map((pais) => (
+                  <option key={pais.value} value={pais.value}>
+                    {pais.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          )}
           {!isLogin && (
             <div className="space-y-2">
               <Label htmlFor="telefono" className="text-sm font-medium">

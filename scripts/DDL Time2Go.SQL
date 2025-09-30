@@ -407,6 +407,10 @@ INSERT INTO tabla_pagos (id_reserva_evento, ip_transaccion, valor_entrada, cant_
 INSERT INTO tabla_reembolsos (id_reserva_evento, id_pago, id_usuario, motivo_reembolso, eestado_reembolso) VALUES 
 (1, 1, 1, 'No pude asistir', 'Pendiente');
 
+
+--CARGA TABLE DE ROLES
+INSERT INTO tabla_roles VALUES  (1,'Usuario');
+
 -- CARGA TABLE DE PAIS.
 INSERT INTO tabla_paises VALUES  (1, 'Colombia')
 
