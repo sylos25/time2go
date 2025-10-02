@@ -130,10 +130,10 @@ const events: Event[] = [
   },
   {
     id: 5,
-    title: "Teatro Clásico: Hamlet",
-    description: "La obra maestra de Shakespeare",
+    title: "Teatro politico: La Madriguera",
+    description: "Tragedia política con humor negro y sátira corrosiva.",
     fullDescription:
-      "Vive la tragedia más famosa de Shakespeare en una puesta en escena espectacular. Esta producción combina la tradición teatral clásica con elementos contemporáneos, creando una experiencia única. El elenco está conformado por actores de renombre nacional e internacional, con vestuario de época y escenografía impresionante.",
+      "Una comedia trágica con humor negro y corrosivo que muestra el ocaso del dictador Eutimio Matamoros, asediado por las fuerzas revolucionarias. En tiempos de dictadura, el presidente y su secretario privado se refugian en el palacio presidencial mientras una multitud enardecida los acecha",
     date: "2025-08-20",
     time: "20:00",
     location: "Teatro Colón, Bucaramanga",

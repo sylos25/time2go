@@ -1,13 +1,23 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-// If your Prisma file is located elsewhere, you can change the path
 import { PrismaClient } from "../app/generated/prisma"; 
+import bcrypt from "bcrypt";
  
 const prisma = new PrismaClient();
+
 export const auth = betterAuth({
     database: prismaAdapter(prisma, {
-        provider: "postgresql", // or "mysql", "postgresql", ...etc
+        provider: "postgresql",
     }),
+    emailAndPassword: {
+        enabled: true,
+        async hash(password: string) {
+            return await bcrypt.hash(password, 10);
+        },
+        async verify(password: string, hash: string) {
+            return await bcrypt.compare(password, hash);
+        },
+    },
     socialProviders: {
         google: {
             clientId: process.env.GOOGLE_CLIENT_ID as string,
