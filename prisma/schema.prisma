@@ -277,18 +277,19 @@ model tabla_reservas_eventos {
   evento  tabla_eventos  @relation(fields: [id_evento], references: [id_evento])
 }
 
-model tabla_pagos {
-  id_pago             Int @id @default(autoincrement())
-  numero_documento    String
+model tabla_costos {
+  id_costo            Int @id @default(autoincrement())
+  Boleteria           String
+  Costo               Float
+  fecha_actualizacion DateTime @default(now())
+}
+
+model tabla_costos_eventos {
+  id_costo_evento     Int @id @default(autoincrement())
+  id_costo            Int
   id_evento           Int
-  ip_transaccion      String @unique
-  cant_entrada        Int
-  total_pagar         Float
-  fecha_pago          DateTime @default(now())
-  estado              estado_pago @default(Pendiente)
-  metodo_pago         String
   fecha_actualizacion DateTime @default(now())
 
-  usuario tabla_usuarios @relation(fields: [numero_documento], references: [numero_documento])
+  usuario tabla_costo    @relation(fields: [id_costo], references: [id_costo])
   evento  tabla_eventos  @relation(fields: [id_evento], references: [id_evento])
 }

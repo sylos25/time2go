@@ -25,8 +25,8 @@ DROP TABLE IF EXISTS tabla_tipos_eventos;
 DROP TABLE IF EXISTS tabla_eventos;
 DROP TABLE IF EXISTS tabla_valoraciones;
 DROP TABLE IF EXISTS tabla_reservas_eventos;
-DROP TABLE IF EXISTS tabla_reembolsos;
-DROP TABLE IF EXISTS tabla_pagos;
+DROP TABLE IF EXISTS tabla_costos;
+DROP TABLE IF EXISTS tabla_costos_eventos;
 
 
 CREATE TYPE tip_doc     AS ENUM ('Tarjeta de Identidad', 'Cédula de Ciudadanía', 'Cédula de Extranjería', 'Pasaporte');
@@ -199,7 +199,7 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
     dias_semana             VARCHAR                     NOT NULL,
     hora_inicio             TIME                        NOT NULL,
     hora_final              TIME                        NOT NULL,
-    costo                   DECIMAL(10,2)                               DEFAULT 0 CHECK (costo >= 0),
+    dinero                  BOOLEAN                     NOT NULL        DEFAULT FALSE,
     cupo                    INT                         NOT NULL        DEFAULT 0 CHECK (cupo >= 0),
     estado                  BOOLEAN                     NOT NULL        DEFAULT TRUE,
     id_imagen               INT                         NOT NULL,
@@ -236,18 +236,19 @@ CREATE TABLE IF NOT EXISTS tabla_reservas_eventos (
     FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
 );
 
-CREATE TABLE IF NOT EXISTS tabla_pagos (
-    id_pago                 SERIAL                      PRIMARY KEY,
-    id_usuario              INT                         NOT NULL,
+CREATE TABLE IF NOT EXISTS tabla_costos (
+    id_costo                INT                         PRIMARY KEY,
+    Boleteria               VARCHAR                     NOT NULL,
+    Costo                   DECIMAL(9,2)                NOT NULL,
+    fecha_actualizacion     TIMESTAMP WITH TIME ZONE                    DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS tabla_costos_eventos (
+    id_costo_eventos        SERIAL                      PRIMARY KEY,
+    id_costo                INT                         NOT NULL,
     id_evento               INT                         NOT NULL,
-    ip_transaccion          VARCHAR                     NOT NULL        UNIQUE,
-    cant_entrada            INT                         NOT NULL        CHECK (cant_entrada > 0),
-    total_pagar             DECIMAL(10,2)               NOT NULL        CHECK (total_pagar >= 0),
-    fecha_pago              TIMESTAMP                   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    estado                  estado_pago                 NOT NULL        DEFAULT 'Pendiente'::estado_pago,
-    metodo_pago             VARCHAR                     NOT NULL,
-    fecha_actualizacion     TIMESTAMP WITH TIME ZONE                    DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(id_usuario),
+    fecha_actualizacion     TIMESTAMP                   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_costo) REFERENCES tabla_costos(id_costo),
     FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
 );
 
