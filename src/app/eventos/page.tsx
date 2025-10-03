@@ -34,31 +34,31 @@ interface Event {
 const events: Event[] = [
   {
     id: 1,
-    title: "Festival de Jazz Internacional",
-    description: "Una noche mágica con los mejores artistas de jazz del mundo",
+    title: "Festival de la carranga",
+    description: "Música folclórica y tradiciones colombianas",
     fullDescription:
-      "Sumérgete en una experiencia musical única con el Festival de Jazz Internacional. Este evento reunirá a los artistas más talentosos del jazz mundial en una noche inolvidable. Disfruta de interpretaciones en vivo de jazz clásico, fusion y contemporáneo. El festival incluye food trucks gourmet, bar premium y una atmósfera íntima perfecta para los amantes de la música sofisticada.",
+      "Celebración de la música carranguera colombiana con los mejores exponentes del género. Un evento que reúne tradición, alegría campesina y el inconfundible sonido de la guitarra, el tiple y las coplas picarescas del altiplano cundiboyacense.",
     date: "2025-10-15",
     time: "20:00",
     location: "Teatro Santander, Bucaramanga",
     price: 7200,
     category: "Música",
-    image: "/images/jazz-festival.jpg?height=300&width=400",
+    image: "/images/carranga1.jpg?height=300&width=400",
     additionalImages: [
-      "/images/jazz-stage.jpg?height=400&width=600",
-      "/images/jazz-audience.jpg?height=400&width=600",
-      "/images/jazz-musicians.jpg?height=400&width=600",
+      "/images/carranga2.jpg?height=400&width=600",
+      "/images/carranga3.jpg?height=400&width=600",
+      "/images/carranga4.jpg?height=400&width=600",
     ],
     attendees: 2000,
     rating: 4.9,
     featured: true,
     duration: "4 horas",
     organizer: "Fundación Cultural Santander",
-    highlights: ["Artistas internacionales", "Food trucks gourmet", "Bar premium", "Ambiente íntimo"],
+    highlights: ["Artistas nacionales", "Musica tradicional", "Bebidas Tradicionales", "Ambiente familiar"],
   },
   {
     id: 2,
-    title: "Exposición de Arte Contemporáneo",
+    title: "Exposición cultural ",
     description: "Obras de artistas emergentes y establecidos",
     fullDescription:
       "Descubre las últimas tendencias del arte contemporáneo en esta exposición que presenta obras de más de 50 artistas nacionales e internacionales. La muestra incluye pinturas, esculturas, instalaciones digitales y arte interactivo. Una oportunidad única para conectar con el arte actual y conocer a los artistas en persona durante las charlas programadas.",
@@ -142,7 +142,7 @@ const events: Event[] = [
     image: "/images/experimental-theater.jpg?height=300&width=400",
     additionalImages: [
       "/images/hamlet-stage.jpg?height=400&width=600",
-      "/images/theater-audience.jpg?height=400&width=600",
+      "/images/teatroa.jpg?height=400&width=600",
       "/images/shakespeare-costume.jpg?height=400&width=600",
     ],
     attendees: 500,
@@ -436,12 +436,8 @@ export default function EventosPage() {
                         <span className="text-gray-600">por persona</span>
                       </div>
                       <div className="flex gap-3">
-                        <Button variant="outline" className="rounded-xl bg-transparent">
-                          <Heart className="h-4 w-4 mr-2" />
-                          Guardar
-                        </Button>
-                        <Button className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-700 hover:to-cyan-700 rounded-xl px-8">
-                          Reservar Ahora
+                         <Button className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-700 hover:to-cyan-700 rounded-xl px-15 py-8 text-lg font-semibold text-white">
+                          compra tu entrada
                         </Button>
                       </div>
                     </div>
