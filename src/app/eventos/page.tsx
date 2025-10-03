@@ -9,7 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar, MapPin, Users, Search, Filter, Heart, Share2, Star, X, Clock, DollarSign, Info } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { Calendar, MapPin, Users, Search, Filter, Heart, Share2, Star, X, Clock, Info, Plus } from "lucide-react"
 
 interface Event {
   id: number
@@ -31,7 +33,7 @@ interface Event {
   highlights: string[]
 }
 
-const events: Event[] = [
+const initialEvents: Event[] = [
   {
     id: 1,
     title: "Festival de la carranga",
@@ -161,7 +163,7 @@ const events: Event[] = [
     date: "2025-11-10",
     time: "09:00",
     location: "NeoMundo, Bucaramanga",
-    price:3000,
+    price: 3000,
     category: "Tecnología",
     image: "/images/tecnologia.jpg?height=300&width=400",
     additionalImages: [
@@ -179,6 +181,8 @@ const events: Event[] = [
 ]
 
 export default function EventosPage() {
+  const [events, setEvents] = useState<Event[]>(initialEvents)
+  const [showAddEventForm, setShowAddEventForm] = useState(false)
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [isLogin, setIsLogin] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -187,6 +191,25 @@ export default function EventosPage() {
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [expandedEventId, setExpandedEventId] = useState<number | null>(null)
 
+  const [newEvent, setNewEvent] = useState<Partial<Event>>({
+    title: "",
+    description: "",
+    fullDescription: "",
+    date: "",
+    time: "",
+    location: "",
+    price: 0,
+    category: "Música",
+    image: "",
+    additionalImages: ["", "", ""],
+    attendees: 0,
+    rating: 5.0,
+    featured: false,
+    duration: "",
+    organizer: "",
+    highlights: ["", "", "", ""],
+  })
+
   const openAuthModal = (loginMode = true) => {
     setIsLogin(loginMode)
     setAuthModalOpen(true)
@@ -194,6 +217,63 @@ export default function EventosPage() {
 
   const handleEventExpand = (eventId: number) => {
     setExpandedEventId(expandedEventId === eventId ? null : eventId)
+  }
+
+  const handleAddEvent = () => {
+    const eventToAdd: Event = {
+      id: events.length + 1,
+      title: newEvent.title || "",
+      description: newEvent.description || "",
+      fullDescription: newEvent.fullDescription || "",
+      date: newEvent.date || "",
+      time: newEvent.time || "",
+      location: newEvent.location || "",
+      price: newEvent.price || 0,
+      category: newEvent.category || "Música",
+      image: newEvent.image || "/placeholder.svg?height=300&width=400",
+      additionalImages: newEvent.additionalImages || ["", "", ""],
+      attendees: newEvent.attendees || 0,
+      rating: newEvent.rating || 5.0,
+      featured: newEvent.featured || false,
+      duration: newEvent.duration || "",
+      organizer: newEvent.organizer || "",
+      highlights: (newEvent.highlights || []).filter((h) => h.trim() !== ""),
+    }
+
+    setEvents([...events, eventToAdd])
+    setShowAddEventForm(false)
+
+    // Reset form
+    setNewEvent({
+      title: "",
+      description: "",
+      fullDescription: "",
+      date: "",
+      time: "",
+      location: "",
+      price: 0,
+      category: "Música",
+      image: "",
+      additionalImages: ["", "", ""],
+      attendees: 0,
+      rating: 5.0,
+      featured: false,
+      duration: "",
+      organizer: "",
+      highlights: ["", "", "", ""],
+    })
+  }
+
+  const updateHighlight = (index: number, value: string) => {
+    const updatedHighlights = [...(newEvent.highlights || [])]
+    updatedHighlights[index] = value
+    setNewEvent({ ...newEvent, highlights: updatedHighlights })
+  }
+
+  const updateAdditionalImage = (index: number, value: string) => {
+    const updatedImages = [...(newEvent.additionalImages || [])]
+    updatedImages[index] = value
+    setNewEvent({ ...newEvent, additionalImages: updatedImages })
   }
 
   const categories = ["all", "Música", "Arte", "Teatro", "Gastronomía", "Tecnología"]
@@ -321,6 +401,252 @@ export default function EventosPage() {
         </div>
       </section>
 
+      {showAddEventForm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-3xl font-bold text-gray-900">Crear Nuevo Evento</h2>
+                <Button
+                  onClick={() => setShowAddEventForm(false)}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-full h-10 w-10 p-0"
+                  variant="ghost"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+
+              <div className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Título del Evento *</Label>
+                    <Input
+                      id="title"
+                      value={newEvent.title}
+                      onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                      placeholder="Ej: Festival de Música"
+                      className="rounded-xl"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Categoría *</Label>
+                    <Select
+                      value={newEvent.category}
+                      onValueChange={(value) => setNewEvent({ ...newEvent, category: value })}
+                    >
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories
+                          .filter((c) => c !== "all")
+                          .map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Descripción Corta *</Label>
+                  <Input
+                    id="description"
+                    value={newEvent.description}
+                    onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                    placeholder="Breve descripción del evento"
+                    className="rounded-xl"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="fullDescription">Descripción Completa *</Label>
+                  <Textarea
+                    id="fullDescription"
+                    value={newEvent.fullDescription}
+                    onChange={(e) => setNewEvent({ ...newEvent, fullDescription: e.target.value })}
+                    placeholder="Descripción detallada del evento"
+                    className="rounded-xl min-h-[100px]"
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="date">Fecha *</Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={newEvent.date}
+                      onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                      className="rounded-xl"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="time">Hora *</Label>
+                    <Input
+                      id="time"
+                      type="time"
+                      value={newEvent.time}
+                      onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+                      className="rounded-xl"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="duration">Duración *</Label>
+                    <Input
+                      id="duration"
+                      value={newEvent.duration}
+                      onChange={(e) => setNewEvent({ ...newEvent, duration: e.target.value })}
+                      placeholder="Ej: 3 horas"
+                      className="rounded-xl"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="location">Ubicación *</Label>
+                    <Input
+                      id="location"
+                      value={newEvent.location}
+                      onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+                      placeholder="Ej: Teatro Principal, Bucaramanga"
+                      className="rounded-xl"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="organizer">Organizador *</Label>
+                    <Input
+                      id="organizer"
+                      value={newEvent.organizer}
+                      onChange={(e) => setNewEvent({ ...newEvent, organizer: e.target.value })}
+                      placeholder="Nombre del organizador"
+                      className="rounded-xl"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Precio (COP) *</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      value={newEvent.price}
+                      onChange={(e) => setNewEvent({ ...newEvent, price: Number(e.target.value) })}
+                      placeholder="0"
+                      className="rounded-xl"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="attendees">Asistentes Esperados</Label>
+                    <Input
+                      id="attendees"
+                      type="number"
+                      value={newEvent.attendees}
+                      onChange={(e) => setNewEvent({ ...newEvent, attendees: Number(e.target.value) })}
+                      placeholder="0"
+                      className="rounded-xl"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="rating">Valoración (1-5)</Label>
+                    <Input
+                      id="rating"
+                      type="number"
+                      step="0.1"
+                      min="1"
+                      max="5"
+                      value={newEvent.rating}
+                      onChange={(e) => setNewEvent({ ...newEvent, rating: Number(e.target.value) })}
+                      className="rounded-xl"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="image">URL de Imagen Principal *</Label>
+                  <Input
+                    id="image"
+                    value={newEvent.image}
+                    onChange={(e) => setNewEvent({ ...newEvent, image: e.target.value })}
+                    placeholder="/images/evento.jpg o URL completa"
+                    className="rounded-xl"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>URLs de Imágenes Adicionales (3)</Label>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    {[0, 1, 2].map((index) => (
+                      <Input
+                        key={index}
+                        value={newEvent.additionalImages?.[index] || ""}
+                        onChange={(e) => updateAdditionalImage(index, e.target.value)}
+                        placeholder={`Imagen ${index + 1}`}
+                        className="rounded-xl"
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Destacados del Evento (4)</Label>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {[0, 1, 2, 3].map((index) => (
+                      <Input
+                        key={index}
+                        value={newEvent.highlights?.[index] || ""}
+                        onChange={(e) => updateHighlight(index, e.target.value)}
+                        placeholder={`Destacado ${index + 1}`}
+                        className="rounded-xl"
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 pt-4">
+                  <input
+                    type="checkbox"
+                    id="featured"
+                    checked={newEvent.featured}
+                    onChange={(e) => setNewEvent({ ...newEvent, featured: e.target.checked })}
+                    className="h-5 w-5 rounded"
+                  />
+                  <Label htmlFor="featured" className="cursor-pointer">
+                    Marcar como evento destacado
+                  </Label>
+                </div>
+
+                <div className="flex gap-4 pt-6">
+                  <Button
+                    onClick={handleAddEvent}
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-700 hover:to-cyan-700 rounded-xl py-6 text-lg font-semibold"
+                  >
+                    Crear Evento
+                  </Button>
+                  <Button
+                    onClick={() => setShowAddEventForm(false)}
+                    variant="outline"
+                    className="flex-1 rounded-xl py-6 text-lg"
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {expandedEvent && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
@@ -436,7 +762,7 @@ export default function EventosPage() {
                         <span className="text-gray-600">por persona</span>
                       </div>
                       <div className="flex gap-3">
-                         <Button className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-700 hover:to-cyan-700 rounded-xl px-15 py-8 text-lg font-semibold text-white">
+                        <Button className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-700 hover:to-cyan-700 rounded-xl px-15 py-8 text-lg font-semibold text-white">
                           compra tu entrada
                         </Button>
                       </div>
@@ -544,6 +870,14 @@ export default function EventosPage() {
           )}
         </div>
       </section>
+
+      <button
+        onClick={() => setShowAddEventForm(true)}
+        className="fixed bottom-8 right-8 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-full h-16 w-16 flex items-center justify-center shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-110 z-40"
+        aria-label="Agregar nuevo evento"
+      >
+        <Plus className="h-8 w-8" />
+      </button>
 
       <Footer />
 
