@@ -53,7 +53,7 @@ export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalP
     e.preventDefault();
   
     try {
-      const res = await fetch("/api/usuario-formulario", {
+      const res = await fetch("/api/usuario_formulario", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

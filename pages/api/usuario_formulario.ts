@@ -1,10 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import pool from "../../src/lib/db";
+import pool from "@/lib/db";
+import bcrypt from "bcryptjs";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "POST") {
     const {
-        tipDoc,
+        tipDoc,  
         document,
         firstName,
         lastName,
@@ -20,6 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
         console.log("Datos recibidos del frontend:", req.body);
       
+        const hashedPassword = await bcrypt.hash(password, 10);
         const result = await pool.query(
           `INSERT INTO tabla_usuarios (
             tipo_documento,
@@ -29,10 +31,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             id_pais,
             telefono,
             correo,
-            contrasena_hash,
-            recordar,
-            aceptar_terminos
-          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+            contrasena_hash
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
           [
             tipDoc,
             document,
@@ -41,9 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             pais,
             telefono,
             email,
-            password,
-            rememberMe,
-            acceptTerms,
+            hashedPassword,
           ]
         );
       

@@ -123,8 +123,8 @@ CREATE TABLE IF NOT EXISTS tabla_roles (
 );
 
 CREATE TABLE IF NOT EXISTS tabla_usuarios (
-	numero_documento        VARCHAR(10)                 NOT NULL        UNIQUE,
 	tipo_documento          tip_doc                     NOT NULL,
+    numero_documento        VARCHAR(10)                 NOT NULL        UNIQUE,
     nombres                 VARCHAR(30)                 NOT NULL        CHECK (char_length(nombres) >= 3),
     apellidos               VARCHAR(30)                 NOT NULL        CHECK (char_length(apellidos) >= 3),
     id_pais                 INT                         NOT NULL,
@@ -156,11 +156,11 @@ CREATE TABLE IF NOT EXISTS tabla_menu_usuarios (
 
 CREATE TABLE IF NOT EXISTS tabla_baneados (
     id_baneado              SERIAL                      PRIMARY KEY,
-    id_usuario              INT                         NOT NULL,
+    id_usuario              VARCHAR                         NOT NULL,
     motivo_ban              TEXT                        NOT NULL,
     incio_ban               TIMESTAMP                   NOT NULL,
     termina_ban             TIMESTAMP                   NOT NULL,
-    responsable             INT                         NOT NULL,
+    responsable             VARCHAR                     NOT NULL,
     fecha_registro          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(numero_documento),
@@ -186,7 +186,7 @@ CREATE TABLE IF NOT EXISTS tabla_tipo_eventos (
 CREATE TABLE IF NOT EXISTS tabla_eventos (
     id_evento               SERIAL                      PRIMARY KEY,
     nombre_evento           VARCHAR                     NOT NULL        CHECK (char_length(nombre_evento) >= 6),
-    id_usuario              INT                         NOT NULL,
+    id_usuario              VARCHAR                     NOT NULL,
     id_tipo_evento          INT                         NOT NULL,
     id_municipio            INT                         NOT NULL,
     id_sitio                INT                         NOT NULL,
@@ -213,7 +213,7 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
 
 CREATE TABLE IF NOT EXISTS tabla_valoraciones (
     id_valoracion           SERIAL                      PRIMARY KEY,
-    id_usuario              INT                         NOT NULL,
+    id_usuario              VARCHAR                     NOT NULL,
     id_evento               INT                         NOT NULL,
     valoracion              INT                         NOT NULL        CHECK (valoracion BETWEEN 1 AND 5),
     comentario              VARCHAR,
@@ -225,7 +225,7 @@ CREATE TABLE IF NOT EXISTS tabla_valoraciones (
 
 CREATE TABLE IF NOT EXISTS tabla_reservas_eventos (
     id_reserva_evento       SERIAL                      PRIMARY KEY,
-    id_usuario              INT                         NOT NULL,
+    id_usuario              VARCHAR                     NOT NULL,
     id_evento               INT                         NOT NULL,
     fecha_reserva           TIMESTAMP                   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     estado                  BOOLEAN                     NOT NULL        DEFAULT 'TRUE',
