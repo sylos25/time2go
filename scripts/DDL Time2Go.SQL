@@ -66,7 +66,6 @@ CREATE TABLE IF NOT EXISTS tabla_municipios (
     area_metropolitana      BOOLEAN                     NOT NULL,
     fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_pais) REFERENCES  tabla_paises(id_pais),
     FOREIGN KEY (id_departamento) REFERENCES  tabla_departamentos(id_departamento)
 );
 
@@ -124,11 +123,10 @@ CREATE TABLE IF NOT EXISTS tabla_roles (
 );
 
 CREATE TABLE IF NOT EXISTS tabla_usuarios (
-    id_usuario              SERIAL,
+	numero_documento        VARCHAR(10)                 NOT NULL        UNIQUE,
+	tipo_documento          tip_doc                     NOT NULL,
     nombres                 VARCHAR(30)                 NOT NULL        CHECK (char_length(nombres) >= 3),
     apellidos               VARCHAR(30)                 NOT NULL        CHECK (char_length(apellidos) >= 3),
-    tipo_documento          tip_doc                     NOT NULL,
-    numero_documento        VARCHAR(10)                 NOT NULL        UNIQUE,
     id_pais                 INT                         NOT NULL,
     telefono                DECIMAL(10,0)                               UNIQUE CHECK (telefono > 2999999999),
     validacion_telefono     BOOLEAN                                     DEFAULT FALSE,
@@ -140,7 +138,7 @@ CREATE TABLE IF NOT EXISTS tabla_usuarios (
     estado                  BOOLEAN                     NOT NULL        DEFAULT TRUE,
     id_rol                  INT                         NOT NULL,
     fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id_usuario, numero_documento),
+    PRIMARY KEY (numero_documento),
     FOREIGN KEY (id_pais) REFERENCES tabla_paises(id_pais),
     FOREIGN KEY (id_rol)  REFERENCES tabla_roles(id_rol)
 );
@@ -165,8 +163,8 @@ CREATE TABLE IF NOT EXISTS tabla_baneados (
     responsable             INT                         NOT NULL,
     fecha_registro          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(id_usuario),
-    FOREIGN KEY (responsable) REFERENCES tabla_usuarios(id_usuario)
+    FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(numero_documento),
+    FOREIGN KEY (responsable) REFERENCES tabla_usuarios(numero_documento)
 );
 
 CREATE TABLE IF NOT EXISTS tabla_categorias_eventos (
@@ -182,7 +180,7 @@ CREATE TABLE IF NOT EXISTS tabla_tipos_eventos (
     nombre                  VARCHAR                     NOT NULL        UNIQUE CHECK (char_length(nombre) >= 3),
     fecha_creacion          TIMESTAMP WITH TIME ZONE    NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion     TIMESTAMP WITH TIME ZONE                    DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_categoria_evento) REFERENCES tabla_categorias_eventos(id_categoria_evento),
+    FOREIGN KEY (id_categoria_evento) REFERENCES tabla_categorias_eventos(id_categoria_evento)
 );
 
 CREATE TABLE IF NOT EXISTS tabla_eventos (
@@ -206,7 +204,7 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
     fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     fecha_desactivacion     TIMESTAMP   WITH TIME ZONE,
-    FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(id_usuario),
+    FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(numero_documento),
     FOREIGN KEY (id_tipo_evento) REFERENCES tabla_tipo_eventos(id_tipo_evento),
     FOREIGN KEY (id_municipio) REFERENCES tabla_municipios(id_municipio),
     FOREIGN KEY (id_sitio) REFERENCES tabla_sitios(id_sitio),
@@ -221,7 +219,7 @@ CREATE TABLE IF NOT EXISTS tabla_valoraciones (
     comentario              VARCHAR,
     fecha_creacion          TIMESTAMP WITH TIME ZONE    NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion     TIMESTAMP WITH TIME ZONE                    DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(id_usuario),
+    FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(numero_documento),
     FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
 );
 
@@ -232,7 +230,7 @@ CREATE TABLE IF NOT EXISTS tabla_reservas_eventos (
     fecha_reserva           TIMESTAMP                   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     estado                  BOOLEAN                     NOT NULL        DEFAULT 'TRUE',
     fecha_actualizacion     TIMESTAMP                   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(id_usuario),
+    FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(numero_documento),
     FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
 );
 
