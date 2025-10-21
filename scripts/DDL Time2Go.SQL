@@ -174,7 +174,7 @@ CREATE TABLE IF NOT EXISTS tabla_categorias_eventos (
     fecha_actualizacion     TIMESTAMP WITH TIME ZONE                    DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS tabla_tipos_eventos (
+CREATE TABLE IF NOT EXISTS tabla_tipo_eventos (
     id_tipo_evento          INT                         PRIMARY KEY,
     id_categoria_evento     INT                         NOT NULL,
     nombre                  VARCHAR                     NOT NULL        UNIQUE CHECK (char_length(nombre) >= 3),
