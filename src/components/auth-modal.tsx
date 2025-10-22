@@ -97,9 +97,9 @@ export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalP
                   className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Selecciona una opción</option>
-                  <option value="Tarjeta_de_Identidad">Tarjeta de Identidad</option>
-                  <option value="Cedula_de_Ciudadania">Cédula de Ciudadanía</option>
-                  <option value="Cedula_de_Extranjeria">Cédula de Extranjería</option>
+                  <option value="Tarjeta de Identidad">Tarjeta de Identidad</option>
+                  <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>
+                  <option value="Cédula de Extranjería">Cédula de Extranjería</option>
                   <option value="Pasaporte">Pasaporte</option>
                 </select>
               </div>

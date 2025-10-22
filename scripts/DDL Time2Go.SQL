@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS tabla_usuarios (
     fecha_registro          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     fecha_desactivacion     TIMESTAMP   WITH TIME ZONE,
     estado                  BOOLEAN                     NOT NULL        DEFAULT TRUE,
-    id_rol                  INT                         NOT NULL,
+    id_rol                  INT                         NOT NULL        DEFAULT 1,
     fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (numero_documento),
     FOREIGN KEY (id_pais) REFERENCES tabla_paises(id_pais),
