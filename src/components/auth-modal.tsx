@@ -52,24 +52,38 @@ export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalP
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
   
+    const endpoint = isLogin ? "/api/login" : "/api/usuario_formulario";
+  
+    const payload = isLogin
+      ? { email: formData.email, password: formData.password }
+      : formData;
+  
     try {
-      const res = await fetch("/api/usuario_formulario", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
   
+      const data = await res.json();
+  
       if (!res.ok) {
-        throw new Error("Error al crear usuario");
+        throw new Error(data.message || "Error en la autenticación");
       }
   
-      const data = await res.json();
-      console.log("Usuario creado:", data);
-      // Aquí puedes limpiar el formulario o cerrar el modal si quieres
+      if (isLogin) {
+        localStorage.setItem("token", data.token);
+        console.log("Login exitoso:", data);
+      } else {
+        console.log("Usuario registrado:", data);
+      }
+  
     } catch (error) {
-      console.error("Error en el registro:", error);
+      console.error("Error:", error);
     }
   };
+
+  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto ">
@@ -337,7 +351,7 @@ export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalP
             {isLogin ? "Regístrate aquí" : "Inicia sesión"}
           </Button>
         </div>
-      </DialogContent>
+      </DialogContent>  
     </Dialog>
   )
 }
