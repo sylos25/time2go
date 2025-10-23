@@ -1,4 +1,3 @@
-// pages/api/login.ts (si usas Next.js) o en tu ruta Express
 import type { NextApiRequest, NextApiResponse } from "next";
 import { loginSchema } from "@/schemas/loginSchema";
 import pool from "@/lib/db";
@@ -18,14 +17,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { email, password } = parseResult.data;
 
   try {
-    const result = await pool.query("SELECT * FROM tabla_usuarios WHERE email = $1", [email]);
+    const result = await pool.query("SELECT * FROM tabla_usuarios WHERE correo = $1", [email]);
     const user = result.rows[0];
 
     if (!user) {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
-    const isValid = await bcrypt.compare(password, user.password_hash);
+    const isValid = await bcrypt.compare(password, user.contrasena_hash);
     if (!isValid) {
       return res.status(401).json({ message: "Contraseña incorrecta" });
     }
