@@ -10,17 +10,17 @@ import { Footer } from "@/components/footer"
 import { AuthModal } from "@/components/auth-modal"
 
 export default function HomePage() {
-  const [authModalOpen, setAuthModalOpen] = useState(false)
-  const [isLogin, setIsLogin] = useState(true)
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
 
   const openAuthModal = (loginMode = true) => {
-    setIsLogin(loginMode)
-    setAuthModalOpen(true)
-  }
+    setIsLogin(loginMode);
+    setAuthModalOpen(true);
+  };
 
   const closeAuthModal = () => {
     setAuthModalOpen(false)
-  }
+  };
 
   return (
   
@@ -36,7 +36,7 @@ export default function HomePage() {
         isOpen={authModalOpen}
         onClose={closeAuthModal}
         isLogin={isLogin}
-        onToggleMode={() => setIsLogin(!isLogin)}
+        onToggleMode={() => setIsLogin(prev => !prev)}
       />
     </main>
   )

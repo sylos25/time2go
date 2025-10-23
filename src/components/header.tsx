@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Menu, X } from "lucide-react"
+import type { JSX } from "react";
+
 
 interface HeaderProps {
-  onAuthClick: (isLogin?: boolean) => void
+  onAuthClick: (isLogin: boolean) => void
 }
 
-export function Header({ onAuthClick }: HeaderProps) {
+export function Header({ onAuthClick }: HeaderProps): JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const router = useRouter()
