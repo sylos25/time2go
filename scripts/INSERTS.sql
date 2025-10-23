@@ -1,8 +1,8 @@
 --INSERTS
 /*INSERT PAISES*/
 CREATE OR REPLACE FUNCTION fun_insert_pais(
-    wid_pais        tabla_pais.id_pais%TYPE,
-    wnombre_pais    tabla_pais.nombre_pais%TYPE
+    wid_pais        tabla_paises.id_pais%TYPE,
+    wnombre_pais    tabla_paises.nombre_pais%TYPE
 ) RETURNS BOOLEAN AS
 $$
 BEGIN
