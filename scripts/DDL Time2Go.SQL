@@ -407,11 +407,33 @@ INSERT INTO tabla_reembolsos (id_reserva_evento, id_pago, id_usuario, motivo_ree
 (1, 1, 1, 'No pude asistir', 'Pendiente');
 
 
---CARGA TABLE DE ROLES
+-- CARGAR EN TABLA_ROLES
 INSERT INTO tabla_roles VALUES  (1,'Usuario');
 
--- CARGA TABLE DE PAIS.
+-- CARGAR EN TABLA_PAISES.
 INSERT INTO tabla_paises VALUES  (1, 'Colombia')
+
+-- CARGAR EN TABLA_CATEGORIAS_EVENTOS
+INSERT INTO tabla_categorias_eventos VALUES (1, 'Música');
+INSERT INTO tabla_categorias_eventos VALUES (2, 'Cultura y Arte');
+INSERT INTO tabla_categorias_eventos VALUES (3, 'Deportes');
+
+-- CARGAR EN TABLA_TIPO_EVENTOS
+INSERT INTO tabla_tipo_eventos VALUES (1, 1, 'Concierto');
+INSERT INTO tabla_tipo_eventos VALUES (2, 1, 'Festival');
+INSERT INTO tabla_tipo_eventos VALUES (3, 1, 'Sesión acústica');
+INSERT INTO tabla_tipo_eventos VALUES (4, 1, 'Tributo');
+INSERT INTO tabla_tipo_eventos VALUES (5, 1, 'Show DJ');
+INSERT INTO tabla_tipo_eventos VALUES (6, 2, 'Obra de teatro');
+INSERT INTO tabla_tipo_eventos VALUES (7, 2, 'Exposición');
+INSERT INTO tabla_tipo_eventos VALUES (8, 2, 'Cine-foro');
+INSERT INTO tabla_tipo_eventos VALUES (9, 2, 'Danza');
+INSERT INTO tabla_tipo_eventos VALUES (10, 2, 'Performance');
+INSERT INTO tabla_tipo_eventos VALUES (11, 3, 'Torneo');
+INSERT INTO tabla_tipo_eventos VALUES (12, 3, 'Partido amistoso');
+INSERT INTO tabla_tipo_eventos VALUES (13, 3, 'Carrera 5k');
+INSERT INTO tabla_tipo_eventos VALUES (14, 3, 'Clase deportiva');
+INSERT INTO tabla_tipo_eventos VALUES (15, 3, 'Exhibición deportiva');
 
 -- CARGA TABLE DE DAPARTAMENTOS SEGÚN DANE.
 INSERT INTO tabla_departamentos VALUES  (91,'Amazonas',1);

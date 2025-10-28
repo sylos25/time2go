@@ -36,48 +36,41 @@ export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalP
     acceptTerms: false,
   })
 
-  useEffect(() => {
-    fetch("/api/llamar_pais")
-      .then((res) => res.json())
-      .then((data) => setListaPaises(data))
-      .catch((err) => console.error("Error al cargar países:", err));
-  }, []);
+    // LLamar los paises que estan en BD.
+    useEffect(() => {
+      fetch("/api/llamar_pais")
+        .then((res) => res.json())
+        .then((data) => setListaPaises(data))
+        .catch((err) => console.error("Error al cargar países:", err));
+    }, []);
+    const [listaPaises, setListaPaises] = useState<{ value: number; label: string }[]>([]);
+    const handleInputChange = (field: string, value: string | boolean) => {
+      setFormData((prev) => ({ ...prev, [field]: value }))
+    }
 
-  const [listaPaises, setListaPaises] = useState<{ value: number; label: string }[]>([]);
-
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-  
+    // Iniciar sesión o Registrar usuario.
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
     const endpoint = isLogin ? "/api/login" : "/api/usuario_formulario";
-  
     const payload = isLogin
       ? { email: formData.email, password: formData.password }
       : formData;
-  
     try {
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-  
       const data = await res.json();
-  
       if (!res.ok) {
         throw new Error(data.message || "Error en la autenticación");
       }
-  
       if (isLogin) {
         localStorage.setItem("token", data.token);
         console.log("Login exitoso:", data);
       } else {
         console.log("Usuario registrado:", data);
       }
-  
     } catch (error) {
       console.error("Error:", error);
     }

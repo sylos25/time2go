@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { AuthModal } from "@/components/auth-modal"
@@ -14,171 +14,27 @@ import { Label } from "@/components/ui/label"
 import { Calendar, MapPin, Users, Search, Filter, Heart, Share2, Star, X, Clock, Info, Plus } from "lucide-react"
 
 interface Event {
-  id: number
-  title: string
-  description: string
-  fullDescription: string
-  date: string
-  time: string
-  location: string
-  price: number
-  category: string
-  image: string
-  additionalImages: string[]
-  attendees: number
-  rating: number
-  featured: boolean
-  duration: string
-  organizer: string
-  highlights: string[]
+  nombre_evento: string;
+  descripcion: string;
+  fecha_inicio: string;
+  fecha_final: string;
+  hora_inicio: string;
+  hora_final: string;
+  dias_semana: string;
+  id_usuario: number;
+  id_categoria_evento: number;
+  id_tipo_evento: number;
+  id_municipio: number;
+  id_sitio: number;
+  id_imagen: number;
+  telefono: string;
+  costo: number;
+  cupo: number;
+  estado: boolean;
 }
 
-const initialEvents: Event[] = [
-  {
-    id: 1,
-    title: "Festival de la carranga",
-    description: "Música folclórica y tradiciones colombianas",
-    fullDescription:
-      "Celebración de la música carranguera colombiana con los mejores exponentes del género. Un evento que reúne tradición, alegría campesina y el inconfundible sonido de la guitarra, el tiple y las coplas picarescas del altiplano cundiboyacense.",
-    date: "2025-10-15",
-    time: "20:00",
-    location: "Teatro Santander, Bucaramanga",
-    price: 7200,
-    category: "Música",
-    image: "/images/carranga1.jpg?height=300&width=400",
-    additionalImages: [
-      "/images/carranga2.jpg?height=400&width=600",
-      "/images/carranga3.jpg?height=400&width=600",
-      "/images/carranga4.jpg?height=400&width=600",
-    ],
-    attendees: 2000,
-    rating: 4.9,
-    featured: true,
-    duration: "4 horas",
-    organizer: "Fundación Cultural Santander",
-    highlights: ["Artistas nacionales", "Musica tradicional", "Bebidas Tradicionales", "Ambiente familiar"],
-  },
-  {
-    id: 2,
-    title: "Exposición cultural ",
-    description: "Obras de artistas emergentes y establecidos",
-    fullDescription:
-      "Descubre las últimas tendencias del arte contemporáneo en esta exposición que presenta obras de más de 50 artistas nacionales e internacionales. La muestra incluye pinturas, esculturas, instalaciones digitales y arte interactivo. Una oportunidad única para conectar con el arte actual y conocer a los artistas en persona durante las charlas programadas.",
-    date: "2026-01-12",
-    time: "10:00",
-    location: "Museo Nacional de Arte, Piedecuesta",
-    price: 5000,
-    category: "Arte",
-    image: "/images/img10.jpg?height=300&width=400",
-    additionalImages: [
-      "/images/art-gallery.jpg?height=400&width=600",
-      "/images/art-sculptures.jpg?height=400&width=600",
-      "/images/art-interactive.jpg?height=400&width=600",
-    ],
-    attendees: 800,
-    rating: 4.6,
-    featured: false,
-    duration: "Todo el día",
-    organizer: "Museo Nacional de Arte",
-    highlights: ["50+ artistas", "Arte interactivo", "Charlas con artistas", "Instalaciones digitales"],
-  },
-  {
-    id: 3,
-    title: "Festival Gastronómico",
-    description: "Sabores del mundo en un solo lugar",
-    fullDescription:
-      "Un viaje culinario extraordinario que te llevará por los sabores más exquisitos del mundo. Más de 30 chefs reconocidos presentarán sus especialidades en vivo. Incluye degustaciones, talleres de cocina, maridajes con vinos y cervezas artesanales. Perfecto para foodies y amantes de la gastronomía internacional.",
-    date: "2025-09-25",
-    time: "12:00",
-    location: "Plaza Central, Bucaramanga",
-    price: 2500,
-    category: "Gastronomía",
-    image: "/images/img8.jpg?height=300&width=400",
-    additionalImages: [
-      "/images/food-festival.jpg?height=400&width=600",
-      "/images/chef-cooking.jpg?height=400&width=600",
-      "/images/food-tasting.jpg?height=400&width=600",
-    ],
-    attendees: 2000,
-    rating: 4.9,
-    featured: true,
-    duration: "8 horas",
-    organizer: "Asociación Gastronómica Regional",
-    highlights: ["30+ chefs reconocidos", "Talleres de cocina", "Maridajes premium", "Cocina en vivo"],
-  },
-  {
-    id: 4,
-    title: "Concierto de Rock Nacional",
-    description: "Las mejores bandas de rock del país",
-    fullDescription:
-      "La noche más rockera del año llega con las bandas más importantes del rock nacional. Un lineup espectacular que incluye tanto leyendas como nuevos talentos del rock colombiano. Escenario principal con sistema de sonido de última generación, efectos visuales impresionantes y una experiencia que hará vibrar a todos los asistentes.",
-    date: "2024-05-01",
-    time: "21:00",
-    location: "CenFer, Bucaramanga",
-    price: 60000,
-    category: "Música",
-    image: "/images/rock-concert.jpg?height=300&width=400",
-    additionalImages: [
-      "/images/rock-stage.jpg?height=400&width=600",
-      "/images/rock-crowd.jpg?height=400&width=600",
-      "/images/rock-lights.jpg?height=400&width=600",
-    ],
-    attendees: 5000,
-    rating: 4.7,
-    featured: false,
-    duration: "6 horas",
-    organizer: "Rock Nacional Productions",
-    highlights: ["Bandas legendarias", "Sonido profesional", "Efectos visuales", "Nuevos talentos"],
-  },
-  {
-    id: 5,
-    title: "Teatro politico: La Madriguera",
-    description: "Tragedia política con humor negro y sátira corrosiva.",
-    fullDescription:
-      "Una comedia trágica con humor negro y corrosivo que muestra el ocaso del dictador Eutimio Matamoros, asediado por las fuerzas revolucionarias. En tiempos de dictadura, el presidente y su secretario privado se refugian en el palacio presidencial mientras una multitud enardecida los acecha",
-    date: "2025-08-20",
-    time: "20:00",
-    location: "Teatro Colón, Bucaramanga",
-    price: 8000,
-    category: "Teatro",
-    image: "/images/experimental-theater.jpg?height=300&width=400",
-    additionalImages: [
-      "/images/hamlet-stage.jpg?height=400&width=600",
-      "/images/teatroa.jpg?height=400&width=600",
-      "/images/shakespeare-costume.jpg?height=400&width=600",
-    ],
-    attendees: 500,
-    rating: 4.5,
-    featured: false,
-    duration: "3 horas",
-    organizer: "Compañía Nacional de Teatro",
-    highlights: ["Elenco internacional", "Vestuario de época", "Escenografía única", "Obra clásica"],
-  },
-  {
-    id: 6,
-    title: "Feria de Tecnología",
-    description: "Las últimas innovaciones tecnológicas",
-    fullDescription:
-      "Descubre el futuro de la tecnología en esta feria que reúne a las empresas más innovadoras del sector. Exhibiciones de inteligencia artificial, realidad virtual, robótica y startups emergentes. Incluye conferencias magistrales, demostraciones en vivo y oportunidades de networking con líderes de la industria tech.",
-    date: "2025-11-10",
-    time: "09:00",
-    location: "NeoMundo, Bucaramanga",
-    price: 3000,
-    category: "Tecnología",
-    image: "/images/tecnologia.jpg?height=300&width=400",
-    additionalImages: [
-      "/images/tech-expo.jpg?height=400&width=600",
-      "/images/vr-demo.jpg?height=400&width=600",
-      "/images/ai-robots.jpg?height=400&width=600",
-    ],
-    attendees: 1500,
-    rating: 4.4,
-    featured: true,
-    duration: "10 horas",
-    organizer: "TechColombia",
-    highlights: ["IA y Robótica", "Realidad virtual", "Startups innovadoras", "Networking tech"],
-  },
-]
+// Esto es para mostrar los eventos debajo del buscador --- En proceso
+  const initialEvents: Event[] = []
 
 export default function EventosPage() {
   const [events, setEvents] = useState<Event[]>(initialEvents)
@@ -190,25 +46,63 @@ export default function EventosPage() {
   const [sortBy, setSortBy] = useState("date")
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [expandedEventId, setExpandedEventId] = useState<number | null>(null)
+  const [categorias, setCategorias] = useState<{ id_categoria_evento: number; nombre: string }[]>([]);
+  const [tiposDeEvento, setTiposDeEvento] = useState<{ id_tipo_evento: number; nombre: string }[]>([]);
+
+
 
   const [newEvent, setNewEvent] = useState<Partial<Event>>({
-    title: "",
-    description: "",
-    fullDescription: "",
-    date: "",
-    time: "",
-    location: "",
-    price: 0,
-    category: "Música",
-    image: "",
-    additionalImages: ["", "", ""],
-    attendees: 0,
-    rating: 5.0,
-    featured: false,
-    duration: "",
-    organizer: "",
-    highlights: ["", "", "", ""],
-  })
+    nombre_evento: "",
+    id_usuario: 0,
+    id_categoria_evento: 0,
+    id_tipo_evento: 0,
+    id_municipio: 0,
+    id_sitio: 0,
+    descripcion: "",
+    telefono: "",
+    fecha_inicio: "",
+    fecha_final: "",
+    dias_semana: "",
+    hora_inicio: "",
+    hora_final: "",
+    costo: 0,
+    cupo: 0,
+    estado: true,
+    id_imagen: 0,
+  });
+
+//Para llamar la categría (evento) de la base de datos.
+  useEffect(() => {
+    const fetchCategorias = async () => {
+      try {
+        const res = await fetch("/api/categoria_evento");
+        const data = await res.json();
+        setCategorias(data);
+      } catch (error) {
+        console.error("Error al cargar categorías:", error);
+      }
+    };
+  
+    fetchCategorias();
+  }, []);
+  
+//Para llamar el tipo (evento) de la base de datos.
+  useEffect(() => {
+    const fetchTiposDeEvento = async () => {
+      if (!newEvent.id_categoria_evento) return;
+  
+      try {
+        const res = await fetch(`/api/tipo_evento?categoriaId=${newEvent.id_categoria_evento}`);
+        const data = await res.json();
+        setTiposDeEvento(data);
+      } catch (error) {
+        console.error("Error al cargar tipos de evento:", error);
+      }
+    };
+  
+    fetchTiposDeEvento();
+  }, [newEvent.id_categoria_evento]);
+  
 
   const openAuthModal = (loginMode = true) => {
     setIsLogin(loginMode)
@@ -219,89 +113,132 @@ export default function EventosPage() {
     setExpandedEventId(expandedEventId === eventId ? null : eventId)
   }
 
-  const handleAddEvent = () => {
-    const eventToAdd: Event = {
-      id: events.length + 1,
-      title: newEvent.title || "",
-      description: newEvent.description || "",
-      fullDescription: newEvent.fullDescription || "",
-      date: newEvent.date || "",
-      time: newEvent.time || "",
-      location: newEvent.location || "",
-      price: newEvent.price || 0,
-      category: newEvent.category || "Música",
-      image: newEvent.image || "/placeholder.svg?height=300&width=400",
-      additionalImages: newEvent.additionalImages || ["", "", ""],
-      attendees: newEvent.attendees || 0,
-      rating: newEvent.rating || 5.0,
-      featured: newEvent.featured || false,
-      duration: newEvent.duration || "",
-      organizer: newEvent.organizer || "",
-      highlights: (newEvent.highlights || []).filter((h) => h.trim() !== ""),
+  const handleAddEvent = async () => {
+    const eventToAdd: Partial<Event> = {
+      nombre_evento: newEvent.nombre_evento || "",
+      descripcion: newEvent.descripcion || "",
+      fecha_inicio: newEvent.fecha_inicio || "",
+      fecha_final: newEvent.fecha_final || "", // puedes calcularla con duration si lo deseas
+      hora_inicio: newEvent.hora_inicio || "",
+      hora_final: newEvent.hora_final || "",
+      dias_semana: "", // si aplica
+      id_usuario: id_usuario,
+      id_categoria_evento: 0,
+      id_tipo_evento: mapCategoryToTipoId(newEvent.category || "Música"),
+      id_municipio: mapLocationToMunicipioId(newEvent.location || ""),
+      id_sitio: 0,
+      id_imagen: 0,
+      telefono: "",
+      costo: newEvent.costo || 0,
+      cupo: newEvent.cupo || 0,
+      estado: newEvent.estado || true,
+    };
+  
+    try {
+      const res = await fetch("/api/eventos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(eventToAdd),
+      });
+  
+      if (!res.ok) throw new Error("Error al crear el evento");
+  
+      const eventoCreado = await res.json();
+      setEvents((prev) => [...prev, eventoCreado]);
+      setShowAddEventForm(false);
+  
+      // Reset form adaptado
+      setNewEvent({
+        nombre_evento: "",
+        id_usuario: 0,
+        id_categoria_evento: 0,
+        id_tipo_evento: 0,
+        id_municipio: 0,
+        id_sitio: 0,
+        descripcion: "",
+        telefono: "",
+        fecha_inicio: "",
+        fecha_final: "",
+        dias_semana: "",
+        hora_inicio: "",
+        hora_final: "",
+        costo: 0,
+        cupo: 0,
+        estado: true,
+        id_imagen: 0,
+      });
+    } catch (error) {
+      console.error("Error al guardar el evento:", error);
     }
-
-    setEvents([...events, eventToAdd])
-    setShowAddEventForm(false)
-
-    // Reset form
-    setNewEvent({
-      title: "",
-      description: "",
-      fullDescription: "",
-      date: "",
-      time: "",
-      location: "",
-      price: 0,
-      category: "Música",
-      image: "",
-      additionalImages: ["", "", ""],
-      attendees: 0,
-      rating: 5.0,
-      featured: false,
-      duration: "",
-      organizer: "",
-      highlights: ["", "", "", ""],
-    })
+  };
+  
+  // Funciones de mapeo
+  function mapCategoryToTipoId(category: string): number {
+    const categorias = {
+      Música: 1,
+      Arte: 2,
+      Teatro: 3,
+      Gastronomía: 4,
+      Tecnología: 5,
+    };
+    return categorias[category] || 0;
   }
-
+  
+  function mapLocationToMunicipioId(location: string): number {
+    const municipios = {
+      Bogotá: 1,
+      Medellín: 2,
+      Bucaramanga: 3,
+      Cali: 4,
+      Cartagena: 5,
+    };
+    return municipios[location] || 0;
+  }
+  
+  // Puedes conservar estas funciones si aún usas campos visuales
   const updateHighlight = (index: number, value: string) => {
-    const updatedHighlights = [...(newEvent.highlights || [])]
-    updatedHighlights[index] = value
-    setNewEvent({ ...newEvent, highlights: updatedHighlights })
-  }
-
+    const updatedHighlights = [...(newEvent.highlights || [])];
+    updatedHighlights[index] = value;
+    setNewEvent({ ...newEvent, highlights: updatedHighlights });
+  };
+  
   const updateAdditionalImage = (index: number, value: string) => {
-    const updatedImages = [...(newEvent.additionalImages || [])]
-    updatedImages[index] = value
-    setNewEvent({ ...newEvent, additionalImages: updatedImages })
-  }
-
-  const categories = ["all", "Música", "Arte", "Teatro", "Gastronomía", "Tecnología"]
-
+    const updatedImages = [...(newEvent.additionalImages || [])];
+    updatedImages[index] = value;
+    setNewEvent({ ...newEvent, additionalImages: updatedImages });
+  };
+  
+  // Categorías visuales para filtros
+  const categories = ["all", "Música", "Arte", "Teatro", "Gastronomía", "Tecnología"];
+  
+  // Filtro visual (puedes mantenerlo si usas tarjetas de eventos)
   const filteredEvents = events
     .filter((event) => {
       const matchesSearch =
-        event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        event.description.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesCategory = selectedCategory === "all" || event.category === selectedCategory
-      return matchesSearch && matchesCategory
+        event.nombre_evento.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory =
+        selectedCategory === "all" ||
+        mapCategoryToTipoId(selectedCategory) === event.id_tipo_evento;
+      return matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
       switch (sortBy) {
         case "price":
-          return a.price - b.price
-        case "rating":
-          return b.rating - a.rating
+          return a.costo - b.costo;
         case "attendees":
-          return b.attendees - a.attendees
+          return b.cupo - a.cupo;
         default:
-          return new Date(a.date).getTime() - new Date(b.date).getTime()
+          return new Date(a.fecha_inicio).getTime() - new Date(b.fecha_inicio).getTime();
       }
-    })
-
-  const topRatedEvents = events.sort((a, b) => b.rating - a.rating).slice(0, 3)
-
-  const expandedEvent = expandedEventId ? events.find((e) => e.id === expandedEventId) : null
+    });
+  
+  // Eventos destacados (si decides mantener rating visual)
+  const topRatedEvents = events.slice(0, 3); // puedes ordenar por cupo o costo si no usas rating
+  
+  // Evento expandido
+  const expandedEvent = expandedEventId ? events.find((e) => e.id === expandedEventId) : null;
+  
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -419,18 +356,171 @@ export default function EventosPage() {
               <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="title">Título del Evento *</Label>
+                    <Label htmlFor="title">Nombre del Evento *</Label>
                     <Input
                       id="title"
-                      value={newEvent.title}
-                      onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                      value={newEvent.nombre_evento}
+                      onChange={(e) => setNewEvent({ ...newEvent, nombre_evento: e.target.value })}
                       placeholder="Ej: Festival de Música"
                       className="rounded-xl"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="category">Categoría *</Label>
+                    <Label htmlFor="title">Nombre del Promotor *</Label>
+                    <Input
+                      id="title"
+                      value={newEvent.id_usuario}
+                      onChange={(e) => setNewEvent({ ...newEvent, id_usuario: e.target.value })}
+                      placeholder="Ej: Auto"
+                      className="rounded-xl"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="id_tipo_evento">Categoría del Evento *</Label>
+                    <Select
+                      value={String(newEvent.id_categoria_evento || 0)}
+                      onValueChange={(value) =>setNewEvent({ ...newEvent, id_categoria_evento: Number(value) })
+                      }
+                    >
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue placeholder="Selecciona una categoría" />
+                      </SelectTrigger>
+                      <SelectContent>
+                      <SelectItem value="0">Selecciona una categoría</SelectItem>
+                      {categorias.map((cat) => (
+                        <SelectItem key={cat.id_categoria_evento} value={String(cat.id_categoria_evento)}>
+                          {cat.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Tipo de Evento *</Label>
+                    <Select
+                        value={String(newEvent.id_tipo_evento || 0)}
+                        onValueChange={(value) =>
+                          setNewEvent({ ...newEvent, id_tipo_evento: Number(value) })
+                        }
+                        disabled={!tiposDeEvento.length}
+                      >
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue placeholder="Selecciona un tipo de evento" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">(Selecciona un tipo)</SelectItem>
+                          {tiposDeEvento.map((tipo) => (
+                            <SelectItem key={tipo.id_tipo_evento} value={String(tipo.id_tipo_evento)}>
+                              {tipo.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Sitio *</Label>
+                    <Input
+                      id="title"
+                      value={newEvent.id_sitio}
+                      onChange={(e) => setNewEvent({ ...newEvent, id_sitio: e.target.value })}
+                      placeholder="Ej: Neomundo"
+                      className="rounded-xl"
+                    />
+                  </div>
+
+                  
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="fullDescription">Descripción *</Label>
+                  <Textarea
+                    id="fullDescription"
+                    value={newEvent.descripcion}
+                    onChange={(e) => setNewEvent({ ...newEvent, descripcion: e.target.value })}
+                    placeholder="Descripción detallada del evento"
+                    className="rounded-xl min-h-[100px]"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="title">Teléfono de los organizadores *</Label>
+                    <Input
+                      id="title"
+                      value={newEvent.telefono}
+                      onChange={(e) => setNewEvent({ ...newEvent, telefono: e.target.value })}
+                      placeholder="Ej: 3121234567"
+                      className="rounded-xl"
+                    />
+                  </div>
+
+
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="date">Fecha en la que inicia el evento*</Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={newEvent.fecha_inicio}
+                      onChange={(e) => setNewEvent({ ...newEvent, fecha_inicio: e.target.value })}
+                      className="rounded-xl"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="date">Fecha en la que termina el evento*</Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={newEvent.fecha_final}
+                      onChange={(e) => setNewEvent({ ...newEvent, fecha_final: e.target.value })}
+                      className="rounded-xl"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Dias al que se puede asistir al evento *</Label>
+                    <Input
+                      id="title"
+                      value={newEvent.dias_semana}
+                      onChange={(e) => setNewEvent({ ...newEvent, dias_semana: e.target.value })}
+                      placeholder="Ej: Lunes, Martes, Miercoles..."
+                      className="rounded-xl"
+                    />
+                  </div>
+
+
+                  <div className="space-y-2">
+                    <Label htmlFor="time">Hora de inicio*</Label>
+                    <Input
+                      id="time"
+                      type="time"
+                      value={newEvent.hora_inicio}
+                      onChange={(e) => setNewEvent({ ...newEvent, hora_inicio: e.target.value })}
+                      className="rounded-xl"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="time">Hora final *</Label>
+                    <Input
+                      id="time"
+                      type="time"
+                      value={newEvent.hora_final}
+                      onChange={(e) => setNewEvent({ ...newEvent, hora_final: e.target.value })}
+                      className="rounded-xl"
+                    />
+                  </div>
+                  
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+
+                <div className="space-y-2">
+                    <Label htmlFor="category">Modo de acceder (temporal)*</Label>
                     <Select
                       value={newEvent.category}
                       onValueChange={(value) => setNewEvent({ ...newEvent, category: value })}
@@ -449,84 +539,14 @@ export default function EventosPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-
+                  
                 <div className="space-y-2">
-                  <Label htmlFor="description">Descripción Corta *</Label>
-                  <Input
-                    id="description"
-                    value={newEvent.description}
-                    onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                    placeholder="Breve descripción del evento"
-                    className="rounded-xl"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="fullDescription">Descripción Completa *</Label>
-                  <Textarea
-                    id="fullDescription"
-                    value={newEvent.fullDescription}
-                    onChange={(e) => setNewEvent({ ...newEvent, fullDescription: e.target.value })}
-                    placeholder="Descripción detallada del evento"
-                    className="rounded-xl min-h-[100px]"
-                  />
-                </div>
-
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="date">Fecha *</Label>
+                    <Label htmlFor="title">Valor de la entrada (tabla_costos)*</Label>
                     <Input
-                      id="date"
-                      type="date"
-                      value={newEvent.date}
-                      onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                      className="rounded-xl"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="time">Hora *</Label>
-                    <Input
-                      id="time"
-                      type="time"
-                      value={newEvent.time}
-                      onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
-                      className="rounded-xl"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="duration">Duración *</Label>
-                    <Input
-                      id="duration"
-                      value={newEvent.duration}
-                      onChange={(e) => setNewEvent({ ...newEvent, duration: e.target.value })}
-                      placeholder="Ej: 3 horas"
-                      className="rounded-xl"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="location">Ubicación *</Label>
-                    <Input
-                      id="location"
-                      value={newEvent.location}
-                      onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-                      placeholder="Ej: Teatro Principal, Bucaramanga"
-                      className="rounded-xl"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="organizer">Organizador *</Label>
-                    <Input
-                      id="organizer"
-                      value={newEvent.organizer}
-                      onChange={(e) => setNewEvent({ ...newEvent, organizer: e.target.value })}
-                      placeholder="Nombre del organizador"
+                      id="title"
+                      value={newEvent.costo}
+                      onChange={(e) => setNewEvent({ ...newEvent, costo: e.target.value })}
+                      placeholder="Ej: 100.000"
                       className="rounded-xl"
                     />
                   </div>
@@ -534,39 +554,13 @@ export default function EventosPage() {
 
                 <div className="grid md:grid-cols-3 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="price">Precio (COP) *</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      value={newEvent.price}
-                      onChange={(e) => setNewEvent({ ...newEvent, price: Number(e.target.value) })}
-                      placeholder="0"
-                      className="rounded-xl"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="attendees">Asistentes Esperados</Label>
+                    <Label htmlFor="attendees">Aforo del evento</Label>
                     <Input
                       id="attendees"
                       type="number"
-                      value={newEvent.attendees}
-                      onChange={(e) => setNewEvent({ ...newEvent, attendees: Number(e.target.value) })}
+                      value={newEvent.cupo}
+                      onChange={(e) => setNewEvent({ ...newEvent, cupo: Number(e.target.value) })}
                       placeholder="0"
-                      className="rounded-xl"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="rating">Valoración (1-5)</Label>
-                    <Input
-                      id="rating"
-                      type="number"
-                      step="0.1"
-                      min="1"
-                      max="5"
-                      value={newEvent.rating}
-                      onChange={(e) => setNewEvent({ ...newEvent, rating: Number(e.target.value) })}
                       className="rounded-xl"
                     />
                   </div>
@@ -611,19 +605,6 @@ export default function EventosPage() {
                       />
                     ))}
                   </div>
-                </div>
-
-                <div className="flex items-center gap-3 pt-4">
-                  <input
-                    type="checkbox"
-                    id="featured"
-                    checked={newEvent.featured}
-                    onChange={(e) => setNewEvent({ ...newEvent, featured: e.target.checked })}
-                    className="h-5 w-5 rounded"
-                  />
-                  <Label htmlFor="featured" className="cursor-pointer">
-                    Marcar como evento destacado
-                  </Label>
                 </div>
 
                 <div className="flex gap-4 pt-6">
