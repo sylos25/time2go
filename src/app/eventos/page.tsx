@@ -48,7 +48,8 @@ export default function EventosPage() {
   const [expandedEventId, setExpandedEventId] = useState<number | null>(null)
   const [categorias, setCategorias] = useState<{ id_categoria_evento: number; nombre: string }[]>([]);
   const [tiposDeEvento, setTiposDeEvento] = useState<{ id_tipo_evento: number; nombre: string }[]>([]);
-
+  const [sitios, setSitios] = useState<{ id_sitio: number; nombre_sitio: string }[]>([]);
+  const [busquedaSitio, setBusquedaSitio] = useState("");
 
 
   const [newEvent, setNewEvent] = useState<Partial<Event>>({
@@ -71,6 +72,26 @@ export default function EventosPage() {
     id_imagen: 0,
   });
 
+//Para llamar los sitios de la base de datos.
+  useEffect(() => {
+    const fetchSitios = async () => {
+      if (!busquedaSitio || busquedaSitio.length < 2 || newEvent.id_sitio) return;
+      try {
+        const res = await fetch(`/api/llamar_sitio?nombre_sitio=${encodeURIComponent(busquedaSitio)}`);
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setSitios(data);
+        } else {
+          setSitios([]);
+        }
+      } catch (error) {
+        console.error("Error al buscar sitios:", error);
+        setSitios([]);
+      }
+    };
+    fetchSitios();
+  }, [busquedaSitio]);
+
 //Para llamar la categría (evento) de la base de datos.
   useEffect(() => {
     const fetchCategorias = async () => {
@@ -89,12 +110,13 @@ export default function EventosPage() {
 //Para llamar el tipo (evento) de la base de datos.
   useEffect(() => {
     const fetchTiposDeEvento = async () => {
-      if (!newEvent.id_categoria_evento) return;
+      if (!newEvent.id_categoria_evento || newEvent.id_categoria_evento === 0) {
+        setTiposDeEvento([]); return;}
   
       try {
         const res = await fetch(`/api/tipo_evento?categoriaId=${newEvent.id_categoria_evento}`);
         const data = await res.json();
-        setTiposDeEvento(data);
+        setTiposDeEvento(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Error al cargar tipos de evento:", error);
       }
@@ -381,7 +403,7 @@ export default function EventosPage() {
                     <Label htmlFor="id_tipo_evento">Categoría del Evento *</Label>
                     <Select
                       value={String(newEvent.id_categoria_evento || 0)}
-                      onValueChange={(value) =>setNewEvent({ ...newEvent, id_categoria_evento: Number(value) })
+                      onValueChange={(value) =>setNewEvent({ ...newEvent, id_categoria_evento: Number(value), id_tipo_evento: 0 })
                       }
                     >
                       <SelectTrigger className="rounded-xl">
@@ -421,18 +443,36 @@ export default function EventosPage() {
                       </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Sitio *</Label>
+                  <div className="space-y-2 relative">
+                    <Label htmlFor="sitio">Sitio *</Label>
                     <Input
-                      id="title"
-                      value={newEvent.id_sitio}
-                      onChange={(e) => setNewEvent({ ...newEvent, id_sitio: e.target.value })}
+                      id="sitio"
+                      value={busquedaSitio}
+                      onChange={(e) => {
+                        setBusquedaSitio(e.target.value);
+                        setNewEvent({ ...newEvent, id_sitio: 0 });
+                      }}
                       placeholder="Ej: Neomundo"
                       className="rounded-xl"
                     />
+                    {sitios.length > 0 && (
+                      <ul className="absolute z-10 bg-white border rounded-xl mt-1 w-full max-h-60 overflow-y-auto shadow-lg">
+                        {sitios.map((sitio) => (
+                          <li
+                            key={sitio.id_sitio}
+                            onClick={() => {
+                              setBusquedaSitio(sitio.nombre_sitio);
+                              setNewEvent({ ...newEvent, id_sitio: sitio.id_sitio });
+                              setSitios([]);
+                            }}
+                            className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                          >
+                            {sitio.nombre_sitio}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
-
-                  
                 </div>
 
                 <div className="space-y-2">

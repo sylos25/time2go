@@ -7,26 +7,26 @@
 |------------------------------------------------------------------------------------|
 */
 -- BORRADO TABLAS
-DROP TABLE IF EXISTS tabla_imagenes;
-DROP TABLE IF EXISTS tabla_paises;
-DROP TABLE IF EXISTS tabla_departamentos;
-DROP TABLE IF EXISTS tabla_municipios;
-DROP TABLE IF EXISTS tabla_tipo_sitios;
-DROP TABLE IF EXISTS tabla_sitios;
-DROP TABLE IF EXISTS tabla_tipo_infraest_disc;
-DROP TABLE IF EXISTS tabla_sitios_disc;
-DROP TABLE IF EXISTS tabla_menu;
-DROP TABLE IF EXISTS tabla_roles;
-DROP TABLE IF EXISTS tabla_usuarios;
-DROP TABLE IF EXISTS tabla_menu_usuario;
-DROP TABLE IF EXISTS tabla_baneados;
-DROP TABLE IF EXISTS tabla_categorias_eventos;
-DROP TABLE IF EXISTS tabla_tipos_eventos;
-DROP TABLE IF EXISTS tabla_eventos;
-DROP TABLE IF EXISTS tabla_valoraciones;
 DROP TABLE IF EXISTS tabla_reservas_eventos;
-DROP TABLE IF EXISTS tabla_costos;
 DROP TABLE IF EXISTS tabla_costos_eventos;
+DROP TABLE IF EXISTS tabla_costos;
+DROP TABLE IF EXISTS tabla_valoraciones;
+DROP TABLE IF EXISTS tabla_eventos;
+DROP TABLE IF EXISTS tabla_tipo_eventos;
+DROP TABLE IF EXISTS tabla_categorias_eventos;
+DROP TABLE IF EXISTS tabla_baneados;
+DROP TABLE IF EXISTS tabla_menu_usuarios;
+DROP TABLE IF EXISTS tabla_usuarios;
+DROP TABLE IF EXISTS tabla_roles;
+DROP TABLE IF EXISTS tabla_menu;
+DROP TABLE IF EXISTS tabla_sitios_disc;
+DROP TABLE IF EXISTS tabla_tipo_infraest_disc;
+DROP TABLE IF EXISTS tabla_sitios;
+DROP TABLE IF EXISTS tabla_tipo_sitios;
+DROP TABLE IF EXISTS tabla_municipios;
+DROP TABLE IF EXISTS tabla_departamentos;
+DROP TABLE IF EXISTS tabla_paises;
+DROP TABLE IF EXISTS tabla_imagenes;
 
 
 CREATE TYPE tip_doc     AS ENUM ('Tarjeta de Identidad', 'Cédula de Ciudadanía', 'Cédula de Extranjería', 'Pasaporte');
@@ -59,8 +59,8 @@ CREATE TABLE IF NOT EXISTS tabla_departamentos (
 );
 
 CREATE TABLE IF NOT EXISTS tabla_municipios (
-    id_departamento         INT                         NOT NULL,
     id_municipio            INT                         PRIMARY KEY,
+    id_departamento         INT                         NOT NULL,
     nombre_municipio        VARCHAR                     NOT NULL        CHECK (char_length(nombre_municipio) >= 3),
     distrito                BOOLEAN                     NOT NULL,
     area_metropolitana      BOOLEAN                     NOT NULL,
@@ -84,9 +84,10 @@ CREATE TABLE IF NOT EXISTS tabla_sitios (
     acceso_discapacidad     BOOLEAN                     NOT NULL,
     id_municipio            INT                         NOT NULL,
     direccion               VARCHAR                     NOT NULL        UNIQUE CHECK (char_length(direccion) >= 6),
-    latitud                 DECIMAL(10,8)               NOT NULL        UNIQUE,
-    longitud                DECIMAL(11,8)               NOT NULL        UNIQUE,
-    telefono                DECIMAL(10,0)               NOT NULL        UNIQUE CHECK (telefono > 2999999999),
+    latitud                 VARCHAR                     NOT NULL        UNIQUE,
+    longitud                VARCHAR                     NOT NULL        UNIQUE,
+    telefono_1              DECIMAL(10,0)                               UNIQUE CHECK (telefono_1 > 2999999999),
+    telefono_2              DECIMAL(10,0)                                UNIQUE CHECK (telefono_2 > 2999999999),
     sitio_web               VARCHAR                                     UNIQUE,
     fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
@@ -199,7 +200,7 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
     hora_final              TIME                        NOT NULL,
     dinero                  BOOLEAN                     NOT NULL        DEFAULT FALSE,
     cupo                    INT                         NOT NULL        DEFAULT 0 CHECK (cupo >= 0),
-    estado                  BOOLEAN                     NOT NULL        DEFAULT TRUE,
+    estado                  BOOLEAN                     NOT NULL        DEFAULT FALSE,
     id_imagen               INT                         NOT NULL,
     fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
@@ -295,7 +296,6 @@ CREATE TABLE IF NOT EXISTS tabla_facturas_contenido (
     FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(id_usuario),
     FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
 );
-
 
 CREATE TABLE IF NOT EXISTS tabla_reembolsos (
     id_reembolso            SERIAL PRIMARY KEY,
@@ -411,7 +411,7 @@ INSERT INTO tabla_reembolsos (id_reserva_evento, id_pago, id_usuario, motivo_ree
 INSERT INTO tabla_roles VALUES  (1,'Usuario');
 
 -- CARGAR EN TABLA_PAISES.
-INSERT INTO tabla_paises VALUES  (1, 'Colombia')
+INSERT INTO tabla_paises VALUES  (1, 'Colombia');
 
 -- CARGAR EN TABLA_CATEGORIAS_EVENTOS
 INSERT INTO tabla_categorias_eventos VALUES (1, 'Música');
@@ -434,6 +434,32 @@ INSERT INTO tabla_tipo_eventos VALUES (12, 3, 'Partido amistoso');
 INSERT INTO tabla_tipo_eventos VALUES (13, 3, 'Carrera 5k');
 INSERT INTO tabla_tipo_eventos VALUES (14, 3, 'Clase deportiva');
 INSERT INTO tabla_tipo_eventos VALUES (15, 3, 'Exhibición deportiva');
+
+-- CARGAR EN TABLA_TIPO_SITIOS
+INSERT INTO tabla_tipo_sitios VALUES (1, 'Teatro');
+INSERT INTO tabla_tipo_sitios VALUES (2, 'Centro de convenciones');
+INSERT INTO tabla_tipo_sitios VALUES (3, 'Museo');
+
+-- CARGAR EN TABLA_MUNICIPIOS
+INSERT INTO tabla_municipios VALUES (68001, 68, 'Bucaramanga', FALSE, TRUE);
+
+-- CARGAR EN TABLA_SITIOS
+INSERT INTO tabla_sitios VALUES (1, 'Teatro Santander', 1, 'Desde 1932, el Teatro Santander ocupa un lugar privilegiado en el corazón de Bucaramanga. Ubicado en el Barrio Centro de la ciudad, junto al Parque Centenario, el Teatro Santander se distingue por su destacado carácter arquitectónico, sus exigentes condiciones técnicas y una oferta variada y de alta calidad.​', TRUE, 68001, 'Calle 33 #18-60', '7,12116°', '-73,12401°', 6076424232, 3245670437, 'https://www.teatrosantanderbga.com/');
+INSERT INTO tabla_sitios VALUES (2, 'Neomundo - Centro de convenciones y eventos', 2, 'Neomundo se destaca como uno de los centros de convenciones y eventos más importantes de Colombia. Su oferta se organiza en cuatro líneas de negocio: Arrendamiento de Espacios para Eventos, Arrendamiento Inmobiliario, Operación Logística de Eventos y Proyectos Especiales.', TRUE, 68001, 'Calle 89 Transversal Oriental Metropolitana-69, Barrio, Cl. 100,', '7,10215°', '-73,10619°', 6077000260, 3023246560, 'https://neomundo.co/');
+
+-- CARGAR EN TABLA_TIPO_INFRAEST_DISC
+INSERT INTO tabla_tipo_infraest_disc VALUES (1, 'Ascensor' );
+INSERT INTO tabla_tipo_infraest_disc VALUES (2, 'Rampa' );
+INSERT INTO tabla_tipo_infraest_disc VALUES (3, 'Estacionamiento' );
+INSERT INTO tabla_tipo_infraest_disc VALUES (4, 'Señalización en Braille' );
+
+-- CARGAR EN TABLA_SITIOS_DISC
+INSERT INTO tabla_sitios_disc VALUES (1, 1, 1, 'Ascensor en el lobby del Teatro Santander');
+INSERT INTO tabla_sitios_disc VALUES (2, 1, 2, 'Rampa en la entrada del Teatro Santander');
+INSERT INTO tabla_sitios_disc VALUES (3, 2, 1, 'Ascensor cerca a la entrada de Neomundo');
+INSERT INTO tabla_sitios_disc VALUES (4, 2, 2, 'Rampa en la entrada y para acceder entre los pisos de Neomundo');
+INSERT INTO tabla_sitios_disc VALUES (5, 2, 3, 'Señalización en braille en las distintos accesos de Neomundo');
+
 
 -- CARGA TABLE DE DAPARTAMENTOS SEGÚN DANE.
 INSERT INTO tabla_departamentos VALUES  (91,'Amazonas',1);
