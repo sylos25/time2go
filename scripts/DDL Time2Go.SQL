@@ -409,6 +409,9 @@ INSERT INTO tabla_reembolsos (id_reserva_evento, id_pago, id_usuario, motivo_ree
 
 -- CARGAR EN TABLA_ROLES
 INSERT INTO tabla_roles VALUES  (1,'Usuario');
+INSERT INTO tabla_roles VALUES  (2,'Promotor');
+INSERT INTO tabla_roles VALUES  (3,'Moderador');
+INSERT INTO tabla_roles VALUES  (4,'Administrador');
 
 -- CARGAR EN TABLA_PAISES.
 INSERT INTO tabla_paises VALUES  (1, 'Colombia');
