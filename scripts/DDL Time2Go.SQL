@@ -461,7 +461,42 @@ INSERT INTO tabla_sitios_disc VALUES (4, 2, 2, 'Rampa en la entrada y para acced
 INSERT INTO tabla_sitios_disc VALUES (5, 2, 3, 'Señalización en braille en las distintos accesos de Neomundo');
 
 
--- CARGA TABLE DE DAPARTAMENTOS SEGÚN DANE.
+-- CARGA TABLE DE DEPARTAMENTOS SEGÚN DANE.
+INSERT INTO tabla_departamentos VALUES  (91,'Amazonas',1);
+INSERT INTO tabla_departamentos VALUES  (05,'Antioquia',1);
+INSERT INTO tabla_departamentos VALUES  (81,'Arauca',1);
+INSERT INTO tabla_departamentos VALUES  (08,'Atlántico',1);
+INSERT INTO tabla_departamentos VALUES  (11,'Bogotá',1);
+INSERT INTO tabla_departamentos VALUES  (13,'Bolivar',1);
+INSERT INTO tabla_departamentos VALUES  (15,'Boyacá',1);
+INSERT INTO tabla_departamentos VALUES  (17,'Caldas',1);
+INSERT INTO tabla_departamentos VALUES  (18,'Caquetá',1);
+INSERT INTO tabla_departamentos VALUES  (85,'Casanare',1);
+INSERT INTO tabla_departamentos VALUES  (19,'Cauca',1);
+INSERT INTO tabla_departamentos VALUES  (20,'Cesar',1);
+INSERT INTO tabla_departamentos VALUES  (27,'Chocó',1);
+INSERT INTO tabla_departamentos VALUES  (23,'Córdoba',1);
+INSERT INTO tabla_departamentos VALUES  (25,'Cundinamarca',1);
+INSERT INTO tabla_departamentos VALUES  (94,'Guanía',1);
+INSERT INTO tabla_departamentos VALUES  (95,'Guaviare',1);
+INSERT INTO tabla_departamentos VALUES  (41,'Huila',1);
+INSERT INTO tabla_departamentos VALUES  (44,'La Guajira',1);
+INSERT INTO tabla_departamentos VALUES  (47,'Magdalena',1);
+INSERT INTO tabla_departamentos VALUES  (50,'Meta',1);
+INSERT INTO tabla_departamentos VALUES  (52,'Nariño',1);
+INSERT INTO tabla_departamentos VALUES  (54,'Norte de Santander',1);
+INSERT INTO tabla_departamentos VALUES  (86,'Putumayo',1);
+INSERT INTO tabla_departamentos VALUES  (63,'Quindío',1);
+INSERT INTO tabla_departamentos VALUES  (66,'Risaralda',1);
+INSERT INTO tabla_departamentos VALUES  (68,'Santander',1);
+INSERT INTO tabla_departamentos VALUES  (70,'Sucre',1);
+INSERT INTO tabla_departamentos VALUES  (73,'Tolima',1);
+INSERT INTO tabla_departamentos VALUES  (76,'Valle del Cauca',1);
+INSERT INTO tabla_departamentos VALUES  (88,'Archipiélago de San Andrés',1);
+INSERT INTO tabla_departamentos VALUES  (97,'Vaupés',1);
+INSERT INTO tabla_departamentos VALUES  (99,'Vichada',1);
+
+-- CARGA TABLE DE MUNICIPIOS SEGÚN DANE.
 INSERT INTO tabla_municipios VALUES (91, 91263, 'EL ENCANTO', FALSE, FALSE);
 INSERT INTO tabla_municipios VALUES (91, 91405, 'LA CHORRERA', FALSE, FALSE);
 INSERT INTO tabla_municipios VALUES (91, 91407, 'LA PEDRERA', FALSE, FALSE);
