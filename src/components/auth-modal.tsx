@@ -194,7 +194,7 @@ export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalP
                 <Input
                   id="telefono"
                   type="tel"
-                  placeholder="+57 123 456 789"
+                  placeholder="3001234567"
                   value={formData.telefono}
                   onChange={(e) => handleInputChange("telefono", e.target.value)}
                   className="pl-10"

@@ -4,15 +4,30 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Menu, X } from "lucide-react"
-import type { JSX } from "react";
-
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Menu, X, User, LogOut, Settings, LayoutDashboard, Calendar } from "lucide-react"
+import type { JSX } from "react"
 
 interface HeaderProps {
   onAuthClick: (isLogin: boolean) => void
+  isLoggedIn?: boolean
+  isAdmin?: boolean
+  userName?: string
 }
 
-export function Header({ onAuthClick }: HeaderProps): JSX.Element {
+export function Header({
+  onAuthClick,
+  isLoggedIn = false,
+  isAdmin = false,
+  userName = "Usuario",
+}: HeaderProps): JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const router = useRouter()
@@ -33,8 +48,13 @@ export function Header({ onAuthClick }: HeaderProps): JSX.Element {
   ]
 
   const navigateTo = (path: string) => {
-    console.log("[v0] Navigating to:", path)
     router.push(path)
+    setMenuOpen(false)
+  }
+
+  const handleLogout = () => {
+    // TODO: Implement actual logout logic
+    console.log("[v0] Logging out...")
     setMenuOpen(false)
   }
 
@@ -89,22 +109,112 @@ export function Header({ onAuthClick }: HeaderProps): JSX.Element {
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 transition-all group-hover:w-full" />
                 </button>
               ))}
-              <Button
-                onClick={() => onAuthClick(true)}
-                className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-500 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-              >
-                Únete
-              </Button>
+
+              {!isLoggedIn ? (
+                <Button
+                  onClick={() => onAuthClick(true)}
+                  className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-500 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                >
+                  Únete
+                </Button>
+              ) : (
+                <div className="flex items-center gap-3">
+                  {isAdmin && (
+                    <Button
+                      onClick={() => navigateTo("/dashboard")}
+                      variant="outline"
+                      className="border-blue-600 text-blue-600 hover:bg-blue-50 font-medium"
+                    >
+                      <LayoutDashboard className="h-4 w-4 mr-2" />
+                      Dashboard
+                    </Button>
+                  )}
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="flex items-center gap-2 hover:bg-blue-50">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center text-white font-medium">
+                          {userName.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="font-medium text-gray-700">{userName}</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigateTo("/perfil")}>
+                        <User className="h-4 w-4 mr-2" />
+                        Mi Perfil
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigateTo("/mis-eventos")}>
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Mis Eventos
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigateTo("/configuracion")}>
+                        <Settings className="h-4 w-4 mr-2" />
+                        Configuración
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Cerrar Sesión
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
             </nav>
 
             {/* Mobile CTA */}
-            <Button
-              onClick={() => onAuthClick(true)}
-              size="sm"
-              className="lg:hidden bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-500 text-white"
-            >
-              Únete
-            </Button>
+            {!isLoggedIn ? (
+              <Button
+                onClick={() => onAuthClick(true)}
+                size="sm"
+                className="lg:hidden bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-500 text-white"
+              >
+                Únete
+              </Button>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="lg:hidden">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center text-white font-medium text-sm">
+                      {userName.charAt(0).toUpperCase()}
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuItem onClick={() => navigateTo("/dashboard")}>
+                        <LayoutDashboard className="h-4 w-4 mr-2" />
+                        Dashboard
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  <DropdownMenuItem onClick={() => navigateTo("/perfil")}>
+                    <User className="h-4 w-4 mr-2" />
+                    Mi Perfil
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigateTo("/mis-eventos")}>
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Mis Eventos
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigateTo("/configuracion")}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Configuración
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Cerrar Sesión
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </header>
@@ -131,12 +241,35 @@ export function Header({ onAuthClick }: HeaderProps): JSX.Element {
           </ul>
 
           <div className="mt-8 pt-8 border-t border-gray-200">
-            <Button
-              onClick={() => onAuthClick(true)}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium shadow-lg hover:shadow-xl transition-all"
-            >
-              Únete a Time2Go
-            </Button>
+            {!isLoggedIn ? (
+              <Button
+                onClick={() => onAuthClick(true)}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium shadow-lg hover:shadow-xl transition-all"
+              >
+                Únete a Time2Go
+              </Button>
+            ) : (
+              <div className="space-y-3">
+                {isAdmin && (
+                  <Button
+                    onClick={() => navigateTo("/dashboard")}
+                    variant="outline"
+                    className="w-full border-blue-600 text-blue-600 hover:bg-blue-50"
+                  >
+                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </Button>
+                )}
+                <Button
+                  onClick={handleLogout}
+                  variant="outline"
+                  className="w-full border-red-600 text-red-600 hover:bg-red-50 bg-transparent"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Cerrar Sesión
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </nav>
