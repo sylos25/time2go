@@ -20,23 +20,25 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalProps) {
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [formData, setFormData] = useState({
-    tipDoc:"",
-    document:"",
-    firstName: "",
-    lastName: "",
-    pais:"",
-    telefono: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    rememberMe: false,
-    acceptTerms: false,
-  })
+  const [showPassword, setShowPassword] = useState(false);
+  const [registroExitoso, setRegistroExitoso] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const formDataInicial = {
+  tipDoc: "",
+  document: "",
+  firstName: "",
+  lastName: "",
+  pais: "",
+  telefono: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+  rememberMe: false,
+  acceptTerms: false,
+};
+const [formData, setFormData] = useState(formDataInicial);
 
-    // LLamar los paises que estan en BD.
+// LLamar los paises que estan en BD.
     useEffect(() => {
       fetch("/api/llamar_pais")
         .then((res) => res.json())
@@ -48,33 +50,46 @@ export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalP
       setFormData((prev) => ({ ...prev, [field]: value }))
     }
 
-    // Iniciar sesión o Registrar usuario.
-    const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-    const endpoint = isLogin ? "/api/login" : "/api/usuario_formulario";
-    const payload = isLogin
-      ? { email: formData.email, password: formData.password }
-      : formData;
-    try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Error en la autenticación");
-      }
-      if (isLogin) {
-        localStorage.setItem("token", data.token);
-        console.log("Login exitoso:", data);
-      } else {
-        console.log("Usuario registrado:", data);
-      }
-    } catch (error) {
-      console.error("Error:", error);
+// Ocultar mensaje (Perfil creado exitosamente) despues de 5 segundos    
+    useEffect(() => {
+    if (registroExitoso) {
+      const timer = setTimeout(() => setRegistroExitoso(false), 5000);
+      return () => clearTimeout(timer);
     }
-  };
+  }, [registroExitoso]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  const endpoint = isLogin ? "/api/login" : "/api/usuario_formulario";
+  const payload = isLogin
+    ? { email: formData.email, password: formData.password }
+    : formData;
+
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || "Error en la autenticación");
+    }
+
+    if (isLogin) {
+      localStorage.setItem("token", data.token);
+      console.log("Login exitoso:", data);
+    } else {
+      console.log("Usuario registrado:", data);
+      setRegistroExitoso(true); // ← activa el mensaje
+      setFormData(formDataInicial); // ← limpia todos los campos
+    }
+
+  } catch (error) {
+    console.error("Error:", error);
+  }
+};
 
   
   return (
@@ -311,6 +326,12 @@ export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalP
             {isLogin ? "Iniciar Sesión" : "Crear Cuenta"}
           </Button>
         </form>
+
+        {registroExitoso && (
+          <p className="text-green-600 font-medium mt-2">
+            Perfil creado exitosamente
+          </p>
+        )}
 
         <div className="mt-6">
           <div className="relative">
