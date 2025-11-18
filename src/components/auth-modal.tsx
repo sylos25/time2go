@@ -333,28 +333,6 @@ const [formData, setFormData] = useState(formDataInicial);
           </p>
         )}
 
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <Separator />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">o continúa con</span>
-            </div>
-          </div>
-
-          <div className="mt-6 grid grid-cols-2 gap-3 ">
-            <Button variant="outline" className="w-full bg-transparent cursor-pointer">
-              <Chrome className="mr-2 h-4 w-4" />
-              Google
-            </Button>
-            <Button variant="outline" className="w-full bg-transparent cursor-pointer">
-              <Facebook className="mr-2 h-4 w-4" />
-              Facebook
-            </Button>
-          </div>
-        </div>
-
         <div className="mt-6 text-center">
           <span className="text-sm text-gray-600">{isLogin ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}</span>
           <Button
