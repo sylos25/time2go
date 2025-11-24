@@ -21,8 +21,10 @@ export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET as string,
 
   session: {
-    expiresIn: 60 * 60 * 24 * 7,
-    updateAge: 60 * 60 * 24,
+    // 30 minutos
+    expiresIn: 60 * 30,
+    // tiempo opcional para refresh interno
+    updateAge: 60 * 5,
     cookieCache: {
       enabled: true,
       maxAge: 5 * 60,
@@ -43,12 +45,18 @@ export const auth = betterAuth({
     async jwt({ token, user }: JWTCallbackParams) {
       if (user) {
         token.id_usuario = user.id_usuario;
+        // si el flujo de registro devuelve nombre, incluirlo en token
+        if ((user as any).nombres) token.name = (user as any).nombres;
       }
       return token;
     },
     async session({ session, token }: SessionCallbackParams) {
-      if (token?.id) {
+      // exponer name en session.user si está en token
+      if (token?.id_usuario) {
         session.user.id_usuario = token.id_usuario;
+      }
+      if ((token as any).name) {
+        session.user.name = (token as any).name;
       }
       return session;
     },

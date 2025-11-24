@@ -1,7 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { Pool } from "pg";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -17,7 +16,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const client = await pool.connect();
     try {
-      // Usar los nombres reales de columna sin alias
       const q = `
         SELECT numero_documento, correo, nombres, contrasena_hash
         FROM tabla_usuarios
@@ -28,8 +26,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (result.rowCount === 0) return res.status(401).json({ message: "Credenciales inválidas" });
 
       const user = result.rows[0];
-
-      // usar el nombre real del campo del hash
       const hash = user.contrasena_hash;
       if (!hash || typeof hash !== "string" || hash.trim() === "") {
         console.warn("Login: hash de contraseña ausente para usuario:", user.numero_documento ?? user.correo);
@@ -39,22 +35,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const match = await bcrypt.compare(String(password), hash);
       if (!match) return res.status(401).json({ message: "Credenciales inválidas" });
 
-      const jwtSecret = process.env.JWT_SECRET as string;
-      if (!jwtSecret) return res.status(500).json({ message: "JWT_SECRET no configurado" });
-
-      const expiresInSec = 60 * 60 * 24 * 7; // 7 días
-      // incluir nombre real en el payload
-      const token = jwt.sign(
-        { id: user.numero_documento, email: user.correo, name: user.nombres },
-        jwtSecret,
-        { expiresIn: expiresInSec }
-      );
-      const expiresAt = Math.floor(Date.now() / 1000) + expiresInSec;
-
+      // Ya no generamos ni devolvemos token aquí.
       return res.status(200).json({
-        token,
+        success: true,
         name: user.nombres || user.correo.split("@")[0],
-        expiresAt,
       });
     } finally {
       client.release();
