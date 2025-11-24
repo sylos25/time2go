@@ -10,12 +10,13 @@ export async function middleware(request: NextRequest) {
   // Get session token from cookies
   const sessionToken = request.cookies.get("better-auth.session_token")
 
-  // Si intenta acceder a dashboard sin sesión, redirigir a login
-  if (isDashboardRoute && !sessionToken) {
-    const loginUrl = new URL("/login", request.url)
-    loginUrl.searchParams.set("redirect", pathname)
-    return NextResponse.redirect(loginUrl)
-  }
+  // Dashboard ahora es accesible sin sesión
+  // Si intenta acceder a dashboard sin sesión, permitir acceso
+  // if (isDashboardRoute && !sessionToken) {
+  //   const loginUrl = new URL("/login", request.url)
+  //   loginUrl.searchParams.set("redirect", pathname)
+  //   return NextResponse.redirect(loginUrl)
+  // }
 
   return NextResponse.next()
 }

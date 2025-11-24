@@ -1,7 +1,8 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
-import Image from "next/image"
 import { useRouter } from "next/navigation"
 import {
   BarChart,
@@ -28,23 +29,21 @@ import {
   Bell,
   Search,
   Plus,
-  MoreVertical,
-  Home,
-  LogOut,
   Menu,
   X,
   Edit,
   Trash2,
   EyeOff,
   CheckCircle,
-  XCircle,
   MapPin,
   Clock,
   Ticket,
-  Activity,
-  Filter,
   Download,
-  Upload,
+  Home,
+  LogOut,
+  CheckSquare,
+  Activity,
+  MoreVertical,
 } from "lucide-react"
 
 interface Event {
@@ -71,6 +70,12 @@ interface StatCard {
   color: string
 }
 
+interface ChecklistItem {
+  id: number
+  text: string
+  completed: boolean
+}
+
 export default function EventDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activeTab, setActiveTab] = useState("overview")
@@ -78,6 +83,14 @@ export default function EventDashboard() {
   const [filterCategory, setFilterCategory] = useState("all")
   const [selectedEvents, setSelectedEvents] = useState<number[]>([])
   const router = useRouter()
+
+  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([
+    { id: 1, text: "Revisar eventos del mes", completed: true },
+    { id: 2, text: "Confirmar proveedores", completed: true },
+    { id: 3, text: "Actualizar precios", completed: false },
+    { id: 4, text: "Enviar reporte financiero", completed: false },
+    { id: 5, text: "Planificar próximo festival", completed: false },
+  ])
 
   const stats: StatCard[] = [
     {
@@ -206,32 +219,30 @@ export default function EventDashboard() {
   ]
 
   const toggleVisibility = (id: number) => {
-    setEvents(events.map(event => 
-      event.id === id ? { ...event, visibility: !event.visibility } : event
-    ))
+    setEvents(events.map((event) => (event.id === id ? { ...event, visibility: !event.visibility } : event)))
   }
 
   const deleteEvent = (id: number) => {
     if (confirm("¿Estás seguro de eliminar este evento?")) {
-      setEvents(events.filter(event => event.id !== id))
+      setEvents(events.filter((event) => event.id !== id))
     }
   }
 
   const bulkHide = () => {
-    setEvents(events.map(event =>
-      selectedEvents.includes(event.id) ? { ...event, visibility: false } : event
-    ))
+    setEvents(events.map((event) => (selectedEvents.includes(event.id) ? { ...event, visibility: false } : event)))
     setSelectedEvents([])
   }
 
   const bulkShow = () => {
-    setEvents(events.map(event =>
-      selectedEvents.includes(event.id) ? { ...event, visibility: true } : event
-    ))
+    setEvents(events.map((event) => (selectedEvents.includes(event.id) ? { ...event, visibility: true } : event)))
     setSelectedEvents([])
   }
 
-  const filteredEvents = events.filter(event => {
+  const toggleChecklistItem = (id: number) => {
+    setChecklistItems(checklistItems.map((item) => (item.id === id ? { ...item, completed: !item.completed } : item)))
+  }
+
+  const filteredEvents = events.filter((event) => {
     const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = filterCategory === "all" || event.category === filterCategory
     return matchesSearch && matchesCategory
@@ -239,26 +250,36 @@ export default function EventDashboard() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "published": return "bg-green-100 text-green-800"
-      case "hidden": return "bg-gray-100 text-gray-800"
-      case "cancelled": return "bg-red-100 text-red-800"
-      case "completed": return "bg-blue-100 text-blue-800"
-      default: return "bg-gray-100 text-gray-800"
+      case "published":
+        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+      case "hidden":
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
+      case "cancelled":
+        return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+      case "completed":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+      default:
+        return "bg-gray-100 text-gray-800"
     }
   }
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "published": return "Publicado"
-      case "hidden": return "Oculto"
-      case "cancelled": return "Cancelado"
-      case "completed": return "Completado"
-      default: return "Desconocido"
+      case "published":
+        return "Publicado"
+      case "hidden":
+        return "Oculto"
+      case "cancelled":
+        return "Cancelado"
+      case "completed":
+        return "Completado"
+      default:
+        return "Desconocido"
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 lg:hidden"
@@ -267,87 +288,91 @@ export default function EventDashboard() {
       )}
 
       <aside
-        className={`fixed top-0 left-0 z-40 w-72 h-screen bg-white shadow-2xl transform transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed top-0 left-0 z-40 w-72 h-screen bg-white border-r border-gray-200 shadow-sm transform transition-transform duration-300 lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-white" />
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
+              <Calendar className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Time2Go
-            </h1>
+            <h1 className="text-xl font-bold text-gray-900">Time2Go</h1>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-2 rounded-lg hover:bg-gray-100">
-            <X className="w-5 h-5" />
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
-        <nav className="p-4">
-          <ul className="space-y-1">
-            {menuItems.map((item) => (
-              <li key={item.id}>
-                <button
-                  onClick={() => {
-                    setActiveTab(item.id)
-                    setSidebarOpen(false)
-                  }}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all ${
-                    activeTab === item.id
-                      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span>{item.name}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+        <nav className="p-4 space-y-1">
+          {menuItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => {
+                setActiveTab(item.id)
+                setSidebarOpen(false)
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all ${
+                activeTab === item.id
+                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/25"
+                  : "text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <item.icon className="w-5 h-5" />
+              <span className="text-sm">{item.name}</span>
+            </button>
+          ))}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-200">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
+        <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-100 bg-gray-50/50">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-sm">
               A
             </div>
-            <div>
-              <p className="font-medium text-gray-900">Admin</p>
-              <p className="text-sm text-gray-500">admin@time2go.com</p>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-gray-900 text-sm truncate">Admin</p>
+              <p className="text-xs text-gray-500 truncate">admin@time2go.com</p>
             </div>
           </div>
           <button
             onClick={() => router.push("/")}
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors text-sm"
           >
             <LogOut className="w-4 h-4" />
-            <span className="text-sm">Cerrar sesión</span>
+            <span>Cerrar sesión</span>
           </button>
         </div>
       </aside>
 
       <div className="lg:ml-72">
-        <header className="bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-200 sticky top-0 z-20">
+        <header className="bg-white/80 backdrop-blur-xl shadow-sm border-b border-gray-200 sticky top-0 z-20">
           <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center space-x-4">
-              <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-gray-100">
-                <Menu className="w-5 h-5" />
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <Menu className="w-5 h-5 text-gray-700" />
               </button>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {menuItems.find((item) => item.id === activeTab)?.name}
-              </h2>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {menuItems.find((item) => item.id === activeTab)?.name}
+                </h2>
+                <p className="text-sm text-gray-500 mt-0.5">Bienvenido de nuevo, Admin</p>
+              </div>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+            <div className="flex items-center gap-3">
+              <button className="relative p-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
                 <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                <span className="absolute top-1.5 right-1.5 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-semibold">
                   3
                 </span>
               </button>
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">
                 A
               </div>
             </div>
@@ -357,22 +382,29 @@ export default function EventDashboard() {
         <main className="p-6">
           {activeTab === "overview" && (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                 {stats.map((stat, index) => (
-                  <div key={index} className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all">
-                    <div className="flex items-center justify-between">
-                      <div>
+                  <div
+                    key={index}
+                    className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md hover:border-gray-200 transition-all"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
                         <p className="text-sm font-medium text-gray-600">{stat.title}</p>
                         <p className="text-3xl font-bold text-gray-900 mt-2">{stat.value}</p>
-                        <div className="flex items-center mt-2">
-                          <TrendingUp className={`w-4 h-4 ${stat.change >= 0 ? "text-green-500" : "text-red-500"}`} />
-                          <span className={`text-sm font-medium ml-1 ${stat.change >= 0 ? "text-green-500" : "text-red-500"}`}>
-                            {stat.change}%
-                          </span>
-                          <span className="text-sm text-gray-500 ml-1">vs mes anterior</span>
+                        <div className="flex items-center mt-3">
+                          <div
+                            className={`flex items-center gap-1 px-2 py-1 rounded-md ${
+                              stat.change >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                            }`}
+                          >
+                            <TrendingUp className="w-3.5 h-3.5" />
+                            <span className="text-xs font-semibold">{stat.change}%</span>
+                          </div>
+                          <span className="text-xs text-gray-500 ml-2">vs mes anterior</span>
                         </div>
                       </div>
-                      <div className={`p-3 rounded-xl bg-gradient-to-r ${stat.color}`}>
+                      <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.color} shadow-sm`}>
                         <stat.icon className="w-6 h-6 text-white" />
                       </div>
                     </div>
@@ -380,31 +412,110 @@ export default function EventDashboard() {
                 ))}
               </div>
 
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Tareas Pendientes</h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {checklistItems.filter((item) => item.completed).length} de {checklistItems.length} completadas
+                    </p>
+                  </div>
+                  <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center">
+                    <CheckSquare className="w-6 h-6 text-blue-600" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {checklistItems.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => toggleChecklistItem(item.id)}
+                      className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+                    >
+                      <div
+                        className={`flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                          item.completed ? "bg-blue-600 border-blue-600" : "border-gray-300 group-hover:border-blue-400"
+                        }`}
+                      >
+                        {item.completed && <CheckCircle className="w-4 h-4 text-white" />}
+                      </div>
+                      <span
+                        className={`text-sm font-medium text-left flex-1 ${
+                          item.completed ? "text-gray-400 line-through" : "text-gray-700"
+                        }`}
+                      >
+                        {item.text}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 font-medium">Progreso</span>
+                    <span className="text-blue-600 font-semibold">
+                      {Math.round(
+                        (checklistItems.filter((item) => item.completed).length / checklistItems.length) * 100,
+                      )}
+                      %
+                    </span>
+                  </div>
+                  <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${(checklistItems.filter((item) => item.completed).length / checklistItems.length) * 100}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6">
+                <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-bold text-gray-900">Evolución de Ingresos</h3>
-                    <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                      <Download className="w-4 h-4 inline mr-1" />
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">Evolución de Ingresos</h3>
+                      <p className="text-sm text-gray-500 mt-1">Últimos 6 meses</p>
+                    </div>
+                    <button className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors">
+                      <Download className="w-4 h-4" />
                       Exportar
                     </button>
                   </div>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={revenueData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Line type="monotone" dataKey="ingresos" stroke="#3B82F6" strokeWidth={3} name="Ingresos (miles)" />
-                      <Line type="monotone" dataKey="eventos" stroke="#8B5CF6" strokeWidth={3} name="Eventos" />
+                      <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                      <YAxis tick={{ fontSize: 12 }} />
+                      <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }} />
+                      <Legend wrapperStyle={{ fontSize: "14px" }} />
+                      <Line
+                        type="monotone"
+                        dataKey="ingresos"
+                        stroke="#3B82F6"
+                        strokeWidth={3}
+                        name="Ingresos (miles)"
+                        dot={{ r: 4 }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="eventos"
+                        stroke="#8B5CF6"
+                        strokeWidth={3}
+                        name="Eventos"
+                        dot={{ r: 4 }}
+                      />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
 
-                <div className="bg-white rounded-2xl shadow-lg p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-6">Eventos por Categoría</h3>
-                  <ResponsiveContainer width="100%" height={300}>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                  <div className="mb-6">
+                    <h3 className="text-lg font-bold text-gray-900">Eventos por Categoría</h3>
+                    <p className="text-sm text-gray-500 mt-1">Distribución actual</p>
+                  </div>
+                  <ResponsiveContainer width="100%" height={240}>
                     <PieChart>
                       <Pie
                         data={categoryData}
@@ -414,34 +525,62 @@ export default function EventDashboard() {
                         outerRadius={90}
                         dataKey="value"
                         label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        labelLine={{ stroke: "#94a3b8", strokeWidth: 1 }}
                       >
                         {categoryData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }} />
                     </PieChart>
                   </ResponsiveContainer>
+                  <div className="mt-4 space-y-2">
+                    {categoryData.map((category, index) => (
+                      <div key={index} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
+                          <span className="text-gray-700">{category.name}</span>
+                        </div>
+                        <span className="font-semibold text-gray-900">{category.value}%</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-6">Eventos Más Exitosos</h3>
-                <div className="space-y-4">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div className="mb-6">
+                  <h3 className="text-lg font-bold text-gray-900">Eventos Más Exitosos</h3>
+                  <p className="text-sm text-gray-500 mt-1">Ordenados por ingresos generados</p>
+                </div>
+                <div className="space-y-3">
                   {topEvents.map((event, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center text-white font-bold">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-transparent rounded-xl hover:from-blue-50 transition-all border border-transparent hover:border-blue-100"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={`w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold shadow-sm ${
+                            index === 0
+                              ? "bg-gradient-to-br from-yellow-400 to-yellow-500"
+                              : index === 1
+                                ? "bg-gradient-to-br from-gray-300 to-gray-400"
+                                : index === 2
+                                  ? "bg-gradient-to-br from-orange-400 to-orange-500"
+                                  : "bg-gradient-to-br from-blue-400 to-blue-500"
+                          }`}
+                        >
                           #{index + 1}
                         </div>
                         <div>
                           <p className="font-semibold text-gray-900">{event.name}</p>
-                          <p className="text-sm text-gray-600">{event.tickets} tickets vendidos</p>
+                          <p className="text-sm text-gray-600">{event.tickets.toLocaleString()} tickets vendidos</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-green-600">${(event.revenue / 1000000).toFixed(1)}M</p>
-                        <p className="text-sm text-gray-600">Revenue</p>
+                        <p className="font-bold text-green-600 text-lg">${(event.revenue / 1000000).toFixed(1)}M</p>
+                        <p className="text-xs text-gray-500 font-medium">Revenue</p>
                       </div>
                     </div>
                   ))}
@@ -452,23 +591,23 @@ export default function EventDashboard() {
 
           {activeTab === "events" && (
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl shadow-lg p-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-                  <div className="flex items-center space-x-3">
-                    <div className="relative flex-1 md:w-80">
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="relative flex-1 md:max-w-md">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                       <input
                         type="text"
                         placeholder="Buscar eventos..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                       />
                     </div>
                     <select
                       value={filterCategory}
                       onChange={(e) => setFilterCategory(e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                     >
                       <option value="all">Todas las categorías</option>
                       <option value="Música">Música</option>
@@ -477,63 +616,62 @@ export default function EventDashboard() {
                       <option value="Arte">Arte</option>
                     </select>
                   </div>
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center gap-3">
                     {selectedEvents.length > 0 && (
                       <>
                         <button
                           onClick={bulkShow}
-                          className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+                          className="px-4 py-2.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium flex items-center gap-2"
                         >
-                          <Eye className="w-4 h-4 inline mr-1" />
+                          <Eye className="w-4 h-4" />
                           Mostrar ({selectedEvents.length})
                         </button>
                         <button
                           onClick={bulkHide}
-                          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                          className="px-4 py-2.5 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium flex items-center gap-2"
                         >
-                          <EyeOff className="w-4 h-4 inline mr-1" />
+                          <EyeOff className="w-4 h-4" />
                           Ocultar ({selectedEvents.length})
                         </button>
                       </>
                     )}
-                    <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all">
-                      <Plus className="w-4 h-4 inline mr-2" />
+                    <button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2.5 rounded-lg font-medium hover:shadow-md transition-all text-sm flex items-center gap-2">
+                      <Plus className="w-4 h-4" />
                       Nuevo Evento
                     </button>
                   </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto -mx-6 px-6">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4">
+                        <th className="text-left py-4 px-4">
                           <input
                             type="checkbox"
                             onChange={(e) => {
                               if (e.target.checked) {
-                                setSelectedEvents(filteredEvents.map(e => e.id))
+                                setSelectedEvents(filteredEvents.map((e) => e.id))
                               } else {
                                 setSelectedEvents([])
                               }
                             }}
-                            className="rounded"
+                            className="rounded border-gray-300"
                           />
                         </th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Evento</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Categoría</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Fecha</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Ubicación</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Ventas</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Ingresos</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Estado</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Visibilidad</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Acciones</th>
+                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Evento</th>
+                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Categoría</th>
+                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Fecha</th>
+                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Ubicación</th>
+                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Ventas</th>
+                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Ingresos</th>
+                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Estado</th>
+                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Acciones</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredEvents.map((event) => (
-                        <tr key={event.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <tr key={event.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
                           <td className="py-4 px-4">
                             <input
                               type="checkbox"
@@ -542,74 +680,77 @@ export default function EventDashboard() {
                                 if (e.target.checked) {
                                   setSelectedEvents([...selectedEvents, event.id])
                                 } else {
-                                  setSelectedEvents(selectedEvents.filter(id => id !== event.id))
+                                  setSelectedEvents(selectedEvents.filter((id) => id !== event.id))
                                 }
                               }}
-                              className="rounded"
+                              className="rounded border-gray-300"
                             />
                           </td>
                           <td className="py-4 px-4">
-                            <div className="flex items-center space-x-3">
-                              <img
-                                src={event.image || "/placeholder.svg"}
-                                alt={event.name}
-                                className="w-12 h-12 rounded-lg object-cover"
-                              />
-                              <div>
-                                <p className="font-medium text-gray-900">{event.name}</p>
-                                <p className="text-sm text-gray-500">{event.time}</p>
-                              </div>
+                            <div>
+                              <p className="font-semibold text-gray-900 text-sm">{event.name}</p>
+                              <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                                <Clock className="w-3 h-3" />
+                                {event.time}
+                              </p>
                             </div>
                           </td>
                           <td className="py-4 px-4">
-                            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-medium">
                               {event.category}
                             </span>
                           </td>
-                          <td className="py-4 px-4 text-gray-600">{event.date}</td>
+                          <td className="py-4 px-4 text-sm text-gray-700">{event.date}</td>
                           <td className="py-4 px-4">
-                            <div className="flex items-center text-gray-600">
-                              <MapPin className="w-4 h-4 mr-1" />
-                              <span className="text-sm">{event.location}</span>
+                            <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                              <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span className="truncate max-w-[150px]">{event.location}</span>
                             </div>
                           </td>
                           <td className="py-4 px-4">
-                            <div className="text-sm">
-                              <p className="font-medium text-gray-900">{event.ticketsSold}/{event.capacity}</p>
-                              <div className="w-20 bg-gray-200 rounded-full h-2 mt-1">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-semibold text-gray-900">
+                                {event.ticketsSold} / {event.capacity}
+                              </span>
+                              <div className="mt-1 w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                                 <div
-                                  className="bg-blue-600 h-2 rounded-full"
+                                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
                                   style={{ width: `${(event.ticketsSold / event.capacity) * 100}%` }}
                                 />
                               </div>
                             </div>
                           </td>
                           <td className="py-4 px-4">
-                            <p className="font-semibold text-green-600">${(event.revenue / 1000000).toFixed(1)}M</p>
+                            <span className="font-semibold text-gray-900 text-sm">
+                              ${(event.revenue / 1000000).toFixed(1)}M
+                            </span>
                           </td>
                           <td className="py-4 px-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
+                            <span
+                              className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${getStatusColor(event.status)}`}
+                            >
                               {getStatusText(event.status)}
                             </span>
                           </td>
                           <td className="py-4 px-4">
-                            <button
-                              onClick={() => toggleVisibility(event.id)}
-                              className={`p-2 rounded-lg transition-colors ${
-                                event.visibility ? "bg-green-100 text-green-600 hover:bg-green-200" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                              }`}
-                            >
-                              {event.visibility ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                            </button>
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center space-x-2">
-                              <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => toggleVisibility(event.id)}
+                                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                title={event.visibility ? "Ocultar" : "Mostrar"}
+                              >
+                                {event.visibility ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                              </button>
+                              <button
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Editar"
+                              >
                                 <Edit className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => deleteEvent(event.id)}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Eliminar"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -627,7 +768,7 @@ export default function EventDashboard() {
           {activeTab === "analytics" && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white rounded-2xl shadow-lg p-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">Eventos por Mes</h3>
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={revenueData}>
@@ -641,7 +782,7 @@ export default function EventDashboard() {
                   </ResponsiveContainer>
                 </div>
 
-                <div className="bg-white rounded-2xl shadow-lg p-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">Capacidad vs Ventas</h3>
                   <div className="space-y-4">
                     {events.slice(0, 4).map((event) => (
@@ -664,7 +805,7 @@ export default function EventDashboard() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-lg p-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Rendimiento por Categoría</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={categoryData}>
@@ -685,7 +826,7 @@ export default function EventDashboard() {
 
           {activeTab === "users" && (
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl shadow-lg p-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-bold text-gray-900">Gestión de Usuarios</h3>
                   <div className="flex items-center space-x-3">
@@ -750,10 +891,46 @@ export default function EventDashboard() {
                     </thead>
                     <tbody>
                       {[
-                        { id: 1, name: "María González", email: "maria@email.com", date: "2024-01-15", events: 12, tickets: 18, spent: 450000, status: "active" },
-                        { id: 2, name: "Carlos Rodríguez", email: "carlos@email.com", date: "2024-02-20", events: 8, tickets: 10, spent: 320000, status: "active" },
-                        { id: 3, name: "Ana Martínez", email: "ana@email.com", date: "2024-03-10", events: 15, tickets: 22, spent: 680000, status: "active" },
-                        { id: 4, name: "Luis Pérez", email: "luis@email.com", date: "2023-12-05", events: 20, tickets: 35, spent: 950000, status: "premium" },
+                        {
+                          id: 1,
+                          name: "María González",
+                          email: "maria@email.com",
+                          date: "2024-01-15",
+                          events: 12,
+                          tickets: 18,
+                          spent: 450000,
+                          status: "active",
+                        },
+                        {
+                          id: 2,
+                          name: "Carlos Rodríguez",
+                          email: "carlos@email.com",
+                          date: "2024-02-20",
+                          events: 8,
+                          tickets: 10,
+                          spent: 320000,
+                          status: "active",
+                        },
+                        {
+                          id: 3,
+                          name: "Ana Martínez",
+                          email: "ana@email.com",
+                          date: "2024-03-10",
+                          events: 15,
+                          tickets: 22,
+                          spent: 680000,
+                          status: "active",
+                        },
+                        {
+                          id: 4,
+                          name: "Luis Pérez",
+                          email: "luis@email.com",
+                          date: "2023-12-05",
+                          events: 20,
+                          tickets: 35,
+                          spent: 950000,
+                          status: "premium",
+                        },
                       ].map((user) => (
                         <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50">
                           <td className="py-4 px-4">
@@ -770,9 +947,13 @@ export default function EventDashboard() {
                           <td className="py-4 px-4 text-gray-600">{user.tickets}</td>
                           <td className="py-4 px-4 font-semibold text-green-600">${(user.spent / 1000).toFixed(0)}k</td>
                           <td className="py-4 px-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              user.status === "premium" ? "bg-purple-100 text-purple-800" : "bg-green-100 text-green-800"
-                            }`}>
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                user.status === "premium"
+                                  ? "bg-purple-100 text-purple-800"
+                                  : "bg-green-100 text-green-800"
+                              }`}
+                            >
                               {user.status === "premium" ? "Premium" : "Activo"}
                             </span>
                           </td>
@@ -797,9 +978,9 @@ export default function EventDashboard() {
 
           {activeTab === "settings" && (
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl shadow-lg p-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-6">Configuración de la Plataforma</h3>
-                
+
                 <div className="space-y-6">
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-4">Información General</h4>
