@@ -259,67 +259,6 @@ CREATE TABLE IF NOT EXISTS tabla_costos_eventos (
 );
 
 
-/*
-CREATE TABLE IF NOT EXISTS tabla_facturas_encabezado (
-    id_factura_encabezado   SERIAL                      PRIMARY KEY,
-    id_usuario              INT                         NOT NULL,
-    id_evento               INT                         NOT NULL,
-    ip_transaccion          VARCHAR                     NOT NULL        UNIQUE,
-    cant_entrada            INT                         NOT NULL        CHECK (cant_entrada > 0),
-    total_pagar             DECIMAL(10,2)               NOT NULL        CHECK (total_pagar >= 0),
-    fecha_pago              TIMESTAMP                   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    estado                  estado_pago                 NOT NULL        DEFAULT 'Pendiente'::estado_pago,
-    metodo_pago             VARCHAR                     NOT NULL,
-    fecha_actualizacion     TIMESTAMP WITH TIME ZONE                    DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(id_usuario),
-    FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
-);
-
-CREATE TABLE IF NOT EXISTS tabla_facturas_encabezado (
-    id_factura_encabezado   SERIAL                      PRIMARY KEY,
-    id_usuario              INT                         NOT NULL,
-    id_evento               INT                         NOT NULL,
-    ip_transaccion          VARCHAR                     NOT NULL        UNIQUE,
-    cant_entrada            INT                         NOT NULL        CHECK (cant_entrada > 0),
-    total_pagar             DECIMAL(10,2)               NOT NULL        CHECK (total_pagar >= 0),
-    fecha_pago              TIMESTAMP                   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    estado                  estado_pago                 NOT NULL        DEFAULT 'Pendiente'::estado_pago,
-    metodo_pago             VARCHAR                     NOT NULL,
-    fecha_actualizacion     TIMESTAMP WITH TIME ZONE                    DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(id_usuario),
-    FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
-);
-
-CREATE TABLE IF NOT EXISTS tabla_facturas_contenido (
-    id_pago                 SERIAL                      PRIMARY KEY,
-    id_usuario              INT                         NOT NULL,
-    id_evento               INT                         NOT NULL,
-    ip_transaccion          VARCHAR                     NOT NULL        UNIQUE,
-    cant_entrada            INT                         NOT NULL        CHECK (cant_entrada > 0),
-    total_pagar             DECIMAL(10,2)               NOT NULL        CHECK (total_pagar >= 0),
-    fecha_pago              TIMESTAMP                   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    estado                  estado_pago                 NOT NULL        DEFAULT 'Pendiente'::estado_pago,
-    metodo_pago             VARCHAR                     NOT NULL,
-    fecha_actualizacion     TIMESTAMP WITH TIME ZONE                    DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(id_usuario),
-    FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
-);
-
-CREATE TABLE IF NOT EXISTS tabla_reembolsos (
-    id_reembolso            SERIAL PRIMARY KEY,
-    id_reserva_evento       INT NOT NULL,
-    id_pago                 INT,
-    id_usuario              INT NOT NULL,
-    fecha_solicitud         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    motivo_reembolso        TEXT NOT NULL,
-    estado_reembolso        VARCHAR NOT NULL CHECK (estado_reembolso IN ('Pendiente', 'Aprobado', 'Rechazado')) DEFAULT 'Pendiente',
-    ip_transaccion_reembolso VARCHAR,
-    fecha_actualizacion     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_reserva_evento) REFERENCES tabla_reserva_eventos(id_reserva_evento),
-    FOREIGN KEY (id_pago) REFERENCES tabla_pagos(id_pago),
-    FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(id_usuario)
-);*/
-
 
 CREATE INDEX idx_ciudades_id_pais ON tabla_ciudades(id_pais);
 CREATE INDEX idx_usuarios_id_pais ON tabla_usuarios(id_pais);
@@ -373,46 +312,9 @@ FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
 --INSERTS PRUEBAS
 
-
 INSERT INTO tabla_menu (id_menu, nombre_opcion) VALUES 
 (1, 'Administrar usuarios'),
 (2, 'Gestión de eventos');
-
-INSERT INTO tabla_usuarios (
-    nombres, apellidos, tipo_documento, numero_documento, id_pais, id_ciudad, telefono, correo, contrasena_hash
-) VALUES 
-('Juan', 'Pérez', 'Cédula', '1234567890', 1, 1, 3001234567, 'juan@example.com', 'hash123'),
-('Ana', 'López', 'Pasaporte', 'P987654321', 2, 3, 3123456789, 'ana@example.com', 'hash456');
-
-INSERT INTO tabla_verificaciones (
-    id_usuario, token, tipo_validacion, fecha_expiracion
-) VALUES 
-(1, 'token123', 'Validar correo', CURRENT_TIMESTAMP + INTERVAL '1 day');
-
-INSERT INTO tabla_menu_usuario (id_menu_usuario, id_usuario, id_menu, permisos) VALUES 
-(1, 1, 1, TRUE),
-(2, 1, 2, TRUE);
-
-INSERT INTO tabla_baneado (id_usuario, mot_ban) VALUES 
-(2, 'Incumplimiento de normas');
-
-INSERT INTO tabla_tipo_eventos (id_tipo_evento, nombre, descripcion) VALUES 
-(1, 'Concierto', 'Eventos musicales en vivo'),
-(2, 'Feria', 'Eventos de exposición y ventas');
-
-INSERT INTO tabla_eventos (
-    nombre_evento, id_tipo_evento, descripcion, id_pais, id_ciudad, direccion, telefono, fecha_inicio, fecha_fin, horario, costo, cupo, id_imagen
-) VALUES 
-('Festival Vallenato', 1, 'Música en vivo todo el día', 1, 1, 'Parque principal', 3123456789, '2025-07-01', '2025-07-03', '10am - 11pm', 50.00, 500, 1);
-
-INSERT INTO tabla_valoraciones (id_usuario, id_evento, valoracion) VALUES 
-(1, 1, 5);
-
-INSERT INTO tabla_pagos (id_reserva_evento, ip_transaccion, valor_entrada, cant_entrada, total_pagar, estado, metodo_pago) VALUES 
-(1, 'TX123456789', 50.00, 2, 100.00, 'Pagado', 'Tarjeta de crédito');
-
-INSERT INTO tabla_reembolsos (id_reserva_evento, id_pago, id_usuario, motivo_reembolso, eestado_reembolso) VALUES 
-(1, 1, 1, 'No pude asistir', 'Pendiente');
 
 
 -- CARGAR EN TABLA_ROLES

@@ -23,7 +23,6 @@ import {
   Calendar,
   Users,
   TrendingUp,
-  DollarSign,
   Eye,
   Settings,
   Bell,
@@ -37,7 +36,6 @@ import {
   CheckCircle,
   MapPin,
   Clock,
-  Ticket,
   Download,
   Home,
   LogOut,
@@ -55,11 +53,10 @@ interface Event {
   category: string
   capacity: number
   ticketsSold: number
-  price: number
-  revenue: number
   status: "published" | "hidden" | "cancelled" | "completed"
   visibility: boolean
   image: string
+  promoter: string
 }
 
 interface StatCard {
@@ -101,17 +98,17 @@ export default function EventDashboard() {
       color: "from-blue-500 to-blue-600",
     },
     {
-      title: "Tickets Vendidos",
-      value: "3,847",
-      change: 23.1,
-      icon: Ticket,
+      title: "Total Asistentes",
+      value: "3,275",
+      change: 18.2,
+      icon: Users,
       color: "from-green-500 to-emerald-600",
     },
     {
-      title: "Ingresos del Mes",
-      value: "$186,500",
+      title: "Vistas del Mes",
+      value: "12,847",
       change: 15.3,
-      icon: DollarSign,
+      icon: Eye,
       color: "from-purple-500 to-purple-600",
     },
     {
@@ -133,11 +130,10 @@ export default function EventDashboard() {
       category: "Teatro",
       capacity: 450,
       ticketsSold: 380,
-      price: 45000,
-      revenue: 17100000,
       status: "published",
       visibility: true,
       image: "/images/teatro.jpg",
+      promoter: "Eventos Colombia",
     },
     {
       id: 2,
@@ -148,11 +144,10 @@ export default function EventDashboard() {
       category: "Música",
       capacity: 2000,
       ticketsSold: 1850,
-      price: 25000,
-      revenue: 46250000,
       status: "published",
       visibility: true,
       image: "/images/carranga.jpg",
+      promoter: "MusicFest Pro",
     },
     {
       id: 3,
@@ -163,11 +158,10 @@ export default function EventDashboard() {
       category: "Música",
       capacity: 800,
       ticketsSold: 800,
-      price: 60000,
-      revenue: 48000000,
       status: "completed",
       visibility: false,
       image: "/images/rock.jpg",
+      promoter: "Rock Nation",
     },
     {
       id: 4,
@@ -178,21 +172,20 @@ export default function EventDashboard() {
       category: "Música",
       capacity: 300,
       ticketsSold: 245,
-      price: 35000,
-      revenue: 8575000,
       status: "published",
       visibility: true,
       image: "/images/jazz.jpg",
+      promoter: "Jazz Internacional",
     },
   ])
 
-  const revenueData = [
-    { month: "Jul", ingresos: 45000, eventos: 12 },
-    { month: "Ago", ingresos: 52000, eventos: 15 },
-    { month: "Sep", ingresos: 61000, eventos: 18 },
-    { month: "Oct", ingresos: 58000, eventos: 16 },
-    { month: "Nov", ingresos: 72000, eventos: 22 },
-    { month: "Dic", ingresos: 86000, eventos: 24 },
+  const eventData = [
+    { month: "Jul", vistas: 8500, asistentes: 2100 },
+    { month: "Ago", vistas: 9200, asistentes: 2450 },
+    { month: "Sep", vistas: 11000, asistentes: 2800 },
+    { month: "Oct", vistas: 10500, asistentes: 2600 },
+    { month: "Nov", vistas: 12300, asistentes: 3100 },
+    { month: "Dic", vistas: 14200, asistentes: 3275 },
   ]
 
   const categoryData = [
@@ -204,10 +197,10 @@ export default function EventDashboard() {
   ]
 
   const topEvents = [
-    { name: "Festival Carranga", tickets: 1850, revenue: 46250000 },
-    { name: "Concierto Rock", tickets: 800, revenue: 48000000 },
-    { name: "La Madriguera", tickets: 380, revenue: 17100000 },
-    { name: "Festival Jazz", tickets: 245, revenue: 8575000 },
+    { name: "Festival Carranga", tickets: 1850, views: 8500 },
+    { name: "Concierto Rock", tickets: 800, views: 6200 },
+    { name: "La Madriguera", tickets: 380, views: 2400 },
+    { name: "Festival Jazz", tickets: 245, views: 1900 },
   ]
 
   const menuItems = [
@@ -475,7 +468,7 @@ export default function EventDashboard() {
                 <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                   <div className="flex items-center justify-between mb-6">
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900">Evolución de Ingresos</h3>
+                      <h3 className="text-lg font-bold text-gray-900">Evolución de Vistas y Asistentes</h3>
                       <p className="text-sm text-gray-500 mt-1">Últimos 6 meses</p>
                     </div>
                     <button className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors">
@@ -484,7 +477,7 @@ export default function EventDashboard() {
                     </button>
                   </div>
                   <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={revenueData}>
+                    <LineChart data={eventData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                       <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                       <YAxis tick={{ fontSize: 12 }} />
@@ -492,18 +485,18 @@ export default function EventDashboard() {
                       <Legend wrapperStyle={{ fontSize: "14px" }} />
                       <Line
                         type="monotone"
-                        dataKey="ingresos"
+                        dataKey="vistas"
                         stroke="#3B82F6"
                         strokeWidth={3}
-                        name="Ingresos (miles)"
+                        name="Vistas"
                         dot={{ r: 4 }}
                       />
                       <Line
                         type="monotone"
-                        dataKey="eventos"
+                        dataKey="asistentes"
                         stroke="#8B5CF6"
                         strokeWidth={3}
-                        name="Eventos"
+                        name="Asistentes"
                         dot={{ r: 4 }}
                       />
                     </LineChart>
@@ -550,8 +543,8 @@ export default function EventDashboard() {
 
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <div className="mb-6">
-                  <h3 className="text-lg font-bold text-gray-900">Eventos Más Exitosos</h3>
-                  <p className="text-sm text-gray-500 mt-1">Ordenados por ingresos generados</p>
+                  <h3 className="text-lg font-bold text-gray-900">Eventos Más Populares</h3>
+                  <p className="text-sm text-gray-500 mt-1">Ordenados por asistencia</p>
                 </div>
                 <div className="space-y-3">
                   {topEvents.map((event, index) => (
@@ -575,12 +568,12 @@ export default function EventDashboard() {
                         </div>
                         <div>
                           <p className="font-semibold text-gray-900">{event.name}</p>
-                          <p className="text-sm text-gray-600">{event.tickets.toLocaleString()} tickets vendidos</p>
+                          <p className="text-sm text-gray-600">{event.tickets.toLocaleString()} asistentes</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-green-600 text-lg">${(event.revenue / 1000000).toFixed(1)}M</p>
-                        <p className="text-xs text-gray-500 font-medium">Revenue</p>
+                        <p className="font-bold text-blue-600 text-lg">{event.views.toLocaleString()}</p>
+                        <p className="text-xs text-gray-500 font-medium">Vistas</p>
                       </div>
                     </div>
                   ))}
@@ -663,8 +656,8 @@ export default function EventDashboard() {
                         <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Categoría</th>
                         <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Fecha</th>
                         <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Ubicación</th>
-                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Ventas</th>
-                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Ingresos</th>
+                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Asistencia</th>
+                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Promotor</th>
                         <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Estado</th>
                         <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Acciones</th>
                       </tr>
@@ -721,9 +714,7 @@ export default function EventDashboard() {
                             </div>
                           </td>
                           <td className="py-4 px-4">
-                            <span className="font-semibold text-gray-900 text-sm">
-                              ${(event.revenue / 1000000).toFixed(1)}M
-                            </span>
+                            <span className="text-sm font-medium text-gray-900">{event.promoter}</span>
                           </td>
                           <td className="py-4 px-4">
                             <span
@@ -769,21 +760,21 @@ export default function EventDashboard() {
             <div className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Eventos por Mes</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Vistas por Mes</h3>
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={revenueData}>
+                    <BarChart data={eventData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
                       <Tooltip />
                       <Legend />
-                      <Bar dataKey="eventos" fill="#8B5CF6" name="Número de Eventos" />
+                      <Bar dataKey="vistas" fill="#3B82F6" name="Vistas" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
 
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Capacidad vs Ventas</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Capacidad vs Asistencia</h3>
                   <div className="space-y-4">
                     {events.slice(0, 4).map((event) => (
                       <div key={event.id}>
@@ -884,7 +875,6 @@ export default function EventDashboard() {
                         <th className="text-left py-3 px-4 font-medium text-gray-600">Registro</th>
                         <th className="text-left py-3 px-4 font-medium text-gray-600">Eventos</th>
                         <th className="text-left py-3 px-4 font-medium text-gray-600">Tickets</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Gasto Total</th>
                         <th className="text-left py-3 px-4 font-medium text-gray-600">Estado</th>
                         <th className="text-left py-3 px-4 font-medium text-gray-600">Acciones</th>
                       </tr>
@@ -898,7 +888,6 @@ export default function EventDashboard() {
                           date: "2024-01-15",
                           events: 12,
                           tickets: 18,
-                          spent: 450000,
                           status: "active",
                         },
                         {
@@ -908,7 +897,6 @@ export default function EventDashboard() {
                           date: "2024-02-20",
                           events: 8,
                           tickets: 10,
-                          spent: 320000,
                           status: "active",
                         },
                         {
@@ -918,7 +906,6 @@ export default function EventDashboard() {
                           date: "2024-03-10",
                           events: 15,
                           tickets: 22,
-                          spent: 680000,
                           status: "active",
                         },
                         {
@@ -928,7 +915,6 @@ export default function EventDashboard() {
                           date: "2023-12-05",
                           events: 20,
                           tickets: 35,
-                          spent: 950000,
                           status: "premium",
                         },
                       ].map((user) => (
@@ -945,7 +931,6 @@ export default function EventDashboard() {
                           <td className="py-4 px-4 text-gray-600">{user.date}</td>
                           <td className="py-4 px-4 text-gray-600">{user.events}</td>
                           <td className="py-4 px-4 text-gray-600">{user.tickets}</td>
-                          <td className="py-4 px-4 font-semibold text-green-600">${(user.spent / 1000).toFixed(0)}k</td>
                           <td className="py-4 px-4">
                             <span
                               className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -1069,7 +1054,7 @@ export default function EventDashboard() {
                       </button>
                       <button className="flex items-center justify-center space-x-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                         <Download className="w-5 h-5 text-gray-600" />
-                        <span className="font-medium text-gray-700">Exportar Ventas</span>
+                        <span className="font-medium text-gray-700">Exportar Estadísticas</span>
                       </button>
                     </div>
                   </div>
