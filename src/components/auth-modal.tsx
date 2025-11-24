@@ -59,38 +59,36 @@ const [formData, setFormData] = useState(formDataInicial);
   }, [registroExitoso]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  const endpoint = isLogin ? "/api/login" : "/api/usuario_formulario";
-  const payload = isLogin
-    ? { email: formData.email, password: formData.password }
-    : formData;
+    e.preventDefault();
+    if (!isLogin) { /* registro existente */ return; }
 
-  try {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email, password: formData.password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.error("Login failed:", data);
+        // mostrar error al usuario según tu UI
+        return;
+      }
 
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.message || "Error en la autenticación");
+      // guardar token y nombre
+      if (data.token) localStorage.setItem("token", data.token);
+      const name = data.name || (formData.email ? formData.email.split("@")[0] : "Usuario");
+      localStorage.setItem("userName", name);
+
+      // notificar al header
+      window.dispatchEvent(new CustomEvent("user:login", { detail: { token: data.token, name, expiresAt: data.expiresAt } }));
+
+      // cerrar modal
+      onClose();
+    } catch (err) {
+      console.error("Login error:", err);
     }
-
-    if (isLogin) {
-      localStorage.setItem("token", data.token);
-      console.log("Login exitoso:", data);
-    } else {
-      console.log("Usuario registrado:", data);
-      setRegistroExitoso(true); // ← activa el mensaje
-      setFormData(formDataInicial); // ← limpia todos los campos
-    }
-
-  } catch (error) {
-    console.error("Error:", error);
-  }
-};
-
+  };
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

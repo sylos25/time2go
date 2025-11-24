@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -31,6 +31,33 @@ export function Header({
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const router = useRouter()
+  const [user, setUser] = useState<any>(null);
+  const logoutTimerRef = useRef<number | null>(null);
+
+  const parseJwtExp = (token: string) => {
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload.exp as number | undefined;
+    } catch {
+      return undefined;
+    }
+  };
+
+  const scheduleAutoLogout = (expiresAtSec?: number) => {
+    if (logoutTimerRef.current) {
+      window.clearTimeout(logoutTimerRef.current);
+      logoutTimerRef.current = null;
+    }
+    if (!expiresAtSec) return;
+    const ms = expiresAtSec * 1000 - Date.now();
+    if (ms <= 0) {
+      handleLogout();
+      return;
+    }
+    logoutTimerRef.current = window.setTimeout(() => {
+      handleLogout();
+    }, ms);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -40,6 +67,35 @@ export function Header({
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
+
+  useEffect(() => {
+    // Si ya hay token en localStorage al cargar la app
+    const token = localStorage.getItem("token");
+    const storedName = localStorage.getItem("userName");
+    if (token) {
+      const exp = parseJwtExp(token);
+      setUser({ token, name: storedName || undefined });
+      if (exp) scheduleAutoLogout(exp);
+    }
+ 
+    const onLogin = (e: Event) => {
+      const ev = e as CustomEvent;
+      const detail = ev.detail ?? {};
+      const token = detail.token || localStorage.getItem("token");
+      const name = detail.name || detail.nombre || localStorage.getItem("userName") || "Usuario";
+      if (token) localStorage.setItem("token", token);
+      if (name) localStorage.setItem("userName", name);
+      setUser({ token, name });
+      const exp = detail.expiresAt || parseJwtExp(token || "");
+      if (exp) scheduleAutoLogout(exp);
+    };
+    window.addEventListener("user:login", onLogin);
+    return () => window.removeEventListener("user:login", onLogin);
+  }, []);
+
+  // derive login state and display name from local user state (fallback to props)
+  const loggedIn = Boolean(user) || isLoggedIn;
+  const displayName = (user?.name || user?.firstName || user?.name || user?.firstName || userName) as string;
 
   const navigationItems = [
     { name: "Inicio", path: "/" },
@@ -53,9 +109,17 @@ export function Header({
   }
 
   const handleLogout = () => {
-    // TODO: Implement actual logout logic
-    console.log("[v0] Logging out...")
-    setMenuOpen(false)
+    // limpiar estado y localStorage, notificar y redirigir
+    localStorage.removeItem("token");
+    localStorage.removeItem("userName");
+    setUser(null);
+    if (logoutTimerRef.current) {
+      window.clearTimeout(logoutTimerRef.current);
+      logoutTimerRef.current = null;
+    }
+    window.dispatchEvent(new CustomEvent("user:logout"));
+    router.push("/");
+    setMenuOpen(false);
   }
 
   return (
@@ -110,7 +174,7 @@ export function Header({
                 </button>
               ))}
 
-              {!isLoggedIn ? (
+              {!loggedIn ? (
                 <Button
                   onClick={() => onAuthClick(true)}
                   className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-500 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
@@ -134,9 +198,9 @@ export function Header({
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="flex items-center gap-2 hover:bg-blue-50">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center text-white font-medium">
-                          {userName.charAt(0).toUpperCase()}
+                          {displayName.charAt(0).toUpperCase()}
                         </div>
-                        <span className="font-medium text-gray-700">{userName}</span>
+                        <span className="font-medium text-gray-700">{displayName}</span>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
