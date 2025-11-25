@@ -22,6 +22,7 @@ interface AuthModalProps {
 export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [registroExitoso, setRegistroExitoso] = useState(false);
+  const [registroError, setRegistroError] = useState("");
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const formDataInicial = {
   tipDoc: "",
@@ -60,8 +61,57 @@ const [formData, setFormData] = useState(formDataInicial);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLogin) { /* registro existente */ return; }
+    // Registro
+    if (!isLogin) {
+      setRegistroError("");
+      // validaciones básicas
+      if (!formData.acceptTerms) {
+        setRegistroError("Debe aceptar los términos y condiciones.");
+        return;
+      }
+      if (!formData.password || formData.password !== formData.confirmPassword) {
+        setRegistroError("Las contraseñas no coinciden.");
+        return;
+      }
 
+      try {
+        const res = await fetch("/api/usuario_formulario", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tipDoc: formData.tipDoc,
+            document: formData.document,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            pais: formData.pais,
+            telefono: formData.telefono,
+            email: formData.email,
+            password: formData.password,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          console.error("Registro fallido:", data);
+          setRegistroError(data.error || "Error al crear usuario.");
+          return;
+        }
+
+        setRegistroError("");
+        setRegistroExitoso(true);
+        // cambiar a modo login para que el usuario pueda iniciar sesión
+        onToggleMode();
+        // cerrar modal poco después
+        setTimeout(() => onClose(), 800);
+      } catch (err) {
+        console.error("Registro error:", err);
+        setRegistroError("Error de red. Intenta nuevamente.");
+      }
+
+      return;
+    }
+
+    // Login existente
     try {
       const res = await fetch("/api/login", {
         method: "POST",
