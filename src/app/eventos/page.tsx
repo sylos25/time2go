@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Calendar, MapPin, Users, Search, Filter, Heart, Share2, Star, X, Clock, Info, Plus } from "lucide-react"
 
+
 interface Event {
   nombre_evento: string;
   descripcion: string;
@@ -27,7 +28,8 @@ interface Event {
   id_municipio: number;
   id_sitio: number;
   id_imagen: number;
-  telefono: string;
+  telefono1: string;
+  telefono2: string;
   costo: number;
   cupo: number;
   estado: boolean;
@@ -50,7 +52,9 @@ export default function EventosPage() {
   const [tiposDeEvento, setTiposDeEvento] = useState<{ id_tipo_evento: number; nombre: string }[]>([]);
   const [sitios, setSitios] = useState<{ id_sitio: number; nombre_sitio: string }[]>([]);
   const [busquedaSitio, setBusquedaSitio] = useState("");
-
+  const [busquedaMunicipio, setBusquedaMunicipio] = useState("");
+  const [municipios, setMunicipios] = useState([]);
+  const [showTelefono2, setShowTelefono2] = useState(false);
 
   const [newEvent, setNewEvent] = useState<Partial<Event>>({
     nombre_evento: "",
@@ -60,7 +64,8 @@ export default function EventosPage() {
     id_municipio: 0,
     id_sitio: 0,
     descripcion: "",
-    telefono: "",
+    telefono1: "",
+    telefono2:"",
     fecha_inicio: "",
     fecha_final: "",
     dias_semana: "",
@@ -71,6 +76,8 @@ export default function EventosPage() {
     estado: true,
     id_imagen: 0,
   });
+
+  
 
 //Para llamar los sitios de la base de datos.
   useEffect(() => {
@@ -91,6 +98,30 @@ export default function EventosPage() {
     };
     fetchSitios();
   }, [busquedaSitio]);
+
+//Para llamar los municipios de la base de datos.
+  useEffect(() => {
+    if (newEvent.id_sitio) {
+      fetch(`/api/municipios?sitioId=${newEvent.id_sitio}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.length > 0) {
+            // Autorrellena con el primer municipio
+            setBusquedaMunicipio(data[0].nombre_municipio);
+            setNewEvent({ ...newEvent, id_municipio: data[0].id_municipio });
+          } else {
+            // Si no hay municipios, deja vacío pero bloqueado
+            setBusquedaMunicipio("");
+            setNewEvent({ ...newEvent, id_municipio: 0 });
+          }
+        })
+        .catch((err) => console.error("Error cargando municipios:", err));
+    } else {
+      setBusquedaMunicipio("");
+      setNewEvent({ ...newEvent, id_municipio: 0 });
+    }
+  }, [newEvent.id_sitio]);
+
 
 //Para llamar la categría (evento) de la base de datos.
   useEffect(() => {
@@ -400,7 +431,7 @@ export default function EventosPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="id_tipo_evento">Categoría del Evento *</Label>
+                    <Label htmlFor="id_tipo_evento">Categoría del Evento</Label>
                     <Select
                       value={String(newEvent.id_categoria_evento || 0)}
                       onValueChange={(value) =>setNewEvent({ ...newEvent, id_categoria_evento: Number(value), id_tipo_evento: 0 })
@@ -421,7 +452,7 @@ export default function EventosPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="category">Tipo de Evento *</Label>
+                    <Label htmlFor="category">Tipo de Evento</Label>
                     <Select
                         value={String(newEvent.id_tipo_evento || 0)}
                         onValueChange={(value) =>
@@ -444,7 +475,7 @@ export default function EventosPage() {
                   </div>
 
                   <div className="space-y-2 relative">
-                    <Label htmlFor="sitio">Sitio *</Label>
+                    <Label htmlFor="sitio">Sitio</Label>
                     <Input
                       id="sitio"
                       value={busquedaSitio}
@@ -452,7 +483,7 @@ export default function EventosPage() {
                         setBusquedaSitio(e.target.value);
                         setNewEvent({ ...newEvent, id_sitio: 0 });
                       }}
-                      placeholder="Ej: Neomundo"
+                      placeholder="Ej: Neomundo - Centro de convenciones y eventos"
                       className="rounded-xl"
                     />
                     {sitios.length > 0 && (
@@ -473,6 +504,16 @@ export default function EventosPage() {
                       </ul>
                     )}
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="municipio">Municipio</Label>
+                    <Input
+                      id="municipio"
+                      value={busquedaMunicipio}
+                      readOnly={!!newEvent.id_sitio} // bloquea edición si ya hay sitio seleccionado
+                      placeholder="Ej: Bucaramanga"
+                      className="rounded-xl"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -485,22 +526,67 @@ export default function EventosPage() {
                     className="rounded-xl min-h-[100px]"
                   />
                 </div>
-
                 <div className="space-y-2">
-                    <Label htmlFor="title">Teléfono de los organizadores *</Label>
-                    <Input
-                      id="title"
-                      value={newEvent.telefono}
-                      onChange={(e) => setNewEvent({ ...newEvent, telefono: e.target.value })}
-                      placeholder="Ej: 3121234567"
-                      className="rounded-xl"
-                    />
-                  </div>
-
+                  <Label htmlFor="telefono1">Teléfono del organizador del evento</Label>
+                  <Input
+                    id="telefono1"
+                    value={newEvent.telefono1}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (/^\d{0,10}$/.test(value)) {
+                        setNewEvent({ ...newEvent, telefono1: value });
+                      }
+                    }}
+                    placeholder="Ej: 3121234567"
+                    className="rounded-xl"
+                    maxLength={10}
+                    inputMode="numeric"
+                    pattern="\d*"
+                  />
+                </div>
+                {!showTelefono2 && (
+                    <Button
+                      type="button"
+                      onClick={() => setShowTelefono2(true)}
+                      className="bg-blue-500 text-white px-3 py-1 rounded-xl"
+                    >
+                      + Agregar otro teléfono
+                    </Button>
+                  )}
+                  {showTelefono2 && (
+                    <div className="space-y-2">
+                      <Label htmlFor="telefono2">Segundo teléfono del organizador del evento</Label>
+                      <Input
+                        id="telefono2"
+                        value={newEvent.telefono2 || ""}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (/^\d{0,10}$/.test(value)) {
+                            setNewEvent({ ...newEvent, telefono2: value });
+                          }
+                        }}
+                        placeholder="Ej: 3009876543"
+                        className="rounded-xl"
+                        maxLength={10}
+                        inputMode="numeric"
+                        pattern="\d*"
+                      />
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          setShowTelefono2(false);
+                          setNewEvent({ ...newEvent, telefono2: "" }); // limpiar al quitar
+                        }}
+                        className="bg-red-500 text-white px-3 py-1 rounded-xl mt-2"
+                      >
+                        – Quitar teléfono
+                      </Button>
+                    </div>
+                  )}
 
                 <div className="grid md:grid-cols-3 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="date">Fecha en la que inicia el evento*</Label>
+                    <Label htmlFor="date">Fecha de inicio del evento</Label>
                     <Input
                       id="date"
                       type="date"
@@ -511,7 +597,7 @@ export default function EventosPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="date">Fecha en la que termina el evento*</Label>
+                    <Label htmlFor="date">Fecha final del evento</Label>
                     <Input
                       id="date"
                       type="date"
