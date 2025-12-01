@@ -1,39 +1,46 @@
 "use client"
-
-import { useState, useEffect } from "react"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
-import { AuthModal } from "@/components/auth-modal"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Calendar, MapPin, Users, Search, Filter, Heart, Share2, Star, X, Clock, Info, Plus } from "lucide-react"
+import { useState, useEffect } from "react";
+import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
+import { AuthModal } from "@/components/auth-modal";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Calendar, MapPin, Users, Search, Filter, Heart, Share2, Star, X, Clock, Info, Plus } from "lucide-react";
 import { NumericFormat } from "react-number-format";
 
+interface ImagenEvento {
+  id_imagen_evento: number;
+  url_imagen_evento: string;
+}
 
 interface Event {
+  id_evento: number;                // PK del evento
   nombre_evento: string;
   descripcion: string;
   fecha_inicio: string;
-  fecha_final: string;
+  fecha_fin: string;                // corregido: antes tenías fecha_final
   hora_inicio: string;
   hora_final: string;
-  dias_semana: string;
+  dias_semana?: string;             // opcional si no lo usas en BD
   id_usuario: number;
   id_categoria_evento: number;
   id_tipo_evento: number;
   id_municipio: number;
   id_sitio: number;
-  id_imagen: number;
-  telefono1: string;
-  telefono2: string;
+  telefono_1: string;               // corregido: antes tenías telefono1
+  telefono_2?: string;              // opcional
   costo: number;
   cupo: number;
   estado: boolean;
+  imagenes: {                       // relación con tabla_imagenes_eventos
+    id_imagen_evento: number;
+    url_imagen_evento: string;
+  }[];
 }
 
 // Esto es para mostrar los eventos debajo del buscador --- En proceso
@@ -56,29 +63,39 @@ export default function EventosPage() {
   const [busquedaMunicipio, setBusquedaMunicipio] = useState("");
   const [municipios, setMunicipios] = useState([]);
   const [showTelefono2, setShowTelefono2] = useState(false);
+  const [eventos, setEventos] = useState<any[]>([]);
+  const [preview, setPreview] = useState<string[]>([]);
 
-  const [newEvent, setNewEvent] = useState<Partial<Event>>({
-    nombre_evento: "",
-    id_usuario: 0,
-    id_categoria_evento: 0,
-    id_tipo_evento: 0,
-    id_municipio: 0,
-    id_sitio: 0,
-    descripcion: "",
-    telefono1: "",
-    telefono2:"",
-    fecha_inicio: "",
-    fecha_final: "",
-    dias_semana: "",
-    hora_inicio: "",
-    hora_final: "",
-    costo: 0,
-    cupo: 0,
-    estado: true,
-    id_imagen: 0,
-  });
+const [newEvent, setNewEvent] = useState<Partial<Event>>({
+  nombre_evento: "",
+  id_usuario: 0,
+  id_categoria_evento: 0,
+  id_tipo_evento: 0,
+  id_municipio: 0,
+  id_sitio: 0,
+  descripcion: "",
+  telefono_1: "",
+  telefono_2: "",
+  fecha_inicio: "",
+  fecha_fin: "",
+  dias_semana: "",
+  hora_inicio: "",
+  hora_final: "",
+  costo: 0,
+  cupo: 0,
+  estado: true,
+  imagenes: [], // aquí se guardarán las imágenes seleccionadas
+});
 
-  
+  useEffect(() => {
+    const fetchEventos = async () => {
+      const res = await fetch("/api/events");
+      const data = await res.json();
+      if (data.ok) setEventos(data.eventos);
+    };
+    fetchEventos();
+  }, []);
+
 
 //Para llamar los sitios de la base de datos.
   useEffect(() => {
@@ -167,64 +184,73 @@ export default function EventosPage() {
     setExpandedEventId(expandedEventId === eventId ? null : eventId)
   }
 
-  const handleAddEvent = async () => {
-    const eventToAdd: Partial<Event> = {
-      nombre_evento: newEvent.nombre_evento || "",
-      descripcion: newEvent.descripcion || "",
-      fecha_inicio: newEvent.fecha_inicio || "",
-      fecha_final: newEvent.fecha_final || "", // puedes calcularla con duration si lo deseas
-      hora_inicio: newEvent.hora_inicio || "",
-      hora_final: newEvent.hora_final || "",
-      dias_semana: "", // si aplica
-      id_usuario: id_usuario,
+const handleAddEvent = async () => {
+  try {
+    const formData = new FormData();
+
+    // Campos del evento
+    formData.append("nombre_evento", newEvent.nombre_evento || "");
+    formData.append("descripcion", newEvent.descripcion || "");
+    formData.append("fecha_inicio", newEvent.fecha_inicio || "");
+    formData.append("fecha_fin", newEvent.fecha_fin || ""); // corregido: fecha_fin
+    formData.append("hora_inicio", newEvent.hora_inicio || "");
+    formData.append("hora_final", newEvent.hora_final || "");
+    formData.append("dias_semana", newEvent.dias_semana || "");
+    formData.append("id_usuario", String(id_usuario));
+    formData.append("id_categoria_evento", String(newEvent.id_categoria_evento || 0));
+    formData.append("id_tipo_evento", String(mapCategoryToTipoId(newEvent.category || "Música")));
+    formData.append("id_municipio", String(mapLocationToMunicipioId(newEvent.location || "")));
+    formData.append("id_sitio", String(newEvent.id_sitio || 0));
+    formData.append("telefono_1", newEvent.telefono_1 || "");
+    formData.append("telefono_2", newEvent.telefono_2 || "");
+    formData.append("costo", String(newEvent.costo || 0));
+    formData.append("cupo", String(newEvent.cupo || 0));
+    formData.append("estado", String(newEvent.estado ?? true));
+
+    // Imágenes (array de File)
+    newEvent.imagenes?.forEach((file: File) => {
+      formData.append("additionalImages", file);
+    });
+
+    const res = await fetch("/api/events", {
+      method: "POST",
+      body: formData, // 👈 ya no usamos headers ni JSON.stringify
+    });
+
+    if (!res.ok) throw new Error("Error al crear el evento");
+
+    const data = await res.json();
+
+    // Actualizar lista de eventos
+    setEvents((prev) => [...prev, data]);
+
+    setShowAddEventForm(false);
+
+    // Reset del formulario
+    setNewEvent({
+      nombre_evento: "",
+      id_usuario: 0,
       id_categoria_evento: 0,
-      id_tipo_evento: mapCategoryToTipoId(newEvent.category || "Música"),
-      id_municipio: mapLocationToMunicipioId(newEvent.location || ""),
+      id_tipo_evento: 0,
+      id_municipio: 0,
       id_sitio: 0,
-      id_imagen: 0,
-      telefono: "",
-      costo: newEvent.costo || 0,
-      cupo: newEvent.cupo || 0,
-      estado: newEvent.estado || true,
-    };
-  
-    try {
-      const res = await fetch("/api/eventos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(eventToAdd),
-      });
-  
-      if (!res.ok) throw new Error("Error al crear el evento");
-  
-      const eventoCreado = await res.json();
-      setEvents((prev) => [...prev, eventoCreado]);
-      setShowAddEventForm(false);
-  
-      // Reset form adaptado
-      setNewEvent({
-        nombre_evento: "",
-        id_usuario: 0,
-        id_categoria_evento: 0,
-        id_tipo_evento: 0,
-        id_municipio: 0,
-        id_sitio: 0,
-        descripcion: "",
-        telefono: "",
-        fecha_inicio: "",
-        fecha_final: "",
-        dias_semana: "",
-        hora_inicio: "",
-        hora_final: "",
-        costo: 0,
-        cupo: 0,
-        estado: true,
-        id_imagen: 0,
-      });
-    } catch (error) {
-      console.error("Error al guardar el evento:", error);
-    }
-  };
+      descripcion: "",
+      telefono_1: "",
+      telefono_2: "",
+      fecha_inicio: "",
+      fecha_fin: "",
+      dias_semana: "",
+      hora_inicio: "",
+      hora_final: "",
+      costo: 0,
+      cupo: 0,
+      estado: true,
+      imagenes: [],
+    });
+  } catch (error) {
+    console.error("Error al guardar el evento:", error);
+  }
+};
   
   // Funciones de mapeo
   function mapCategoryToTipoId(category: string): number {
@@ -294,6 +320,7 @@ export default function EventosPage() {
   const expandedEvent = expandedEventId ? events.find((e) => e.id === expandedEventId) : null;
   
 
+  
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <Header onAuthClick={openAuthModal} />
@@ -675,16 +702,65 @@ export default function EventosPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="image">URL de Imagen Principal *</Label>
-                  <Input
-                    id="image"
-                    value={newEvent.image}
-                    onChange={(e) => setNewEvent({ ...newEvent, image: e.target.value })}
-                    placeholder="/images/evento.jpg o URL completa"
-                    className="rounded-xl"
-                  />
+<div className="space-y-2">
+  <label htmlFor="imagenes" className="font-medium">
+    Imágenes del evento *
+  </label>
+  <input
+    id="imagenes"
+    type="file"
+    multiple
+    accept="image/*"
+    className="rounded-xl border p-2"
+    onChange={(e) => {
+      if (!e.target.files) return;
+      const files = Array.from(e.target.files);
+      setNewEvent((prev) => ({ ...prev, imagenes: files }));
+
+      // Generar previews
+      const previews = files.map((file) => URL.createObjectURL(file));
+      setPreview(previews);
+    }}
+  />
+
+  {/* Previews */}
+  {preview.length > 0 && (
+    <div className="flex flex-wrap gap-2 mt-2">
+      {preview.map((src, i) => (
+        <img
+          key={i}
+          src={src}
+          alt={`preview-${i}`}
+          className="w-24 h-24 object-cover rounded-lg border"
+        />
+      ))}
+    </div>
+  )}
+</div>
+
+                <div className="space-y-6">
+                  <h1 className="text-2xl font-bold">Eventos</h1>
+                  {eventos.map((evento) => (
+                    <div key={evento.id_evento} className="border rounded-xl p-4">
+                      <h2 className="text-xl font-semibold">{evento.nombre_evento}</h2>
+                      <p>{evento.descripcion}</p>
+                      <p>
+                        {evento.fecha_inicio} - {evento.fecha_fin}
+                      </p>
+                      <div className="flex gap-2 mt-2">
+                        {evento.imagenes.map((img) => (
+                          <img
+                            key={img.id_imagen_evento}
+                            src={img.url_imagen_evento}
+                            alt="imagen evento"
+                            className="w-32 h-32 object-cover rounded-lg border"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
+
 
                 <div className="space-y-2">
                   <Label>URLs de Imágenes Adicionales (3)</Label>
