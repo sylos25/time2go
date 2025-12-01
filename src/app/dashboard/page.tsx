@@ -18,6 +18,11 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
 } from "recharts"
 import {
   Calendar,
@@ -42,6 +47,7 @@ import {
   CheckSquare,
   Activity,
   MoreVertical,
+  Target,
 } from "lucide-react"
 
 interface Event {
@@ -73,6 +79,21 @@ interface ChecklistItem {
   completed: boolean
 }
 
+interface KPISubObjective {
+  id: number
+  name: string
+  progress: number
+}
+
+interface KPI {
+  id: number
+  name: string
+  description: string
+  progress: number
+  color: string
+  subObjectives: KPISubObjective[]
+}
+
 export default function EventDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activeTab, setActiveTab] = useState("overview")
@@ -87,6 +108,100 @@ export default function EventDashboard() {
     { id: 3, text: "Actualizar precios", completed: false },
     { id: 4, text: "Enviar reporte financiero", completed: false },
     { id: 5, text: "Planificar próximo festival", completed: false },
+  ])
+
+  const [kpis, setKpis] = useState<KPI[]>([
+    {
+      id: 1,
+      name: "Actividad de Usuarios",
+      description: "Incrementar la participación y uso recurrente del sistema",
+      progress: 0,
+      color: "#3B82F6",
+      subObjectives: [
+        { id: 1, name: "Usuarios activos diarios (DAU) - Meta: crecer 20% mensual", progress: 0 },
+        { id: 2, name: "Retención 7 días - Meta: 35-50%", progress: 0 },
+        { id: 3, name: "Usuarios por municipio - Meta: aumentar cobertura en zonas clave", progress: 0 },
+        { id: 4, name: "Usuarios nuevos por mes - Meta: +15% mensual", progress: 0 },
+      ],
+    },
+    {
+      id: 2,
+      name: "Interacción con Eventos",
+      description: "Aumentar el interés por los eventos y mejorar su visibilidad",
+      progress: 0,
+      color: "#10B981",
+      subObjectives: [
+        { id: 1, name: "Vistas promedio por evento - Meta: +30%", progress: 0 },
+        { id: 2, name: "Eventos favoritos o guardados - Meta: crecer en 25%", progress: 0 },
+        { id: 3, name: "Duración promedio por sesión - Meta: +10%", progress: 0 },
+        { id: 4, name: "Tasa de scroll / interacción dentro del evento - Meta: +20%", progress: 0 },
+      ],
+    },
+    {
+      id: 3,
+      name: "Conversiones y Reservas",
+      description: "Mejorar la conversión en eventos gratuitos y la salida hacia boleterías externas",
+      progress: 0,
+      color: "#F97316",
+      subObjectives: [
+        { id: 1, name: "Tasa de reserva en eventos gratuitos - Meta: 25-35%", progress: 0 },
+        { id: 2, name: "Clics hacia boleterías externas - Meta: +20% mensual", progress: 0 },
+        { id: 3, name: "Eventos gratuitos agotados - Meta: 70% del cupo llenado", progress: 0 },
+        { id: 4, name: "Tasa de abandono antes de reservar - Meta: disminuir 15%", progress: 0 },
+      ],
+    },
+    {
+      id: 4,
+      name: "Rendimiento Técnico",
+      description: "Garantizar que el sistema sea rápido, estable y confiable",
+      progress: 0,
+      color: "#EAB308",
+      subObjectives: [
+        { id: 1, name: "Tiempo promedio de carga del sitio - Meta: < 2.5s", progress: 0 },
+        { id: 2, name: "Tiempo de respuesta del backend/API - Meta: < 600ms", progress: 0 },
+        { id: 3, name: "Errores 4xx y 5xx por mes - Meta: reducción del 30%", progress: 0 },
+        { id: 4, name: "Disponibilidad del sistema (Uptime) - Meta: 99.5%", progress: 0 },
+      ],
+    },
+    {
+      id: 5,
+      name: "Gestión de Organizadores",
+      description: "Medir qué tan bien usan el CMS para subir contenidos",
+      progress: 0,
+      color: "#78350F",
+      subObjectives: [
+        { id: 1, name: "Eventos creados por organizador - Meta: min. 3/mes", progress: 0 },
+        { id: 2, name: "Tiempo promedio para crear un evento - Meta: < 5 minutos", progress: 0 },
+        { id: 3, name: "Eventos aprobados sin errores - Meta: > 90%", progress: 0 },
+        { id: 4, name: "Tasa de rechazo por errores de datos - Meta: reducir 25%", progress: 0 },
+      ],
+    },
+    {
+      id: 6,
+      name: "Calidad del Contenido",
+      description: "Asegurar que los eventos y datos publicados sean útiles y claros",
+      progress: 0,
+      color: "#DC2626",
+      subObjectives: [
+        { id: 1, name: "Eventos con información completa - Meta: 95%", progress: 0 },
+        { id: 2, name: "Valoración promedio de eventos - Meta: 4.5/5", progress: 0 },
+        { id: 3, name: "Tasa de correcciones posteriores - Meta: reducir 30%", progress: 0 },
+        { id: 4, name: "Fotos/medios cargados correctamente - Meta: 98%", progress: 0 },
+      ],
+    },
+    {
+      id: 7,
+      name: "Expansión del Mercado",
+      description: "Aumentar la cantidad de municipios con eventos activos",
+      progress: 0,
+      color: "#8B5CF6",
+      subObjectives: [
+        { id: 1, name: "Municipios con al menos un evento activo - Meta: +3 por mes", progress: 0 },
+        { id: 2, name: "Número de organizadores registrados - Meta: +10% mensual", progress: 0 },
+        { id: 3, name: "Crecimiento de eventos mensuales - Meta: +15%", progress: 0 },
+        { id: 4, name: "Diversidad de categorías de eventos - Meta: aumentar variedad", progress: 0 },
+      ],
+    },
   ])
 
   const stats: StatCard[] = [
@@ -205,6 +320,8 @@ export default function EventDashboard() {
 
   const menuItems = [
     { id: "overview", name: "Resumen General", icon: Home },
+    { id: "kpis", name: "KPIs y Objetivos", icon: Target },
+    { id: "checklist", name: "Tareas Pendientes", icon: CheckSquare },
     { id: "events", name: "Gestión de Eventos", icon: Calendar },
     { id: "analytics", name: "Analíticas", icon: TrendingUp },
     { id: "users", name: "Usuarios", icon: Users },
@@ -270,6 +387,12 @@ export default function EventDashboard() {
         return "Desconocido"
     }
   }
+
+  const kpiRadarData = kpis.map((kpi) => ({
+    subject: kpi.name.split(" ").slice(0, 2).join(" "),
+    value: kpi.progress,
+    fullMark: 100,
+  }))
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
@@ -405,65 +528,6 @@ export default function EventDashboard() {
                 ))}
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <div className="flex items-center justify-between mb-5">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">Tareas Pendientes</h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {checklistItems.filter((item) => item.completed).length} de {checklistItems.length} completadas
-                    </p>
-                  </div>
-                  <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center">
-                    <CheckSquare className="w-6 h-6 text-blue-600" />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  {checklistItems.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => toggleChecklistItem(item.id)}
-                      className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
-                    >
-                      <div
-                        className={`flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                          item.completed ? "bg-blue-600 border-blue-600" : "border-gray-300 group-hover:border-blue-400"
-                        }`}
-                      >
-                        {item.completed && <CheckCircle className="w-4 h-4 text-white" />}
-                      </div>
-                      <span
-                        className={`text-sm font-medium text-left flex-1 ${
-                          item.completed ? "text-gray-400 line-through" : "text-gray-700"
-                        }`}
-                      >
-                        {item.text}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 font-medium">Progreso</span>
-                    <span className="text-blue-600 font-semibold">
-                      {Math.round(
-                        (checklistItems.filter((item) => item.completed).length / checklistItems.length) * 100,
-                      )}
-                      %
-                    </span>
-                  </div>
-                  <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${(checklistItems.filter((item) => item.completed).length / checklistItems.length) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                   <div className="flex items-center justify-between mb-6">
@@ -542,41 +606,273 @@ export default function EventDashboard() {
               </div>
 
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <div className="mb-6">
-                  <h3 className="text-lg font-bold text-gray-900">Eventos Más Populares</h3>
-                  <p className="text-sm text-gray-500 mt-1">Ordenados por asistencia</p>
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Eventos Más Populares</h3>
+                    <p className="text-sm text-gray-500 mt-1">Ordenados por número de tickets vendidos</p>
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  {topEvents.map((event, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-transparent rounded-xl hover:from-blue-50 transition-all border border-transparent hover:border-blue-100"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold shadow-sm ${
-                            index === 0
-                              ? "bg-gradient-to-br from-yellow-400 to-yellow-500"
-                              : index === 1
-                                ? "bg-gradient-to-br from-gray-300 to-gray-400"
-                                : index === 2
-                                  ? "bg-gradient-to-br from-orange-400 to-orange-500"
-                                  : "bg-gradient-to-br from-blue-400 to-blue-500"
-                          }`}
-                        >
-                          #{index + 1}
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={topEvents}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} />
+                    <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }} />
+                    <Legend wrapperStyle={{ fontSize: "14px" }} />
+                    <Bar dataKey="tickets" fill="#3B82F6" name="Tickets Vendidos" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="views" fill="#8B5CF6" name="Vistas" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "kpis" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">KPIs y Objetivos Estratégicos</h3>
+                  <p className="text-sm text-gray-500 mt-1">Seguimiento del progreso de objetivos clave</p>
+                </div>
+                <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all">
+                  <Plus className="w-4 h-4" />
+                  Agregar KPI
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-4">
+                  {kpis.map((kpi) => (
+                    <div key={kpi.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h4 className="text-lg font-bold text-gray-900">{kpi.name}</h4>
+                          <p className="text-sm text-gray-500 mt-1">{kpi.description}</p>
                         </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{event.name}</p>
-                          <p className="text-sm text-gray-600">{event.tickets.toLocaleString()} asistentes</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl font-bold" style={{ color: kpi.color }}>
+                            {kpi.progress}%
+                          </span>
+                          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                            <MoreVertical className="w-4 h-4 text-gray-400" />
+                          </button>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-blue-600 text-lg">{event.views.toLocaleString()}</p>
-                        <p className="text-xs text-gray-500 font-medium">Vistas</p>
+
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+                          <span>Progreso General</span>
+                          <span className="font-semibold">{kpi.progress}%</span>
+                        </div>
+                        <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${kpi.progress}%`,
+                              backgroundColor: kpi.color,
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-3 pt-4 border-t border-gray-100">
+                        <h5 className="text-sm font-semibold text-gray-700 mb-3">Sub-objetivos</h5>
+                        {kpi.subObjectives.map((sub) => (
+                          <div key={sub.id}>
+                            <div className="flex items-center justify-between text-xs text-gray-600 mb-1.5">
+                              <span className="font-medium">{sub.name}</span>
+                              <span className="font-semibold">{sub.progress}%</span>
+                            </div>
+                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{
+                                  width: `${sub.progress}%`,
+                                  backgroundColor: kpi.color,
+                                  opacity: 0.7,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   ))}
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                  <div className="mb-6">
+                    <h3 className="text-lg font-bold text-gray-900">Resumen de KPIs</h3>
+                    <p className="text-sm text-gray-500 mt-1">Vista general del progreso</p>
+                  </div>
+
+                  <ResponsiveContainer width="100%" height={300}>
+                    <RadarChart data={kpiRadarData}>
+                      <PolarGrid stroke="#e5e7eb" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: "#6b7280" }} />
+                      <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10 }} />
+                      <Radar name="Progreso" dataKey="value" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.6} />
+                      <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+
+                  <div className="mt-6 space-y-3">
+                    <h4 className="text-sm font-semibold text-gray-700">KPIs por progreso</h4>
+                    {kpis
+                      .sort((a, b) => b.progress - a.progress)
+                      .map((kpi, index) => (
+                        <div key={kpi.id} className="flex items-center gap-3">
+                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: kpi.color }} />
+                              <span className="text-sm text-gray-700 truncate">{kpi.name}</span>
+                            </div>
+                          </div>
+                          <span className="text-sm font-semibold text-gray-900">{kpi.progress}%</span>
+                        </div>
+                      ))}
+                  </div>
+
+                  <div className="mt-6 pt-6 border-t border-gray-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-gray-700">Progreso Promedio</span>
+                      <span className="text-lg font-bold text-blue-600">
+                        {Math.round(kpis.reduce((acc, kpi) => acc + kpi.progress, 0) / kpis.length)}%
+                      </span>
+                    </div>
+                    <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full transition-all duration-500"
+                        style={{
+                          width: `${Math.round(kpis.reduce((acc, kpi) => acc + kpi.progress, 0) / kpis.length)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "checklist" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">Tareas Pendientes</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {checklistItems.filter((item) => item.completed).length} de {checklistItems.length} tareas
+                    completadas
+                  </p>
+                </div>
+                <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all">
+                  <Plus className="w-4 h-4" />
+                  Nueva Tarea
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                  <div className="space-y-2">
+                    {checklistItems.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => toggleChecklistItem(item.id)}
+                        className="w-full flex items-center gap-4 p-4 rounded-lg hover:bg-gray-50 transition-colors group border border-gray-100"
+                      >
+                        <div
+                          className={`flex-shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
+                            item.completed
+                              ? "bg-blue-600 border-blue-600"
+                              : "border-gray-300 group-hover:border-blue-400"
+                          }`}
+                        >
+                          {item.completed && <CheckCircle className="w-5 h-5 text-white" />}
+                        </div>
+                        <span
+                          className={`text-base font-medium text-left flex-1 ${
+                            item.completed ? "text-gray-400 line-through" : "text-gray-900"
+                          }`}
+                        >
+                          {item.text}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setChecklistItems(checklistItems.filter((i) => i.id !== item.id))
+                          }}
+                          className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </button>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-lg font-bold text-gray-900">Progreso</h4>
+                      <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center">
+                        <CheckSquare className="w-6 h-6 text-blue-600" />
+                      </div>
+                    </div>
+
+                    <div className="text-center mb-6">
+                      <div className="text-5xl font-bold text-blue-600 mb-2">
+                        {Math.round(
+                          (checklistItems.filter((item) => item.completed).length / checklistItems.length) * 100,
+                        )}
+                        %
+                      </div>
+                      <p className="text-sm text-gray-500">Tareas completadas</p>
+                    </div>
+
+                    <div className="h-3 bg-gray-100 rounded-full overflow-hidden mb-4">
+                      <div
+                        className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full transition-all duration-500"
+                        style={{
+                          width: `${(checklistItems.filter((item) => item.completed).length / checklistItems.length) * 100}%`,
+                        }}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                      <div>
+                        <p className="text-sm text-gray-500">Completadas</p>
+                        <p className="text-2xl font-bold text-green-600">
+                          {checklistItems.filter((item) => item.completed).length}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Pendientes</p>
+                        <p className="text-2xl font-bold text-orange-600">
+                          {checklistItems.filter((item) => !item.completed).length}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-sm border border-blue-100 p-6">
+                    <h4 className="text-lg font-bold text-gray-900 mb-3">Consejos</h4>
+                    <ul className="space-y-2 text-sm text-gray-700">
+                      <li className="flex items-start gap-2">
+                        <span className="text-blue-600 mt-0.5">•</span>
+                        <span>Prioriza las tareas más importantes</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-blue-600 mt-0.5">•</span>
+                        <span>Divide tareas grandes en sub- tareas</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-blue-600 mt-0.5">•</span>
+                        <span>Revisa tu progreso diariamente</span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
@@ -584,88 +880,103 @@ export default function EventDashboard() {
 
           {activeTab === "events" && (
             <div className="space-y-6">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className="relative flex-1 md:max-w-md">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="text"
-                        placeholder="Buscar eventos..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                      />
-                    </div>
-                    <select
-                      value={filterCategory}
-                      onChange={(e) => setFilterCategory(e.target.value)}
-                      className="px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                    >
-                      <option value="all">Todas las categorías</option>
-                      <option value="Música">Música</option>
-                      <option value="Teatro">Teatro</option>
-                      <option value="Deportes">Deportes</option>
-                      <option value="Arte">Arte</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {selectedEvents.length > 0 && (
-                      <>
-                        <button
-                          onClick={bulkShow}
-                          className="px-4 py-2.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium flex items-center gap-2"
-                        >
-                          <Eye className="w-4 h-4" />
-                          Mostrar ({selectedEvents.length})
-                        </button>
-                        <button
-                          onClick={bulkHide}
-                          className="px-4 py-2.5 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium flex items-center gap-2"
-                        >
-                          <EyeOff className="w-4 h-4" />
-                          Ocultar ({selectedEvents.length})
-                        </button>
-                      </>
-                    )}
-                    <button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2.5 rounded-lg font-medium hover:shadow-md transition-all text-sm flex items-center gap-2">
-                      <Plus className="w-4 h-4" />
-                      Nuevo Evento
-                    </button>
-                  </div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Buscar eventos..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
                 </div>
 
-                <div className="overflow-x-auto -mx-6 px-6">
+                <div className="flex items-center gap-3">
+                  <select
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                    className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="all">Todas las categorías</option>
+                    <option value="Música">Música</option>
+                    <option value="Teatro">Teatro</option>
+                    <option value="Deportes">Deportes</option>
+                    <option value="Arte">Arte</option>
+                  </select>
+
+                  <button className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all">
+                    <Plus className="w-4 h-4" />
+                    Nuevo Evento
+                  </button>
+                </div>
+              </div>
+
+              {selectedEvents.length > 0 && (
+                <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <span className="text-sm font-medium text-blue-900">
+                    {selectedEvents.length} evento(s) seleccionado(s)
+                  </span>
+                  <button
+                    onClick={bulkShow}
+                    className="px-3 py-1.5 text-sm bg-white text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
+                  >
+                    <Eye className="w-4 h-4 inline mr-1" />
+                    Mostrar
+                  </button>
+                  <button
+                    onClick={bulkHide}
+                    className="px-3 py-1.5 text-sm bg-white text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
+                  >
+                    <EyeOff className="w-4 h-4 inline mr-1" />
+                    Ocultar
+                  </button>
+                </div>
+              )}
+
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-4 px-4">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-6 py-4 text-left">
                           <input
                             type="checkbox"
                             onChange={(e) => {
                               if (e.target.checked) {
-                                setSelectedEvents(filteredEvents.map((e) => e.id))
+                                setSelectedEvents(filteredEvents.map((event) => event.id))
                               } else {
                                 setSelectedEvents([])
                               }
                             }}
+                            checked={selectedEvents.length === filteredEvents.length && filteredEvents.length > 0}
                             className="rounded border-gray-300"
                           />
                         </th>
-                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Evento</th>
-                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Categoría</th>
-                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Fecha</th>
-                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Ubicación</th>
-                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Asistencia</th>
-                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Promotor</th>
-                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Estado</th>
-                        <th className="text-left py-4 px-4 font-semibold text-sm text-gray-600">Acciones</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Evento
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Fecha y Hora
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Ubicación
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Tickets
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Estado
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Acciones
+                        </th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-gray-200">
                       {filteredEvents.map((event) => (
-                        <tr key={event.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
-                          <td className="py-4 px-4">
+                        <tr key={event.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4">
                             <input
                               type="checkbox"
                               checked={selectedEvents.includes(event.id)}
@@ -679,69 +990,74 @@ export default function EventDashboard() {
                               className="rounded border-gray-300"
                             />
                           </td>
-                          <td className="py-4 px-4">
-                            <div>
-                              <p className="font-semibold text-gray-900 text-sm">{event.name}</p>
-                              <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                                <Clock className="w-3 h-3" />
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                                <Calendar className="w-6 h-6 text-white" />
+                              </div>
+                              <div>
+                                <p className="font-semibold text-gray-900">{event.name}</p>
+                                <p className="text-sm text-gray-500">{event.category}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1.5 text-sm text-gray-700">
+                                <Calendar className="w-4 h-4 text-gray-400" />
+                                {event.date}
+                              </div>
+                              <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                                <Clock className="w-4 h-4 text-gray-400" />
                                 {event.time}
-                              </p>
+                              </div>
                             </div>
                           </td>
-                          <td className="py-4 px-4">
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-medium">
-                              {event.category}
-                            </span>
-                          </td>
-                          <td className="py-4 px-4 text-sm text-gray-700">{event.date}</td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                              <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span className="truncate max-w-[150px]">{event.location}</span>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-1.5 text-sm text-gray-700">
+                              <MapPin className="w-4 h-4 text-gray-400" />
+                              {event.location}
                             </div>
                           </td>
-                          <td className="py-4 px-4">
-                            <div className="flex flex-col">
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col gap-1">
                               <span className="text-sm font-semibold text-gray-900">
                                 {event.ticketsSold} / {event.capacity}
                               </span>
-                              <div className="mt-1 w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                                 <div
-                                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
+                                  className="h-full bg-blue-600 rounded-full"
                                   style={{ width: `${(event.ticketsSold / event.capacity) * 100}%` }}
                                 />
                               </div>
                             </div>
                           </td>
-                          <td className="py-4 px-4">
-                            <span className="text-sm font-medium text-gray-900">{event.promoter}</span>
-                          </td>
-                          <td className="py-4 px-4">
+                          <td className="px-6 py-4">
                             <span
-                              className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${getStatusColor(event.status)}`}
+                              className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(event.status)}`}
                             >
                               {getStatusText(event.status)}
                             </span>
                           </td>
-                          <td className="py-4 px-4">
+                          <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => toggleVisibility(event.id)}
                                 className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                title={event.visibility ? "Ocultar" : "Mostrar"}
+                                title={event.visibility ? "Ocultar evento" : "Mostrar evento"}
                               >
-                                {event.visibility ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                                {event.visibility ? (
+                                  <Eye className="w-4 h-4" />
+                                ) : (
+                                  <EyeOff className="w-4 h-4 text-gray-400" />
+                                )}
                               </button>
-                              <button
-                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                title="Editar"
-                              >
+                              <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                                 <Edit className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => deleteEvent(event.id)}
                                 className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                title="Eliminar"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -752,323 +1068,39 @@ export default function EventDashboard() {
                     </tbody>
                   </table>
                 </div>
+
+                {filteredEvents.length === 0 && (
+                  <div className="text-center py-12">
+                    <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 font-medium">No se encontraron eventos</p>
+                    <p className="text-sm text-gray-400 mt-1">Intenta con otros filtros de búsqueda</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           {activeTab === "analytics" && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Vistas por Mes</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={eventData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="vistas" fill="#3B82F6" name="Vistas" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Capacidad vs Asistencia</h3>
-                  <div className="space-y-4">
-                    {events.slice(0, 4).map((event) => (
-                      <div key={event.id}>
-                        <div className="flex justify-between mb-2">
-                          <span className="text-sm font-medium text-gray-700">{event.name}</span>
-                          <span className="text-sm text-gray-600">
-                            {((event.ticketsSold / event.capacity) * 100).toFixed(0)}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-3">
-                          <div
-                            className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all"
-                            style={{ width: `${(event.ticketsSold / event.capacity) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Rendimiento por Categoría</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={categoryData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="value" name="Eventos">
-                      {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+            <div className="text-center py-20">
+              <Activity className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 font-medium">Sección de Analíticas</p>
+              <p className="text-sm text-gray-400 mt-1">Esta funcionalidad estará disponible próximamente</p>
             </div>
           )}
 
           {activeTab === "users" && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-bold text-gray-900">Gestión de Usuarios</h3>
-                  <div className="flex items-center space-x-3">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="text"
-                        placeholder="Buscar usuarios..."
-                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all">
-                      <Plus className="w-4 h-4 inline mr-2" />
-                      Nuevo Usuario
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-blue-600 font-medium">Usuarios Totales</p>
-                        <p className="text-2xl font-bold text-blue-900 mt-1">1,234</p>
-                      </div>
-                      <Users className="w-8 h-8 text-blue-600" />
-                    </div>
-                  </div>
-                  <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-green-600 font-medium">Activos este mes</p>
-                        <p className="text-2xl font-bold text-green-900 mt-1">847</p>
-                      </div>
-                      <Activity className="w-8 h-8 text-green-600" />
-                    </div>
-                  </div>
-                  <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-purple-600 font-medium">Nuevos (7 días)</p>
-                        <p className="text-2xl font-bold text-purple-900 mt-1">89</p>
-                      </div>
-                      <TrendingUp className="w-8 h-8 text-purple-600" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Usuario</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Email</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Registro</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Eventos</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Tickets</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Estado</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        {
-                          id: 1,
-                          name: "María González",
-                          email: "maria@email.com",
-                          date: "2024-01-15",
-                          events: 12,
-                          tickets: 18,
-                          status: "active",
-                        },
-                        {
-                          id: 2,
-                          name: "Carlos Rodríguez",
-                          email: "carlos@email.com",
-                          date: "2024-02-20",
-                          events: 8,
-                          tickets: 10,
-                          status: "active",
-                        },
-                        {
-                          id: 3,
-                          name: "Ana Martínez",
-                          email: "ana@email.com",
-                          date: "2024-03-10",
-                          events: 15,
-                          tickets: 22,
-                          status: "active",
-                        },
-                        {
-                          id: 4,
-                          name: "Luis Pérez",
-                          email: "luis@email.com",
-                          date: "2023-12-05",
-                          events: 20,
-                          tickets: 35,
-                          status: "premium",
-                        },
-                      ].map((user) => (
-                        <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="py-4 px-4">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                                {user.name.charAt(0)}
-                              </div>
-                              <span className="font-medium text-gray-900">{user.name}</span>
-                            </div>
-                          </td>
-                          <td className="py-4 px-4 text-gray-600">{user.email}</td>
-                          <td className="py-4 px-4 text-gray-600">{user.date}</td>
-                          <td className="py-4 px-4 text-gray-600">{user.events}</td>
-                          <td className="py-4 px-4 text-gray-600">{user.tickets}</td>
-                          <td className="py-4 px-4">
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                user.status === "premium"
-                                  ? "bg-purple-100 text-purple-800"
-                                  : "bg-green-100 text-green-800"
-                              }`}
-                            >
-                              {user.status === "premium" ? "Premium" : "Activo"}
-                            </span>
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center space-x-2">
-                              <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-                                <MoreVertical className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+            <div className="text-center py-20">
+              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 font-medium">Gestión de Usuarios</p>
+              <p className="text-sm text-gray-400 mt-1">Esta funcionalidad estará disponible próximamente</p>
             </div>
           )}
 
           {activeTab === "settings" && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-6">Configuración de la Plataforma</h3>
-
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-4">Información General</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Nombre de la Plataforma</label>
-                        <input
-                          type="text"
-                          defaultValue="Time2Go"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Email de Contacto</label>
-                        <input
-                          type="email"
-                          defaultValue="info@time2go.com"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
-                        <input
-                          type="tel"
-                          defaultValue="+57 300 123 4567"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Ciudad</label>
-                        <input
-                          type="text"
-                          defaultValue="Bucaramanga"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-gray-200 pt-6">
-                    <h4 className="font-semibold text-gray-900 mb-4">Configuración de Eventos</h4>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div>
-                          <p className="font-medium text-gray-900">Aprobación automática de eventos</p>
-                          <p className="text-sm text-gray-600">Los nuevos eventos se publican sin revisión</p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" className="sr-only peer" />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                      </div>
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div>
-                          <p className="font-medium text-gray-900">Notificaciones por email</p>
-                          <p className="text-sm text-gray-600">Enviar alertas de nuevos eventos a usuarios</p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" defaultChecked className="sr-only peer" />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                      </div>
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div>
-                          <p className="font-medium text-gray-900">Modo mantenimiento</p>
-                          <p className="text-sm text-gray-600">Desactivar temporalmente la plataforma</p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" className="sr-only peer" />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-gray-200 pt-6">
-                    <h4 className="font-semibold text-gray-900 mb-4">Exportar Datos</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <button className="flex items-center justify-center space-x-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                        <Download className="w-5 h-5 text-gray-600" />
-                        <span className="font-medium text-gray-700">Exportar Eventos</span>
-                      </button>
-                      <button className="flex items-center justify-center space-x-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                        <Download className="w-5 h-5 text-gray-600" />
-                        <span className="font-medium text-gray-700">Exportar Usuarios</span>
-                      </button>
-                      <button className="flex items-center justify-center space-x-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                        <Download className="w-5 h-5 text-gray-600" />
-                        <span className="font-medium text-gray-700">Exportar Estadísticas</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="pt-6 border-t border-gray-200 flex justify-end space-x-4">
-                    <button className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                      Cancelar
-                    </button>
-                    <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:shadow-lg transition-all">
-                      Guardar Cambios
-                    </button>
-                  </div>
-                </div>
-              </div>
+            <div className="text-center py-20">
+              <Settings className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 font-medium">Configuración</p>
+              <p className="text-sm text-gray-400 mt-1">Esta funcionalidad estará disponible próximamente</p>
             </div>
           )}
         </main>
