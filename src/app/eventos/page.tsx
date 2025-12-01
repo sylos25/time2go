@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Calendar, MapPin, Users, Search, Filter, Heart, Share2, Star, X, Clock, Info, Plus } from "lucide-react"
+import { NumericFormat } from "react-number-format";
 
 
 interface Event {
@@ -510,14 +511,14 @@ export default function EventosPage() {
                       id="municipio"
                       value={busquedaMunicipio}
                       readOnly={!!newEvent.id_sitio} // bloquea edición si ya hay sitio seleccionado
-                      placeholder="Ej: Bucaramanga"
+                      placeholder="Bucaramanga"
                       className="rounded-xl"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="fullDescription">Descripción *</Label>
+                  <Label htmlFor="fullDescription">Descripción</Label>
                   <Textarea
                     id="fullDescription"
                     value={newEvent.descripcion}
@@ -620,7 +621,7 @@ export default function EventosPage() {
 
 
                   <div className="space-y-2">
-                    <Label htmlFor="time">Hora de inicio*</Label>
+                    <Label htmlFor="time">Hora de inicio</Label>
                     <Input
                       id="time"
                       type="time"
@@ -631,7 +632,7 @@ export default function EventosPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="time">Hora final *</Label>
+                    <Label htmlFor="time">Hora final</Label>
                     <Input
                       id="time"
                       type="time"
@@ -640,52 +641,34 @@ export default function EventosPage() {
                       className="rounded-xl"
                     />
                   </div>
-                  
                 </div>
-
+                
                 <div className="grid md:grid-cols-2 gap-6">
-
                 <div className="space-y-2">
-                    <Label htmlFor="category">Modo de acceder (temporal)*</Label>
-                    <Select
-                      value={newEvent.category}
-                      onValueChange={(value) => setNewEvent({ ...newEvent, category: value })}
-                    >
-                      <SelectTrigger className="rounded-xl">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories
-                          .filter((c) => c !== "all")
-                          .map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                <div className="space-y-2">
-                    <Label htmlFor="title">Valor de la entrada (tabla_costos)*</Label>
-                    <Input
-                      id="title"
-                      value={newEvent.costo}
-                      onChange={(e) => setNewEvent({ ...newEvent, costo: e.target.value })}
-                      placeholder="Ej: 100.000"
-                      className="rounded-xl"
-                    />
-                  </div>
+                  <Label htmlFor="costo">Valor de la entrada</Label>
+                  <NumericFormat
+                    id="costo"
+                    value={newEvent.costo}
+                    prefix="$"
+                    thousandSeparator="."
+                    decimalSeparator=","
+                    onValueChange={(values) =>
+                      setNewEvent({ ...newEvent, costo: values.value })
+                    }
+                    placeholder="$100.000"
+                    className="rounded-xl border px-2 py-1 w-full"
+                  />
                 </div>
-
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="space-y-2">
+                <div className="space-y-2">
                     <Label htmlFor="attendees">Aforo del evento</Label>
                     <Input
                       id="attendees"
                       type="number"
-                      value={newEvent.cupo}
-                      onChange={(e) => setNewEvent({ ...newEvent, cupo: Number(e.target.value) })}
+                      value={newEvent.cupo === 0 ? "" : newEvent.cupo}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setNewEvent({...newEvent, cupo: val === "" ? "" : Number(val) });
+                      }}
                       placeholder="0"
                       className="rounded-xl"
                     />
