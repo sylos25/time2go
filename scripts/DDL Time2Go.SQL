@@ -36,11 +36,12 @@ CREATE TYPE estado_pago AS ENUM ('Pendiente', 'Pagado', 'Fallido');
 
 -- CREACION DE TABLAS
 
-CREATE TABLE IF NOT EXISTS tabla_imagenes (
-    id_imagen               SERIAL                      PRIMARY KEY,
-    url_imagen              VARCHAR                     NOT NULL        UNIQUE,
+CREATE TABLE IF NOT EXISTS tabla_imagenes_eventos (
+    id_imagen_evento        SERIAL                      PRIMARY KEY,
+    url_imagen_evento       VARCHAR                     NOT NULL        UNIQUE,
     fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP
+    fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
+    id_eventos              INT                         NOT NULL,
 );
 
 CREATE TABLE IF NOT EXISTS tabla_paises (
@@ -202,7 +203,6 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
     dinero                  BOOLEAN                     NOT NULL        DEFAULT FALSE,
     cupo                    INT                         NOT NULL        DEFAULT 0 CHECK (cupo >= 0),
     estado                  BOOLEAN                     NOT NULL        DEFAULT FALSE,
-    id_imagen               INT                         NOT NULL,
     fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     fecha_desactivacion     TIMESTAMP   WITH TIME ZONE,
