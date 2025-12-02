@@ -311,13 +311,6 @@ FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 CREATE TRIGGER trig_update_valoraciones BEFORE UPDATE ON tabla_reembolsos
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
---INSERTS PRUEBAS
-
-INSERT INTO tabla_menu (id_menu, nombre_opcion) VALUES 
-(1, 'Administrar usuarios'),
-(2, 'Gestión de eventos');
-
-
 -- CARGAR EN TABLA_ROLES
 INSERT INTO tabla_roles VALUES  (1,'Usuario');
 INSERT INTO tabla_roles VALUES  (2,'Promotor');

@@ -141,12 +141,12 @@ export default function EventDashboard() {
       id: 3,
       name: "Conversiones y Reservas",
       description: "Mejorar la conversión en eventos gratuitos y la salida hacia boleterías externas",
-      progress: 0,
+      progress: 20,
       color: "#F97316",
       subObjectives: [
         { id: 1, name: "Tasa de reserva en eventos gratuitos - Meta: 25-35%", progress: 0 },
         { id: 2, name: "Clics hacia boleterías externas - Meta: +20% mensual", progress: 0 },
-        { id: 3, name: "Eventos gratuitos agotados - Meta: 70% del cupo llenado", progress: 0 },
+        { id: 3, name: "Eventos gratuitos agotados - Meta: 70% del cupo llenado", progress: 15 },
         { id: 4, name: "Tasa de abandono antes de reservar - Meta: disminuir 15%", progress: 0 },
       ],
     },
@@ -154,7 +154,7 @@ export default function EventDashboard() {
       id: 4,
       name: "Rendimiento Técnico",
       description: "Garantizar que el sistema sea rápido, estable y confiable",
-      progress: 0,
+      progress: 45,
       color: "#EAB308",
       subObjectives: [
         { id: 1, name: "Tiempo promedio de carga del sitio - Meta: < 2.5s", progress: 0 },
