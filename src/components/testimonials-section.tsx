@@ -36,7 +36,6 @@ export function TestimonialsSection() {
     <section className="bg-blue-50 py-16 lg:py-24 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="text-center mb-16">
-
           <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-6">
             Reseñas de
             <span className="block bg-gradient-to-r  from-blue-500 to-cyan-500 bg-clip-text text-transparent">
