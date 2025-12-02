@@ -621,7 +621,7 @@ const handleAddEvent = async () => {
                     <Button
                       type="button"
                       onClick={() => setShowTelefono2(true)}
-                      className="bg-blue-500 text-white px-3 py-1 rounded-xl"
+                      className="ursor-pointer rounded-md border px-2 py-1 bg-blue-500 text-white text-sm hover:bg-blue-600 w-60 text-center"
                     >
                       + Agregar otro teléfono
                     </Button>
@@ -650,7 +650,7 @@ const handleAddEvent = async () => {
                           setShowTelefono2(false);
                           setNewEvent({ ...newEvent, telefono2: "" }); // limpiar al quitar
                         }}
-                        className="bg-red-500 text-white px-3 py-1 rounded-xl mt-2"
+                        className="ursor-pointer rounded-md border px-2 py-1 bg-red-500 text-white text-sm hover:bg-blue-600 w-60 text-center"
                       >
                         – Quitar teléfono
                       </Button>
@@ -720,7 +720,7 @@ const handleAddEvent = async () => {
                   <Label htmlFor="costo">Valor de la entrada</Label>
                   <NumericFormat
                     id="costo"
-                    value={newEvent.costo}
+                    value={newEvent.costo || ""}
                     prefix="$"
                     thousandSeparator="."
                     decimalSeparator=","
@@ -731,6 +731,7 @@ const handleAddEvent = async () => {
                     className="rounded-xl border px-2 py-1 w-full"
                   />
                 </div>
+
                 <div className="space-y-2">
                     <Label htmlFor="attendees">Aforo del evento</Label>
                     <Input
@@ -756,7 +757,7 @@ const handleAddEvent = async () => {
                     htmlFor="imagenes"
                     className="cursor-pointer rounded-md border px-2 py-1 bg-blue-500 text-white text-sm hover:bg-blue-600 w-60 text-center"
                   >
-                    Seleccionar imágenes
+                    Cargar imágenes
                   </label>
 
                 <input
@@ -772,17 +773,18 @@ const handleAddEvent = async () => {
                     // Limitar a máximo 6
                     if (files.length > 6) {
                       alert("Solo puedes subir hasta 6 imágenes por evento.");
-                      files = files.slice(0, 6);
+                      setNewEvent((prev) => ({ ...prev, imagenes: [] }));
+                      setPreview([]); // limpia las previews
+                      return; // salir de la función
                     }
 
+                    // Si cumple la regla → guardar y mostrar previews
                     setNewEvent((prev) => ({ ...prev, imagenes: files }));
 
-                    // Generar previews
                     const previews = files.map((file) => URL.createObjectURL(file));
                     setPreview(previews);
                   }}
                 />
-
                   {preview.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
                       {preview.map((src, i) => (
@@ -796,6 +798,49 @@ const handleAddEvent = async () => {
                     </div>
                   )}
                 </div>
+
+                <div className="flex flex-col space-y-2">
+                  <label htmlFor="documento" className="font-medium">
+                    Permiso del IMCT
+                  </label>
+
+                  {/* Botón estilizado */}
+                  <label
+                    htmlFor="documento"
+                    className="cursor-pointer rounded-md border px-3 py-1 bg-blue-500 text-white text-sm hover:bg-blue-600 w-60 text-center"
+                  >
+                    Cargar PDF
+                  </label>
+
+                  {/* Input oculto */}
+                  <input
+                    id="documento"
+                    type="file"
+                    accept="application/pdf"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (!e.target.files) return;
+                      const file = e.target.files[0];
+
+                      // Validar que sea PDF
+                      if (file && file.type !== "application/pdf") {
+                        alert("Solo se permiten archivos PDF.");
+                        return;
+                      }
+
+                      // Guardar en tu estado
+                      setNewEvent((prev) => ({ ...prev, documento: file }));
+                    }}
+                  />
+
+                  {/* Mostrar nombre del archivo */}
+                  {newEvent.documento && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Archivo seleccionado: {newEvent.documento.name}
+                    </p>
+                  )}
+                </div>
+
 
                 <div className="flex gap-4 pt-6">
                   <Button

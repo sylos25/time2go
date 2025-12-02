@@ -132,7 +132,9 @@ export function Header({
       {/* Header */}
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? "bg-white/95 backdrop-blur-md shadow-lg border-b border-white/20" : "bg-white/90 backdrop-blur-sm"
+          scrolled
+            ? "bg-gradient-to-r from-blue-900 via-purple-900 to-violet-900 backdrop-blur-md shadow-lg border-b border-white/10"
+            : "bg-gradient-to-r from-blue-800 via-purple-800 to-violet-800 backdrop-blur-sm"
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -141,7 +143,7 @@ export function Header({
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden"
+              className="lg:hidden text-white hover:bg-white/10"
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label="Toggle menu"
             >
@@ -156,7 +158,7 @@ export function Header({
               <div className="w-10 h-10 lg:w-12 lg:h-12 relative">
                 <Image src="/images/logo.svg?height=48&width=48" alt="Time2Go Logo" fill className="object-contain" />
               </div>
-              <h1 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent cursor-pointer">
+              <h1 className="text-xl lg:text-2xl font-bold text-white cursor-pointer">
                 Time2Go
               </h1>
             </button>
@@ -167,17 +169,17 @@ export function Header({
                 <button
                   key={item.name}
                   onClick={() => navigateTo(item.path)}
-                  className="text-gray-700 hover:text-blue-600 font-medium transition-colors relative group cursor-pointer"
+                  className="text-white/90 hover:text-white font-medium transition-colors relative group cursor-pointer"
                 >
                   {item.name}
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 transition-all group-hover:w-full" />
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full" />
                 </button>
               ))}
 
               {!loggedIn ? (
                 <Button
                   onClick={() => onAuthClick(true)}
-                  className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-500 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                  className="bg-white text-purple-900 hover:bg-white/90 font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-sm"
                 >
                   Únete
                 </Button>
@@ -187,7 +189,7 @@ export function Header({
                     <Button
                       onClick={() => navigateTo("/dashboard")}
                       variant="outline"
-                      className="border-blue-600 text-blue-600 hover:bg-blue-50 font-medium"
+                      className="border-white/30 text-white hover:bg-white/10 font-medium rounded-sm"
                     >
                       <LayoutDashboard className="h-4 w-4 mr-2" />
                       Dashboard
@@ -196,11 +198,13 @@ export function Header({
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="flex items-center gap-2 hover:bg-blue-50">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center text-white font-medium">
+                      <Button
+                        variant="ghost"
+                        className="flex items-center gap-2 hover:bg-white/10 text-white rounded-sm">
+                        <div className="w-8 h-8 rounded-sm bg-white flex items-center justify-center text-purple-900 font-medium">
                           {displayName.charAt(0).toUpperCase()}
                         </div>
-                        <span className="font-medium text-gray-700">{displayName}</span>
+                        <span className="font-medium">{displayName}</span>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
@@ -234,15 +238,15 @@ export function Header({
               <Button
                 onClick={() => onAuthClick(true)}
                 size="sm"
-                className="lg:hidden bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-500 text-white"
+                className="lg:hidden bg-white text-purple-900 hover:bg-white/90 rounded-sm"
               >
                 Únete
               </Button>
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="lg:hidden">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center text-white font-medium text-sm">
+                  <Button variant="ghost" size="icon" className="lg:hidden hover:bg-white/10 rounded-sm">
+                    <div className="w-8 h-8 rounded-sm bg-white flex items-center justify-center text-purple-900 font-medium text-sm">
                       {userName.charAt(0).toUpperCase()}
                     </div>
                   </Button>
@@ -304,11 +308,11 @@ export function Header({
             ))}
           </ul>
 
-          <div className="mt-8 pt-8 border-t border-gray-200">
+          <div className="mt-8 pt-8 border-t border-white/20">
             {!isLoggedIn ? (
               <Button
                 onClick={() => onAuthClick(true)}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium shadow-lg hover:shadow-xl transition-all"
+                className="w-full bg-white text-purple-900 hover:bg-white/90 font-medium shadow-lg hover:shadow-xl transition-all rounded-sm"
               >
                 Únete a Time2Go
               </Button>
@@ -318,7 +322,7 @@ export function Header({
                   <Button
                     onClick={() => navigateTo("/dashboard")}
                     variant="outline"
-                    className="w-full border-blue-600 text-blue-600 hover:bg-blue-50"
+                    className="w-full border-red-400/30 text-red-400 hover:bg-red-400/10 bg-transparent rounded-sm"
                   >
                     <LayoutDashboard className="h-4 w-4 mr-2" />
                     Dashboard

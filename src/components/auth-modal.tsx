@@ -142,9 +142,9 @@ const [formData, setFormData] = useState(formDataInicial);
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto ">
+      <DialogContent className="sm:max-w-md rounded-sm">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
+          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600 bg-clip-text text-transparent">
             {isLogin ? "Bienvenido de vuelta" : "Únete a Time2Go"}
           </DialogTitle>
           <p className="text-center text-gray-600 mt-2 " >
@@ -154,7 +154,7 @@ const [formData, setFormData] = useState(formDataInicial);
           </p>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
         {!isLogin && (
               <div className="space-y-2">
                 <Label htmlFor="tipoDoc" className="text-sm font-medium">
@@ -369,7 +369,7 @@ const [formData, setFormData] = useState(formDataInicial);
 
           <Button
             type="submit"
-            className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-700 hover:to-cyan-500 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
+            className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600 hover:from-blue-700 hover:via-purple-700 hover:to-violet-700 text-white font-medium rounded-sm"
           >
             {isLogin ? "Iniciar Sesión" : "Crear Cuenta"}
           </Button>
@@ -381,12 +381,12 @@ const [formData, setFormData] = useState(formDataInicial);
           </p>
         )}
 
-        <div className="mt-6 text-center">
+        <div className="text-center text-sm">
           <span className="text-sm text-gray-600">{isLogin ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}</span>
           <Button
             variant="link"
             onClick={onToggleMode}
-            className="text-sm font-medium text-blue-600 hover:text-blue-500 ml-1 p-0 cursor-pointer"
+            className="ml-1 text-purple-600 hover:text-purple-700 font-medium"
           >
             {isLogin ? "Regístrate aquí" : "Inicia sesión"}
           </Button>
