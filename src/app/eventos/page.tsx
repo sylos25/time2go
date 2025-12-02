@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Calendar, MapPin, Users, Search, Filter, Heart, Share2, Star, X, Clock, Info, Plus } from "lucide-react";
 import { NumericFormat } from "react-number-format";
+import imageCompression from "browser-image-compression";
 
 interface ImagenEvento {
   id_imagen_evento: number;
@@ -84,8 +85,52 @@ const [newEvent, setNewEvent] = useState<Partial<Event>>({
   costo: 0,
   cupo: 0,
   estado: true,
-  imagenes: [], // aquí se guardarán las imágenes seleccionadas
+  imagenes: [] as File[], // aquí se guardarán las imágenes seleccionadas
 });
+
+const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    let files = Array.from(e.target.files);
+
+    // Limitar cantidad
+    if (files.length > 6) {
+      alert("Solo puedes subir 6 imágenes por evento.");
+      files = files.slice(0, 6);
+    }
+
+    // Validar y comprimir
+    const compressedFiles = await Promise.all(
+      files.map(async (file) => {
+        if (file.type !== "image/jpeg") {
+          alert("Solo se permiten imágenes en formato JPG.");
+          return null;
+        }
+
+        const options = {
+          maxSizeMB: 2,              // máximo 2 MB
+          maxWidthOrHeight: 1280,    // redimensionar si es muy grande
+          useWebWorker: true,
+        };
+        return await imageCompression(file, options);
+      })
+    );
+
+    // Filtrar nulos (por si algún archivo no era JPG)
+    const validFiles = compressedFiles.filter((f): f is File => f !== null);
+
+    // Guardar en el estado del evento
+    setNewEvent((prev) => ({ ...prev, imagenes: validFiles }));
+
+    // Generar previews
+    const previews = validFiles.map((file) => URL.createObjectURL(file));
+    setPreview(previews);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Evento listo para enviar:", newEvent);
+    // Aquí podrías hacer un fetch/axios POST al backend
+  };
 
   useEffect(() => {
     const fetchEventos = async () => {
@@ -702,94 +747,54 @@ const handleAddEvent = async () => {
                   </div>
                 </div>
 
-<div className="space-y-2">
-  <label htmlFor="imagenes" className="font-medium">
-    Imágenes del evento *
-  </label>
-  <input
-    id="imagenes"
-    type="file"
-    multiple
-    accept="image/*"
-    className="rounded-xl border p-2"
-    onChange={(e) => {
-      if (!e.target.files) return;
-      const files = Array.from(e.target.files);
-      setNewEvent((prev) => ({ ...prev, imagenes: files }));
+                <div className="flex flex-col space-y-2">
+                  <label htmlFor="imagenes" className="font-medium">
+                    Imágenes del evento
+                  </label>
 
-      // Generar previews
-      const previews = files.map((file) => URL.createObjectURL(file));
-      setPreview(previews);
-    }}
-  />
+                  <label
+                    htmlFor="imagenes"
+                    className="cursor-pointer rounded-md border px-2 py-1 bg-blue-500 text-white text-sm hover:bg-blue-600 w-60 text-center"
+                  >
+                    Seleccionar imágenes
+                  </label>
 
-  {/* Previews */}
-  {preview.length > 0 && (
-    <div className="flex flex-wrap gap-2 mt-2">
-      {preview.map((src, i) => (
-        <img
-          key={i}
-          src={src}
-          alt={`preview-${i}`}
-          className="w-24 h-24 object-cover rounded-lg border"
-        />
-      ))}
-    </div>
-  )}
-</div>
+                <input
+                  id="imagenes"
+                  type="file"
+                  multiple
+                  accept="image/jpeg"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (!e.target.files) return;
+                    let files = Array.from(e.target.files);
 
-                <div className="space-y-6">
-                  <h1 className="text-2xl font-bold">Eventos</h1>
-                  {eventos.map((evento) => (
-                    <div key={evento.id_evento} className="border rounded-xl p-4">
-                      <h2 className="text-xl font-semibold">{evento.nombre_evento}</h2>
-                      <p>{evento.descripcion}</p>
-                      <p>
-                        {evento.fecha_inicio} - {evento.fecha_fin}
-                      </p>
-                      <div className="flex gap-2 mt-2">
-                        {evento.imagenes.map((img) => (
-                          <img
-                            key={img.id_imagen_evento}
-                            src={img.url_imagen_evento}
-                            alt="imagen evento"
-                            className="w-32 h-32 object-cover rounded-lg border"
-                          />
-                        ))}
-                      </div>
+                    // Limitar a máximo 6
+                    if (files.length > 6) {
+                      alert("Solo puedes subir hasta 6 imágenes por evento.");
+                      files = files.slice(0, 6);
+                    }
+
+                    setNewEvent((prev) => ({ ...prev, imagenes: files }));
+
+                    // Generar previews
+                    const previews = files.map((file) => URL.createObjectURL(file));
+                    setPreview(previews);
+                  }}
+                />
+
+                  {preview.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {preview.map((src, i) => (
+                        <img
+                          key={i}
+                          src={src}
+                          alt={`preview-${i}`}
+                          className="w-32 h-32 object-cover rounded-lg border"
+                        />
+                      ))}
                     </div>
-                  ))}
-                </div>
-
-
-                <div className="space-y-2">
-                  <Label>URLs de Imágenes Adicionales (3)</Label>
-                  <div className="grid md:grid-cols-3 gap-4">
-                    {[0, 1, 2].map((index) => (
-                      <Input
-                        key={index}
-                        value={newEvent.additionalImages?.[index] || ""}
-                        onChange={(e) => updateAdditionalImage(index, e.target.value)}
-                        placeholder={`Imagen ${index + 1}`}
-                        className="rounded-xl"
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Destacados del Evento (4)</Label>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {[0, 1, 2, 3].map((index) => (
-                      <Input
-                        key={index}
-                        value={newEvent.highlights?.[index] || ""}
-                        onChange={(e) => updateHighlight(index, e.target.value)}
-                        placeholder={`Destacado ${index + 1}`}
-                        className="rounded-xl"
-                      />
-                    ))}
-                  </div>
+                  )}
                 </div>
 
                 <div className="flex gap-4 pt-6">
