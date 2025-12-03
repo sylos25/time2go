@@ -880,7 +880,13 @@ const handleAddEvent = async () => {
                         name="tipoEntrada"
                         checked={!newEvent.pago}
                         onChange={() =>
-                          setNewEvent({ ...newEvent, pago: false, costos: [""] }) // 🚨 limpia costos al seleccionar gratis
+                          setNewEvent({
+                            ...newEvent,
+                            pago: false,
+                            costos: [""],
+                            tiposBoleteria: [""],
+                            linksBoleteria: [""]
+                          }) // limpia todos los datos relacionados con 'pago' al seleccionar Gratis
                         }
                       />
                       Gratis
