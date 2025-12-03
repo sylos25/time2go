@@ -67,6 +67,16 @@ export default function EventosPage() {
   // NOTE: use `events` state (unified) instead of a separate `eventos`
   const [preview, setPreview] = useState<string[]>([]);
 
+const TIPOS_BOLETERIA = [
+  "General",
+  "Estudiante",
+  "Adulto Mayor",
+  "VIP",
+  "Premium",
+  "Acceso Temprano",
+  "Familia"
+];
+
 const [newEvent, setNewEvent] = useState<any>({
   nombre_evento: "",
   id_usuario: 0,
@@ -80,11 +90,13 @@ const [newEvent, setNewEvent] = useState<any>({
   telefono2: "",
   fecha_inicio: "",
   fecha_final: "",
-  dias_semana: "",
+  diasSeleccionados: [] as string[], // array de fechas YYYY-MM-DD
   hora_inicio: "",
   hora_final: "",
   pago: false,
   costos: [""],
+  tiposBoleteria: [""] as string[], // tipos de boletería para cada costo
+  linksBoleteria: [""] as string[], // links para comprar boletería (máx 5)
   cupo: "",
   estado: true,
   imagenes: [] as File[], // aquí se guardarán las imágenes seleccionadas
@@ -104,6 +116,41 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   }
 };
 
+// Generar rango de fechas entre fecha_inicio y fecha_final
+const generarRangoDias = (inicio: string, fin: string): string[] => {
+  if (!inicio || !fin) return [];
+  const diasArray: string[] = [];
+  const current = new Date(inicio + "T00:00:00");
+  const end = new Date(fin + "T00:00:00");
+  while (current <= end) {
+    const year = current.getFullYear();
+    const month = String(current.getMonth() + 1).padStart(2, "0");
+    const day = String(current.getDate()).padStart(2, "0");
+    diasArray.push(`${year}-${month}-${day}`);
+    current.setDate(current.getDate() + 1);
+  }
+  return diasArray;
+};
+
+// Toggle selección de un día
+const toggleDiaSeleccionado = (fecha: string) => {
+  setNewEvent((prev: any) => {
+    const selected = prev.diasSeleccionados || [];
+    if (selected.includes(fecha)) {
+      return { ...prev, diasSeleccionados: selected.filter((d: string) => d !== fecha) };
+    } else {
+      return { ...prev, diasSeleccionados: [...selected, fecha] };
+    }
+  });
+};
+
+// Helper para formatear fecha a día completo/mes
+const formatDia = (dateStr: string): string => {
+  const date = new Date(dateStr + "T00:00:00");
+  const opciones: Intl.DateTimeFormatOptions = { weekday: "long", day: "numeric", month: "numeric" };
+  return date.toLocaleDateString("es-ES", opciones);
+};
+
   const addCostoField = () => {
     if (newEvent.costos.length < 7) {
       setNewEvent({ ...newEvent, costos: [...newEvent.costos, ""] });
@@ -116,9 +163,42 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewEvent({ ...newEvent, costos: updatedCostos });
   };
 
-    const removeCostoField = (index: number) => {
+  const removeCostoField = (index: number) => {
     const updatedCostos = newEvent.costos.filter((_, i) => i !== index);
-    setNewEvent({ ...newEvent, costos: updatedCostos });
+    const updatedTipos = newEvent.tiposBoleteria.filter((_: string, i: number) => i !== index);
+    setNewEvent({ ...newEvent, costos: updatedCostos, tiposBoleteria: updatedTipos });
+  };
+
+  const removeAllCostos = () => {
+    setNewEvent({ ...newEvent, costos: [""], tiposBoleteria: [""] });
+  };
+
+  // Obtener tipos disponibles (no seleccionados en otros campos)
+  const getAvailableTypes = (currentIndex: number): string[] => {
+    const selectedTypes = newEvent.tiposBoleteria.filter((_: string, i: number) => i !== currentIndex);
+    return TIPOS_BOLETERIA.filter(tipo => !selectedTypes.includes(tipo));
+  };
+
+  // Handlers para links de boletería
+  const addLinkBoleteria = () => {
+    if (newEvent.linksBoleteria.length < 5) {
+      setNewEvent({ ...newEvent, linksBoleteria: [...newEvent.linksBoleteria, ""] });
+    }
+  };
+
+  const updateLinkBoleteria = (index: number, value: string) => {
+    const updatedLinks = [...newEvent.linksBoleteria];
+    updatedLinks[index] = value;
+    setNewEvent({ ...newEvent, linksBoleteria: updatedLinks });
+  };
+
+  const removeLinkBoleteria = (index: number) => {
+    const updatedLinks = newEvent.linksBoleteria.filter((_: string, i: number) => i !== index);
+    setNewEvent({ ...newEvent, linksBoleteria: updatedLinks });
+  };
+
+  const removeAllLinksBoleteria = () => {
+    setNewEvent({ ...newEvent, linksBoleteria: [""] });
   };
 
 
@@ -279,7 +359,7 @@ const handleAddEvent = async () => {
     formData.append("fecha_fin", newEvent.fecha_final || "");
     formData.append("hora_inicio", newEvent.hora_inicio || "");
     formData.append("hora_final", newEvent.hora_final || "");
-    formData.append("dias_semana", newEvent.dias_semana || "");
+    formData.append("dias_semana", JSON.stringify(newEvent.diasSeleccionados || []));
     formData.append("id_usuario", String(newEvent.id_usuario || 0));
     formData.append("id_categoria_evento", String(newEvent.id_categoria_evento || 0));
     formData.append("id_tipo_evento", String(newEvent.id_tipo_evento || 0));
@@ -324,7 +404,7 @@ const handleAddEvent = async () => {
       telefono2: "",
       fecha_inicio: "",
       fecha_final: "",
-      dias_semana: "",
+      diasSeleccionados: [],
       hora_inicio: "",
       hora_final: "",
       costo: 0,
@@ -333,6 +413,9 @@ const handleAddEvent = async () => {
       imagenes: [],
       documento: null,
       costos: [""],
+      tiposBoleteria: [""],
+      linksBoleteria: [""],
+      diasSeleccionados: [],
       highlights: [],
       additionalImages: [],
     });
@@ -704,7 +787,7 @@ const handleAddEvent = async () => {
                     </div>
                   )}
 
-                <div className="grid md:grid-cols-3 gap-6">
+                <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="date">Fecha de inicio del evento</Label>
                     <Input
@@ -722,23 +805,48 @@ const handleAddEvent = async () => {
                       id="date"
                       type="date"
                       value={newEvent.fecha_final}
-                      onChange={(e) => setNewEvent({ ...newEvent, fecha_final: e.target.value })}
+                      onChange={(e) => setNewEvent({ ...newEvent, fecha_final: e.target.value, diasSeleccionados: [] })}
                       className="rounded-xl"
                     />
                   </div>
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Dias al que se puede asistir al evento *</Label>
-                    <Input
-                      id="title"
-                      value={newEvent.dias_semana}
-                      onChange={(e) => setNewEvent({ ...newEvent, dias_semana: e.target.value })}
-                      placeholder="Ej: Lunes, Martes, Miercoles..."
-                      className="rounded-xl"
-                    />
+                <div className="space-y-2">
+                  <Label htmlFor="title">Días en los que se puede asistir al evento *</Label>
+                  <div className="p-4 border rounded-xl bg-gray-50">
+                    {generarRangoDias(newEvent.fecha_inicio, newEvent.fecha_final).length > 0 ? (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                          {generarRangoDias(newEvent.fecha_inicio, newEvent.fecha_final).map((fecha) => (
+                            <label
+                              key={fecha}
+                              className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                newEvent.diasSeleccionados.includes(fecha)
+                                  ? "bg-blue-100 border-blue-500"
+                                  : "bg-white border-gray-300 hover:border-blue-300"
+                              }`}
+                            >
+                              <span className="text-xs font-semibold text-gray-700">{formatDia(fecha)}</span>
+                              <input
+                                type="checkbox"
+                                checked={newEvent.diasSeleccionados.includes(fecha)}
+                                onChange={() => toggleDiaSeleccionado(fecha)}
+                                className="w-5 h-5 cursor-pointer"
+                              />
+                            </label>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-600 text-center">
+                          Seleccionados: {newEvent.diasSeleccionados.length} día(s)
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">Selecciona primero las fechas de inicio y fin</p>
+                    )}
                   </div>
+                </div>
 
-
+                <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="time">Hora de inicio</Label>
                     <Input
@@ -789,53 +897,149 @@ const handleAddEvent = async () => {
                     </label>
                   </div>
 
-                  <h2 className="text-lg font-semibold">Valores de la entrada</h2>
-
-                  {newEvent.costos.map((costo, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <NumericFormat
-                        value={costo}
-                        prefix="$"
-                        thousandSeparator="."
-                        decimalSeparator=","
-                        onValueChange={(values) => updateCosto(index, values.value)}
-                        placeholder="$100.000"
-                        className="rounded-xl border px-2 py-1 w-full"
-                        disabled={!newEvent.pago} // 🚨 deshabilitado si es gratis
-                      />
-                      {newEvent.costos.length > 1 && newEvent.pago && (
-                        <button
-                          type="button"
-                          onClick={() => removeCostoField(index)}
-                          className="bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600"
-                        >
-                          Quitar
-                        </button>
-                      )}
-                    </div>
-                  ))}
-
                   {newEvent.pago && (
-                    <div className="flex justify-between items-center">
-                      <button
-                        type="button"
-                        onClick={addCostoField}
-                        disabled={newEvent.costos.length >= 7}
-                        className={`px-3 py-1 rounded-md text-white ${
-                          newEvent.costos.length >= 7
-                            ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-blue-500 hover:bg-blue-600"
-                        }`}
-                      >
-                        + Añadir campo
-                      </button>
+                    <div className="space-y-4 p-4 border rounded-lg shadow-md">
+                      <h2 className="text-lg font-semibold">Valores de la entrada</h2>
 
-                      <span className="text-sm text-gray-600">
-                        {newEvent.costos.length}/7 campos usados
-                      </span>
+                      {newEvent.costos.map((costo, index) => (
+                        <div key={index} className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={newEvent.tiposBoleteria[index] || ""}
+                              onChange={(e) => {
+                              const updatedTipos = [...newEvent.tiposBoleteria];
+                              updatedTipos[index] = e.target.value;
+                              setNewEvent({ ...newEvent, tiposBoleteria: updatedTipos });
+                              }}
+                              className="rounded-xl border px-3 py-2 w-40"
+                          >
+                              <option value="">Selecciona tipo</option>
+                              {getAvailableTypes(index).map((tipo) => (
+                              <option key={tipo} value={tipo}>
+                                  {tipo}
+                              </option>
+                              ))}
+                              {newEvent.tiposBoleteria[index] && (
+                              <option value={newEvent.tiposBoleteria[index]}>
+                                  {newEvent.tiposBoleteria[index]}
+                              </option>
+                              )}
+                          </select>
+                          <NumericFormat
+                              value={costo}
+                              prefix="$"
+                              thousandSeparator="."
+                              decimalSeparator=","
+                              onValueChange={(values) => updateCosto(index, values.value)}
+                              placeholder="$100.000"
+                              className="rounded-xl border px-2 py-1 flex-1"
+                              disabled={!newEvent.pago}
+                          />
+                          {newEvent.costos.length > 1 && newEvent.pago && (
+                              <button
+                              type="button"
+                              onClick={() => removeCostoField(index)}
+                              className="bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600"
+                              >
+                              Quitar
+                              </button>
+                          )}
+                          </div>
+                        </div>
+                      ))}
+
+                      <div className="flex justify-between items-center gap-3">
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={addCostoField}
+                            disabled={newEvent.costos.length >= 7}
+                            className={`px-3 py-1 rounded-md text-white ${
+                              newEvent.costos.length >= 7
+                                ? "bg-gray-400 cursor-not-allowed"
+                                : "bg-blue-500 hover:bg-blue-600"
+                            }`}
+                          >
+                            + Añadir campo
+                          </button>
+                          {newEvent.costos.length >= 2 && (
+                            <button
+                              type="button"
+                              onClick={removeAllCostos}
+                              className="px-3 py-1 rounded-md text-white bg-red-600 hover:bg-red-700"
+                            >
+                              Eliminar todos
+                            </button>
+                          )}
+                        </div>
+
+                        <span className="text-sm text-gray-600">
+                          {newEvent.costos.length}/7 campos usados
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>
+
+                {newEvent.pago && (
+                  <div className="space-y-4 p-4 border rounded-lg shadow-md bg-blue-50">
+                    <h2 className="text-lg font-semibold">Links de boletería</h2>
+
+                    {newEvent.linksBoleteria.map((link, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Input
+                          type="url"
+                          value={link}
+                          onChange={(e) => updateLinkBoleteria(index, e.target.value)}
+                          placeholder="Ej: https://example.com/tickets"
+                          className="rounded-xl flex-1"
+                        />
+                        {newEvent.linksBoleteria.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeLinkBoleteria(index)}
+                            className="bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600 whitespace-nowrap"
+                          >
+                            Quitar
+                          </button>
+                        )}
+                      </div>
+                    ))}
+
+                    <div className="flex justify-between items-center gap-3">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={addLinkBoleteria}
+                          disabled={newEvent.linksBoleteria.length >= 5}
+                          className={`px-3 py-1 rounded-md text-white ${
+                            newEvent.linksBoleteria.length >= 5
+                              ? "bg-gray-400 cursor-not-allowed"
+                              : "bg-blue-500 hover:bg-blue-600"
+                          }`}
+                        >
+                          + Añadir link
+                        </button>
+                        {newEvent.linksBoleteria.length >= 2 && (
+                          <button
+                            type="button"
+                            onClick={removeAllLinksBoleteria}
+                            className="px-3 py-1 rounded-md text-white bg-red-600 hover:bg-red-700"
+                          >
+                            Eliminar todos
+                          </button>
+                        )}
+                      </div>
+
+                      <span className="text-sm text-gray-600">
+                        {newEvent.linksBoleteria.length}/5 links
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 italic">
+                      Agrega los links donde tus usuarios pueden comprar las boletería
+                    </p>
+                  </div>
+                )}
 
 
 
