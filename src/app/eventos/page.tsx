@@ -36,7 +36,7 @@ interface Event {
   telefono_1: string;               // corregido: antes tenías telefono1
   telefono_2?: string;              // opcional
   costo: number;
-  cupo: number;
+  cupo: number | "";
   estado: boolean;
   imagenes: {                       // relación con tabla_imagenes_eventos
     id_imagen_evento: number;
@@ -48,7 +48,7 @@ interface Event {
   const initialEvents: Event[] = []
 
 export default function EventosPage() {
-  const [events, setEvents] = useState<Event[]>(initialEvents)
+  const [events, setEvents] = useState<any[]>(initialEvents)
   const [showAddEventForm, setShowAddEventForm] = useState(false)
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [isLogin, setIsLogin] = useState(true)
@@ -64,10 +64,10 @@ export default function EventosPage() {
   const [busquedaMunicipio, setBusquedaMunicipio] = useState("");
   const [municipios, setMunicipios] = useState([]);
   const [showTelefono2, setShowTelefono2] = useState(false);
-  const [eventos, setEventos] = useState<any[]>([]);
+  // NOTE: use `events` state (unified) instead of a separate `eventos`
   const [preview, setPreview] = useState<string[]>([]);
 
-const [newEvent, setNewEvent] = useState<Partial<Event>>({
+const [newEvent, setNewEvent] = useState<any>({
   nombre_evento: "",
   id_usuario: 0,
   id_categoria_evento: 0,
@@ -75,18 +75,52 @@ const [newEvent, setNewEvent] = useState<Partial<Event>>({
   id_municipio: 0,
   id_sitio: 0,
   descripcion: "",
-  telefono_1: "",
-  telefono_2: "",
+  // use telefones without underscore for form fields; we'll map to backend names on submit
+  telefono1: "",
+  telefono2: "",
   fecha_inicio: "",
-  fecha_fin: "",
+  fecha_final: "",
   dias_semana: "",
   hora_inicio: "",
   hora_final: "",
-  costo: 0,
-  cupo: 0,
+  pago: false,
+  costos: [""],
+  cupo: "",
   estado: true,
   imagenes: [] as File[], // aquí se guardarán las imágenes seleccionadas
+  documento: null,
+  highlights: [],
+  additionalImages: [],
 });
+
+// handler para el campo `cupo`
+const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const value = e.target.value;
+  if (value === "") return setNewEvent({ ...newEvent, cupo: "" });
+  const num = Number(value);
+  if (!Number.isNaN(num)) {
+    // limitar entre 1 y 5000
+    if (num >= 1 && num <= 5000) setNewEvent({ ...newEvent, cupo: num });
+  }
+};
+
+  const addCostoField = () => {
+    if (newEvent.costos.length < 7) {
+      setNewEvent({ ...newEvent, costos: [...newEvent.costos, ""] });
+    }
+  };
+
+  const updateCosto = (index: number, value: string) => {
+    const updatedCostos = [...newEvent.costos];
+    updatedCostos[index] = value;
+    setNewEvent({ ...newEvent, costos: updatedCostos });
+  };
+
+    const removeCostoField = (index: number) => {
+    const updatedCostos = newEvent.costos.filter((_, i) => i !== index);
+    setNewEvent({ ...newEvent, costos: updatedCostos });
+  };
+
 
 const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -134,9 +168,14 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
   useEffect(() => {
     const fetchEventos = async () => {
-      const res = await fetch("/api/events");
-      const data = await res.json();
-      if (data.ok) setEventos(data.eventos);
+      try {
+        const res = await fetch("/api/events");
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.eventos)) setEvents(data.eventos);
+        else if (Array.isArray(data)) setEvents(data);
+      } catch (err) {
+        console.error("Error fetching events:", err);
+      }
     };
     fetchEventos();
   }, []);
@@ -233,33 +272,34 @@ const handleAddEvent = async () => {
   try {
     const formData = new FormData();
 
-    // Campos del evento
+    // Campos del evento (mapeo seguro desde los campos del formulario)
     formData.append("nombre_evento", newEvent.nombre_evento || "");
     formData.append("descripcion", newEvent.descripcion || "");
     formData.append("fecha_inicio", newEvent.fecha_inicio || "");
-    formData.append("fecha_fin", newEvent.fecha_fin || ""); // corregido: fecha_fin
+    formData.append("fecha_fin", newEvent.fecha_final || "");
     formData.append("hora_inicio", newEvent.hora_inicio || "");
     formData.append("hora_final", newEvent.hora_final || "");
     formData.append("dias_semana", newEvent.dias_semana || "");
-    formData.append("id_usuario", String(id_usuario));
+    formData.append("id_usuario", String(newEvent.id_usuario || 0));
     formData.append("id_categoria_evento", String(newEvent.id_categoria_evento || 0));
-    formData.append("id_tipo_evento", String(mapCategoryToTipoId(newEvent.category || "Música")));
-    formData.append("id_municipio", String(mapLocationToMunicipioId(newEvent.location || "")));
+    formData.append("id_tipo_evento", String(newEvent.id_tipo_evento || 0));
+    formData.append("id_municipio", String(newEvent.id_municipio || 0));
     formData.append("id_sitio", String(newEvent.id_sitio || 0));
-    formData.append("telefono_1", newEvent.telefono_1 || "");
-    formData.append("telefono_2", newEvent.telefono_2 || "");
+    // transform phone fields to backend expected names
+    formData.append("telefono_1", newEvent.telefono1 || newEvent.telefono_1 || "");
+    formData.append("telefono_2", newEvent.telefono2 || newEvent.telefono_2 || "");
     formData.append("costo", String(newEvent.costo || 0));
     formData.append("cupo", String(newEvent.cupo || 0));
     formData.append("estado", String(newEvent.estado ?? true));
 
     // Imágenes (array de File)
-    newEvent.imagenes?.forEach((file: File) => {
+    (newEvent.imagenes || []).forEach((file: File) => {
       formData.append("additionalImages", file);
     });
 
     const res = await fetch("/api/events", {
       method: "POST",
-      body: formData, // 👈 ya no usamos headers ni JSON.stringify
+      body: formData,
     });
 
     if (!res.ok) throw new Error("Error al crear el evento");
@@ -271,7 +311,7 @@ const handleAddEvent = async () => {
 
     setShowAddEventForm(false);
 
-    // Reset del formulario
+    // Reset del formulario (manteniendo la misma forma que el estado inicial)
     setNewEvent({
       nombre_evento: "",
       id_usuario: 0,
@@ -280,17 +320,21 @@ const handleAddEvent = async () => {
       id_municipio: 0,
       id_sitio: 0,
       descripcion: "",
-      telefono_1: "",
-      telefono_2: "",
+      telefono1: "",
+      telefono2: "",
       fecha_inicio: "",
-      fecha_fin: "",
+      fecha_final: "",
       dias_semana: "",
       hora_inicio: "",
       hora_final: "",
       costo: 0,
-      cupo: 0,
+      cupo: "",
       estado: true,
       imagenes: [],
+      documento: null,
+      costos: [""],
+      highlights: [],
+      additionalImages: [],
     });
   } catch (error) {
     console.error("Error al guardar el evento:", error);
@@ -361,8 +405,10 @@ const handleAddEvent = async () => {
   // Eventos destacados (si decides mantener rating visual)
   const topRatedEvents = events.slice(0, 3); // puedes ordenar por cupo o costo si no usas rating
   
-  // Evento expandido
-  const expandedEvent = expandedEventId ? events.find((e) => e.id === expandedEventId) : null;
+  // Evento expandido: support backend `id_evento` or frontend `id`
+  const expandedEvent = expandedEventId
+    ? events.find((e: any) => (e.id_evento ?? e.id) === expandedEventId)
+    : null;
   
 
   
@@ -406,7 +452,7 @@ const handleAddEvent = async () => {
                       <div className="space-y-3">
                         {topRatedEvents.map((event) => (
                           <div
-                            key={event.id}
+                            key={event.id_evento ?? event.id}
                             className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
                           >
                             <img
@@ -497,8 +543,8 @@ const handleAddEvent = async () => {
                     <Input
                       id="title"
                       value={newEvent.id_usuario}
-                      onChange={(e) => setNewEvent({ ...newEvent, id_usuario: e.target.value })}
-                      placeholder="Ej: Auto"
+                      onChange={(e) => setNewEvent({ ...newEvent, id_usuario: Number(e.target.value) })}
+                      placeholder="Ej: 12345"
                       className="rounded-xl"
                     />
                   </div>
@@ -598,6 +644,7 @@ const handleAddEvent = async () => {
                     placeholder="Descripción detallada del evento"
                     className="rounded-xl min-h-[100px]"
                   />
+                  
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="telefono1">Teléfono del organizador del evento</Label>
@@ -619,10 +666,10 @@ const handleAddEvent = async () => {
                 </div>
                 {!showTelefono2 && (
                     <Button
-                      type="button"
-                      onClick={() => setShowTelefono2(true)}
-                      className="ursor-pointer rounded-md border px-2 py-1 bg-blue-500 text-white text-sm hover:bg-blue-600 w-60 text-center"
-                    >
+                          type="button"
+                          onClick={() => setShowTelefono2(true)}
+                          className="cursor-pointer rounded-md border px-2 py-1 bg-blue-500 text-white text-sm hover:bg-blue-600 w-60 text-center"
+                        >
                       + Agregar otro teléfono
                     </Button>
                   )}
@@ -650,7 +697,7 @@ const handleAddEvent = async () => {
                           setShowTelefono2(false);
                           setNewEvent({ ...newEvent, telefono2: "" }); // limpiar al quitar
                         }}
-                        className="ursor-pointer rounded-md border px-2 py-1 bg-red-500 text-white text-sm hover:bg-blue-600 w-60 text-center"
+                        className="cursor-pointer rounded-md border px-2 py-1 bg-red-500 text-white text-sm hover:bg-blue-600 w-60 text-center"
                       >
                         – Quitar teléfono
                       </Button>
@@ -715,38 +762,101 @@ const handleAddEvent = async () => {
                   </div>
                 </div>
                 
-                <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="costo">Valor de la entrada</Label>
-                  <NumericFormat
-                    id="costo"
-                    value={newEvent.costo || ""}
-                    prefix="$"
-                    thousandSeparator="."
-                    decimalSeparator=","
-                    onValueChange={(values) =>
-                      setNewEvent({ ...newEvent, costo: values.value })
-                    }
-                    placeholder="$100.000"
-                    className="rounded-xl border px-2 py-1 w-full"
-                  />
+                <div className="space-y-4 p-4 border rounded-lg shadow-md">
+                        {/* Selector Gratis/Pago */}
+
+                  <div className="flex gap-6 items-center">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="tipoEntrada"
+                        checked={!newEvent.pago}
+                        onChange={() =>
+                          setNewEvent({ ...newEvent, pago: false, costos: [""] }) // 🚨 limpia costos al seleccionar gratis
+                        }
+                      />
+                      Gratis
+                    </label>
+
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="tipoEntrada"
+                        checked={newEvent.pago}
+                        onChange={() => setNewEvent({ ...newEvent, pago: true })}
+                      />
+                      Pago
+                    </label>
+                  </div>
+
+                  <h2 className="text-lg font-semibold">Valores de la entrada</h2>
+
+                  {newEvent.costos.map((costo, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <NumericFormat
+                        value={costo}
+                        prefix="$"
+                        thousandSeparator="."
+                        decimalSeparator=","
+                        onValueChange={(values) => updateCosto(index, values.value)}
+                        placeholder="$100.000"
+                        className="rounded-xl border px-2 py-1 w-full"
+                        disabled={!newEvent.pago} // 🚨 deshabilitado si es gratis
+                      />
+                      {newEvent.costos.length > 1 && newEvent.pago && (
+                        <button
+                          type="button"
+                          onClick={() => removeCostoField(index)}
+                          className="bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600"
+                        >
+                          Quitar
+                        </button>
+                      )}
+                    </div>
+                  ))}
+
+                  {newEvent.pago && (
+                    <div className="flex justify-between items-center">
+                      <button
+                        type="button"
+                        onClick={addCostoField}
+                        disabled={newEvent.costos.length >= 7}
+                        className={`px-3 py-1 rounded-md text-white ${
+                          newEvent.costos.length >= 7
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-blue-500 hover:bg-blue-600"
+                        }`}
+                      >
+                        + Añadir campo
+                      </button>
+
+                      <span className="text-sm text-gray-600">
+                        {newEvent.costos.length}/7 campos usados
+                      </span>
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-2">
-                    <Label htmlFor="attendees">Aforo del evento</Label>
-                    <Input
+
+
+              <div className="space-y-2">
+                    <label htmlFor="attendees" className="block font-medium">
+                      Aforo del evento
+                    </label>
+                    <input
                       id="attendees"
                       type="number"
-                      value={newEvent.cupo === 0 ? "" : newEvent.cupo}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setNewEvent({...newEvent, cupo: val === "" ? "" : Number(val) });
-                      }}
-                      placeholder="0"
-                      className="rounded-xl"
+                      min={1}
+                      max={5000}
+                      value={newEvent.cupo === "" ? "" : newEvent.cupo}
+                      onChange={handleChange}
+                      placeholder="Ej: 100"
+                      className="rounded-xl border px-2 py-1 w-full"
                     />
+                    <p className="text-sm text-gray-500">
+                      Ingrese un número entre 1 y 5000
+                    </p>
                   </div>
-                </div>
 
                 <div className="flex flex-col space-y-2">
                   <label htmlFor="imagenes" className="font-medium">
@@ -1007,7 +1117,7 @@ const handleAddEvent = async () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredEvents.map((event) => (
               <Card
-                key={event.id}
+                key={event.id_evento ?? event.id}
                 className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-white/90 backdrop-blur-sm border-white/60 rounded-2xl overflow-hidden"
               >
                 <div className="relative overflow-hidden">
@@ -1066,7 +1176,7 @@ const handleAddEvent = async () => {
                   <div className="flex items-center justify-between">
                     <div className="text-2xl font-bold text-blue-600">${event.price}</div>
                     <Button
-                      onClick={() => handleEventExpand(event.id)}
+                      onClick={() => handleEventExpand(event.id_evento ?? event.id)}
                       className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-700 hover:to-cyan-700 rounded-xl px-6"
                     >
                       Detalles

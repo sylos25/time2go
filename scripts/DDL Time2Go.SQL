@@ -259,8 +259,6 @@ CREATE TABLE IF NOT EXISTS tabla_costos_eventos (
     FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
 );
 
-
-
 CREATE INDEX idx_ciudades_id_pais ON tabla_ciudades(id_pais);
 CREATE INDEX idx_usuarios_id_pais ON tabla_usuarios(id_pais);
 CREATE INDEX idx_usuarios_id_ciudad ON tabla_usuarios(id_ciudad);
