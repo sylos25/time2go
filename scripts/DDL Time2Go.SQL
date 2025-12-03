@@ -35,15 +35,6 @@ CREATE TYPE tip_rol     AS ENUM ('Usuario', 'Promotor', 'Administrador', 'SuperA
 CREATE TYPE estado_pago AS ENUM ('Pendiente', 'Pagado', 'Fallido');
 
 -- CREACION DE TABLAS
-
-CREATE TABLE IF NOT EXISTS tabla_imagenes_eventos (
-    id_imagen_evento        SERIAL                      PRIMARY KEY,
-    url_imagen_evento       VARCHAR                     NOT NULL        UNIQUE,
-    fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
-    id_eventos              INT                         NOT NULL,
-);
-
 CREATE TABLE IF NOT EXISTS tabla_paises (
     id_pais                 INT                         PRIMARY KEY,
     nombre_pais             VARCHAR                     NOT NULL        CHECK (char_length(nombre_pais) >= 3),
@@ -186,6 +177,16 @@ CREATE TABLE IF NOT EXISTS tabla_tipo_eventos (
     FOREIGN KEY (id_categoria_evento) REFERENCES tabla_categorias_eventos(id_categoria_evento)
 );
 
+CREATE TABLE IF NOT EXISTS tabla_imagenes_eventos (
+    id_imagen_evento        SERIAL                      PRIMARY KEY,
+    url_imagen_evento       VARCHAR                     NOT NULL        UNIQUE,
+    fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
+    id_eventos              INT                         NOT NULL
+    FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
+
+);
+
 CREATE TABLE IF NOT EXISTS tabla_eventos (
     id_evento               INT                         PRIMARY KEY,
     nombre_evento           VARCHAR                     NOT NULL        CHECK (char_length(nombre_evento) >= 6),
@@ -194,8 +195,8 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
     id_municipio            INT                         NOT NULL,
     id_sitio                INT                         NOT NULL,
     descripcion             TEXT                        NOT NULL,
-    telefono_1              DECIMAL(10,0)               NOT NULL        CHECK (telefono > 2999999999),
-    telefono_2              DECIMAL(10,0)                               CHECK (telefono > 2999999999),
+    telefono_1              DECIMAL(10,0)               NOT NULL        CHECK (telefono_1 > 2999999999),
+    telefono_2              DECIMAL(10,0)                               CHECK (telefono_2 > 2999999999),
     fecha_inicio            DATE                        NOT NULL,
     fecha_fin               DATE                        NOT NULL,   
     hora_inicio             TIME                        NOT NULL,
@@ -209,8 +210,7 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
     FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(numero_documento),
     FOREIGN KEY (id_tipo_evento) REFERENCES tabla_tipo_eventos(id_tipo_evento),
     FOREIGN KEY (id_municipio) REFERENCES tabla_municipios(id_municipio),
-    FOREIGN KEY (id_sitio) REFERENCES tabla_sitios(id_sitio),
-    FOREIGN KEY (id_imagen) REFERENCES tabla_imagenes(id_imagen)
+    FOREIGN KEY (id_sitio) REFERENCES tabla_sitios(id_sitio)
 );
 
 CREATE TABLE IF NOT EXISTS tabla_eventos_x_dias (
