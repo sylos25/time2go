@@ -5,6 +5,14 @@ import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -33,6 +41,7 @@ export function Header({
   const router = useRouter()
   const [user, setUser] = useState<any>(null);
   const logoutTimerRef = useRef<number | null>(null);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
   const parseJwtExp = (token: string) => {
     try {
@@ -51,11 +60,11 @@ export function Header({
     if (!expiresAtSec) return;
     const ms = expiresAtSec * 1000 - Date.now();
     if (ms <= 0) {
-      handleLogout();
+      performLogout();
       return;
     }
     logoutTimerRef.current = window.setTimeout(() => {
-      handleLogout();
+      performLogout();
     }, ms);
   };
 
@@ -108,7 +117,7 @@ export function Header({
     setMenuOpen(false)
   }
 
-  const handleLogout = () => {
+  const performLogout = () => {
     // limpiar estado y localStorage, notificar y redirigir
     localStorage.removeItem("token");
     localStorage.removeItem("userName");
@@ -120,6 +129,12 @@ export function Header({
     window.dispatchEvent(new CustomEvent("user:logout"));
     router.push("/");
     setMenuOpen(false);
+    setLogoutDialogOpen(false);
+  }
+
+  const handleLogout = () => {
+    // abrir modal de confirmación en lugar de confirmar inmediato
+    setLogoutDialogOpen(true);
   }
 
   return (
@@ -128,6 +143,22 @@ export function Header({
       {menuOpen && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 lg:hidden" onClick={() => setMenuOpen(false)} />
       )}
+
+      {/* Logout confirmation modal */}
+      <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar cierre de sesión</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro que deseas cerrar sesión? Se cerrará tu sesión actual.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLogoutDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={performLogout} className="bg-red-600 text-white">Cerrar sesión</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Header */}
       <header
@@ -185,16 +216,14 @@ export function Header({
                 </Button>
               ) : (
                 <div className="flex items-center gap-3">
-                  {isAdmin && (
-                    <Button
-                      onClick={() => navigateTo("/dashboard")}
-                      variant="outline"
-                      className="border-white/30 text-white hover:bg-white/10 font-medium rounded-sm"
-                    >
-                      <LayoutDashboard className="h-4 w-4 mr-2" />
-                      Dashboard
-                    </Button>
-                  )}
+                  <Button
+                    onClick={() => navigateTo("/dashboard")}
+                    variant="outline"
+                    className="border-white/30 text-purple hover:bg-white/10 font-medium rounded-sm cursor-pointer"
+                  >
+                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </Button>
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -207,27 +236,27 @@ export function Header({
                         <span className="font-medium">{displayName}</span>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => navigateTo("/perfil")}>
-                        <User className="h-4 w-4 mr-2" />
-                        Mi Perfil
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigateTo("/mis-eventos")}>
-                        <Calendar className="h-4 w-4 mr-2" />
-                        Mis Eventos
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigateTo("/configuracion")}>
-                        <Settings className="h-4 w-4 mr-2" />
-                        Configuración
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-                        <LogOut className="h-4 w-4 mr-2" />
-                        Cerrar Sesión
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => navigateTo("/perfil")} className="cursor-pointer">
+                          <User className="h-4 w-4 mr-2" />
+                          Mi Perfil
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigateTo("/mis-eventos")} className="cursor-pointer">
+                          <Calendar className="h-4 w-4 mr-2" />
+                          Mis Eventos
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigateTo("/configuracion")} className="cursor-pointer">
+                          <Settings className="h-4 w-4 mr-2" />
+                          Configuración
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Cerrar Sesión
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
               )}
@@ -254,29 +283,25 @@ export function Header({
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {isAdmin && (
-                    <>
-                      <DropdownMenuItem onClick={() => navigateTo("/dashboard")}>
-                        <LayoutDashboard className="h-4 w-4 mr-2" />
-                        Dashboard
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  <DropdownMenuItem onClick={() => navigateTo("/perfil")}>
+                  <DropdownMenuItem onClick={() => navigateTo("/dashboard")} className="cursor-pointer">
+                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigateTo("/perfil")} className="cursor-pointer">
                     <User className="h-4 w-4 mr-2" />
                     Mi Perfil
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigateTo("/mis-eventos")}>
+                  <DropdownMenuItem onClick={() => navigateTo("/mis-eventos")} className="cursor-pointer">
                     <Calendar className="h-4 w-4 mr-2" />
                     Mis Eventos
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigateTo("/configuracion")}>
+                  <DropdownMenuItem onClick={() => navigateTo("/configuracion")} className="cursor-pointer">
                     <Settings className="h-4 w-4 mr-2" />
                     Configuración
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
                     <LogOut className="h-4 w-4 mr-2" />
                     Cerrar Sesión
                   </DropdownMenuItem>
@@ -318,16 +343,14 @@ export function Header({
               </Button>
             ) : (
               <div className="space-y-3">
-                {isAdmin && (
-                  <Button
-                    onClick={() => navigateTo("/dashboard")}
-                    variant="outline"
-                    className="w-full border-red-400/30 text-red-400 hover:bg-red-400/10 bg-transparent rounded-sm"
-                  >
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                    Dashboard
-                  </Button>
-                )}
+                <Button
+                  onClick={() => navigateTo("/dashboard")}
+                  variant="outline"
+                  className="w-full border-red-400/30 text-red-400 hover:bg-red-400/10 bg-transparent rounded-sm cursor-pointer"
+                >
+                  <LayoutDashboard className="h-4 w-4 mr-2" />
+                  Dashboard
+                </Button>
                 <Button
                   onClick={handleLogout}
                   variant="outline"
