@@ -13,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Calendar, MapPin, Users, Search, Filter, Heart, Share2, Star, X, Clock, Info, Plus } from "lucide-react";
 import { NumericFormat } from "react-number-format";
 import imageCompression from "browser-image-compression";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 interface ImagenEvento {
   id_imagen_evento: number;
@@ -88,9 +90,9 @@ const [newEvent, setNewEvent] = useState<any>({
   // use telefones without underscore for form fields; we'll map to backend names on submit
   telefono1: "",
   telefono2: "",
-  fecha_inicio: "",
-  fecha_final: "",
-  diasSeleccionados: [] as string[], // array de fechas YYYY-MM-DD
+  fecha_inicio: null as Date | null,
+  fecha_final: null as Date | null,
+  diasSeleccionados: [] as Date[], // array de objetos Date
   hora_inicio: "",
   hora_final: "",
   pago: false,
@@ -116,37 +118,39 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   }
 };
 
-// Generar rango de fechas entre fecha_inicio y fecha_final
-const generarRangoDias = (inicio: string, fin: string): string[] => {
+// Generar rango de fechas entre fecha_inicio y fecha_final (retorna Date objects)
+const generarRangoDias = (inicio: Date | null, fin: Date | null): Date[] => {
   if (!inicio || !fin) return [];
-  const diasArray: string[] = [];
-  const current = new Date(inicio + "T00:00:00");
-  const end = new Date(fin + "T00:00:00");
+  const diasArray: Date[] = [];
+  const current = new Date(inicio);
+  current.setHours(0, 0, 0, 0); // resetea a medianoche
+  const end = new Date(fin);
+  end.setHours(0, 0, 0, 0);
+  
   while (current <= end) {
-    const year = current.getFullYear();
-    const month = String(current.getMonth() + 1).padStart(2, "0");
-    const day = String(current.getDate()).padStart(2, "0");
-    diasArray.push(`${year}-${month}-${day}`);
+    diasArray.push(new Date(current));
     current.setDate(current.getDate() + 1);
   }
   return diasArray;
 };
 
-// Toggle selección de un día
-const toggleDiaSeleccionado = (fecha: string) => {
+// Toggle selección de un día (Date object)
+const toggleDiaSeleccionado = (fecha: Date) => {
   setNewEvent((prev: any) => {
     const selected = prev.diasSeleccionados || [];
-    if (selected.includes(fecha)) {
-      return { ...prev, diasSeleccionados: selected.filter((d: string) => d !== fecha) };
+    const fechaTime = new Date(fecha).setHours(0, 0, 0, 0);
+    const found = selected.find((d: Date) => new Date(d).setHours(0, 0, 0, 0) === fechaTime);
+    
+    if (found) {
+      return { ...prev, diasSeleccionados: selected.filter((d: Date) => new Date(d).setHours(0, 0, 0, 0) !== fechaTime) };
     } else {
-      return { ...prev, diasSeleccionados: [...selected, fecha] };
+      return { ...prev, diasSeleccionados: [...selected, new Date(fecha)] };
     }
   });
 };
 
-// Helper para formatear fecha a día completo/mes
-const formatDia = (dateStr: string): string => {
-  const date = new Date(dateStr + "T00:00:00");
+// Helper para formatear fecha a día completo/mes (acepta Date object)
+const formatDia = (date: Date): string => {
   const opciones: Intl.DateTimeFormatOptions = { weekday: "long", day: "numeric", month: "numeric" };
   return date.toLocaleDateString("es-ES", opciones);
 };
@@ -355,11 +359,16 @@ const handleAddEvent = async () => {
     // Campos del evento (mapeo seguro desde los campos del formulario)
     formData.append("nombre_evento", newEvent.nombre_evento || "");
     formData.append("descripcion", newEvent.descripcion || "");
-    formData.append("fecha_inicio", newEvent.fecha_inicio || "");
-    formData.append("fecha_fin", newEvent.fecha_final || "");
+    // Convertir Date a formato YYYY-MM-DD string para el backend
+    const fechaInicioStr = newEvent.fecha_inicio ? newEvent.fecha_inicio.toISOString().split('T')[0] : "";
+    const fechaFinalStr = newEvent.fecha_final ? newEvent.fecha_final.toISOString().split('T')[0] : "";
+    formData.append("fecha_inicio", fechaInicioStr);
+    formData.append("fecha_fin", fechaFinalStr);
     formData.append("hora_inicio", newEvent.hora_inicio || "");
     formData.append("hora_final", newEvent.hora_final || "");
-    formData.append("dias_semana", JSON.stringify(newEvent.diasSeleccionados || []));
+    // Convertir diasSeleccionados (Date[]) a formato YYYY-MM-DD string array
+    const diasStrings = (newEvent.diasSeleccionados || []).map((d: Date) => d.toISOString().split('T')[0]);
+    formData.append("dias_semana", JSON.stringify(diasStrings));
     formData.append("id_usuario", String(newEvent.id_usuario || 0));
     formData.append("id_categoria_evento", String(newEvent.id_categoria_evento || 0));
     formData.append("id_tipo_evento", String(newEvent.id_tipo_evento || 0));
@@ -402,8 +411,8 @@ const handleAddEvent = async () => {
       descripcion: "",
       telefono1: "",
       telefono2: "",
-      fecha_inicio: "",
-      fecha_final: "",
+      fecha_inicio: null,
+      fecha_final: null,
       diasSeleccionados: [],
       hora_inicio: "",
       hora_final: "",
@@ -415,7 +424,6 @@ const handleAddEvent = async () => {
       costos: [""],
       tiposBoleteria: [""],
       linksBoleteria: [""],
-      diasSeleccionados: [],
       highlights: [],
       additionalImages: [],
     });
@@ -632,21 +640,23 @@ const handleAddEvent = async () => {
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 ">
                     <Label htmlFor="id_tipo_evento">Categoría del Evento</Label>
                     <Select
                       value={String(newEvent.id_categoria_evento || 0)}
                       onValueChange={(value) =>setNewEvent({ ...newEvent, id_categoria_evento: Number(value), id_tipo_evento: 0 })
                       }
                     >
-                      <SelectTrigger className="rounded-xl">
+                      <SelectTrigger className="rounded-xl cursor-pointer">
                         <SelectValue placeholder="Selecciona una categoría" />
                       </SelectTrigger>
                       <SelectContent>
                       <SelectItem value="0">Selecciona una categoría</SelectItem>
                       {categorias.map((cat) => (
-                        <SelectItem key={cat.id_categoria_evento} value={String(cat.id_categoria_evento)}>
-                          {cat.nombre}
+                        <SelectItem 
+                          className="rounded-xl cursor-pointer"
+                          key={cat.id_categoria_evento} value={String(cat.id_categoria_evento)}>
+                            {cat.nombre}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -662,14 +672,16 @@ const handleAddEvent = async () => {
                         }
                         disabled={!tiposDeEvento.length}
                       >
-                        <SelectTrigger className="rounded-xl">
+                        <SelectTrigger className="rounded-xl cursor-pointer">
                           <SelectValue placeholder="Selecciona un tipo de evento" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="0">(Selecciona un tipo)</SelectItem>
                           {tiposDeEvento.map((tipo) => (
-                            <SelectItem key={tipo.id_tipo_evento} value={String(tipo.id_tipo_evento)}>
-                              {tipo.nombre}
+                            <SelectItem 
+                              className="rounded-xl cursor-pointer"
+                              key={tipo.id_tipo_evento} value={String(tipo.id_tipo_evento)}>
+                                {tipo.nombre}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -706,14 +718,14 @@ const handleAddEvent = async () => {
                       </ul>
                     )}
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 ">
                     <Label htmlFor="municipio">Municipio</Label>
                     <Input
                       id="municipio"
                       value={busquedaMunicipio}
                       readOnly={!!newEvent.id_sitio} // bloquea edición si ya hay sitio seleccionado
                       placeholder="Bucaramanga"
-                      className="rounded-xl"
+                      className="rounded-xl cursor-default "
                     />
                   </div>
                 </div>
@@ -787,29 +799,40 @@ const handleAddEvent = async () => {
                     </div>
                   )}
 
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="date">Fecha de inicio del evento</Label>
-                    <Input
-                      id="date"
-                      type="date"
-                      value={newEvent.fecha_inicio}
-                      onChange={(e) => setNewEvent({ ...newEvent, fecha_inicio: e.target.value })}
-                      className="rounded-xl"
-                    />
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="date">Fecha final del evento</Label>
-                    <Input
-                      id="date"
-                      type="date"
-                      value={newEvent.fecha_final}
-                      onChange={(e) => setNewEvent({ ...newEvent, fecha_final: e.target.value, diasSeleccionados: [] })}
-                      className="rounded-xl"
-                    />
-                  </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="fecha_inicio">Fecha de inicio del evento</Label>
+                      <DatePicker
+                        id="fecha_inicio"
+                        selected={newEvent.fecha_inicio}
+                        onChange={(date) => setNewEvent({ ...newEvent, fecha_inicio: date })}
+                        dateFormat="dd/MM/yyyy"
+                        minDate={new Date()}
+                        placeholderText="01/01/2025"
+                        className="cursor-pointer w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="fecha_final">Fecha final del evento</Label>
+                      <DatePicker
+                        id="fecha_final"
+                        selected={newEvent.fecha_final}
+                        onChange={(date) =>
+                          setNewEvent({
+                            ...newEvent,
+                            fecha_final: date,
+                            diasSeleccionados: []
+                          })
+                        }
+                        dateFormat="dd/MM/yyyy"
+                        minDate={newEvent.fecha_inicio || new Date()} 
+                        placeholderText="31/12/2025"
+                        className="cursor-pointer w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+                      />
+                    </div>
                 </div>
+
 
                 <div className="space-y-2">
                   <Label htmlFor="title">Días en los que se puede asistir al evento *</Label>
@@ -817,24 +840,28 @@ const handleAddEvent = async () => {
                     {generarRangoDias(newEvent.fecha_inicio, newEvent.fecha_final).length > 0 ? (
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                          {generarRangoDias(newEvent.fecha_inicio, newEvent.fecha_final).map((fecha) => (
-                            <label
-                              key={fecha}
-                              className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                                newEvent.diasSeleccionados.includes(fecha)
-                                  ? "bg-blue-100 border-blue-500"
-                                  : "bg-white border-gray-300 hover:border-blue-300"
-                              }`}
-                            >
-                              <span className="text-xs font-semibold text-gray-700">{formatDia(fecha)}</span>
-                              <input
-                                type="checkbox"
-                                checked={newEvent.diasSeleccionados.includes(fecha)}
-                                onChange={() => toggleDiaSeleccionado(fecha)}
-                                className="w-5 h-5 cursor-pointer"
-                              />
-                            </label>
-                          ))}
+                          {generarRangoDias(newEvent.fecha_inicio, newEvent.fecha_final).map((fecha) => {
+                            const fechaTime = new Date(fecha).setHours(0, 0, 0, 0);
+                            const isSelected = newEvent.diasSeleccionados.some((d: Date) => new Date(d).setHours(0, 0, 0, 0) === fechaTime);                           
+                            return (
+                              <label
+                                key={fecha.toISOString().split('T')[0]}
+                                className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                  isSelected
+                                    ? "bg-blue-100 border-blue-500"
+                                    : "bg-white border-gray-300 hover:border-blue-300"
+                                }`}
+                              >
+                                <span className="text-xs font-semibold text-gray-700">{formatDia(fecha)}</span>
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => toggleDiaSeleccionado(fecha)}
+                                  className="w-5 h-5 cursor-pointer"
+                                />
+                              </label>
+                            );
+                          })}
                         </div>
                         <p className="text-xs text-gray-600 text-center">
                           Seleccionados: {newEvent.diasSeleccionados.length} día(s)
@@ -845,7 +872,6 @@ const handleAddEvent = async () => {
                     )}
                   </div>
                 </div>
-
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="time">Hora de inicio</Label>
@@ -857,7 +883,6 @@ const handleAddEvent = async () => {
                       className="rounded-xl"
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="time">Hora final</Label>
                     <Input
@@ -870,11 +895,10 @@ const handleAddEvent = async () => {
                   </div>
                 </div>
                 
-                <div className="space-y-4 p-4 border rounded-lg shadow-md">
-                        {/* Selector Gratis/Pago */}
 
-                  <div className="flex gap-6 items-center">
-                    <label className="flex items-center gap-2">
+                <div className="space-y-4 p-4 border rounded-lg shadow-md">
+                  <div className="flex gap-6 items-center ">
+                    <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
                         name="tipoEntrada"
@@ -886,50 +910,45 @@ const handleAddEvent = async () => {
                             costos: [""],
                             tiposBoleteria: [""],
                             linksBoleteria: [""]
-                          }) // limpia todos los datos relacionados con 'pago' al seleccionar Gratis
+                          })
                         }
                       />
                       Gratis
                     </label>
-
-                    <label className="flex items-center gap-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
                         name="tipoEntrada"
                         checked={newEvent.pago}
-                        onChange={() => setNewEvent({ ...newEvent, pago: true })}
-                      />
+                        onChange={() => setNewEvent({ ...newEvent, pago: true })}/>
                       Pago
                     </label>
                   </div>
-
                   {newEvent.pago && (
                     <div className="space-y-4 p-4 border rounded-lg shadow-md">
-                      <h2 className="text-lg font-semibold">Valores de la entrada</h2>
-
-                      {newEvent.costos.map((costo, index) => (
-                        <div key={index} className="flex flex-col gap-2">
-                          <div className="flex items-center gap-2">
-                            <select
-                              value={newEvent.tiposBoleteria[index] || ""}
-                              onChange={(e) => {
-                              const updatedTipos = [...newEvent.tiposBoleteria];
-                              updatedTipos[index] = e.target.value;
-                              setNewEvent({ ...newEvent, tiposBoleteria: updatedTipos });
-                              }}
-                              className="rounded-xl border px-3 py-2 w-40"
-                          >
-                              <option value="">Selecciona tipo</option>
+                      <h2 className="text-lg font-semibold cursor-default">Valores de la entrada</h2>
+                        {newEvent.costos.map((costo, index) => (
+                          <div key={index} className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2">
+                              <select
+                                value={newEvent.tiposBoleteria[index] || ""}
+                                  onChange={(e) => {
+                                    const updatedTipos = [...newEvent.tiposBoleteria];
+                                    updatedTipos[index] = e.target.value;
+                                    setNewEvent({ ...newEvent, tiposBoleteria: updatedTipos });
+                                  }}
+                          className="rounded-xl border px-3 py-2 w-40 cursor-pointer">
+                            <option value="">Selecciona tipo</option>
                               {getAvailableTypes(index).map((tipo) => (
-                              <option key={tipo} value={tipo}>
+                                <option key={tipo} value={tipo}>
                                   {tipo}
-                              </option>
+                                </option>
                               ))}
-                              {newEvent.tiposBoleteria[index] && (
+                            {newEvent.tiposBoleteria[index] && (
                               <option value={newEvent.tiposBoleteria[index]}>
-                                  {newEvent.tiposBoleteria[index]}
+                                {newEvent.tiposBoleteria[index]}
                               </option>
-                              )}
+                            )}
                           </select>
                           <NumericFormat
                               value={costo}
@@ -939,23 +958,20 @@ const handleAddEvent = async () => {
                               onValueChange={(values) => updateCosto(index, values.value)}
                               placeholder="$100.000"
                               className="rounded-xl border px-2 py-1 flex-1"
-                              disabled={!newEvent.pago}
-                          />
+                              disabled={!newEvent.pago}/>
                           {newEvent.costos.length > 1 && newEvent.pago && (
                               <button
-                              type="button"
-                              onClick={() => removeCostoField(index)}
-                              className="bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600"
-                              >
-                              Quitar
+                                type="button"
+                                onClick={() => removeCostoField(index)}
+                                className="bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600 cursor-pointer">
+                                Quitar
                               </button>
                           )}
                           </div>
                         </div>
                       ))}
-
                       <div className="flex justify-between items-center gap-3">
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 ">
                           <button
                             type="button"
                             onClick={addCostoField}
@@ -963,56 +979,53 @@ const handleAddEvent = async () => {
                             className={`px-3 py-1 rounded-md text-white ${
                               newEvent.costos.length >= 7
                                 ? "bg-gray-400 cursor-not-allowed"
-                                : "bg-blue-500 hover:bg-blue-600"
-                            }`}
-                          >
-                            + Añadir campo
+                                : "bg-blue-500 hover:bg-blue-600 cursor-pointer"
+                            }`}>
+                          + Añadir campo
                           </button>
                           {newEvent.costos.length >= 2 && (
                             <button
                               type="button"
                               onClick={removeAllCostos}
-                              className="px-3 py-1 rounded-md text-white bg-red-600 hover:bg-red-700"
-                            >
+                              className="px-3 py-1 rounded-md text-white bg-red-600 hover:bg-red-700 cursor-pointer">
                               Eliminar todos
                             </button>
                           )}
                         </div>
-
                         <span className="text-sm text-gray-600">
                           {newEvent.costos.length}/7 campos usados
                         </span>
                       </div>
                     </div>
-                  )}
-                </div>
+                  )}               
+
 
                 {newEvent.pago && (
-                  <div className="space-y-4 p-4 border rounded-lg shadow-md bg-blue-50">
-                    <h2 className="text-lg font-semibold">Links de boletería</h2>
-
-                    {newEvent.linksBoleteria.map((link, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <Input
-                          type="url"
-                          value={link}
-                          onChange={(e) => updateLinkBoleteria(index, e.target.value)}
-                          placeholder="Ej: https://example.com/tickets"
-                          className="rounded-xl flex-1"
-                        />
-                        {newEvent.linksBoleteria.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeLinkBoleteria(index)}
-                            className="bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600 whitespace-nowrap"
-                          >
-                            Quitar
-                          </button>
-                        )}
-                      </div>
-                    ))}
-
-                    <div className="flex justify-between items-center gap-3">
+                  <div className="space-y-4 p-4 border rounded-lg shadow-md bg-white-50 cursor-default">
+                    <h2 className="text-lg font-semibold">
+                      Links de la boletería.
+                    </h2>
+                    <p className="text-xs text-gray-600 italic -translate-y-3 cursor-default"> 
+                      Agrega los links donde los usuarios pueden comprar la entrada al evento.
+                    </p>
+                  {newEvent.linksBoleteria.map((link, index) => (
+                    <div key={index} className="flex items-center gap-2 -translate-y-3 ">
+                      <Input
+                        type="url"
+                        value={link}
+                        onChange={(e) => updateLinkBoleteria(index, e.target.value)}
+                        placeholder="https://example.com/tickets"
+                        className="rounded-xl flex-1"/>
+                    {newEvent.linksBoleteria.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeLinkBoleteria(index)}
+                        className="bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-800 whitespace-nowrap cursor-pointer">
+                        Quitar
+                      </button>)}
+                    </div>
+                  ))}
+                    <div className="flex justify-between items-center gap-3 -translate-y-3">
                       <div className="flex gap-2">
                         <button
                           type="button"
@@ -1021,31 +1034,26 @@ const handleAddEvent = async () => {
                           className={`px-3 py-1 rounded-md text-white ${
                             newEvent.linksBoleteria.length >= 5
                               ? "bg-gray-400 cursor-not-allowed"
-                              : "bg-blue-500 hover:bg-blue-600"
-                          }`}
-                        >
-                          + Añadir link
+                              : "bg-blue-500 hover:bg-blue-600 cursor-pointer"
+                          }`}>
+                        + Añadir link     
                         </button>
                         {newEvent.linksBoleteria.length >= 2 && (
                           <button
                             type="button"
                             onClick={removeAllLinksBoleteria}
-                            className="px-3 py-1 rounded-md text-white bg-red-600 hover:bg-red-700"
-                          >
+                            className="px-3 py-1 rounded-md text-white bg-red-600 hover:bg-red-700 cursor-pointer">
                             Eliminar todos
                           </button>
                         )}
                       </div>
-
                       <span className="text-sm text-gray-600">
                         {newEvent.linksBoleteria.length}/5 links
                       </span>
                     </div>
-                    <p className="text-xs text-gray-600 italic">
-                      Agrega los links donde tus usuarios pueden comprar las boletería
-                    </p>
                   </div>
                 )}
+                </div>
 
 
 
