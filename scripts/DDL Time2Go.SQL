@@ -177,23 +177,14 @@ CREATE TABLE IF NOT EXISTS tabla_tipo_eventos (
     FOREIGN KEY (id_categoria_evento) REFERENCES tabla_categorias_eventos(id_categoria_evento)
 );
 
-CREATE TABLE IF NOT EXISTS tabla_imagenes_eventos (
-    id_imagen_evento        SERIAL                      PRIMARY KEY,
-    url_imagen_evento       VARCHAR                     NOT NULL        UNIQUE,
-    fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
-    id_eventos              INT                         NOT NULL
-    FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
-
-);
-
 CREATE TABLE IF NOT EXISTS tabla_eventos (
     id_evento               INT                         PRIMARY KEY,
     nombre_evento           VARCHAR                     NOT NULL        CHECK (char_length(nombre_evento) >= 6),
-    id_usuario              VARCHAR                     NOT NULL,
+    id_usuario              VARCHAR                     NOT NULL,                                                   -- ID del usuario que crea el evento.
+    id_categoria_evento     INT                         NOT NULL,
     id_tipo_evento          INT                         NOT NULL,
+    id_sitio                INT                         NOT NULL,                                                   -- ID del lugar (dentro del municipio) donde se realiza el evento.
     id_municipio            INT                         NOT NULL,
-    id_sitio                INT                         NOT NULL,
     descripcion             TEXT                        NOT NULL,
     telefono_1              DECIMAL(10,0)               NOT NULL        CHECK (telefono_1 > 2999999999),
     telefono_2              DECIMAL(10,0)                               CHECK (telefono_2 > 2999999999),
@@ -201,16 +192,26 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
     fecha_fin               DATE                        NOT NULL,   
     hora_inicio             TIME                        NOT NULL,
     hora_final              TIME                        NOT NULL,
-    dinero                  BOOLEAN                     NOT NULL        DEFAULT FALSE,
-    cupo                    INT                         NOT NULL        DEFAULT 0 CHECK (cupo >= 0),
-    estado                  BOOLEAN                     NOT NULL        DEFAULT FALSE,
+    gratis_pago             BOOLEAN                     NOT NULL        DEFAULT FALSE,                              -- FALSE: GRATIS and TRUE: PAGO.
+    cupo                    INT                         NOT NULL        DEFAULT 0 CHECK (cupo >= 0),                -- Numero de invitados (No debe ser menor a 0 y mayor a 5000).
+    estado                  BOOLEAN                     NOT NULL        DEFAULT FALSE,                              -- FALSE: Pendiente por validar and TRUE: Aprobado.
     fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     fecha_desactivacion     TIMESTAMP   WITH TIME ZONE,
     FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(numero_documento),
     FOREIGN KEY (id_tipo_evento) REFERENCES tabla_tipo_eventos(id_tipo_evento),
-    FOREIGN KEY (id_municipio) REFERENCES tabla_municipios(id_municipio),
-    FOREIGN KEY (id_sitio) REFERENCES tabla_sitios(id_sitio)
+    FOREIGN KEY (id_categoria_evento) REFERENCES tabla_categorias_eventos(id_categoria_evento),
+    FOREIGN KEY (id_sitio) REFERENCES tabla_sitios(id_sitio),
+    FOREIGN KEY (id_municipio) REFERENCES tabla_municipios(id_municipio)
+);
+
+CREATE TABLE IF NOT EXISTS tabla_imagenes_eventos (
+    id_imagen_evento        SERIAL                      PRIMARY KEY,
+    url_imagen_evento       VARCHAR                     NOT NULL        UNIQUE,
+    fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
+    id_evento              INT                         NOT NULL,
+    FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
 );
 
 CREATE TABLE IF NOT EXISTS tabla_eventos_x_dias (
@@ -243,19 +244,19 @@ CREATE TABLE IF NOT EXISTS tabla_reservas_eventos (
     FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
 );
 
-CREATE TABLE IF NOT EXISTS tabla_costos (
-    id_costo                INT                         PRIMARY KEY,
-    Boleteria               VARCHAR                     NOT NULL,
-    Costo                   DECIMAL(9,2)                NOT NULL,
-    fecha_actualizacion     TIMESTAMP WITH TIME ZONE                    DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS tabla_valores (
+    id_valor                SERIAL                      PRIMARY KEY,
+    id_evento               INT                         NOT NULL,
+    valor                   DECIMAL(9,2)                NOT NULL,
+    fecha_actualizacion     TIMESTAMP WITH TIME ZONE                    DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
 );
 
-CREATE TABLE IF NOT EXISTS tabla_costos_eventos (
-    id_costo_eventos        SERIAL                      PRIMARY KEY,
-    id_costo                INT                         NOT NULL,
+CREATE TABLE IF NOT EXISTS tabla_links (
+    id_link                 SERIAL                      PRIMARY KEY,
     id_evento               INT                         NOT NULL,
+    link                    VARCHAR                     NOT NULL,
     fecha_actualizacion     TIMESTAMP                   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_costo)  REFERENCES tabla_costos(id_costo),
     FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
 );
 

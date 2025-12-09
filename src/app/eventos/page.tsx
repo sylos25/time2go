@@ -624,7 +624,7 @@ const handleAddEvent = async () => {
                       id="title"
                       value={newEvent.nombre_evento}
                       onChange={(e) => setNewEvent({ ...newEvent, nombre_evento: e.target.value })}
-                      placeholder="Ej: Festival de Música"
+                      placeholder="Nombre completo del evento."
                       className="rounded-xl"
                     />
                   </div>
@@ -635,7 +635,7 @@ const handleAddEvent = async () => {
                       id="title"
                       value={newEvent.id_usuario}
                       onChange={(e) => setNewEvent({ ...newEvent, id_usuario: Number(e.target.value) })}
-                      placeholder="Ej: 12345"
+                      placeholder="12345"
                       className="rounded-xl"
                     />
                   </div>
@@ -697,7 +697,7 @@ const handleAddEvent = async () => {
                         setBusquedaSitio(e.target.value);
                         setNewEvent({ ...newEvent, id_sitio: 0 });
                       }}
-                      placeholder="Ej: Neomundo - Centro de convenciones y eventos"
+                      placeholder="Escribe el nombre del sitio donde será el evento"
                       className="rounded-xl"
                     />
                     {sitios.length > 0 && (
@@ -724,7 +724,7 @@ const handleAddEvent = async () => {
                       id="municipio"
                       value={busquedaMunicipio}
                       readOnly={!!newEvent.id_sitio} // bloquea edición si ya hay sitio seleccionado
-                      placeholder="Bucaramanga"
+                      placeholder="Ciudad del lugar donde se hará el evento."
                       className="rounded-xl cursor-default "
                     />
                   </div>
@@ -752,7 +752,7 @@ const handleAddEvent = async () => {
                         setNewEvent({ ...newEvent, telefono1: value });
                       }
                     }}
-                    placeholder="Ej: 3121234567"
+                    placeholder="Teléfono 1"
                     className="rounded-xl"
                     maxLength={10}
                     inputMode="numeric"
@@ -780,7 +780,7 @@ const handleAddEvent = async () => {
                             setNewEvent({ ...newEvent, telefono2: value });
                           }
                         }}
-                        placeholder="Ej: 3009876543"
+                        placeholder="Teléfono 2"
                         className="rounded-xl"
                         maxLength={10}
                         inputMode="numeric"
@@ -927,6 +927,9 @@ const handleAddEvent = async () => {
                   {newEvent.pago && (
                     <div className="space-y-4 p-4 border rounded-lg shadow-md">
                       <h2 className="text-lg font-semibold cursor-default">Valores de la entrada</h2>
+                       <p className="text-xs text-gray-600 italic -translate-y-3 cursor-default"> 
+                          Agrega los tipos de boletas y los precios de cada una de las boletas al evento.
+                        </p>
                         {newEvent.costos.map((costo, index) => (
                           <div key={index} className="flex flex-col gap-2">
                             <div className="flex items-center gap-2">
@@ -1068,7 +1071,7 @@ const handleAddEvent = async () => {
                       max={5000}
                       value={newEvent.cupo === "" ? "" : newEvent.cupo}
                       onChange={handleChange}
-                      placeholder="Ej: 100"
+                      placeholder="100"
                       className="rounded-xl border px-2 py-1 w-full"
                     />
                     <p className="text-sm text-gray-500">
