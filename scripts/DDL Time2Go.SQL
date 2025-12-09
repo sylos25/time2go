@@ -208,9 +208,18 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
 CREATE TABLE IF NOT EXISTS tabla_imagenes_eventos (
     id_imagen_evento        SERIAL                      PRIMARY KEY,
     url_imagen_evento       VARCHAR                     NOT NULL        UNIQUE,
+    id_evento               INT                         NOT NULL,
     fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
-    id_evento              INT                         NOT NULL,
+    fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP
+    FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
+);
+
+CREATE TABLE IF NOT EXISTS tabla_documentos_eventos (
+    id_documento_evento     SERIAL                      PRIMARY KEY,
+    url_documento_evento    VARCHAR                     NOT NULL        UNIQUE,
+    id_evento               INT                         NOT NULL,
+    fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP
     FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
 );
 
