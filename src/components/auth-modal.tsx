@@ -37,42 +37,44 @@ export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalP
   rememberMe: false,
   acceptTerms: false,
 };
-const [formData, setFormData] = useState(formDataInicial);
 
-// LLamar los paises que estan en BD.
-    useEffect(() => {
-      fetch("/api/llamar_pais")
-        .then((res) => res.json())
-        .then((data) => setListaPaises(data))
-        .catch((err) => console.error("Error al cargar países:", err));
-    }, []);
-    const [listaPaises, setListaPaises] = useState<{ value: number; label: string }[]>([]);
-    const handleInputChange = (field: string, value: string | boolean) => {
-      setFormData((prev) => ({ ...prev, [field]: value }))
-    }
+  const [formData, setFormData] = useState(formDataInicial);
 
-// Ocultar mensaje (Perfil creado exitosamente) despues de 5 segundos    
-    useEffect(() => {
-    if (registroExitoso) {
-      const timer = setTimeout(() => setRegistroExitoso(false), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [registroExitoso]);
+  // LLamar los paises que estan en BD.
+      useEffect(() => {
+        fetch("/api/llamar_pais")
+          .then((res) => res.json())
+          .then((data) => setListaPaises(data))
+          .catch((err) => console.error("Error al cargar países:", err));
+      }, []);
+      const [listaPaises, setListaPaises] = useState<{ value: number; label: string }[]>([]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // Registro
-    if (!isLogin) {
-      setRegistroError("");
-      // validaciones básicas
-      if (!formData.acceptTerms) {
-        setRegistroError("Debe aceptar los términos y condiciones.");
-        return;
+      const handleInputChange = (field: keyof FormData, value: string) => {
+          setFormData((prev) => ({ ...prev, [field]: value }));
+        };
+
+  // Ocultar mensaje (Perfil creado exitosamente) despues de 5 segundos    
+      useEffect(() => {
+      if (registroExitoso) {
+        const timer = setTimeout(() => setRegistroExitoso(false), 5000);
+        return () => clearTimeout(timer);
       }
-      if (!formData.password || formData.password !== formData.confirmPassword) {
-        setRegistroError("Las contraseñas no coinciden.");
-        return;
-      }
+    }, [registroExitoso]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      // Registro
+      if (!isLogin) {
+        setRegistroError("");
+        // validaciones básicas
+        if (!formData.acceptTerms) {
+          setRegistroError("Debe aceptar los términos y condiciones.");
+          return;
+        }
+        if (!formData.password || formData.password !== formData.confirmPassword) {
+          setRegistroError("Las contraseñas no coinciden.");
+          return;
+        }
 
       try {
         const res = await fetch("/api/usuario_formulario", {
@@ -139,7 +141,71 @@ const [formData, setFormData] = useState(formDataInicial);
       console.error("Login error:", err);
     }
   };
-  
+
+
+// Lógica para manejar los cambios en el select de tipo de documento 
+const handleTipDocChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const value = e.target.value;
+  handleInputChange("tipDoc", value);
+  handleInputChange("document", "");
+};
+
+// Validar el campo de número de documento según el tipo seleccionado, que no exceda 10 caracteres y que cumpla con el formato adecuado.
+  const handleNumDocChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.toUpperCase();
+    if (!formData.tipDoc) return;
+    if (value.length > 10) return;
+    if (formData.tipDoc === "Pasaporte") {
+      if (/^[A-Z0-9]*$/.test(value)) {
+        const lettersCount = (value.match(/[A-Z]/g) || []).length;
+        if (lettersCount < 3) {
+          handleInputChange("document", value);
+        } else {
+          if (/^[A-Z]{3}[0-9]*$/.test(value)) {
+            handleInputChange("document", value);
+          }
+        }
+      }
+    } else {
+      if (/^[0-9]*$/.test(value)) {
+        handleInputChange("document", value);
+      }
+    }
+  };
+
+// Validar que los campos de nombre y apellido solo contengan letras y espacios.
+  const handleFirstnameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(value)) {
+      handleInputChange("firstName", value);
+    }
+  };
+
+  const handleLastnameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(value)) {
+      handleInputChange("lastName", value);
+    }
+  };
+
+//Validar que el campo de teléfono solo contenga números y tenga un máximo de 10 dígitos.  
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (/^[0-9]*$/.test(value) && value.length <= 10) {
+      handleInputChange("telefono", value);
+    }
+  };
+
+// Validar que el campo de correo tenga un formato válido.
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    handleInputChange("email", value);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value) && value !== "") {
+      console.log("Correo inválido");
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md rounded-sm">
@@ -157,16 +223,19 @@ const [formData, setFormData] = useState(formDataInicial);
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
         {!isLogin && (
               <div className="space-y-2">
-                <Label htmlFor="tipoDoc" className="text-sm font-medium">
+                <Label htmlFor="tipDoc" className="text-sm font-medium">
                   Tipo de Documento
                 </Label>
                 <select
                   id="tipDoc"
                   value={formData.tipDoc}
-                  onChange={(e) => handleInputChange("tipDoc", e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={handleTipDocChange}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 
+                            focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 >
-                  <option value="">Selecciona una opción</option>
+                  <option value="">
+                    Selecciona un tipo de documento
+                  </option>
                   <option value="Tarjeta de Identidad">Tarjeta de Identidad</option>
                   <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>
                   <option value="Cédula de Extranjería">Cédula de Extranjería</option>
@@ -174,68 +243,69 @@ const [formData, setFormData] = useState(formDataInicial);
                 </select>
               </div>
             )}
+
           {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="documento" className="text-sm font-medium">
-                  Número de Documento
-                </Label>
-                <div className="relative">
-                  <IdCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    id="document"
-                    placeholder="123456789"
-                    value={formData.document}
-                    onChange={(e) => handleInputChange("document", e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="document" className="text-sm font-medium">
+                Número de Documento
+              </Label>
+              <input
+                id="document"
+                value={formData.document}
+                onChange={handleNumDocChange}
+                disabled={!formData.tipDoc} // 👈 bloquea si está en "Selecciona un tipo de documento"
+                className={`w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 
+                  ${!formData.tipDoc ? "bg-gray-100 cursor-not-allowed" : ""} 
+                  focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                placeholder="Ingrese el número de documento"
+              />
+            </div>
+
             )}
+
           {!isLogin && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName" className="text-sm font-medium">
-                  Nombre
+                <Label htmlFor="firstname" className="text-sm font-medium">
+                  Nombres
                 </Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    id="firstName"
-                    placeholder="Juan"
-                    value={formData.firstName}
-                    onChange={(e) => handleInputChange("firstName", e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+                <input
+                  id="firstname"
+                  type="text"
+                  value={formData.firstName}
+                  onChange={handleFirstnameChange}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Ingrese sus nombres"
+                />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="lastName" className="text-sm font-medium">
-                  Apellido
+                <Label htmlFor="lastname" className="text-sm font-medium">
+                  Apellidos
                 </Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
+                  <input
                     id="lastName"
-                    placeholder="Pérez"
+                    type="text"
                     value={formData.lastName}
-                    onChange={(e) => handleInputChange("lastName", e.target.value)}
-                    className="pl-10"
+                    onChange={handleLastnameChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Ingrese sus apellidos"
                   />
                 </div>
-              </div>
             </div>
           )}
+
           {!isLogin && (
             <div className="space-y-2">
-            <label htmlFor="pais" className="text-sm font-medium">
+            <Label htmlFor="pais" className="text-sm font-medium">
               País
-            </label>
+            </Label>
             <div className="relative">
               <select
                 id="pais"
                 value={formData.pais}
                 onChange={(e) => handleInputChange("pais", e.target.value)}
-                className="pl-3 pr-4 py-2 w-full border rounded-md text-sm bg-white"
+                className="pl-3 pr-4 py-2 w-full border rounded-md text-sm bg-white cursor-pointer"
               >
                 <option value="">Selecciona un país</option>
                 {listaPaises.map((pais) => (
@@ -247,20 +317,20 @@ const [formData, setFormData] = useState(formDataInicial);
             </div>
           </div>
           )}
+
           {!isLogin && (
             <div className="space-y-2">
               <Label htmlFor="telefono" className="text-sm font-medium">
                 Teléfono
               </Label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
+                <input
                   id="telefono"
                   type="tel"
-                  placeholder="3001234567"
+                  placeholder="1234567890"
                   value={formData.telefono}
-                  onChange={(e) => handleInputChange("telefono", e.target.value)}
-                  className="pl-10"
+                  onChange={handlePhoneChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -270,17 +340,14 @@ const [formData, setFormData] = useState(formDataInicial);
             <Label htmlFor="email" className="text-sm font-medium">
               Email
             </Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
+              <input
                 id="email"
-                type="email"
-                placeholder="nick@email.com"
+                type="text"
                 value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                className="pl-10"
+                onChange={handleEmailChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="ejemplo@correo.com"
               />
-            </div>
           </div>
 
           <div className="space-y-2">
