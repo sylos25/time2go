@@ -39,6 +39,20 @@ export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalP
 };
 
   const [formData, setFormData] = useState(formDataInicial);
+  const [showModal, setShowModal] = useState(false);
+
+// Para manejar la ventana emergente de 'Política de seguridad de la información'.
+  const handleAccept = () => {
+    handleInputChange("acceptTerms", true);
+    setShowModal(false);
+  };
+
+  const handleReject = () => {
+    setFormData({ acceptTerms: false });
+    setShowModal(false);
+    alert("Formulario cerrado");
+  };
+
 
   // LLamar los paises que estan en BD.
       useEffect(() => {
@@ -419,19 +433,53 @@ const handleTipDocChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
             </div>
           ) : (
             <div className="flex items-center space-x-2">
-              <Checkbox
-              className="cursor-pointer"
-                id="acceptTerms"
-                checked={formData.acceptTerms}
-                onCheckedChange={(checked) => handleInputChange("acceptTerms", checked as boolean)}
-              />
-              <Label htmlFor="acceptTerms" className="text-sm text-gray-600 ">
-                Acepto los{" "}
-                <Button variant="link" className="text-blue-600 hover:text-blue-500 p-0 h-auto cursor-pointer">
-                  términos y condiciones
-                </Button>
-              </Label>
+      <Checkbox
+        className="cursor-pointer"
+        id="acceptTerms"
+        checked={formData.acceptTerms}
+        onCheckedChange={(checked) =>
+          handleInputChange("acceptTerms", checked as boolean)
+        }
+      />
+      <Label
+        htmlFor="acceptTerms"
+        className="text-sm text-gray-600"
+      >
+        Acepto los{" "}
+        <Button
+          variant="link"
+          className="text-blue-600 hover:text-blue-500 p-0 h-auto cursor-pointer"
+          onClick={() => setShowModal(true)}
+        >
+          Política de seguridad de la información.
+        </Button>
+      </Label>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded shadow-md w-96">
+            <h2 className="text-lg font-semibold mb-4">
+              Política de seguridad de la información
+            </h2>
+            <p className="text-sm text-gray-700 mb-6">
+              Time2Go (www.Time2Go.com) cuenta con medidas de seguridad de la información en los procesos, trámites, servicios, sistemas de información y su infraestructura permitiendo preservar la confidencialidad, integridad, disponibilidad y privacidad de los datos y la información que se administran en este, y en cumplimiento del marco jurídico correspondiente, con el objetivo de proporcionar una experiencia confiable, mediante un servicio seguro.
+              En Time2Go (www.Time2Go.com) comprobamos y ponemos a prueba todas las etapas del ciclo de vida del desarrollo de este (Desarrollo, Pruebas, Producción) y realizamos evaluación constante del mismo, en cumplimiento de la Estrategia de Gobierno Digital (Decreto 1008 del 2018) y la Política Nacional de Seguridad Digital (CONPES 3854) con el objetivo de analizar los riesgos de seguridad digital a los cuales se encuentra expuesto el sitio web y lograr su adecuada mitigación
+              No nos hacemos responsables por cualquier falla en las medidas de seguridad cuando dicho incumplimiento se deba a circunstancias fuera de nuestro control, caso fortuito o fuerza mayor.
+              Time2Go (www.Time2Go), se compromete a adoptar una política de confidencialidad y protección de datos, con el objeto de proteger la privacidad de la información personal obtenida a través de su sitio web.
+            </p>
+            <div className="flex justify-end space-x-4">
+              <Button variant="outline" onClick={handleReject}>
+                Rechazar
+              </Button>
+              <Button onClick={handleAccept}>
+                Aceptar
+              </Button>
             </div>
+          </div>
+        </div>
+      )}
+    </div>
           )}
 
           <Button

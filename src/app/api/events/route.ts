@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { cloudinary } from "@/lib/cloudinary";
-import streamifier from "streamifier";
+import { cloudinary, uploadBuffer } from "@/lib/cloudinary";
 import pool from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -11,58 +10,59 @@ export async function POST(req: Request) {
     const formData = await req.formData();
     const files = formData.getAll("additionalImages") as File[];
 
-    // Subir imágenes a Cloudinary y obtener URLs
+    // Subir imágenes a Cloudinary y obtener URLs (usando helper uploadBuffer)
     const urls: string[] = [];
     for (const f of files) {
       const buffer = Buffer.from(await f.arrayBuffer());
-      const url = await new Promise<string>((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          { folder: "eventos" },
-          (err, result) => (err ? reject(err) : resolve(result!.secure_url))
-        );
-        streamifier.createReadStream(buffer).pipe(uploadStream);
-      });
-      urls.push(url);
+      const result = await uploadBuffer(buffer, "eventos");
+      urls.push(result.secure_url);
     }
 
-    // Extraer campos del formulario
-    const id_evento = formData.get("id_evento") as string;
-    const nombre_evento = formData.get("nombre_evento") as string;
-    const id_usuario = formData.get("id_usuario") as string;
-    const id_tipo_evento = formData.get("id_tipo_evento") as string;
-    const id_municipio = formData.get("id_municipio") as string;
-    const id_sitio = formData.get("id_sitio") as string;
-    const descripcion = formData.get("descripcion") as string;
-    const telefono_1 = formData.get("telefono_1") as string;
-    const telefono_2 = formData.get("telefono_2") as string;
-    const fecha_inicio = formData.get("fecha_inicio") as string;
-    const fecha_fin = formData.get("fecha_fin") as string;
-    const hora_inicio = formData.get("hora_inicio") as string;
-    const hora_final = formData.get("hora_final") as string;
+    // Extraer campos del formulario (mapeo y parseo de tipos)
+    const nombre_evento = (formData.get("nombre_evento") as string) || "";
+    const descripcion = (formData.get("descripcion") as string) || "";
+    const fecha_inicio = (formData.get("fecha_inicio") as string) || null;
+    const fecha_fin = (formData.get("fecha_fin") as string) || null;
+    const hora_inicio = (formData.get("hora_inicio") as string) || null;
+    const hora_final = (formData.get("hora_final") as string) || null;
+    const dias_semana = (formData.get("dias_semana") as string) || null; // JSON string
+    const id_usuario = Number(formData.get("id_usuario") || 0);
+    const id_categoria_evento = Number(formData.get("id_categoria_evento") || 0);
+    const id_tipo_evento = Number(formData.get("id_tipo_evento") || 0);
+    const id_municipio = Number(formData.get("id_municipio") || 0);
+    const id_sitio = Number(formData.get("id_sitio") || 0);
+    const telefono_1 = (formData.get("telefono_1") as string) || null;
+    const telefono_2 = (formData.get("telefono_2") as string) || null;
+    const costo = parseFloat((formData.get("costo") as string) || "0") || 0;
+    const cupo = parseInt((formData.get("cupo") as string) || "0") || 0;
+    const estado = String(formData.get("estado") || "true") === "true";
 
-    // 1. Insertar evento en tabla_eventos
+    // 1. Insertar evento en tabla_eventos (omitimos id_evento para que sea autoincrement)
     const eventResult = await pool.query(
       `INSERT INTO tabla_eventos (
-        id_evento, nombre_evento, id_usuario, id_tipo_evento, id_municipio, id_sitio,
-        descripcion, telefono_1, telefono_2, fecha_inicio, fecha_fin,
-        hora_inicio, hora_final, id_imagen
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+        nombre_evento, descripcion, fecha_inicio, fecha_fin, hora_inicio, hora_final, dias_semana,
+        id_usuario, id_categoria_evento, id_tipo_evento, id_municipio, id_sitio,
+        telefono_1, telefono_2, costo, cupo, estado
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
       RETURNING id_evento`,
       [
-        id_evento,
         nombre_evento,
-        id_usuario,
-        id_tipo_evento,
-        id_municipio,
-        id_sitio,
         descripcion,
-        telefono_1,
-        telefono_2,
         fecha_inicio,
         fecha_fin,
         hora_inicio,
         hora_final,
-        null, // id_imagen lo dejamos null porque se manejará en tabla_imagenes_eventos
+        dias_semana,
+        id_usuario,
+        id_categoria_evento,
+        id_tipo_evento,
+        id_municipio,
+        id_sitio,
+        telefono_1,
+        telefono_2,
+        costo,
+        cupo,
+        estado,
       ]
     );
 
@@ -77,10 +77,27 @@ export async function POST(req: Request) {
       );
     }
 
+    // 3. Si se envió un documento (PDF u otro), subirlo y guardarlo también
+    const docFile = formData.get("documento") as File | null;
+    let documentoUrl: string | null = null;
+    if (docFile && (docFile as unknown as any).size) {
+      const bufferDoc = Buffer.from(await docFile.arrayBuffer());
+      // subimos como recurso raw (pdf, docx, etc.)
+      const docResult = await uploadBuffer(bufferDoc, "eventos/documents", { resource_type: "raw" });
+      documentoUrl = docResult.secure_url;
+      // Guardar link del documento en la misma tabla de archivos vinculados al evento
+      await pool.query(
+        `INSERT INTO tabla_imagenes_eventos (url_imagen_evento, id_evento)
+         VALUES ($1, $2)`,
+        [documentoUrl, newEventId]
+      );
+    }
+
     return NextResponse.json({
       ok: true,
       eventId: newEventId,
       urls,
+      documento: documentoUrl,
     });
   } catch (err) {
     console.error(err);
@@ -100,6 +117,7 @@ export async function GET() {
              e.descripcion,
              e.fecha_inicio,
              e.fecha_fin,
+             e.dias_semana,
              i.id_imagen_evento,
              i.url_imagen_evento
       FROM tabla_eventos e
@@ -118,6 +136,7 @@ export async function GET() {
           descripcion: row.descripcion,
           fecha_inicio: row.fecha_inicio,
           fecha_fin: row.fecha_fin,
+          dias_semana: row.dias_semana,
           imagenes: [],
         };
       }

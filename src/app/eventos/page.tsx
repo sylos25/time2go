@@ -118,6 +118,12 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   }
 };
 
+// Imágenes se procesan localmente (compresión/preview) y se envían al backend en el submit.
+// El backend (`/api/events`) se encargará de subir a Cloudinary y guardar los links en la BD.
+
+
+
+
 // Generar rango de fechas entre fecha_inicio y fecha_final (retorna Date objects)
 const generarRangoDias = (inicio: Date | null, fin: Date | null): Date[] => {
   if (!inicio || !fin) return [];
@@ -385,6 +391,11 @@ const handleAddEvent = async () => {
     (newEvent.imagenes || []).forEach((file: File) => {
       formData.append("additionalImages", file);
     });
+
+    // Documento (PDF) opcional
+    if (newEvent.documento) {
+      formData.append("documento", newEvent.documento);
+    }
 
     const res = await fetch("/api/events", {
       method: "POST",
@@ -1097,24 +1108,7 @@ const handleAddEvent = async () => {
                   multiple
                   accept="image/jpeg"
                   className="hidden"
-                  onChange={(e) => {
-                    if (!e.target.files) return;
-                    let files = Array.from(e.target.files);
-
-                    // Limitar a máximo 6
-                    if (files.length > 6) {
-                      alert("Solo puedes subir hasta 6 imágenes por evento.");
-                      setNewEvent((prev) => ({ ...prev, imagenes: [] }));
-                      setPreview([]); // limpia las previews
-                      return; // salir de la función
-                    }
-
-                    // Si cumple la regla → guardar y mostrar previews
-                    setNewEvent((prev) => ({ ...prev, imagenes: files }));
-
-                    const previews = files.map((file) => URL.createObjectURL(file));
-                    setPreview(previews);
-                  }}
+                  onChange={handleImageUpload}
                 />
                   {preview.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">

@@ -192,6 +192,7 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
     fecha_fin               DATE                        NOT NULL,   
     hora_inicio             TIME                        NOT NULL,
     hora_final              TIME                        NOT NULL,
+    dias_semana             TEXT                                    , -- JSON string of selected days (YYYY-MM-DD array)
     gratis_pago             BOOLEAN                     NOT NULL        DEFAULT FALSE,                              -- FALSE: GRATIS and TRUE: PAGO.
     cupo                    INT                         NOT NULL        DEFAULT 0 CHECK (cupo >= 0),                -- Numero de invitados (No debe ser menor a 0 y mayor a 5000).
     estado                  BOOLEAN                     NOT NULL        DEFAULT FALSE,                              -- FALSE: Pendiente por validar and TRUE: Aprobado.
@@ -253,12 +254,19 @@ CREATE TABLE IF NOT EXISTS tabla_reservas_eventos (
     FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
 );
 
+CREATE TABLE IF NOT EXISTS tabla_categoria_boleto (
+    id_categoria_boleto     INT                         PRIMARY KEY,
+    nombre_categoria_boleto VARCHAR                     NOT NULL        UNIQUE CHECK (char_length(nombre_categoria_boleto) >= 3),   
+    );
+
 CREATE TABLE IF NOT EXISTS tabla_valores (
     id_valor                SERIAL                      PRIMARY KEY,
     id_evento               INT                         NOT NULL,
+    id_categoria_boleto     INT                         NOT NULL        DEFAULT 1,
     valor                   DECIMAL(9,2)                NOT NULL,
     fecha_actualizacion     TIMESTAMP WITH TIME ZONE                    DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
+    FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento),
+    FOREIGN KEY (id_categoria_boleto) REFERENCES tabla_categoria_boleto(id_categoria_boleto)
 );
 
 CREATE TABLE IF NOT EXISTS tabla_links (
@@ -309,6 +317,9 @@ FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
 CREATE TRIGGER trig_update_imagenes BEFORE UPDATE ON tabla_imagenes
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
+-- Asegurar columna dias_semana en caso de migraciones parciales
+ALTER TABLE tabla_eventos ADD COLUMN IF NOT EXISTS dias_semana TEXT;
 
 CREATE TRIGGER trig_update_tipo_eventos BEFORE UPDATE ON tabla_tipo_eventos
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
