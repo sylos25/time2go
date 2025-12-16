@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import {
@@ -77,30 +77,131 @@ export function Header({
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
+  const pathname = usePathname();
+
   useEffect(() => {
-    // Si ya hay token en localStorage al cargar la app
-    const token = localStorage.getItem("token");
-    const storedName = localStorage.getItem("userName");
-    if (token) {
-      const exp = parseJwtExp(token);
-      setUser({ token, name: storedName || undefined });
-      if (exp) scheduleAutoLogout(exp);
-    }
- 
+    // Read token from localStorage on mount and on route change to keep session
+    const syncFromStorage = () => {
+      const token = localStorage.getItem("token");
+      const storedName = localStorage.getItem("userName");
+      const storedDoc = localStorage.getItem("userDocument");
+      if (token) {
+        const exp = parseJwtExp(token);
+        setUser({ token, name: storedName || undefined, numero_documento: storedDoc || undefined });
+        if (exp) scheduleAutoLogout(exp);
+      }
+      // if no token, don't immediately clear user here — we'll validate session with the server
+    };
+
+    const validateSession = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          // If token exists, validate locally by expiry to avoid unnecessary server calls
+          const exp = parseJwtExp(token);
+          if (exp && exp * 1000 <= Date.now()) {
+            // expired token
+            performLogout();
+            return;
+          }
+
+          // Token seems valid locally — optimistically set user from localStorage
+          const storedName = localStorage.getItem('userName');
+          setUser({ token, name: storedName || (user as any)?.name });
+          if (exp) scheduleAutoLogout(exp);
+
+          // Also validate token with the server in background (silent clear if invalid)
+          try {
+            const res = await fetch('/api/me', { headers: { Authorization: `Bearer ${token}` } });
+            if (!res.ok) {
+              // token not valid on server -> clear silently
+              clearSessionSilent();
+              return;
+            }
+            const data = await res.json();
+            if (data?.ok && data.user) {
+              const name = data.user.nombres || data.user.correo || storedName || user?.name;
+              const numero_documento = data.user.numero_documento || localStorage.getItem('userDocument') || undefined;
+              if (numero_documento) localStorage.setItem('userDocument', String(numero_documento));
+              setUser({ token, name, numero_documento });
+            } else {
+              clearSessionSilent();
+            }
+          } catch (err) {
+            console.error('validateSession server check error', err);
+          }
+
+          return;
+        }
+
+        // No token in localStorage — maybe server session (cookie) exists; ask /api/me
+        const res = await fetch('/api/me');
+        if (!res.ok) {
+          // session invalid — clear silently so we don't interrupt navigation
+          clearSessionSilent();
+          return;
+        }
+        const data = await res.json();
+        if (data?.ok && data.user) {
+          const name = data.user.nombres || data.user.correo || localStorage.getItem('userName') || user?.name;
+          const tokenFromStorage = localStorage.getItem('token') || (user as any)?.token;
+          const numero_documento = data.user.numero_documento || localStorage.getItem('userDocument') || undefined;
+          if (numero_documento) localStorage.setItem('userDocument', String(numero_documento));
+          setUser({ token: tokenFromStorage, name, numero_documento });
+          const expFromToken = tokenFromStorage ? parseJwtExp(tokenFromStorage) : undefined;
+          if (expFromToken) scheduleAutoLogout(expFromToken);
+        } else {
+          // server said no session — clear silently
+          clearSessionSilent();
+        }
+      } catch (err) {
+        console.error('validateSession error', err);
+      }
+    };
+
+    syncFromStorage();
+    validateSession();
+
     const onLogin = (e: Event) => {
       const ev = e as CustomEvent;
       const detail = ev.detail ?? {};
       const token = detail.token || localStorage.getItem("token");
       const name = detail.name || detail.nombre || localStorage.getItem("userName") || "Usuario";
+      const numero_documento = detail.numero_documento || localStorage.getItem("userDocument") || undefined;
       if (token) localStorage.setItem("token", token);
       if (name) localStorage.setItem("userName", name);
-      setUser({ token, name });
+      if (numero_documento) localStorage.setItem("userDocument", String(numero_documento));
+      setUser({ token, name, numero_documento });
       const exp = detail.expiresAt || parseJwtExp(token || "");
       if (exp) scheduleAutoLogout(exp);
     };
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "token") {
+        // if token removed in another tab, logout here
+        if (!e.newValue) {
+          performLogout();
+        } else {
+          // new token added/updated -> re-validate session
+          syncFromStorage();
+          validateSession();
+        }
+      }
+      if (e.key === "userName") {
+        // just sync name
+        const storedName = localStorage.getItem('userName');
+        setUser((prev: any) => (prev ? { ...prev, name: storedName || prev.name } : prev));
+      }
+    };
+
     window.addEventListener("user:login", onLogin);
-    return () => window.removeEventListener("user:login", onLogin);
-  }, []);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      window.removeEventListener("user:login", onLogin);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [pathname]);
 
   // derive login state and display name from local user state (fallback to props)
   const loggedIn = Boolean(user) || isLoggedIn;
@@ -130,6 +231,18 @@ export function Header({
     router.push("/");
     setMenuOpen(false);
     setLogoutDialogOpen(false);
+  }
+
+  // Silent session clear: clear auth state without redirecting (used for background checks)
+  const clearSessionSilent = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userName");
+    setUser(null);
+    if (logoutTimerRef.current) {
+      window.clearTimeout(logoutTimerRef.current);
+      logoutTimerRef.current = null;
+    }
+    // do not dispatch user:logout or redirect here to avoid interrupting navigation
   }
 
   const handleLogout = () => {

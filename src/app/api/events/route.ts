@@ -26,7 +26,24 @@ export async function POST(req: Request) {
     const hora_inicio = (formData.get("hora_inicio") as string) || null;
     const hora_final = (formData.get("hora_final") as string) || null;
     const dias_semana = (formData.get("dias_semana") as string) || null; // JSON string
-    const id_usuario = Number(formData.get("id_usuario") || 0);
+
+    // Determine owner: prefer Authorization Bearer token (numero_documento), fallback to form field
+    let numero_documento = String(formData.get("numero_documento") || "");
+    const authHeader = (req.headers.get('authorization') || '').trim();
+    if (authHeader.startsWith('Bearer ')) {
+      try {
+        const { verifyToken } = await import('@/lib/jwt');
+        const t = authHeader.slice(7).trim();
+        const payload = verifyToken(t);
+        if (payload && payload.numero_documento) {
+          numero_documento = String(payload.numero_documento);
+        }
+      } catch (e) {
+        // ignore verification errors and fallback to provided document
+        console.error('token verification in events POST failed', e);
+      }
+    }
+
     const id_categoria_evento = Number(formData.get("id_categoria_evento") || 0);
     const id_tipo_evento = Number(formData.get("id_tipo_evento") || 0);
     const id_municipio = Number(formData.get("id_municipio") || 0);
@@ -53,7 +70,7 @@ export async function POST(req: Request) {
         hora_inicio,
         hora_final,
         dias_semana,
-        id_usuario,
+        numero_documento, // store numero_documento into id_usuario column
         id_categoria_evento,
         id_tipo_evento,
         id_municipio,

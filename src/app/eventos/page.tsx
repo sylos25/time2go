@@ -30,7 +30,7 @@ interface Event {
   hora_inicio: string;
   hora_final: string;
   dias_semana?: string;             // opcional si no lo usas en BD
-  id_usuario: number;
+  numero_documento?: string;
   id_categoria_evento: number;
   id_tipo_evento: number;
   id_municipio: number;
@@ -81,27 +81,26 @@ const TIPOS_BOLETERIA = [
 
 const [newEvent, setNewEvent] = useState<any>({
   nombre_evento: "",
-  id_usuario: 0,
+  numero_documento: "",
   id_categoria_evento: 0,
   id_tipo_evento: 0,
   id_municipio: 0,
   id_sitio: 0,
   descripcion: "",
-  // use telefones without underscore for form fields; we'll map to backend names on submit
   telefono1: "",
   telefono2: "",
   fecha_inicio: null as Date | null,
   fecha_final: null as Date | null,
-  diasSeleccionados: [] as Date[], // array de objetos Date
+  diasSeleccionados: [] as Date[],
   hora_inicio: "",
   hora_final: "",
   pago: false,
   costos: [""],
-  tiposBoleteria: [""] as string[], // tipos de boletería para cada costo
-  linksBoleteria: [""] as string[], // links para comprar boletería (máx 5)
+  tiposBoleteria: [""] as string[],
+  linksBoleteria: [""] as string[],
   cupo: "",
   estado: true,
-  imagenes: [] as File[], // aquí se guardarán las imágenes seleccionadas
+  imagenes: [] as File[],
   documento: null,
   highlights: [],
   additionalImages: [],
@@ -174,13 +173,13 @@ const formatDia = (date: Date): string => {
   };
 
   const removeCostoField = (index: number) => {
-    const updatedCostos = newEvent.costos.filter((_, i) => i !== index);
+    const updatedCostos = newEvent.costos.filter((_: any, i: number) => i !== index);
     const updatedTipos = newEvent.tiposBoleteria.filter((_: string, i: number) => i !== index);
     setNewEvent({ ...newEvent, costos: updatedCostos, tiposBoleteria: updatedTipos });
   };
 
   const removeAllCostos = () => {
-    setNewEvent({ ...newEvent, costos: [""], tiposBoleteria: [""] });
+    setNewEvent((prev: any) => ({ ...prev, costos: [""], tiposBoleteria: [""] }));
   };
 
   // Obtener tipos disponibles (no seleccionados en otros campos)
@@ -243,7 +242,7 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const validFiles = compressedFiles.filter((f): f is File => f !== null);
 
     // Guardar en el estado del evento
-    setNewEvent((prev) => ({ ...prev, imagenes: validFiles }));
+    setNewEvent((prev: any) => ({ ...prev, imagenes: validFiles }));
 
     // Generar previews
     const previews = validFiles.map((file) => URL.createObjectURL(file));
@@ -329,6 +328,10 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   
     fetchCategorias();
   }, []);
+
+//Para traer el nombre del usuario que esta en login al campo nombre del promotor.
+
+
   
 //Para llamar el tipo (evento) de la base de datos.
   useEffect(() => {
@@ -375,7 +378,8 @@ const handleAddEvent = async () => {
     // Convertir diasSeleccionados (Date[]) a formato YYYY-MM-DD string array
     const diasStrings = (newEvent.diasSeleccionados || []).map((d: Date) => d.toISOString().split('T')[0]);
     formData.append("dias_semana", JSON.stringify(diasStrings));
-    formData.append("id_usuario", String(newEvent.id_usuario || 0));
+    // Attach owner by numero_documento (if available from session)
+    formData.append("numero_documento", String(newEvent.numero_documento || localStorage.getItem('userDocument') || ""));
     formData.append("id_categoria_evento", String(newEvent.id_categoria_evento || 0));
     formData.append("id_tipo_evento", String(newEvent.id_tipo_evento || 0));
     formData.append("id_municipio", String(newEvent.id_municipio || 0));
@@ -414,7 +418,7 @@ const handleAddEvent = async () => {
     // Reset del formulario (manteniendo la misma forma que el estado inicial)
     setNewEvent({
       nombre_evento: "",
-      id_usuario: 0,
+      numero_documento: "",
       id_categoria_evento: 0,
       id_tipo_evento: 0,
       id_municipio: 0,
@@ -445,7 +449,7 @@ const handleAddEvent = async () => {
   
   // Funciones de mapeo
   function mapCategoryToTipoId(category: string): number {
-    const categorias = {
+    const categorias: Record<string, number> = {
       Música: 1,
       Arte: 2,
       Teatro: 3,
@@ -456,7 +460,7 @@ const handleAddEvent = async () => {
   }
   
   function mapLocationToMunicipioId(location: string): number {
-    const municipios = {
+    const municipios: Record<string, number> = {
       Bogotá: 1,
       Medellín: 2,
       Bucaramanga: 3,
@@ -478,6 +482,9 @@ const handleAddEvent = async () => {
     updatedImages[index] = value;
     setNewEvent({ ...newEvent, additionalImages: updatedImages });
   };
+
+  // Fix implicit any in maps elsewhere
+  // examples in render: ensure callbacks have typed params
   
   // Categorías visuales para filtros
   const categories = ["all", "Música", "Arte", "Teatro", "Gastronomía", "Tecnología"];
@@ -630,7 +637,7 @@ const handleAddEvent = async () => {
               <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="title">Nombre del Evento *</Label>
+                    <Label htmlFor="title">Nombre del Evento</Label>
                     <Input
                       id="title"
                       value={newEvent.nombre_evento}
@@ -641,12 +648,12 @@ const handleAddEvent = async () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="title">Nombre del Promotor *</Label>
+                    <Label htmlFor="title">Nombre del Promotor</Label>
                     <Input
-                      id="title"
-                      value={newEvent.id_usuario}
-                      onChange={(e) => setNewEvent({ ...newEvent, id_usuario: Number(e.target.value) })}
-                      placeholder="12345"
+                      id="promotor_doc"
+                      value={newEvent.numero_documento}
+                      onChange={(e) => setNewEvent({ ...newEvent, numero_documento: e.target.value })}
+                      placeholder="1234567890"
                       className="rounded-xl"
                     />
                   </div>
@@ -941,7 +948,7 @@ const handleAddEvent = async () => {
                        <p className="text-xs text-gray-600 italic -translate-y-3 cursor-default"> 
                           Agrega los tipos de boletas y los precios de cada una de las boletas al evento.
                         </p>
-                        {newEvent.costos.map((costo, index) => (
+                        {newEvent.costos.map((costo: string, index: number) => (
                           <div key={index} className="flex flex-col gap-2">
                             <div className="flex items-center gap-2">
                               <select
@@ -1022,7 +1029,7 @@ const handleAddEvent = async () => {
                     <p className="text-xs text-gray-600 italic -translate-y-3 cursor-default"> 
                       Agrega los links donde los usuarios pueden comprar la entrada al evento.
                     </p>
-                  {newEvent.linksBoleteria.map((link, index) => (
+                  {newEvent.linksBoleteria.map((link: string, index: number) => (
                     <div key={index} className="flex items-center gap-2 -translate-y-3 ">
                       <Input
                         type="url"
@@ -1154,7 +1161,7 @@ const handleAddEvent = async () => {
                       }
 
                       // Guardar en tu estado
-                      setNewEvent((prev) => ({ ...prev, documento: file }));
+                      setNewEvent((prev: any) => ({ ...prev, documento: file }));
                     }}
                   />
 
@@ -1209,7 +1216,7 @@ const handleAddEvent = async () => {
                     className="w-full h-80 object-cover rounded-2xl"
                   />
                   <div className="grid grid-cols-3 gap-3">
-                    {expandedEvent.additionalImages.map((img, index) => (
+                    {expandedEvent.additionalImages.map((img: string, index: number) => (
                       <img
                         key={index}
                         src={img || "/placeholder.svg"}
@@ -1275,7 +1282,7 @@ const handleAddEvent = async () => {
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 mb-3">Lo que incluye</h3>
                     <div className="grid grid-cols-2 gap-2">
-                      {expandedEvent.highlights.map((highlight, index) => (
+                      {expandedEvent.highlights.map((highlight: string, index: number) => (
                         <div key={index} className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
                           <span className="text-gray-700">{highlight}</span>

@@ -35,9 +35,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const match = await bcrypt.compare(String(password), hash);
       if (!match) return res.status(401).json({ message: "Credenciales inválidas" });
 
-      // Ya no generamos ni devolvemos token aquí.
+      // Generate JWT token so client can store session in localStorage
+      const jwt = require('jsonwebtoken');
+      const secret = process.env.BETTER_AUTH_SECRET || process.env.JWT_SECRET || 'dev-secret';
+      const expiresIn = 60 * 30; // 30 minutes
+      // Use numero_documento as the stable user identifier in tokens
+      const token = jwt.sign({ numero_documento: user.numero_documento, name: user.nombres || user.correo.split('@')[0] }, secret, { expiresIn });
+
       return res.status(200).json({
         success: true,
+        token,
+        numero_documento: user.numero_documento,
+        expiresAt: Math.floor(Date.now() / 1000) + expiresIn,
         name: user.nombres || user.correo.split("@")[0],
       });
     } finally {
