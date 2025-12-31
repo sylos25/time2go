@@ -192,7 +192,7 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
     fecha_fin               DATE                        NOT NULL,   
     hora_inicio             TIME                        NOT NULL,
     hora_final              TIME                        NOT NULL,
-    dias_semana             TEXT                                    , -- JSON string of selected days (YYYY-MM-DD array)
+    dias_semana             TEXT,                                                                                   -- JSON string of selected days (YYYY-MM-DD array)
     gratis_pago             BOOLEAN                     NOT NULL        DEFAULT FALSE,                              -- FALSE: GRATIS and TRUE: PAGO.
     cupo                    INT                         NOT NULL        DEFAULT 0 CHECK (cupo >= 0),                -- Numero de invitados (No debe ser menor a 0 y mayor a 5000).
     estado                  BOOLEAN                     NOT NULL        DEFAULT FALSE,                              -- FALSE: Pendiente por validar and TRUE: Aprobado.
@@ -211,7 +211,7 @@ CREATE TABLE IF NOT EXISTS tabla_imagenes_eventos (
     url_imagen_evento       VARCHAR                     NOT NULL        UNIQUE,
     id_evento               INT                         NOT NULL,
     fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP
+    fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
 );
 
@@ -220,7 +220,7 @@ CREATE TABLE IF NOT EXISTS tabla_documentos_eventos (
     url_documento_evento    VARCHAR                     NOT NULL        UNIQUE,
     id_evento               INT                         NOT NULL,
     fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP
+    fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
 );
 
@@ -256,7 +256,7 @@ CREATE TABLE IF NOT EXISTS tabla_reservas_eventos (
 
 CREATE TABLE IF NOT EXISTS tabla_categoria_boleto (
     id_categoria_boleto     INT                         PRIMARY KEY,
-    nombre_categoria_boleto VARCHAR                     NOT NULL        UNIQUE CHECK (char_length(nombre_categoria_boleto) >= 3),   
+    nombre_categoria_boleto VARCHAR                     NOT NULL        UNIQUE CHECK (char_length(nombre_categoria_boleto) >= 3)   
     );
 
 CREATE TABLE IF NOT EXISTS tabla_valores (
@@ -1544,3 +1544,10 @@ INSERT INTO tabla_sitios_disc VALUES (2, 1, 2, 'Rampa en la entrada del Teatro S
 INSERT INTO tabla_sitios_disc VALUES (3, 2, 1, 'Ascensor cerca a la entrada de Neomundo');
 INSERT INTO tabla_sitios_disc VALUES (4, 2, 2, 'Rampa en la entrada y para acceder entre los pisos de Neomundo');
 INSERT INTO tabla_sitios_disc VALUES (5, 2, 3, 'Señalización en braille en las distintos accesos de Neomundo');
+
+-- CARGAR CATEGORIA BOLETERIA
+INSERT INTO tabla_categoria_boleto VALUES (1, 'General');
+INSERT INTO tabla_categoria_boleto VALUES (2, 'VIP');
+INSERT INTO tabla_categoria_boleto VALUES (3, 'Platea');
+INSERT INTO tabla_categoria_boleto VALUES (4, 'Balcon');
+INSERT INTO tabla_categoria_boleto VALUES (5, 'Preferencial');

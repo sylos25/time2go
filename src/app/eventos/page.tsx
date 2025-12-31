@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { AuthModal } from "@/components/auth-modal";
@@ -68,16 +69,7 @@ export default function EventosPage() {
   const [showTelefono2, setShowTelefono2] = useState(false);
   // NOTE: use `events` state (unified) instead of a separate `eventos`
   const [preview, setPreview] = useState<string[]>([]);
-
-const TIPOS_BOLETERIA = [
-  "General",
-  "Estudiante",
-  "Adulto Mayor",
-  "VIP",
-  "Premium",
-  "Acceso Temprano",
-  "Familia"
-];
+  const [categoriasBoleto, setCategoriasBoleto] = useState<{ id_categoria_boleto: number; nombre_categoria_boleto: string }[]>([]);
 
 const [newEvent, setNewEvent] = useState<any>({
   nombre_evento: "",
@@ -105,6 +97,8 @@ const [newEvent, setNewEvent] = useState<any>({
   highlights: [],
   additionalImages: [],
 });
+
+  const router = useRouter();
 
 // handler para el campo `cupo`
 const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,9 +177,16 @@ const formatDia = (date: Date): string => {
   };
 
   // Obtener tipos disponibles (no seleccionados en otros campos)
-  const getAvailableTypes = (currentIndex: number): string[] => {
-    const selectedTypes = newEvent.tiposBoleteria.filter((_: string, i: number) => i !== currentIndex);
-    return TIPOS_BOLETERIA.filter(tipo => !selectedTypes.includes(tipo));
+  const getAvailableTypes = (currentIndex: number): { id_categoria_boleto: number; nombre_categoria_boleto: string }[] => {
+    const selectedTypeIds = newEvent.tiposBoleteria
+      .filter((_: string, i: number) => i !== currentIndex)
+      .map((tipo: string) => {
+        const found = categoriasBoleto.find(cat => cat.nombre_categoria_boleto === tipo);
+        return found ? found.id_categoria_boleto : null;
+      })
+      .filter((id: number | null) => id !== null);
+    
+    return categoriasBoleto.filter(tipo => !selectedTypeIds.includes(tipo.id_categoria_boleto));
   };
 
   // Handlers para links de boletería
@@ -255,17 +256,54 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     // Aquí podrías hacer un fetch/axios POST al backend
   };
 
+  // Fetch and normalize events for the UI
+  const fetchEventos = async () => {
+    try {
+      const res = await fetch("/api/events");
+      const data = await res.json();
+      const rawEvents = (data && data.ok && Array.isArray(data.eventos)) ? data.eventos : Array.isArray(data) ? data : [];
+
+      const normalized = rawEvents.map((e: any) => {
+        // determine first image
+        const firstImage = e.imagenes && e.imagenes.length ? e.imagenes[0].url_imagen_evento : null;
+
+        // determine price (show min price if paid, otherwise 'Gratis')
+        let price: number | string = 0;
+        if (!e.gratis_pago) {
+          price = "Gratis";
+        } else if (e.valores && e.valores.length) {
+          const vals = e.valores.map((v: any) => Number(v.valor || 0)).filter(Boolean);
+          price = vals.length ? Math.min(...vals) : 0;
+        } else {
+          price = 0;
+        }
+
+        // date/time formatting
+        const date = e.fecha_inicio ? new Date(e.fecha_inicio).toLocaleDateString() : "";
+        const time = e.hora_inicio ? `${e.hora_inicio}${e.hora_final ? ` - ${e.hora_final}` : ""}` : "";
+
+        return {
+          id_evento: e.id_evento,
+          title: e.nombre_evento,
+          description: e.descripcion,
+          image: firstImage || "/placeholder.svg",
+          date,
+          time,
+          location: e.nombre_sitio || e.nombre_municipio || "",
+          attendees: e.cupo ?? 0,
+          price,
+          raw: e, // keep original for details
+        };
+      });
+
+      setEvents(normalized);
+    } catch (err) {
+      console.error("Error fetching events:", err);
+      setEvents([]);
+    }
+  };
+
   useEffect(() => {
-    const fetchEventos = async () => {
-      try {
-        const res = await fetch("/api/events");
-        const data = await res.json();
-        if (data.ok && Array.isArray(data.eventos)) setEvents(data.eventos);
-        else if (Array.isArray(data)) setEvents(data);
-      } catch (err) {
-        console.error("Error fetching events:", err);
-      }
-    };
     fetchEventos();
   }, []);
 
@@ -329,6 +367,21 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     fetchCategorias();
   }, []);
 
+//Para cargar las categorías de boletos de la base de datos.
+  useEffect(() => {
+    const fetchCategoriasBoleto = async () => {
+      try {
+        const res = await fetch("/api/categoria_boleto");
+        const data = await res.json();
+        setCategoriasBoleto(data);
+      } catch (error) {
+        console.error("Error al cargar categorías de boleto:", error);
+      }
+    };
+  
+    fetchCategoriasBoleto();
+  }, []);
+
 //Para traer el nombre del usuario que esta en login al campo nombre del promotor.
 
 
@@ -387,7 +440,12 @@ const handleAddEvent = async () => {
     // transform phone fields to backend expected names
     formData.append("telefono_1", newEvent.telefono1 || newEvent.telefono_1 || "");
     formData.append("telefono_2", newEvent.telefono2 || newEvent.telefono_2 || "");
-    formData.append("costo", String(newEvent.costo || 0));
+    // indicar si el evento es de pago (true) o gratis (false). En DB: gratis_pago => TRUE = PAGO
+    formData.append("gratis_pago", String(newEvent.pago ?? false));
+    // enviar arrays para valores y categorías cuando el evento es de pago
+    formData.append("costos", JSON.stringify(newEvent.costos || []));
+    formData.append("tiposBoleteria", JSON.stringify(newEvent.tiposBoleteria || []));
+    formData.append("linksBoleteria", JSON.stringify(newEvent.linksBoleteria || []));
     formData.append("cupo", String(newEvent.cupo || 0));
     formData.append("estado", String(newEvent.estado ?? true));
 
@@ -410,8 +468,8 @@ const handleAddEvent = async () => {
 
     const data = await res.json();
 
-    // Actualizar lista de eventos
-    setEvents((prev) => [...prev, data]);
+    // Refresh events list from server
+    await fetchEventos();
 
     setShowAddEventForm(false);
 
@@ -431,6 +489,7 @@ const handleAddEvent = async () => {
       diasSeleccionados: [],
       hora_inicio: "",
       hora_final: "",
+      pago: false,
       costo: 0,
       cupo: "",
       estado: true,
@@ -492,22 +551,39 @@ const handleAddEvent = async () => {
   // Filtro visual (puedes mantenerlo si usas tarjetas de eventos)
   const filteredEvents = events
     .filter((event) => {
-      const matchesSearch =
-        event.nombre_evento.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        event.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory =
-        selectedCategory === "all" ||
-        mapCategoryToTipoId(selectedCategory) === event.id_tipo_evento;
+      const name = String(event.nombre_evento ?? event.title ?? event.raw?.nombre_evento ?? "").toLowerCase();
+      const descr = String(event.descripcion ?? event.description ?? event.raw?.descripcion ?? "").toLowerCase();
+      const matchesSearch = name.includes(searchTerm.toLowerCase()) || descr.includes(searchTerm.toLowerCase());
+
+      const eventTipo = event.id_tipo_evento ?? event.raw?.id_tipo_evento ?? 0;
+      const matchesCategory = selectedCategory === "all" || mapCategoryToTipoId(selectedCategory) === eventTipo;
       return matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
+      const toNumberPrice = (x: any) => {
+        if (typeof x.price === 'number') return x.price;
+        if (x.raw && x.raw.valores && x.raw.valores.length) {
+          const vals = x.raw.valores.map((v: any) => Number(v.valor || 0)).filter(Boolean);
+          return vals.length ? Math.min(...vals) : 0;
+        }
+        return 0;
+      };
+
+      const toNumberAttendees = (x: any) => Number(x.attendees ?? x.cupo ?? x.raw?.cupo ?? 0);
+
+      const toTime = (x: any) => {
+        const maybe = x.raw?.fecha_inicio ?? x.fecha_inicio ?? x.date;
+        const t = Date.parse(String(maybe));
+        return isNaN(t) ? 0 : t;
+      };
+
       switch (sortBy) {
         case "price":
-          return a.costo - b.costo;
+          return toNumberPrice(a) - toNumberPrice(b);
         case "attendees":
-          return b.cupo - a.cupo;
+          return toNumberAttendees(b) - toNumberAttendees(a);
         default:
-          return new Date(a.fecha_inicio).getTime() - new Date(b.fecha_inicio).getTime();
+          return toTime(a) - toTime(b);
       }
     });
   
@@ -741,6 +817,7 @@ const handleAddEvent = async () => {
                     <Input
                       id="municipio"
                       value={busquedaMunicipio}
+                      onChange={(e) => setBusquedaMunicipio(e.target.value)}
                       readOnly={!!newEvent.id_sitio} // bloquea edición si ya hay sitio seleccionado
                       placeholder="Ciudad del lugar donde se hará el evento."
                       className="rounded-xl cursor-default "
@@ -961,8 +1038,8 @@ const handleAddEvent = async () => {
                           className="rounded-xl border px-3 py-2 w-40 cursor-pointer">
                             <option value="">Selecciona tipo</option>
                               {getAvailableTypes(index).map((tipo) => (
-                                <option key={tipo} value={tipo}>
-                                  {tipo}
+                                <option key={tipo.id_categoria_boleto} value={tipo.nombre_categoria_boleto}>
+                                  {tipo.nombre_categoria_boleto}
                                 </option>
                               ))}
                             {newEvent.tiposBoleteria[index] && (
@@ -1210,21 +1287,37 @@ const handleAddEvent = async () => {
               <div className="grid lg:grid-cols-2 gap-8 p-8">
                 {/* Left Column - Images */}
                 <div className="space-y-4">
-                  <img
-                    src={expandedEvent.image || "/placeholder.svg"}
-                    alt={expandedEvent.title}
-                    className="w-full h-80 object-cover rounded-2xl"
-                  />
-                  <div className="grid grid-cols-3 gap-3">
-                    {expandedEvent.additionalImages.map((img: string, index: number) => (
+                  {/* Expanded gallery: show main and thumbnails from raw.imagenes */}
+                  {expandedEvent && expandedEvent.raw && expandedEvent.raw.imagenes && expandedEvent.raw.imagenes.length ? (
+                    <>
                       <img
-                        key={index}
-                        src={img || "/placeholder.svg"}
-                        alt={`${expandedEvent.title} ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-xl"
+                        src={expandedEvent.raw.imagenes[0].url_imagen_evento}
+                        alt={expandedEvent.title}
+                        className="w-full h-80 object-cover rounded-2xl"
                       />
-                    ))}
-                  </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        {expandedEvent.raw.imagenes.map((imgObj: any, index: number) => (
+                          <img
+                            key={index}
+                            src={imgObj.url_imagen_evento || "/placeholder.svg"}
+                            alt={`${expandedEvent.title} ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-xl"
+                          />
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <img
+                      src="/placeholder.svg"
+                      alt={expandedEvent.title}
+                      className="w-full h-80 object-cover rounded-2xl"
+                    />
+                  )}
+
+                  {/* Badge: PAGO / GRATIS */}
+                  <span className={`inline-block text-sm font-semibold px-3 py-1 rounded-full ${typeof expandedEvent.price === 'number' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
+                    {typeof expandedEvent.price === 'number' ? 'PAGO' : 'GRATIS'}
+                  </span>
                 </div>
 
                 {/* Right Column - Details */}
@@ -1306,7 +1399,7 @@ const handleAddEvent = async () => {
                   <div className="border-t pt-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-3xl font-bold text-blue-600">${expandedEvent.price}</span>
+                        <span className="text-3xl font-bold text-blue-600">{typeof expandedEvent.price === 'number' ? `$${expandedEvent.price}` : expandedEvent.price}</span>
                         <span className="text-gray-600">por persona</span>
                       </div>
                       <div className="flex gap-3">
@@ -1343,11 +1436,41 @@ const handleAddEvent = async () => {
                 className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-white/90 backdrop-blur-sm border-white/60 rounded-2xl overflow-hidden"
               >
                 <div className="relative overflow-hidden">
-                  <img
-                    src={event.image || "/placeholder.svg"}
-                    alt={event.title}
-                    className="w-full h-52 object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
+                  {/* Image gallery: main image + thumbnails */}
+                  <div className="w-full h-52 bg-gray-100">
+                    {event.raw && event.raw.imagenes && event.raw.imagenes.length ? (
+                      <>
+                        <img
+                          src={event.raw.imagenes[0].url_imagen_evento}
+                          alt={event.title}
+                          className="w-full h-52 object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                        <div className="absolute bottom-2 left-2 right-2 flex gap-2 overflow-x-auto p-1">
+                          {event.raw.imagenes.map((imgObj: any, i: number) => (
+                            <img
+                              key={i}
+                              src={imgObj.url_imagen_evento}
+                              alt={`${event.title} ${i + 1}`}
+                              className="h-10 w-16 object-cover rounded-md border border-white shadow-sm"
+                            />
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <img
+                        src="/placeholder.svg"
+                        alt={event.title}
+                        className="w-full h-52 object-cover"
+                      />
+                    )}
+
+                    {/* Badge: PAGO / GRATIS */}
+                    <span className={`absolute top-4 left-4 text-xs font-semibold px-2 py-1 rounded-full ${typeof event.price === 'number' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
+                      {typeof event.price === 'number' ? 'PAGO' : 'GRATIS'}
+                    </span>
+
+                  </div>
+
                   <div className="absolute top-4 right-4 flex gap-2">
                     <Button
                       size="icon"
@@ -1391,14 +1514,14 @@ const handleAddEvent = async () => {
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <Users className="h-4 w-4 mr-3" />
-                      {event.attendees.toLocaleString()} asistentes
+                      {Number(event.attendees ?? event.cupo ?? 0).toLocaleString()} asistentes
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold text-blue-600">${event.price}</div>
+                    <div className="text-2xl font-bold text-blue-600">{typeof event.price === 'number' ? `$${event.price}` : event.price}</div>
                     <Button
-                      onClick={() => handleEventExpand(event.id_evento ?? event.id)}
+                      onClick={() => (window.location.href = `/eventos/${event.id_evento ?? event.id}`)}
                       className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-700 hover:to-cyan-700 rounded-xl px-6"
                     >
                       Detalles
