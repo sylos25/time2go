@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import {
   BarChart,
@@ -67,8 +67,7 @@ interface Event {
 
 interface StatCard {
   title: string
-  value: string
-  change: number
+  value: number | string
   icon: React.ElementType
   color: string
 }
@@ -100,7 +99,109 @@ export default function EventDashboard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterCategory, setFilterCategory] = useState("all")
   const [selectedEvents, setSelectedEvents] = useState<number[]>([])
+  const [eventsScope, setEventsScope] = useState<'all' | 'mine'>('all')
+  const [loading, setLoading] = useState(true)
+  const [meUser, setMeUser] = useState<any>(null)
+  const [users, setUsers] = useState<any[]>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [searchUsers, setSearchUsers] = useState('')
   const router = useRouter()
+
+  // On mount: validate session and fetch dashboard data (events + user)
+  useEffect(() => {
+    let canceled = false;
+    const loadDashboardData = async () => {
+      setLoading(true)
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+        const headers: any = {}
+        if (token) headers['Authorization'] = `Bearer ${token}`
+        const meRes = await fetch('/api/me', { headers })
+        if (!meRes.ok) {
+          // Not authenticated — redirect to home/login
+          router.push('/')
+          return
+        }
+        const meData = await meRes.json()
+        if (!canceled) setMeUser(meData.user)
+
+        // Fetch events (server returns all events)
+        const eventsRes = await fetch('/api/events')
+        if (eventsRes.ok) {
+          const eventsData = await eventsRes.json()
+          const serverEvents = eventsData.eventos || []
+          // Map server events to local Event type (include creatorId to allow scoping)
+          const mapped = serverEvents.map((ev: any) => ({
+            id: ev.id_evento,
+            name: ev.nombre_evento || 'Sin título',
+            date: ev.fecha_inicio || ev.fecha_creacion,
+            time: ev.hora_inicio || '',
+            location: ev.sitio?.nombre_sitio || ev.municipio?.nombre_municipio || '',
+            category: ev.categoria_nombre || '',
+            capacity: ev.cupo || 0,
+            ticketsSold: (ev.valores && ev.valores.reduce((acc: number, v: any) => acc + (v.valor || 0), 0)) || 0,
+            status: ev.estado ? 'published' : 'hidden',
+            visibility: !!ev.estado,
+            image: (ev.imagenes && ev.imagenes[0] && ev.imagenes[0].url_imagen_evento) || '/images/placeholder.jpg',
+            promoter: ev.creador?.nombres || '',
+            creatorId: ev.creador?.numero_documento || null,
+          }))
+          if (!canceled) setEvents(mapped)
+
+          // Update the Eventos Activos stat based on current server data
+          try {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+            const headers: any = {}
+            if (token) headers['Authorization'] = `Bearer ${token}`
+            const statsRes = await fetch('/api/stats', { headers })
+            if (statsRes.ok) {
+              const statsData = await statsRes.json()
+              if (!canceled && statsData.ok) {
+                setStats((prev) => prev.map((s) => {
+                  if (s.title === 'Eventos Activos') return { ...s, value: statsData.eventsActive }
+                  if (s.title === 'Usuarios Activos') return { ...s, value: statsData.usersActive }
+                  return s
+                }))
+              }
+            }
+          } catch (e) {
+            console.error('Failed to load stats', e)
+          }
+        }
+      } catch (err) {
+        console.error('Error cargando datos del dashboard', err)
+      } finally {
+        if (!canceled) setLoading(false)
+      }
+    }
+    loadDashboardData()
+    return () => { canceled = true }
+  }, [router])
+
+  // When user opens the Users tab, fetch users list
+  useEffect(() => {
+    let cancelled = false
+    const loadUsers = async () => {
+      if (activeTab !== 'users') return
+      setLoadingUsers(true)
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+        const headers: any = {}
+        if (token) headers['Authorization'] = `Bearer ${token}`
+        const res = await fetch('/api/usuarios', { headers })
+        if (res.ok) {
+          const data = await res.json()
+          if (!cancelled) setUsers(data.usuarios || [])
+        }
+      } catch (err) {
+        console.error('Error cargando usuarios', err)
+      } finally {
+        if (!cancelled) setLoadingUsers(false)
+      }
+    }
+    loadUsers()
+    return () => { cancelled = true }
+  }, [activeTab])
 
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([
     { id: 1, text: "Revisar eventos del mes", completed: true },
@@ -204,36 +305,12 @@ export default function EventDashboard() {
     },
   ])
 
-  const stats: StatCard[] = [
-    {
-      title: "Eventos Activos",
-      value: "24",
-      change: 12.5,
-      icon: Calendar,
-      color: "from-blue-500 to-blue-600",
-    },
-    {
-      title: "Total Asistentes",
-      value: "3,275",
-      change: 18.2,
-      icon: Users,
-      color: "from-green-500 to-emerald-600",
-    },
-    {
-      title: "Vistas del Mes",
-      value: "12,847",
-      change: 15.3,
-      icon: Eye,
-      color: "from-purple-500 to-purple-600",
-    },
-    {
-      title: "Usuarios Activos",
-      value: "1,234",
-      change: 8.7,
-      icon: Users,
-      color: "from-orange-500 to-red-500",
-    },
-  ]
+  const [stats, setStats] = useState<StatCard[]>([
+    { title: "Eventos Activos", value: 0, icon: Calendar, color: "from-blue-500 to-blue-600" },
+    { title: "Total Asistentes", value: 0, icon: Users, color: "from-green-500 to-emerald-600" },
+    { title: "Vistas del Mes", value: 0, icon: Eye, color: "from-purple-500 to-purple-600" },
+    { title: "Usuarios Activos", value: 0, icon: Users, color: "from-orange-500 to-red-500" },
+  ])
 
   const [events, setEvents] = useState<Event[]>([
     {
@@ -352,7 +429,9 @@ export default function EventDashboard() {
     setChecklistItems(checklistItems.map((item) => (item.id === id ? { ...item, completed: !item.completed } : item)))
   }
 
-  const filteredEvents = events.filter((event) => {
+  const eventsScoped = eventsScope === 'all' ? events : (events as any[]).filter((ev) => String(ev.creatorId) === String(meUser?.numero_documento))
+
+  const filteredEvents = eventsScoped.filter((event) => {
     const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = filterCategory === "all" || event.category === filterCategory
     return matchesSearch && matchesCategory
@@ -393,6 +472,10 @@ export default function EventDashboard() {
     value: kpi.progress,
     fullMark: 100,
   }))
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Cargando tu panel...</div>
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
@@ -444,22 +527,15 @@ export default function EventDashboard() {
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-100 bg-gray-50/50">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-sm">
-              A
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-gray-900 text-sm truncate">Admin</p>
-              <p className="text-xs text-gray-500 truncate">admin@time2go.com</p>
-            </div>
+          <div className="text-right">
+            <button
+              onClick={() => router.push("/")}
+              className="flex items-center justify-end gap-2 text-gray-600 hover:text-gray-900 transition-colors text-sm"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Cerrar sesión</span>
+            </button>
           </div>
-          <button
-            onClick={() => router.push("/")}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors text-sm"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Cerrar sesión</span>
-          </button>
         </div>
       </aside>
 
@@ -477,11 +553,14 @@ export default function EventDashboard() {
                 <h2 className="text-2xl font-bold text-gray-900">
                   {menuItems.find((item) => item.id === activeTab)?.name}
                 </h2>
-                <p className="text-sm text-gray-500 mt-0.5">Bienvenido de nuevo, Admin</p>
+                <p className="text-sm text-gray-500 mt-0.5">Bienvenido de nuevo, {meUser?.nombres || meUser?.name || 'Usuario'}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
+              <button onClick={() => router.push('/')} className="px-3 py-1 text-sm bg-white text-gray-700 rounded-lg shadow-sm hover:bg-gray-50">
+                Salir
+              </button>
               <button className="relative p-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-1.5 right-1.5 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-semibold">
@@ -489,7 +568,7 @@ export default function EventDashboard() {
                 </span>
               </button>
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">
-                A
+                {meUser?.nombres ? meUser.nombres.charAt(0).toUpperCase() : 'U'}
               </div>
             </div>
           </div>
@@ -508,17 +587,7 @@ export default function EventDashboard() {
                       <div className="flex-1">
                         <p className="text-sm font-medium text-gray-600">{stat.title}</p>
                         <p className="text-3xl font-bold text-gray-900 mt-2">{stat.value}</p>
-                        <div className="flex items-center mt-3">
-                          <div
-                            className={`flex items-center gap-1 px-2 py-1 rounded-md ${
-                              stat.change >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-                            }`}
-                          >
-                            <TrendingUp className="w-3.5 h-3.5" />
-                            <span className="text-xs font-semibold">{stat.change}%</span>
-                          </div>
-                          <span className="text-xs text-gray-500 ml-2">vs mes anterior</span>
-                        </div>
+
                       </div>
                       <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.color} shadow-sm`}>
                         <stat.icon className="w-6 h-6 text-white" />
@@ -893,6 +962,21 @@ export default function EventDashboard() {
                 </div>
 
                 <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setEventsScope('all')}
+                      className={`px-3 py-1 rounded ${eventsScope === 'all' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-200'}`}
+                    >
+                      Todos
+                    </button>
+                    <button
+                      onClick={() => setEventsScope('mine')}
+                      className={`px-3 py-1 rounded ${eventsScope === 'mine' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-200'}`}
+                    >
+                      Míos
+                    </button>
+                  </div>
+
                   <select
                     value={filterCategory}
                     onChange={(e) => setFilterCategory(e.target.value)}
@@ -1089,10 +1173,108 @@ export default function EventDashboard() {
           )}
 
           {activeTab === "users" && (
-            <div className="text-center py-20">
-              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 font-medium">Gestión de Usuarios</p>
-              <p className="text-sm text-gray-400 mt-1">Esta funcionalidad estará disponible próximamente</p>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between gap-4">
+                <div className="relative flex-1 max-w-md">
+                  <input
+                    type="text"
+                    placeholder="Buscar usuarios..."
+                    value={searchUsers}
+                    onChange={(e) => setSearchUsers(e.target.value)}
+                    className="w-full pl-4 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={async () => {
+                      setLoadingUsers(true)
+                      try {
+                        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+                        const headers: any = {}
+                        if (token) headers['Authorization'] = `Bearer ${token}`
+                                        // By default load only active users with role=1 (Usuarios)
+                        const res = await fetch('/api/usuarios?role=1&estado=true', { headers })
+                        if (res.ok) {
+                          const data = await res.json()
+                          setUsers(data.usuarios || [])
+                        }
+                      } catch (err) {
+                        console.error('Error fetching users', err)
+                      } finally {
+                        setLoadingUsers(false)
+                      }
+                    }}
+                    className="px-4 py-2.5 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50"
+                  >
+                    Actualizar
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Documento</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tipo Doc</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nombres</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Apellidos</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">País</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Teléfono</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tel. Val.</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Correo</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Correo Val.</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Estado</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rol</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fecha Reg.</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fecha Desac.</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fecha Actualiz.</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {users
+                        .filter(u => {
+                          if (!searchUsers) return true
+                          const hay = `${u.numero_documento} ${u.nombres} ${u.apellidos} ${u.correo} ${u.pais} ${u.rol}`.toLowerCase()
+                          return hay.includes(searchUsers.toLowerCase())
+                        })
+                        .map((u) => (
+                          <tr key={u.numero_documento} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4 text-sm text-gray-700">{u.numero_documento}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{u.tipo_documento}</td>
+                            <td className="px-6 py-4 text-sm text-gray-900">{u.nombres}</td>
+                            <td className="px-6 py-4 text-sm text-gray-900">{u.apellidos}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{u.pais || '-'}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{u.telefono || '-'}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{u.validacion_telefono ? 'Sí' : 'No'}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{u.correo}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{u.validacion_correo ? 'Sí' : 'No'}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{u.estado ? 'Activo' : 'Inactivo'}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{u.rol || '-'}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{u.fecha_registro ? new Date(u.fecha_registro).toLocaleString() : '-'}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{u.fecha_desactivacion ? new Date(u.fecha_desactivacion).toLocaleString() : '-'}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{u.fecha_actualizacion ? new Date(u.fecha_actualizacion).toLocaleString() : '-'}</td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                <button className="px-3 py-1 bg-white border border-gray-200 rounded-lg">Ver</button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {(!users || users.length === 0) && (
+                  <div className="text-center py-12">
+                    <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 font-medium">No se encontraron usuarios</p>
+                    <p className="text-sm text-gray-400 mt-1">Pulsa "Actualizar" para cargar la lista</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

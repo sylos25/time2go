@@ -329,14 +329,14 @@ export function Header({
                 </Button>
               ) : (
                 <div className="flex items-center gap-3">
-                  <Button
+                  <button
                     onClick={() => navigateTo("/dashboard")}
-                    variant="outline"
-                    className="border-white/30 text-purple hover:bg-white/10 font-medium rounded-sm cursor-pointer"
+                    className="text-white/90 hover:text-white font-medium transition-colors relative group cursor-pointer flex items-center"
                   >
                     <LayoutDashboard className="h-4 w-4 mr-2" />
                     Dashboard
-                  </Button>
+                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full" />
+                  </button>
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
