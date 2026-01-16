@@ -51,18 +51,17 @@ export function HeroSection() {
   }
 
   return (
-    <section className="pt-16 lg:pt-20 pb-8 lg:pb-16">
+    <section className="pt-16 lg:pt-20 pb-12 lg:pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Hero Content */}
-        <div className="text-center mb-8 lg:mb-16">
-          <h1 className="text-4xl lg:text-6xl xl:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+        <div className="text-center mb-12 lg:mb-20">
+          <h1 className="text-5xl lg:text-7xl xl:text-8xl font-bold text-gray-900 mb-8 leading-tight">
             Descubre Eventos
-            <span className="block bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600 bg-clip-text text-transparent">
               Increíbles
             </span>
           </h1>
 
-          <p className="text-lg lg:text-xl text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed">
+          <p className="text-xl lg:text-2xl text-gray-600 max-w-4xl mx-auto mb-10 leading-relaxed">
             Encuentra y disfruta de los mejores eventos, festivales y experiencias culturales cerca de ti. Conecta con
             tu pasión y vive momentos únicos.
           </p>
@@ -71,20 +70,19 @@ export function HeroSection() {
             <Link href="/eventos">
               <Button
                 size="lg"
-                className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 px-8 py-3"
+                className="bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600 hover:from-blue-700 hover:via-purple-700 hover:to-violet-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 px-10 py-6 text-lg"
               >
                 Explorar Eventos
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-2 h-6 w-6" />
               </Button>
             </Link>
           </div>
         </div>
 
-        {/* Enhanced Carousel */}
         <div className="relative">
           <Swiper
             modules={[Navigation, Pagination, Autoplay, EffectFade]}
-            className="w-full max-w-6xl mx-auto h-[350px] sm:h-[450px] lg:h-[550px] xl:h-[650px] rounded-3xl overflow-hidden shadow-2xl"
+            className="w-full max-w-7xl mx-auto h-[400px] sm:h-[500px] lg:h-[650px] xl:h-[750px] rounded-3xl overflow-hidden shadow-2xl"
             loop={true}
             effect="fade"
             autoplay={{
@@ -106,10 +104,8 @@ export function HeroSection() {
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
 
-                {/* Enhanced Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-                {/* Content */}
                 <div className="absolute bottom-8 left-8 right-8 text-white">
                   <div className="inline-flex items-center px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium mb-4">
                     {slide.category}

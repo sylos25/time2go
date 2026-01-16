@@ -299,12 +299,9 @@ export function Header({
               onClick={() => navigateTo("/")}
               className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
             >
-              <div className="w-10 h-10 lg:w-12 lg:h-12 relative">
-                <Image src="/images/logo.svg?height=48&width=48" alt="Time2Go Logo" fill className="object-contain" />
+              <div className="w-10 h-10 lg:w-40 lg:h-50 relative">
+                <Image src="/images/logo.png?height=48&width=48" alt="Time2Go Logo" fill className="object-contain" />
               </div>
-              <h1 className="text-xl lg:text-2xl font-bold text-white cursor-pointer">
-                Time2Go
-              </h1>
             </button>
 
             {/* Desktop Navigation */}
