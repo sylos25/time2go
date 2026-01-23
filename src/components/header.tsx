@@ -24,7 +24,7 @@ import { Menu, X, User, LogOut, Settings, LayoutDashboard, Calendar } from "luci
 import type { JSX } from "react"
 
 interface HeaderProps {
-  onAuthClick: (isLogin: boolean) => void
+  onAuthClick?: (isLogin: boolean) => void
   isLoggedIn?: boolean
   isAdmin?: boolean
   userName?: string
@@ -319,7 +319,7 @@ export function Header({
 
               {!loggedIn ? (
                 <Button
-                  onClick={() => onAuthClick(true)}
+                  onClick={() => router.push("/auth")}
                   className="bg-white text-purple-900 hover:bg-white/90 font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-sm"
                 >
                   Únete
@@ -330,7 +330,6 @@ export function Header({
                     onClick={() => navigateTo("/dashboard")}
                     className="text-white/90 hover:text-white font-medium transition-colors relative group cursor-pointer flex items-center"
                   >
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
                     Dashboard
                     <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full" />
                   </button>
@@ -375,7 +374,7 @@ export function Header({
             {/* Mobile CTA */}
             {!isLoggedIn ? (
               <Button
-                onClick={() => onAuthClick(true)}
+                onClick={() => router.push("/auth")}
                 size="sm"
                 className="lg:hidden bg-white text-purple-900 hover:bg-white/90 rounded-sm"
               >
@@ -446,7 +445,7 @@ export function Header({
           <div className="mt-8 pt-8 border-t border-white/20">
             {!isLoggedIn ? (
               <Button
-                onClick={() => onAuthClick(true)}
+                onClick={() => router.push("/auth")}
                 className="w-full bg-white text-purple-900 hover:bg-white/90 font-medium shadow-lg hover:shadow-xl transition-all rounded-sm"
               >
                 Únete a Time2Go
