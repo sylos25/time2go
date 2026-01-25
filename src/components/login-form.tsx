@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { ResetPasswordDialog } from "@/components/reset-password-dialog"
 
 interface LoginFormProps {
   onSuccess: () => void
@@ -17,6 +18,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState("")
+  const [resetPasswordOpen, setResetPasswordOpen] = useState(false)
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({
     email: false,
     password: false,
@@ -114,7 +116,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             onBlur={() => handleBlur("password")}
-            className={`pl-10 pr-10 w-full border rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`pl-10 pr-10 w-full border rounded-md py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               touchedFields.password && !password ? "border-red-500 ring-red-500" : "border-gray-300"
             }`}
           />
@@ -147,7 +149,12 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             Recordarme
           </Label>
         </div>
-        <Button variant="link" className="text-sm text-blue-600 hover:text-blue-500 p-0 cursor-pointer">
+        <Button 
+          type="button"
+          variant="link" 
+          className="text-sm text-blue-600 hover:text-blue-500 p-0 cursor-pointer"
+          onClick={() => setResetPasswordOpen(true)}
+        >
           ¿Olvidaste tu contraseña?
         </Button>
       </div>
@@ -160,6 +167,8 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       >
         Iniciar Sesión
       </Button>
+
+      <ResetPasswordDialog open={resetPasswordOpen} onOpenChange={setResetPasswordOpen} />
     </form>
   )
 }

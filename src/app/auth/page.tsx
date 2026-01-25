@@ -63,10 +63,10 @@ export default function AuthPage() {
           {step === "login" && (
             <div className="bg-white rounded-lg shadow-lg p-8">
               <div className="text-center mb-8">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600 bg-clip-text text-transparent mb-2">
+                <h1 className="text-4xl font-bold leading-relaxed bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600 bg-clip-text text-transparent mb-2">
                   Bienvenido
                 </h1>
-                <p className="mt-4 text-1xl text-gray-600">Inicia sesión para continuar con la experiencia</p>
+                <p className="mt-2 text-1xl text-gray-600">Inicia sesión para continuar con la experiencia</p>
               </div>
 
               <LoginForm onSuccess={handleLoginSuccess} />
@@ -86,10 +86,10 @@ export default function AuthPage() {
           {step === "register" && (
             <div className="bg-white rounded-lg shadow-lg p-8">
               <div className="text-center mb-8">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600 bg-clip-text text-transparent mb-2">
+                <h1 className="text-4xl font-bold leading-relaxed bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600 bg-clip-text text-transparent mb-2">
                   Registrate
                 </h1>
-                <p className="mt-6 text-gray-600">Crea tu cuenta y descubre los eventos de tu ciudad</p>
+                <p className="mt-2 text-gray-600">Crea tu cuenta y descubre los eventos de la ciudad</p>
               </div>
 
               <RegisterForm onSuccess={handleRegisterSuccess} />

@@ -1,4 +1,12 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Time2Go
+
+Este es un proyecto [Next.js](https://nextjs.org) - Plataforma de eventos.
+
+## 📚 Documentación
+
+Para consultar la documentación del proyecto, incluyendo la configuración de reset de contraseña:
+
+👉 **[Ver documentación en la carpeta `/docs`](./docs/README.md)**
 
 ## Getting Started
 
