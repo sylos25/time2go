@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Eye, EyeOff, Lock } from "lucide-react"
+import { Eye, EyeOff, Lock, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -18,6 +18,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState("")
+  const [emailValidationError, setEmailValidationError] = useState(false)
   const [resetPasswordOpen, setResetPasswordOpen] = useState(false)
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({
     email: false,
@@ -35,6 +36,8 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError("")
+    setEmailValidationError(false)
 
     // Validate required fields
     if (!email || !password) {
@@ -50,9 +53,17 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         body: JSON.stringify({ email, password }),
       })
       const data = await res.json()
+      
       if (!res.ok) {
         console.error("Login failed:", data)
-        setError(data.error || "Error al iniciar sesión")
+        
+        // Si es error de email no validado (status 403)
+        if (res.status === 403 && data.requiresEmailValidation) {
+          setEmailValidationError(true)
+          setError(data.message || "Debes validar tu correo electrónico antes de poder acceder.")
+        } else {
+          setError(data.error || data.message || "Error al iniciar sesión")
+        }
         return
       }
 
@@ -159,7 +170,22 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         </Button>
       </div>
 
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      {error && (
+        <div className={`p-4 rounded-lg flex items-start gap-3 ${
+          emailValidationError 
+            ? "bg-yellow-50 border border-yellow-200" 
+            : "bg-red-50 border border-red-200"
+        }`}>
+          <AlertCircle className={`h-5 w-5 flex-shrink-0 mt-0.5 ${
+            emailValidationError ? "text-yellow-600" : "text-red-600"
+          }`} />
+          <p className={`text-sm ${
+            emailValidationError ? "text-yellow-800" : "text-red-700"
+          }`}>
+            {error}
+          </p>
+        </div>
+      )}
 
       <Button
         type="submit"

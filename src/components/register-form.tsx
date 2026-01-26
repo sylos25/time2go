@@ -27,9 +27,9 @@ interface FormFields {
 export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [registroExitoso, setRegistroExitoso] = useState(false)
   const [registroError, setRegistroError] = useState("")
   const [showModal, setShowModal] = useState(false)
+  const [passwordValidation, setPasswordValidation] = useState<{ isValid: boolean; errors: string[] }>({ isValid: false, errors: [] })
   const acceptButtonRef = useRef<HTMLButtonElement | null>(null)
   const modalRef = useRef<HTMLDivElement | null>(null)
   const [listaPaises, setListaPaises] = useState<{ value: number; label: string }[]>([])
@@ -73,14 +73,6 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       .then((data) => setListaPaises(data))
       .catch((err) => console.error("Error al cargar países:", err))
   }, [])
-
-  // Mostrar mensaje de éxito por unos segundos
-  useEffect(() => {
-    if (registroExitoso) {
-      const timer = setTimeout(() => setRegistroExitoso(false), 5000)
-      return () => clearTimeout(timer)
-    }
-  }, [registroExitoso])
 
   // Control del focus en el modal de política
   useEffect(() => {
@@ -189,6 +181,29 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
     handleInputChange("email", value)
   }
 
+  // Función para validar contraseña
+  const validatePassword = (password: string): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = []
+    
+    if (password.length > 12) {
+      errors.push("Máximo 12 caracteres")
+    }
+    if (!/[a-zA-Z]/.test(password)) {
+      errors.push("Al menos una letra")
+    }
+    if (!/[0-9]/.test(password)) {
+      errors.push("Al menos un número")
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+      errors.push("Al menos un carácter especial")
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors,
+    }
+  }
+
   const handleAccept = () => {
     handleInputChange("acceptTerms", true)
     setShowModal(false)
@@ -197,7 +212,6 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const handleReject = () => {
     setFormData(formDataInicial)
     setRegistroError("")
-    setRegistroExitoso(false)
     setShowModal(false)
   }
 
@@ -242,6 +256,14 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       return
     }
 
+    // Validar fortaleza de contraseña
+    const passwordValidation = validatePassword(formData.password)
+    if (!passwordValidation.isValid) {
+      setTouchedFields((prev) => ({ ...prev, password: true }))
+      setRegistroError(`Contraseña inválida: ${passwordValidation.errors.join(", ")}`)
+      return
+    }
+
     try {
       const res = await fetch("/api/usuario_formulario", {
         method: "POST",
@@ -269,12 +291,11 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       }
 
       setRegistroError("")
-      setRegistroExitoso(true)
       setFormData(formDataInicial)
-      // Navigate to login after success
+      // Redirigir a auth con parámetro de registro exitoso
       setTimeout(() => {
         onSuccess()
-      }, 1500)
+      }, 500)
     } catch (err) {
       console.error("Registro error:", err)
       setRegistroError("Error de red. Intenta nuevamente.")
@@ -456,7 +477,15 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               type={showPassword ? "text" : "password"}
               placeholder="••••••••"
               value={formData.password}
-              onChange={(e) => handleInputChange("password", e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value
+                handleInputChange("password", value)
+                if (value) {
+                  setPasswordValidation(validatePassword(value))
+                } else {
+                  setPasswordValidation({ isValid: false, errors: [] })
+                }
+              }}
               className="pl-10 pr-10"
             />
             <button
@@ -471,6 +500,45 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               )}
             </button>
           </div>
+          
+          {/* Requisitos de contraseña */}
+          {formData.password && (
+            <div className={`p-3 rounded-lg text-sm ${
+              passwordValidation.isValid 
+                ? "bg-green-50 border border-green-200" 
+                : "bg-red-50 border border-red-200"
+            }`}>
+              <p className={`font-semibold mb-2 ${
+                passwordValidation.isValid ? "text-green-700" : "text-red-700"
+              }`}>
+                {passwordValidation.isValid ? "✓ Contraseña válida" : "Requisitos de contraseña:"}
+              </p>
+              {!passwordValidation.isValid && (
+                <ul className="space-y-1 text-xs">
+                  <li className={`flex items-center gap-2 ${
+                    /[a-zA-Z]/.test(formData.password) ? "text-green-600" : "text-red-600"
+                  }`}>
+                    {/[a-zA-Z]/.test(formData.password) ? "✓" : "✗"} Al menos una letra
+                  </li>
+                  <li className={`flex items-center gap-2 ${
+                    /[0-9]/.test(formData.password) ? "text-green-600" : "text-red-600"
+                  }`}>
+                    {/[0-9]/.test(formData.password) ? "✓" : "✗"} Al menos un número
+                  </li>
+                  <li className={`flex items-center gap-2 ${
+                    /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? "text-green-600" : "text-red-600"
+                  }`}>
+                    {/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? "✓" : "✗"} Al menos un carácter especial
+                  </li>
+                  <li className={`flex items-center gap-2 ${
+                    formData.password.length <= 12 ? "text-green-600" : "text-red-600"
+                  }`}>
+                    {formData.password.length <= 12 ? "✓" : "✗"} Máximo 12 caracteres ({formData.password.length}/12)
+                  </li>
+                </ul>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Confirm Password */}
@@ -487,10 +555,12 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               value={formData.confirmPassword}
               onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
               onBlur={() => handleBlur("confirmPassword")}
-              className={`pl-10 pr-10 ${
-                touchedFields.confirmPassword && !formData.confirmPassword
+              className={`pl-10 pr-10 w-full border rounded-md py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword
                   ? "border-red-500 ring-red-500"
-                  : ""
+                  : formData.password && formData.confirmPassword && formData.password === formData.confirmPassword
+                  ? "border-green-500 ring-green-500"
+                  : "border-gray-300"
               }`}
             />
             <button
@@ -504,15 +574,32 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                 <Eye className="h-4 w-4 cursor-pointer" />
               )}
             </button>
-            {touchedFields.confirmPassword && !formData.confirmPassword && (
-              <p className="text-red-500 text-xs mt-0.5">Este campo es obligatorio</p>
-            )}
-            {touchedFields.confirmPassword &&
-              formData.confirmPassword &&
-              formData.password !== formData.confirmPassword && (
-                <p className="text-red-500 text-xs mt-0.5">Las contraseñas no coinciden</p>
-              )}
           </div>
+          
+          {/* Validación de contraseña confirmada */}
+          {formData.confirmPassword && (
+            <div className={`p-3 rounded-lg text-sm flex items-center gap-2 ${
+              formData.password === formData.confirmPassword
+                ? "bg-green-50 border border-green-200"
+                : "bg-red-50 border border-red-200"
+            }`}>
+              {formData.password === formData.confirmPassword ? (
+                <>
+                  <span className="text-green-600 font-semibold">✓</span>
+                  <p className="text-green-700">Las contraseñas coinciden</p>
+                </>
+              ) : (
+                <>
+                  <span className="text-red-600 font-semibold">✗</span>
+                  <p className="text-red-700">Las contraseñas no coinciden</p>
+                </>
+              )}
+            </div>
+          )}
+          
+          {touchedFields.confirmPassword && !formData.confirmPassword && (
+            <p className="text-red-500 text-xs mt-0.5">Este campo es obligatorio</p>
+          )}
         </div>
 
         {/* Accept Terms */}
@@ -588,7 +675,6 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
         )}
 
         {registroError && <p className="text-red-500 text-sm">{registroError}</p>}
-        {registroExitoso && <p className="text-green-600 font-medium mt-2">Perfil creado exitosamente</p>}
 
         <Button
           type="submit"

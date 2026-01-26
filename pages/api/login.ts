@@ -17,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const client = await pool.connect();
     try {
       const q = `
-        SELECT numero_documento, correo, nombres, contrasena_hash
+        SELECT numero_documento, correo, nombres, contrasena_hash, validacion_correo
         FROM tabla_usuarios
         WHERE correo = $1
         LIMIT 1
@@ -26,6 +26,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (result.rowCount === 0) return res.status(401).json({ message: "Credenciales inválidas" });
 
       const user = result.rows[0];
+      
+      // Verificar que el email ha sido validado
+      if (!user.validacion_correo) {
+        return res.status(403).json({ 
+          error: "Email no validado",
+          message: "Debes validar tu correo electrónico antes de poder acceder. Revisa tu buzón de entrada y haz clic en el link de validación.",
+          requiresEmailValidation: true
+        });
+      }
+
       const hash = user.contrasena_hash;
       if (!hash || typeof hash !== "string" || hash.trim() === "") {
         console.warn("Login: hash de contraseña ausente para usuario:", user.numero_documento ?? user.correo);

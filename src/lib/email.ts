@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer"
+import crypto from "crypto"
 
 // Configurar el transporte de correo
 // Usa variables de entorno para configurar tu proveedor de email
@@ -21,6 +22,65 @@ export function generateRandomPassword(): string {
   return password
 }
 
+export function generateEmailValidationToken(): string {
+  return crypto.randomBytes(32).toString("hex")
+}
+
+
+export async function sendEmailValidationEmail(
+  email: string,
+  token: string,
+  baseUrl: string
+): Promise<boolean> {
+  try {
+    // Validar configuración de email
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      console.error("Email no configurado: falta EMAIL_USER o EMAIL_PASSWORD")
+      return false
+    }
+
+    const validationUrl = `${baseUrl}/validate-email?token=${token}`
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Time2Go - Valida tu correo electrónico",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(to right, #2563eb, #9333ea, #7c3aed); padding: 20px; border-radius: 8px 8px 0 0; color: white;">
+            <h2 style="margin: 0;">Validación de Correo Electrónico</h2>
+          </div>
+          <div style="padding: 20px; background: #f9fafb; border-radius: 0 0 8px 8px;">
+            <p>¡Hola!</p>
+            <p>Gracias por registrarte en Time2Go. Para completar tu registro, necesitas validar tu correo electrónico.</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${validationUrl}" style="background: linear-gradient(to right, #2563eb, #9333ea, #7c3aed); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+                Validar Correo Electrónico
+              </a>
+            </div>
+            <p style="color: #666;">
+              O copia y pega este enlace en tu navegador:
+            </p>
+            <p style="background: white; padding: 10px; border-radius: 4px; word-break: break-all; font-size: 12px; color: #0066cc;">
+              ${validationUrl}
+            </p>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+            <p style="font-size: 12px; color: #999;">
+              Este enlace expirará en 24 horas. Si no solicitaste este registro, por favor ignora este correo.
+            </p>
+          </div>
+        </div>
+      `,
+    }
+
+    const info = await transporter.sendMail(mailOptions)
+    console.log("Correo de validación enviado:", info.response)
+    return true
+  } catch (error) {
+    console.error("Error enviando correo de validación:", error)
+    return false
+  }
+}
 
 export async function sendResetPasswordEmail(email: string, newPassword: string): Promise<boolean> {
   try {

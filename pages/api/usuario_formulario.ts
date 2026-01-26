@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import pool from "@/lib/db";
 import bcrypt from "bcryptjs";
+import { sendEmailValidationEmail, generateEmailValidationToken } from "@/lib/email";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "POST") {
@@ -71,9 +72,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           ]
         );
       
-        console.log("Usuario insertado:", result.rows[0]);
+        const usuario = result.rows[0];
+        console.log("Usuario insertado:", usuario);
+
+        // Generar token de validación y enviar email
+        try {
+          const token = generateEmailValidationToken();
+          const expirationTime = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
+
+          // Guardar el token en la base de datos
+          await pool.query(
+            `INSERT INTO tabla_validacion_email_tokens (numero_documento, token, fecha_expiracion)
+             VALUES ($1, $2, $3)`,
+            [document, token, expirationTime]
+          );
+
+          // Obtener la URL base del sitio
+          const protocol = req.headers['x-forwarded-proto'] || 'http';
+          const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+          const baseUrl = `${protocol}://${host}`;
+
+          // Enviar el email de validación
+          const emailSent = await sendEmailValidationEmail(email, token, baseUrl);
+
+          if (emailSent) {
+            console.log("Email de validación enviado a:", email);
+          } else {
+            console.error("Error al enviar email de validación");
+          }
+        } catch (emailError) {
+          console.error("Error en el proceso de validación de email:", emailError);
+          // No es un error crítico, el usuario se creó exitosamente
+        }
       
-        res.status(201).json({ usuario: result.rows[0] });
+        res.status(201).json({ usuario });
       } catch (error: any) {
         console.error("Error al insertar usuario:", error);
         // Postgres unique violation code is 23505

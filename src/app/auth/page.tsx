@@ -1,25 +1,59 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { LoginForm } from "@/components/login-form"
 import { RegisterForm } from "@/components/register-form"
+import { CheckCircle } from "lucide-react"
 
 export default function AuthPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [step, setStep] = useState<"choice" | "login" | "register">("choice")
+  const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false)
+
+  useEffect(() => {
+    const registered = searchParams?.get("registered")
+    if (registered === "true") {
+      setShowRegistrationSuccess(true)
+      setStep("choice")
+      // Ocultar el mensaje después de 5 segundos
+      const timer = setTimeout(() => {
+        setShowRegistrationSuccess(false)
+      }, 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [searchParams])
 
   const handleLoginSuccess = () => {
     router.push("/")
   }
 
   const handleRegisterSuccess = () => {
-    setStep("login")
+    setShowRegistrationSuccess(true)
+    setStep("choice")
+    // Ocultar el mensaje después de 5 segundos
+    setTimeout(() => {
+      setShowRegistrationSuccess(false)
+    }, 5000)
   }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      {/* Banner de registro exitoso */}
+      {showRegistrationSuccess && (
+        <div className="fixed top-20 left-0 right-0 mx-4 z-50">
+          <div className="max-w-md mx-auto bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3 shadow-lg">
+            <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-green-800 font-semibold">¡Cuenta creada exitosamente!</p>
+              <p className="text-green-700 text-sm mt-1">Se ha enviado un correo de validación. Revisa tu buzón y valida tu email para poder acceder.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Container con padding para acomodar el header fijo */}
       <div className="mt-20 pt-8 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md mx-auto">

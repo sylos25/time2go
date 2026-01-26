@@ -7,6 +7,7 @@
 |------------------------------------------------------------------------------------|
 */
 -- BORRADO TABLAS
+DROP TABLE IF EXISTS tabla_validacion_email_tokens;
 DROP TABLE IF EXISTS tabla_reservas_eventos;
 DROP TABLE IF EXISTS tabla_costos_eventos;
 DROP TABLE IF EXISTS tabla_costos;
@@ -146,6 +147,17 @@ CREATE TABLE IF NOT EXISTS tabla_menu_usuarios (
     fecha_revocacion        TIMESTAMP   WITH TIME ZONE,
     FOREIGN KEY (id_rol) REFERENCES tabla_roles(id_rol),
     FOREIGN KEY (id_menu) REFERENCES tabla_menu(id_menu)
+);
+
+CREATE TABLE IF NOT EXISTS tabla_validacion_email_tokens (
+    id_token                SERIAL                      PRIMARY KEY,
+    numero_documento        VARCHAR(10)                 NOT NULL,
+    token                   VARCHAR(64)                 NOT NULL        UNIQUE,
+    utilizado               BOOLEAN                     NOT NULL        DEFAULT FALSE,
+    fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
+    fecha_expiracion        TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP + INTERVAL '24 hours',
+    fecha_validacion        TIMESTAMP   WITH TIME ZONE,
+    FOREIGN KEY (numero_documento) REFERENCES tabla_usuarios(numero_documento) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS tabla_baneados (
