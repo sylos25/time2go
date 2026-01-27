@@ -29,7 +29,23 @@ export async function GET(req: Request) {
     }
 
     const result = await pool.query(
-      `SELECT numero_documento, nombres, apellidos, correo, id_rol, id_pais FROM tabla_usuarios WHERE numero_documento = $1 LIMIT 1`,
+      `SELECT 
+        u.numero_documento, 
+        u.nombres, 
+        u.apellidos, 
+        u.correo, 
+        u.id_rol, 
+        u.id_pais, 
+        u.telefono,
+        u.validacion_telefono,
+        u.validacion_correo,
+        u.fecha_registro,
+        p.nombre_pais,
+        r.nombre_rol
+      FROM tabla_usuarios u
+      LEFT JOIN tabla_paises p ON u.id_pais = p.id_pais
+      LEFT JOIN tabla_roles r ON u.id_rol = r.id_rol
+      WHERE u.numero_documento = $1 LIMIT 1`,
       [numeroDocumento]
     );
 
