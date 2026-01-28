@@ -1,24 +1,24 @@
 "use client"
 
 import { Separator } from "@/components/ui/separator"
+import Image from "next/image";import { FC } from "react";  
 
 export function Footer() {
   return (
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Brand Section */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-r  from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">T</span>
-            </div>
-            <h3 className="text-2xl font-bold bg-gradient-to-r  from-blue-500 to-cyan-500 bg-clip-text text-transparent">
-              Time2Go
-            </h3>
-          </div>
+        <div className="flex justify-center">
+          <Image
+          src="/images/logo_azul.png"
+          alt="Time2Go Logo"
+          width={200}   // ajusta al tamaño real que quieras
+          height={200}
+        />
         </div>
-
-        <Separator className="bg-gray-800 mb-8" />
+        
+        
+        <hr className="bg-gray-800 my-8" />
 
         <div className="flex flex-wrap justify-center gap-6 mb-8">
           <a href="/terminos-uso" className="text-gray-400 hover:text-white transition-colors">
