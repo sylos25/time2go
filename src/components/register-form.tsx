@@ -657,16 +657,16 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                 Política de seguridad de la información
               </h2>
               <div id="policy-body" className="text-sm text-gray-700 space-y-3 mb-6">
-                <p>Aquí va el contenido de la política de seguridad de la información...</p>
-                <p>
-                  No lea esto William XD
-                </p>
+                <p>Al registrarse en Time2Go, el usuario autoriza de manera previa, expresa e informada el tratamiento de sus datos personales conforme a lo establecido en la Ley 1581 de 2012 y demás normas concordantes.</p>
+                <p>Los datos personales suministrados serán tratados por Time2Go con la finalidad de permitir el registro en la plataforma, brindar información sobre eventos en la ciudad de Bucaramanga, enviar comunicaciones informativas y mejorar la experiencia del usuario.</p>
+                <p>El titular podrá ejercer en cualquier momento sus derechos de acceso, actualización, rectificación y supresión de datos, así como revocar la autorización otorgada, conforme a la Política de Tratamiento de Datos Personales, disponible en el sitio web.</p>
               </div>
-              <div className="flex justify-end space-x-2">
+              <div className="flex justify-center space-x-2">
                 <Button variant="outline" onClick={handleReject}>
                   Rechazar
                 </Button>
-                <Button ref={acceptButtonRef} onClick={handleAccept}>
+                <Button ref={acceptButtonRef} onClick={handleAccept}
+                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-emerald-600 hover:to-green-700 text-white font-medium rounded-md">
                   Aceptar
                 </Button>
               </div>

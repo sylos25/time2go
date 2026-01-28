@@ -327,6 +327,14 @@ export function Header({
               ) : (
                 <div className="flex items-center gap-3">
                   <button
+                    onClick={() => navigateTo("/eventos/crear")}
+                    className="text-white/90 hover:text-white font-medium transition-colors relative group cursor-pointer flex items-center"
+                  >
+                    Crear Evento
+                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full" />
+                  </button>
+
+                  <button
                     onClick={() => navigateTo("/dashboard")}
                     className="text-white/90 hover:text-white font-medium transition-colors relative group cursor-pointer flex items-center"
                   >
