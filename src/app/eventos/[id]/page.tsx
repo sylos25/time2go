@@ -195,19 +195,6 @@ export default function EventLanding({ params }: { params: { id: string } }) {
 
         {/* Event Title */}
         <div className="mb-6">
-          <div className="flex flex-wrap gap-2 mb-3">
-            <Badge
-              variant="secondary"
-              className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0"
-            >
-              {event.categoria_nombre ?? event.categoria ?? "Evento"}
-            </Badge>
-            {event.tipo_nombre && (
-              <Badge variant="outline" className="bg-white/80 backdrop-blur-sm">
-                {event.tipo_nombre}
-              </Badge>
-            )}
-          </div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
             {event.nombre_evento}
           </h1>
