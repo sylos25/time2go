@@ -53,33 +53,8 @@ export function HeroSection() {
   return (
     <section className="pt-16 lg:pt-20 pb-12 lg:pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12 lg:mb-20">
-          <h1 className="text-5xl lg:text-7xl xl:text-8xl font-bold text-gray-900 mb-8 leading-tight">
-            Descubre Eventos
-            <span className="block bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600 bg-clip-text text-transparent">
-              Increíbles
-            </span>
-          </h1>
 
-          <p className="text-xl lg:text-2xl text-gray-600 max-w-4xl mx-auto mb-10 leading-relaxed">
-            Encuentra y disfruta de los mejores eventos, festivales y experiencias culturales cerca de ti. Conecta con
-            tu pasión y vive momentos únicos.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link href="/eventos">
-              <Button
-                size="lg"
-                className="bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600 hover:from-blue-700 hover:via-purple-700 hover:to-violet-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 px-10 py-6 text-lg"
-              >
-                Explorar Eventos
-                <ArrowRight className="ml-2 h-6 w-6" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-
-        <div className="relative">
+        <div className="relative mt-8">
           <Swiper
             modules={[Navigation, Pagination, Autoplay, EffectFade]}
             className="w-full max-w-7xl mx-auto h-[400px] sm:h-[500px] lg:h-[650px] xl:h-[750px] rounded-3xl overflow-hidden shadow-2xl"
@@ -98,6 +73,7 @@ export function HeroSection() {
           >
             {heroSlides.map((slide) => (
               <SwiperSlide key={slide.id} className="relative group">
+                
                 <img
                   src={slide.image || "/placeholder.svg"}
                   alt={slide.title}

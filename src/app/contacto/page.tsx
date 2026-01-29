@@ -298,20 +298,9 @@ export default function ContactoPage() {
           <Card className="bg-white/80 backdrop-blur-sm border-white/50 rounded-sm">
             <CardContent className="p-8 text-center">
             <div className="flex items-center justify-center mb-6">
-                <div className="w-30 h-30 bg-gradient-to-r from-blue-600 to-purple-600 rounded-sm flex items-center justify-center p-3">
-                  <div className="relative w-40 h-40">
-                    <Image 
-                      src="/images/logo.png" 
-                      alt="Time2Go Logo" 
-                      fill 
-                      className="object-contain" 
-                    />
-                  </div>
-                </div>
+                <img src="/images/logo_color.png" 
+                    className="mx-auto mb-3 max-w-[250px] max-h-[250px] object-contain" />
               </div>
-              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-                Time2Go
-              </h2>
               <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-6">
                 Nuestra visión es revolucionar la industria de eventos, conectando a organizadores y asistentes 
                 a través de tecnología innovadora que simplifica cada paso del proceso.
@@ -319,7 +308,7 @@ export default function ContactoPage() {
               <div className="flex items-center justify-center gap-6 text-sm text-gray-500">
                 <span className="flex items-center gap-1">
                   <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                  +10,000 eventos
+                  +10,000 eventos   
                 </span>
                 <span>|</span>
                 <span>+500,000 usuarios</span>

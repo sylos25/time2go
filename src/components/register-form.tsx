@@ -320,7 +320,6 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             }`}
           >
             <option value="">Selecciona un tipo de documento</option>
-            <option value="Tarjeta de Identidad">Tarjeta de Identidad</option>
             <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>
             <option value="Cédula de Extranjería">Cédula de Extranjería</option>
             <option value="Pasaporte">Pasaporte</option>

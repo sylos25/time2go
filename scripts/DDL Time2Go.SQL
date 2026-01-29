@@ -30,8 +30,8 @@ DROP TABLE IF EXISTS tabla_departamentos;
 DROP TABLE IF EXISTS tabla_paises;
 DROP TABLE IF EXISTS tabla_imagenes;
 
-
-CREATE TYPE tip_doc     AS ENUM ('Tarjeta de Identidad', 'Cédula de Ciudadanía', 'Cédula de Extranjería', 'Pasaporte');
+-- CREACION DE TIPOS ENUM
+CREATE TYPE tip_doc     AS ENUM ('Cédula de Ciudadanía', 'Cédula de Extranjería', 'Pasaporte');
 CREATE TYPE tip_rol     AS ENUM ('Usuario', 'Promotor', 'Administrador', 'SuperAdministrador');
 CREATE TYPE estado_pago AS ENUM ('Pendiente', 'Pagado', 'Fallido');
 
@@ -381,9 +381,22 @@ INSERT INTO tabla_tipo_eventos VALUES (15, 3, 'Exhibición deportiva');
 INSERT INTO tabla_tipo_sitios VALUES (1, 'Teatro');
 INSERT INTO tabla_tipo_sitios VALUES (2, 'Centro de convenciones');
 INSERT INTO tabla_tipo_sitios VALUES (3, 'Museo');
+INSERT INTO tabla_tipo_sitios VALUES (4, 'Cancha de Barrio');
 
 -- CARGAR EN TABLA_PAISES.
-INSERT INTO tabla_paises VALUES  (1, 'Colombia');
+INSERT INTO tabla_paises VALUES
+(1, 'Argentina'),
+(2, 'Bolivia')
+(2, 'Brasil'),
+(3, 'Chile'),  
+(4, 'Colombia'),
+(5, 'Ecuador'),
+(6, 'Guyana'),
+(7, 'Paraguay'),
+(5, 'Perú'),
+(8, 'Surinam'),
+(9, 'Uruguay'),
+(10, 'Venezuela');
 
 -- CARGA TABLE DE DEPARTAMENTOS SEGÚN DANE.
 INSERT INTO tabla_departamentos VALUES  (91,'Amazonas',1);
@@ -1543,6 +1556,8 @@ INSERT INTO tabla_municipios VALUES (99, 99624, 'SANTA ROSALÍA', FALSE, FALSE);
 -- CARGAR EN TABLA_SITIOS
 INSERT INTO tabla_sitios VALUES (1, 'Teatro Santander', 1, 'Desde 1932, el Teatro Santander ocupa un lugar privilegiado en el corazón de Bucaramanga. Ubicado en el Barrio Centro de la ciudad, junto al Parque Centenario, el Teatro Santander se distingue por su destacado carácter arquitectónico, sus exigentes condiciones técnicas y una oferta variada y de alta calidad.​', TRUE, 68001, 'Calle 33 #18-60', '7,12116°', '-73,12401°', 6076424232, 3245670437, 'https://www.teatrosantanderbga.com/');
 INSERT INTO tabla_sitios VALUES (2, 'Neomundo - Centro de convenciones y eventos', 2, 'Neomundo se destaca como uno de los centros de convenciones y eventos más importantes de Colombia. Su oferta se organiza en cuatro líneas de negocio: Arrendamiento de Espacios para Eventos, Arrendamiento Inmobiliario, Operación Logística de Eventos y Proyectos Especiales.', TRUE, 68001, 'Calle 89 Transversal Oriental Metropolitana-69, Barrio, Cl. 100,', '7,10215°', '-73,10619°', 6077000260, 3023246560, 'https://neomundo.co/');
+INSERT INTO tabla_sitios VALUES (4, 'Cancha de tierra del barrio La Cumbre', 4, 'El escenario deportivo del barrio La Cumbre es un espacio comunitario dedicado a la práctica de diversas disciplinas deportivas y actividades recreativas. Ubicado en el corazón del barrio, este lugar ofrece a los residentes y visitantes un entorno propicio para el ejercicio físico, la socialización y el desarrollo de habilidades deportivas.', FALSE, 68276, 'Calle 34 con Carrera 8e, Floridablanca.', '7,07904°', '-73,08879°', NULL, NULL, NULL);
+
 
 -- CARGAR EN TABLA_TIPO_INFRAEST_DISC
 INSERT INTO tabla_tipo_infraest_disc VALUES (1, 'Ascensor' );
@@ -1556,6 +1571,21 @@ INSERT INTO tabla_sitios_disc VALUES (2, 1, 2, 'Rampa en la entrada del Teatro S
 INSERT INTO tabla_sitios_disc VALUES (3, 2, 1, 'Ascensor cerca a la entrada de Neomundo');
 INSERT INTO tabla_sitios_disc VALUES (4, 2, 2, 'Rampa en la entrada y para acceder entre los pisos de Neomundo');
 INSERT INTO tabla_sitios_disc VALUES (5, 2, 3, 'Señalización en braille en las distintos accesos de Neomundo');
+
+
+-- CARGAR EN TABLA_EVENTOS
+INSERT INTO tabla_eventos VALUES (1, 'Torneo de Fútbol Amistoso', '1095951827', 3, 12, 4, 68276, 'Un torneo de fútbol amistoso para promover la actividad física y la camaradería entre los participantes.', 3123456789, NULL, '2026-09-15', '2026-09-15', '10:00:00', '16:00:00', NULL, FALSE, 60, TRUE, NOW(), NULL, NULL);
+INSERT INTO tabla_eventos VALUES (2, 'Fiesta de La Cumbia Ñera', '1095951827', 1, 2, 'Lugar'
+
+
+-- CARGAR EN TABLA_IMAGENES_EVENTOS
+INSERT INTO tabla_imagenes_eventos VALUES
+(1, 'https://res.cloudinary.com/dljthy97e/image/upload/v1769572316/Cancha_leopardo_clbqwx.png', 1, NOW(), NOW()),
+(2, 'https://res.cloudinary.com/dljthy97e/image/upload/v1769572322/Microfutbol_ni%C3%B1o2_bea1sl.jpg', 1, NOW(), NOW()),
+(3, 'https://res.cloudinary.com/dljthy97e/image/upload/v1769572317/Microfutbol_ni%C3%B1o1_at3cnl.jpg', 1, NOW(), NOW()),
+(4, 'https://res.cloudinary.com/dljthy97e/image/upload/v1769572316/Microfutbol_joven_kvtx0h.jpg', 1, NOW(), NOW()),
+(5, 'https://res.cloudinary.com/dljthy97e/image/upload/v1769572316/Microfutbol_adulto_uuupv8.jpg', 1, NOW(), NOW());
+
 
 -- CARGAR CATEGORIA BOLETERIA
 INSERT INTO tabla_categoria_boleto VALUES (1, 'General');

@@ -9,6 +9,10 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
   },
+  tls: {
+    // Allow self-signed certificates in non-production environments (useful for dev)
+    rejectUnauthorized: process.env.NODE_ENV === "production",
+  },
 })
 
 
@@ -71,6 +75,14 @@ export async function sendEmailValidationEmail(
           </div>
         </div>
       `,
+    }
+
+    try {
+      await transporter.verify()
+      console.log("Transporter verificado: listo para enviar correos")
+    } catch (verifyError) {
+      console.error("Fallo al verificar transporter:", verifyError)
+      // continuar e intentar enviar para capturar el error real
     }
 
     const info = await transporter.sendMail(mailOptions)

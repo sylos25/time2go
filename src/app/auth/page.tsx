@@ -68,7 +68,7 @@ export default function AuthPage() {
               <div className="space-y-4">
                 <Button
                   onClick={() => setStep("login")}
-                  className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600 hover:from-blue-700 hover:via-purple-700 hover:to-violet-700 text-white font-medium py-6 rounded-sm text-lg"
+                  className="w-full bg-gradient-to-r from-rose-500 via-rose-400 to-rose-500 hover:from-rose-600 hover:via-rose-500 hover:to-rose-600 text-white font-medium py-6 rounded-sm text-lg"
                 >
                   Iniciar Sesión
                 </Button>
@@ -76,7 +76,7 @@ export default function AuthPage() {
                 <Button
                   onClick={() => setStep("register")}
                   variant="outline"
-                  className="w-full border-2 border-purple-600 text-purple-600 hover:bg-purple-50 font-medium py-6 rounded-sm text-lg"
+                  className="w-full border-2 border-lime-600 text-lime-600 hover:bg-green-50 hover:text-lime-600 font-medium py-6 rounded-sm text-lg"
                 >
                   Crear Cuenta
                 </Button>

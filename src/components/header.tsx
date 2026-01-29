@@ -275,11 +275,11 @@ export function Header({
 
       {/* Header */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-70 transition-all duration-300 ${
           scrolled
-            ? "bg-gradient-to-r from-blue-900 via-purple-900 to-violet-900 backdrop-blur-md shadow-lg border-b border-white/10"
-            : "bg-gradient-to-r from-blue-800 via-purple-800 to-violet-800 backdrop-blur-sm"
-        }`}
+            ? "bg-gradient-to-r from-lime-600 via-lime-500 to-lime-600"
+            : "bg-gradient-to-r from-lime-500 via-lime-400 to-lime-500 w-full shadow-md shadow-black/10"
+        }`} 
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-20">
@@ -297,10 +297,10 @@ export function Header({
             {/* Logo */}
             <button
               onClick={() => navigateTo("/")}
-              className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+              className="flex items-center space-x-3 hover:opacity-80 transition-opacity cursor-pointer"
             >
               <div className="w-10 h-10 lg:w-40 lg:h-50 relative">
-                <Image src="/images/logo.png?height=48&width=48" alt="Time2Go Logo" fill className="object-contain" />
+                <Image src="/images/logo_header.png?height=48&width=48" alt="Time2Go Logo" fill className="object-contain" />
               </div>
             </button>
 

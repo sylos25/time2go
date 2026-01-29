@@ -5,12 +5,12 @@ import Image from "next/image";import { FC } from "react";
 
 export function Footer() {
   return (
-    <footer className="bg-gray-900 text-white">
+    <footer className="bg-zinc-800 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Brand Section */}
         <div className="flex justify-center">
           <Image
-          src="/images/logo_azul.png"
+          src="/images/logo.png"
           alt="Time2Go Logo"
           width={200}   // ajusta al tamaño real que quieras
           height={200}

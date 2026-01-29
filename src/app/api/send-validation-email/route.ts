@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+export const runtime = "nodejs";
 import pool from "@/lib/db";
 import { sendEmailValidationEmail, generateEmailValidationToken } from "@/lib/email";
 
