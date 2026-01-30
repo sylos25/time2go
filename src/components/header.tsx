@@ -310,17 +310,17 @@ export function Header({
                 <button
                   key={item.name}
                   onClick={() => navigateTo(item.path)}
-                  className="text-white/90 hover:text-white font-medium transition-colors relative group cursor-pointer"
+                  className="text-white hover:text-green-800 font-medium transition-colors relative group cursor-pointer"
                 >
                   {item.name}
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full" />
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-600 transition-all group-hover:w-full" />
                 </button>
               ))}
 
               {!loggedIn ? (
                 <Button
                   onClick={() => router.push("/auth")}
-                  className="bg-white text-purple-900 hover:bg-white/90 font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-sm"
+                  className="bg-amber-300 text-amber-800 hover:bg-yellow-300 font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-sm"
                 >
                   Únete
                 </Button>

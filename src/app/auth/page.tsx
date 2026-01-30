@@ -12,20 +12,24 @@ export default function AuthPage() {
   const searchParams = useSearchParams()
   const [step, setStep] = useState<"choice" | "login" | "register">("choice")
   const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false)
+  const images = [ "/images/bucaramanga.jpg", "/images/floridablanca.jpg", "/images/giron.jpg", "/images/piedecuesta.jpg", ];
+  const [currentIndex, setCurrentIndex] = useState(0); 
 
   useEffect(() => {
     const registered = searchParams?.get("registered")
     if (registered === "true") {
       setShowRegistrationSuccess(true)
       setStep("choice")
-      // Ocultar el mensaje después de 5 segundos
+
       const timer = setTimeout(() => {
         setShowRegistrationSuccess(false)
       }, 5000)
+      
       return () => clearTimeout(timer)
     }
   }, [searchParams])
 
+  
   const handleLoginSuccess = () => {
     router.push("/")
   }
@@ -39,8 +43,24 @@ export default function AuthPage() {
     }, 5000)
   }
 
+  useEffect(() => { 
+    const interval = setInterval(() => { 
+      setCurrentIndex((prev) => (prev + 1) % images.length); }, 5000); 
+      return () => 
+        clearInterval(interval); }, 
+      [images.length]);
+
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <main className="relative min-h-screen overflow-hidden bg-black">
+            {images.map((img, index) => ( 
+              <div key={index} style={{ backgroundImage: `url(${img})` }} 
+                className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ${ 
+                  index === currentIndex ? "opacity-100" : "opacity-0" }`} /> ))}
+
+    <div className="absolute top-20 w-full text-center p-2 bg-black/30 z-10"> 
+      <p className="text-xs text-gray-200"> Fotografías: © Autores originales </p> 
+    </div>
+
       {/* Banner de registro exitoso */}
       {showRegistrationSuccess && (
         <div className="fixed top-20 left-0 right-0 mx-4 z-50">
@@ -55,20 +75,22 @@ export default function AuthPage() {
       )}
 
       {/* Container con padding para acomodar el header fijo */}
-      <div className="mt-20 pt-8 pb-12 px-4 sm:px-6 lg:px-8">
+      <div className="mt-40 relative z-10 flex items-center justify-center h-full">
         <div className="max-w-md mx-auto">
           {step === "choice" && (
-            <div className="bg-white rounded-lg shadow-lg p-8">
-              <div className="text-center mb-6">
+            <div className="w-100 bg-white rounded-lg shadow-lg p-8">
+              <div className="flex flex-col items-center mb-6">
                 <img src="/images/logo_color.png" 
-                    className="mx-auto mb-3 max-w-[400px] max-h-[400px] object-contain" />
-                <p className="mt-6 text-gray-600 -mt-6">Todo los eventos de tu ciudad, justo donde estás. </p>
+                    className="mb-3 max-w-[350px] max-h-[350px] object-contain" />
+                <p className="mt-6 text-gray-600 -mt-6">
+                  Los eventos de tu ciudad, justo donde estás. 
+                </p>
               </div>
 
-              <div className="space-y-4">
+              <div className="flex flex-col items-center space-y-4">
                 <Button
                   onClick={() => setStep("login")}
-                  className="w-full bg-gradient-to-r from-rose-500 via-rose-400 to-rose-500 hover:from-rose-600 hover:via-rose-500 hover:to-rose-600 text-white font-medium py-6 rounded-sm text-lg"
+                  className="w-80 bg-gradient-to-br from-amber-300 via-amber-300 to-amber-300 text-amber-700 font-medium py-6 rounded-sm text-lg transition duration-300 ease-in-out hover:from-amber-300 hover:via-yellow-300 hover:to-amber-300 hover:text-amber-600"
                 >
                   Iniciar Sesión
                 </Button>
@@ -76,7 +98,7 @@ export default function AuthPage() {
                 <Button
                   onClick={() => setStep("register")}
                   variant="outline"
-                  className="w-full border-2 border-lime-600 text-lime-600 hover:bg-green-50 hover:text-lime-600 font-medium py-6 rounded-sm text-lg"
+                  className="w-80 border-2 border-lime-500 text-lime-500 hover:bg-lime-50 hover:text-lime-600 font-medium py-6 rounded-sm text-lg"
                 >
                   Crear Cuenta
                 </Button>
@@ -96,11 +118,13 @@ export default function AuthPage() {
 
           {step === "login" && (
             <div className="bg-white rounded-lg shadow-lg p-8">
-              <div className="text-center mb-8">
-                <h1 className="text-4xl font-bold leading-relaxed bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600 bg-clip-text text-transparent mb-2">
+              <div className="text-center mb-6">
+                <h1 className="text-4xl font-bold leading-relaxed bg-gradient-to-r from-lime-500 via-lime-400 to-lime-500 bg-clip-text text-transparent mb-2">
                   Bienvenido
                 </h1>
-                <p className="mt-2 text-1xl text-gray-600">Inicia sesión para continuar con la experiencia</p>
+                <p className="mt-1 text-1xl text-gray-600">
+                  Inicia sesión para continuar con la experiencia
+                </p>
               </div>
 
               <LoginForm onSuccess={handleLoginSuccess} />
@@ -120,7 +144,7 @@ export default function AuthPage() {
           {step === "register" && (
             <div className="bg-white rounded-lg shadow-lg p-8">
               <div className="text-center mb-8">
-                <h1 className="text-4xl font-bold leading-relaxed bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600 bg-clip-text text-transparent mb-2">
+                <h1 className="text-4xl font-bold leading-relaxed bg-gradient-to-r from-lime-500 via-lime-400 to-lime-500 bg-clip-text text-transparent mb-2">
                   Registrate
                 </h1>
                 <p className="mt-2 text-gray-600">Crea tu cuenta y descubre los eventos de la ciudad</p>
