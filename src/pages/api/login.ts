@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import { serializeCookie } from "@/lib/cookies";
 import { Pool } from "pg";
 import bcrypt from "bcrypt";
 
@@ -51,6 +52,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const expiresIn = 60 * 30; // 30 minutes
       // Use numero_documento as the stable user identifier in tokens
       const token = jwt.sign({ numero_documento: user.numero_documento, name: user.nombres || user.correo.split('@')[0] }, secret, { expiresIn });
+
+      const secure = process.env.NODE_ENV === 'production';
+      const cookie = serializeCookie('token', token, {
+        maxAge: expiresIn,
+        httpOnly: true,
+        secure,
+        sameSite: 'lax',
+        path: '/',
+        domain: process.env.COOKIE_DOMAIN,
+      });
+
+      res.setHeader('Set-Cookie', cookie);
 
       return res.status(200).json({
         success: true,

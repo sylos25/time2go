@@ -110,9 +110,9 @@ export function Header({
           setUser({ token, name: storedName || (user as any)?.name });
           if (exp) scheduleAutoLogout(exp);
 
-          // Also validate token with the server in background (silent clear if invalid)
+            // Also validate token with the server in background (silent clear if invalid)
           try {
-            const res = await fetch('/api/me', { headers: { Authorization: `Bearer ${token}` } });
+            const res = await fetch('/api/me', { headers: { Authorization: `Bearer ${token}` }, credentials: 'include' });
             if (!res.ok) {
               // token not valid on server -> clear silently
               clearSessionSilent();
@@ -135,7 +135,7 @@ export function Header({
         }
 
         // No token in localStorage — maybe server session (cookie) exists; ask /api/me
-        const res = await fetch('/api/me');
+        const res = await fetch('/api/me', { credentials: 'include' });
         if (!res.ok) {
           // session invalid — clear silently so we don't interrupt navigation
           clearSessionSilent();
@@ -220,6 +220,13 @@ export function Header({
 
   const performLogout = () => {
     // limpiar estado y localStorage, notificar y redirigir
+    // Ask server to clear cookie (best-effort)
+    try {
+      void fetch('/api/logout', { method: 'POST', credentials: 'include' })
+    } catch (err) {
+      console.error('logout request error', err)
+    }
+
     localStorage.removeItem("token");
     localStorage.removeItem("userName");
     setUser(null);

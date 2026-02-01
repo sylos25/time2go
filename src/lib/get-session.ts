@@ -1,6 +1,7 @@
 import { auth } from "./auth"
 import { headers } from "next/headers"
 import { verifyToken } from "./jwt"
+import { parseCookies } from "./cookies"
 
 export async function getSession() {
   const hdrs = await headers();
@@ -11,6 +12,19 @@ export async function getSession() {
     const payload = verifyToken(token as string);
     if (payload && payload.numero_documento) {
       return { user: { numero_documento: payload.numero_documento, name: payload.name } } as any;
+    }
+  }
+
+  // Fall back: check cookies for a token (server-side)
+  const cookieHeader = hdrs.get('cookie')
+  if (cookieHeader) {
+    const cookies = parseCookies(cookieHeader)
+    const token = cookies['token']
+    if (token) {
+      const payload = verifyToken(token as string)
+      if (payload && payload.numero_documento) {
+        return { user: { numero_documento: payload.numero_documento, name: payload.name } } as any;
+      }
     }
   }
 

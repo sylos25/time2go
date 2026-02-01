@@ -289,20 +289,9 @@ const handleAddEvent = async () => {
       {/* Hero Section */}
       <section className="pt-16 lg:pt-20 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 mb-6">
-              Descubre los Mejores
-              <span className="block bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
-                Eventos
-              </span>
-            </h1>
-            <p className="text-lg lg:text-xl text-gray-600 max-w-3xl mx-auto">
-              Encuentra experiencias únicas, conecta con tu pasión y reserva tu lugar en los eventos más emocionantes
-            </p>
-          </div>
 
           {/* Enhanced Search and Filters */}
-          <div className="bg-white/90 backdrop-blur-md rounded-3xl p-8 shadow-xl border border-white/60 mb-12 relative">
+          <div className="mt-20 bg-white/90 backdrop-blur-md rounded-3xl p-8 shadow-xl border border-white/60 mb-12 relative">
             <div className="flex flex-col lg:flex-row gap-6 items-center">
               <div className="flex-1 relative">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-6 w-6" />

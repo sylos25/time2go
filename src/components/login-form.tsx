@@ -49,6 +49,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     try {
       const res = await fetch("/api/login", {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       })
@@ -67,17 +68,36 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         return
       }
 
-      // Guardar token y datos
-      if (data.token) localStorage.setItem("token", data.token)
-      if (data.numero_documento) localStorage.setItem("userDocument", String(data.numero_documento))
-      const name = data.name || (email ? email.split("@")[0] : "Usuario")
-      localStorage.setItem("userName", name)
+      // Respect cookie consent: if user rejected non-essential cookies, avoid storing token/user data in localStorage
+      const readConsent = () => {
+        try {
+          const v = document.cookie.split(';').map(s => s.trim()).find(s => s.startsWith('cookie_consent='))
+          if (!v) return null
+          return decodeURIComponent(v.split('=')[1])
+        } catch {
+          return null
+        }
+      }
 
-      // Notificar al header
+      const consent = readConsent()
+      const name = data.name || (email ? email.split("@")[0] : "Usuario")
+
+      if (consent !== 'rejected') {
+        if (data.token) localStorage.setItem("token", data.token)
+        if (data.numero_documento) localStorage.setItem("userDocument", String(data.numero_documento))
+        localStorage.setItem("userName", name)
+      } else {
+        // Clear any existing persisted auth data to fully respect rejection
+        localStorage.removeItem("token")
+        localStorage.removeItem("userDocument")
+        localStorage.removeItem("userName")
+      }
+
+      // Notificar al header (include token only when consent allows it)
       window.dispatchEvent(
         new CustomEvent("user:login", {
           detail: {
-            token: data.token,
+            token: consent !== 'rejected' ? data.token : undefined,
             name,
             expiresAt: data.expiresAt,
             numero_documento: data.numero_documento,
