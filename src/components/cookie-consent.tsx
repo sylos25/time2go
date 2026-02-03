@@ -47,8 +47,8 @@ export function CookieConsent() {
         Utilizamos cookies propias y de terceros para mejorar tu experiencia, mantener la sesión y analizar el uso. Puedes aceptar o rechazar cookies no esenciales. <a href="/politicas/cookies" className="underline text-lime-600 ml-1">Más información</a>
       </div>
       <div className="flex items-center gap-2">
-        <button onClick={reject} className="px-3 py-2 text-sm rounded-md border border-gray-300 bg-white text-gray-700">Rechazar</button>
-        <button onClick={accept} className="px-4 py-2 text-sm rounded-md bg-lime-600 text-white">Aceptar</button>
+        <button onClick={reject} className="px-3 py-2 text-sm rounded-md border border-gray-300 bg-white text-gray-700 cursor-pointer">Rechazar</button>
+        <button onClick={accept} className="px-4 py-2 text-sm rounded-md bg-lime-600 text-white cursor-pointer">Aceptar</button>
       </div>
     </div>
   )

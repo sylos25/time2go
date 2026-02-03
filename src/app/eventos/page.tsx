@@ -515,17 +515,13 @@ const handleAddEvent = async () => {
         </div>
       )}
 
-      {/* All Events */}
+      {/* Tarjetas de presentación de los eventos */}
       <section className="pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900">
               Eventos Disponibles ({filteredEvents.length})
             </h2>
-            <Button variant="outline" className="bg-white/90 backdrop-blur-sm rounded-xl border-2 hover:bg-white">
-              <Filter className="h-4 w-4 mr-2" />
-              Más filtros
-            </Button>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -535,7 +531,6 @@ const handleAddEvent = async () => {
                 className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-white/90 backdrop-blur-sm border-white/60 rounded-2xl overflow-hidden"
               >
                 <div className="relative overflow-hidden">
-                  {/* Image gallery: main image + thumbnails */}
                   <div className="w-full h-52 bg-gray-100">
                     {event.raw && event.raw.imagenes && event.raw.imagenes.length ? (
                       <>
@@ -564,10 +559,9 @@ const handleAddEvent = async () => {
                     )}
 
                     {/* Badge: PAGO / GRATIS */}
-                    <span className={`absolute top-4 left-4 text-xs font-semibold px-2 py-1 rounded-full ${typeof event.price === 'number' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
+                    <span className={`absolute top-4 left-4 text-xs font-semibold px-2 py-1 rounded-full ${typeof event.price === 'number' ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'}`}>
                       {typeof event.price === 'number' ? 'PAGO' : 'GRATIS'}
                     </span>
-
                   </div>
 
                   <div className="absolute top-4 right-4 flex gap-2">
@@ -587,7 +581,15 @@ const handleAddEvent = async () => {
                     </Button>
                   </div>
                 </div>
+                
                 <CardContent className="p-6">
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Calendar className="h-4 w-4 mr-3" />
+                      {event.date} • {event.time}
+                    </div>
+                  </div>
+
                   <div className="flex items-center justify-between mb-3">
                     <Badge variant="outline" className="rounded-full">
                       {event.category}
@@ -597,31 +599,27 @@ const handleAddEvent = async () => {
                       <span className="text-sm font-medium">{event.rating}</span>
                     </div>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
+
+                  <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-amber-400 transition-colors">
                     {event.title}
                   </h3>
                   <p className="text-gray-600 mb-4 line-clamp-2">{event.description}</p>
-
                   <div className="space-y-2 mb-6">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Calendar className="h-4 w-4 mr-3" />
-                      {event.date} • {event.time}
-                    </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <MapPin className="h-4 w-4 mr-3" />
                       {event.location}
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <Users className="h-4 w-4 mr-3" />
-                      {Number(event.attendees ?? event.cupo ?? 0).toLocaleString()} asistentes
+                      Aforo para {Number(event.attendees ?? event.cupo ?? 0).toLocaleString()}
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold text-blue-600">{typeof event.price === 'number' ? `$${event.price}` : event.price}</div>
+                    <div className="text-2xl font-bold text-lime-700">{typeof event.price === 'number' ? `$${event.price}` : event.price}</div>
                     <Button
                       onClick={() => (window.location.href = `/eventos/${event.id_evento ?? event.id}`)}
-                      className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-700 hover:to-cyan-700 rounded-xl px-6"
+                      className="bg-gradient-to-tr from-violet-600 to-indigo-700 hover:from-blue-700 hover:to-cyan-700 rounded-xl px-6"
                     >
                       Detalles
                     </Button>
