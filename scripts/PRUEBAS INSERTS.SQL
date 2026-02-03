@@ -1,7 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 INSERT INTO tabla_usuarios VALUES ('Cédula de Ciudadanía', '1095951827', 'Brayhan Jahir', 'Orduz Perez', 1, 3143413720, TRUE, 'bryhanorduz14@gmail.com', TRUE, crypt('BhyOP06*', gen_salt('bf', 12)), NOW (), NULL, TRUE, 4, NOW());
-INSERT INTO tabla_usuarios VALUES ('Cédula de Ciudadanía', '1095581203', 'William', 'Rojas', 1, 3167598925, TRUE, 'williamrojas@gmail.com', TRUE, crypt('William15.*', gen_salt('bf', 12)), NOW (), NULL, TRUE, 4, NOW());
+INSERT INTO tabla_usuarios VALUES ('Cédula de Ciudadanía', '1095581203', 'William', 'Rojas', 1, 3167598925, TRUE, 'willirojasorduz@gmail.com', TRUE, crypt('William15.', gen_salt('bf', 12)), NOW (), NULL, TRUE, 4, NOW());
 INSERT INTO tabla_tipo_sitios VALUES (4, 'Cancha de Barrio'); 
 
 INSERT INTO tabla_sitios VALUES (4, 'Cancha de tierra del barrio La Cumbre', 4, 'El escenario deportivo del barrio La Cumbre es un espacio comunitario dedicado a la práctica de diversas disciplinas deportivas y actividades recreativas. Ubicado en el corazón del barrio, este lugar ofrece a los residentes y visitantes un entorno propicio para el ejercicio físico, la socialización y el desarrollo de habilidades deportivas.', FALSE, 68276, 'Calle 34 con Carrera 8e, Floridablanca.', '7,07904°', '-73,08879°', NULL, NULL, NULL);
