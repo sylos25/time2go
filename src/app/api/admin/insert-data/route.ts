@@ -20,10 +20,9 @@ export async function POST(req: NextRequest) {
         values = [data.id_pais, data.nombre_pais]
         break
 
-      case "municipios":
-        query = `INSERT INTO tabla_municipios (id_departamento, id_municipio, nombre_municipio, distrito, area_metropolitana) 
-                 VALUES ($1, $2, $3, $4, $5) RETURNING *`
-        values = [data.id_departamento, data.id_municipio, data.nombre_municipio, data.distrito || false, data.area_metropolitana || false]
+      case "tipo_sitios":
+        query = `INSERT INTO tabla_tipo_sitios (id_tipo_sitio, nombre_tipo_sitio) VALUES ($1, $2) RETURNING *`
+        values = [data.id_tipo_sitio, data.nombre_tipo_sitio]
         break
 
       case "sitios":
@@ -46,27 +45,19 @@ export async function POST(req: NextRequest) {
         ]
         break
 
-      case "usuarios":
-        // Hash de la contraseña
-        const hashedPassword = await bcrypt.hash(data.contrasena, 10)
-        query = `INSERT INTO tabla_usuarios (numero_documento, tipo_documento, nombres, apellidos, id_pais, 
-                 correo, contrasena_hash, validacion_correo, telefono) 
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING numero_documento, nombres, apellidos, correo`
-        values = [
-          data.numero_documento,
-          data.tipo_documento,
-          data.nombres,
-          data.apellidos,
-          data.id_pais,
-          data.correo,
-          hashedPassword,
-          data.validacion_correo || false,
-          data.telefono || null,
-        ]
+      case "tipo_infraest_disc":
+        query = `INSERT INTO tabla_tipo_infraest_disc (id_infraest_disc, nombre_infraest_disc) VALUES ($1, $2) RETURNING *`
+        values = [data.id_infraest_disc, data.nombre_infraest_disc]
         break
 
-      case "categorias_eventos":
-        query = `INSERT INTO tabla_categorias_eventos (id_categoria_evento, nombre) VALUES ($1, $2) RETURNING *`
+      case "sitios_disc":
+        query = `INSERT INTO tabla_sitios_disc (id_sitios_disc, id_sitio, id_infraest_disc, descripcion) 
+                 VALUES ($1, $2, $3, $4) RETURNING *`
+        values = [data.id_sitios_disc, data.id_sitio, data.id_infraest_disc, data.descripcion]
+        break
+
+      case "categoria_eventos":
+        query = `INSERT INTO tabla_categoria_eventos (id_categoria_evento, nombre) VALUES ($1, $2) RETURNING *`
         values = [data.id_categoria_evento, data.nombre]
         break
 
@@ -74,6 +65,11 @@ export async function POST(req: NextRequest) {
         query = `INSERT INTO tabla_tipo_eventos (id_tipo_evento, id_categoria_evento, nombre) 
                  VALUES ($1, $2, $3) RETURNING *`
         values = [data.id_tipo_evento, data.id_categoria_evento, data.nombre]
+        break
+
+      case "categoria_boletos":
+        query = `INSERT INTO tabla_categoria_boletos (id_categoria_boleto, nombre_categoria_boleto) VALUES ($1, $2) RETURNING *`
+        values = [data.id_categoria_boleto, data.nombre_categoria_boleto]
         break
 
       default:

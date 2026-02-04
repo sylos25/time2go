@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AlertCircle, CheckCircle, Loader } from "lucide-react"
 
-type DataTable = "paises" | "sitios" | "municipios" | "usuarios" | "categorias_eventos" | "tipo_eventos"
+type DataTable = "paises" | "tipo_sitios" | "sitios" | "tipo_infraest_disc" | "sitios_disc" | "categoria_eventos" | "tipo_eventos" | "categoria_boletos"
 
 interface FormState {
   [key: string]: string | number | boolean
@@ -23,13 +23,10 @@ const tableConfigs: Record<DataTable, { fields: Array<{ name: string; type: stri
       { name: "nombre_pais", type: "text", required: true, label: "Nombre del País" },
     ],
   },
-  municipios: {
+  tipo_sitios: {
     fields: [
-      { name: "id_departamento", type: "number", required: true, label: "ID Departamento" },
-      { name: "id_municipio", type: "number", required: true, label: "ID Municipio" },
-      { name: "nombre_municipio", type: "text", required: true, label: "Nombre del Municipio" },
-      { name: "distrito", type: "checkbox", required: false, label: "¿Es Distrito?" },
-      { name: "area_metropolitana", type: "checkbox", required: false, label: "¿Es Área Metropolitana?" },
+      { name: "id_tipo_sitio", type: "number", required: true, label: "ID Tipo de Sitio" },
+      { name: "nombre_tipo_sitio", type: "text", required: true, label: "Nombre del Tipo de Sitio" },
     ],
   },
   sitios: {
@@ -48,20 +45,21 @@ const tableConfigs: Record<DataTable, { fields: Array<{ name: string; type: stri
       { name: "sitio_web", type: "text", required: false, label: "Sitio Web" },
     ],
   },
-  usuarios: {
+  tipo_infraest_disc: {
     fields: [
-      { name: "numero_documento", type: "text", required: true, label: "Número de Documento" },
-      { name: "tipo_documento", type: "select", required: true, label: "Tipo de Documento" },
-      { name: "nombres", type: "text", required: true, label: "Nombres" },
-      { name: "apellidos", type: "text", required: true, label: "Apellidos" },
-      { name: "id_pais", type: "number", required: true, label: "ID País" },
-      { name: "correo", type: "email", required: true, label: "Correo Electrónico" },
-      { name: "contrasena", type: "password", required: true, label: "Contraseña" },
-      { name: "validacion_correo", type: "checkbox", required: false, label: "¿Email Validado?" },
-      { name: "telefono", type: "number", required: false, label: "Teléfono" },
+      { name: "id_infraest_disc", type: "number", required: true, label: "ID Infraestructura" },
+      { name: "nombre_infraest_disc", type: "text", required: true, label: "Nombre de Infraestructura" },
     ],
   },
-  categorias_eventos: {
+  sitios_disc: {
+    fields: [
+      { name: "id_sitios_disc", type: "number", required: true, label: "ID Sitio Discapacidad" },
+      { name: "id_sitio", type: "number", required: true, label: "ID Sitio" },
+      { name: "id_infraest_disc", type: "number", required: true, label: "ID Infraestructura" },
+      { name: "descripcion", type: "textarea", required: true, label: "Descripción" },
+    ],
+  },
+  categoria_eventos: {
     fields: [
       { name: "id_categoria_evento", type: "number", required: true, label: "ID Categoría" },
       { name: "nombre", type: "text", required: true, label: "Nombre de la Categoría" },
@@ -74,10 +72,16 @@ const tableConfigs: Record<DataTable, { fields: Array<{ name: string; type: stri
       { name: "nombre", type: "text", required: true, label: "Nombre del Tipo de Evento" },
     ],
   },
+  categoria_boletos: {
+    fields: [
+      { name: "id_categoria_boleto", type: "number", required: true, label: "ID Categoría de Boleto" },
+      { name: "nombre_categoria_boleto", type: "text", required: true, label: "Nombre de la Categoría de Boleto" },
+    ],
+  },
 }
 
-export function InsertDataTab() {
-  const [selectedTable, setSelectedTable] = useState<DataTable>("paises")
+export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {}) {
+  const [selectedTable, setSelectedTable] = useState<DataTable>(initialTable || "paises")
   const [formData, setFormData] = useState<FormState>({})
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
@@ -147,16 +151,18 @@ export function InsertDataTab() {
         </CardHeader>
         <CardContent>
           <Tabs value={selectedTable} onValueChange={(value) => setSelectedTable(value as DataTable)}>
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-8">
               <TabsTrigger value="paises">Países</TabsTrigger>
+              <TabsTrigger value="tipo_sitios">Tipo Sitios</TabsTrigger>
               <TabsTrigger value="sitios">Sitios</TabsTrigger>
-              <TabsTrigger value="municipios">Municipios</TabsTrigger>
-              <TabsTrigger value="usuarios">Usuarios</TabsTrigger>
-              <TabsTrigger value="categorias_eventos">Categorías</TabsTrigger>
+              <TabsTrigger value="tipo_infraest_disc">Infraestructura</TabsTrigger>
+              <TabsTrigger value="sitios_disc">Sitios Disc</TabsTrigger>
+              <TabsTrigger value="categoria_eventos">Categorías</TabsTrigger>
               <TabsTrigger value="tipo_eventos">Tipos de Eventos</TabsTrigger>
+              <TabsTrigger value="categoria_boletos">Categoría Boletos</TabsTrigger>
             </TabsList>
 
-            {["paises", "sitios", "municipios", "usuarios", "categorias_eventos", "tipo_eventos"].map((tableKey) => (
+            {["paises", "tipo_sitios", "sitios", "tipo_infraest_disc", "sitios_disc", "categoria_eventos", "tipo_eventos", "categoria_boletos"].map((tableKey) => (
               <TabsContent key={tableKey} value={tableKey} className="space-y-4">
                 {message && (
                   <div className={`p-4 rounded-lg flex items-center gap-3 ${

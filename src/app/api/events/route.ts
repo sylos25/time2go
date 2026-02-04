@@ -4,13 +4,13 @@ import pool from "@/lib/db";
 
 export const runtime = "nodejs";
 
-// POST: crear evento con imágenes, valores, links y documentos
+
 export async function POST(req: Request) {
   const client = await pool.connect();
   try {
     const formData = await req.formData();
 
-    // subir imágenes a Cloudinary
+
     const files = formData.getAll("additionalImages") as File[];
     const imageUrls: string[] = [];
     for (const f of files) {
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
       imageUrls.push(result.secure_url);
     }
 
-    // documento (raw)
+
     const docFile = formData.get("documento") as File | null;
     let documentoUrl: string | null = null;
     if (docFile && (docFile as unknown as any).size) {
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
       documentoUrl = docResult.secure_url;
     }
 
-    // Extraer campos
+
     const nombre_evento = (formData.get("nombre_evento") as string) || "";
     const descripcion = (formData.get("descripcion") as string) || "";
     const fecha_inicio = (formData.get("fecha_inicio") as string) || null;
@@ -37,7 +37,6 @@ export async function POST(req: Request) {
     const hora_final = (formData.get("hora_final") as string) || null;
     const dias_semana = (formData.get("dias_semana") as string) || null; // JSON string array
 
-    // Determine owner: prefer token, fallback to provided
     let numero_documento = String(formData.get("numero_documento") || "");
     const authHeader = (req.headers.get('authorization') || '').trim();
     if (authHeader.startsWith('Bearer ')) {
@@ -62,7 +61,7 @@ export async function POST(req: Request) {
 
     const gratis_pago = String(formData.get("gratis_pago") || "false") === "true"; // TRUE => PAGO
 
-    // costos y tiposBoleteria y links
+
     const costosRaw = formData.get("costos") as string | null;
     const tiposRaw = formData.get("tiposBoleteria") as string | null;
     const linksRaw = formData.get("linksBoleteria") as string | null;
@@ -70,14 +69,14 @@ export async function POST(req: Request) {
     const tiposBoleteria: string[] = tiposRaw ? JSON.parse(tiposRaw) : [];
     const linksBoleteria: string[] = linksRaw ? JSON.parse(linksRaw) : [];
 
-    // Begin transaction
+
     await client.query('BEGIN');
 
-    // Compute next id_evento explicitly (table uses plain INT PK in DDL)
+
     const nextIdRes = await client.query(`SELECT COALESCE(MAX(id_evento),0)+1 AS next FROM tabla_eventos`);
     const nextEventId = nextIdRes && nextIdRes.rows && nextIdRes.rows[0] ? nextIdRes.rows[0].next : 1;
 
-    // Insert evento with explicit id_evento
+
     await client.query(
       `INSERT INTO tabla_eventos (
         id_evento, nombre_evento, id_usuario, id_categoria_evento, id_tipo_evento, id_sitio, id_municipio,
@@ -108,7 +107,7 @@ export async function POST(req: Request) {
 
     const newEventId = nextEventId;
 
-    // Insert images
+
     for (const url of imageUrls) {
       await client.query(
         `INSERT INTO tabla_imagenes_eventos (url_imagen_evento, id_evento) VALUES ($1,$2)`,
@@ -116,7 +115,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Insert documento if present
+
     if (documentoUrl) {
       await client.query(
         `INSERT INTO tabla_documentos_eventos (url_documento_evento, id_evento) VALUES ($1,$2)`,
@@ -124,12 +123,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // Insert links
     for (const link of linksBoleteria.filter(Boolean)) {
       await client.query(`INSERT INTO tabla_links (id_evento, link) VALUES ($1,$2)`, [newEventId, link]);
     }
 
-    // Insert dias into tabla_eventos_x_dias for each date
+
     if (dias_semana) {
       try {
         const diasArr: string[] = JSON.parse(dias_semana);
@@ -137,32 +135,31 @@ export async function POST(req: Request) {
           await client.query(`INSERT INTO tabla_eventos_x_dias (id_evento, dia) VALUES ($1,$2)`, [newEventId, d]);
         }
       } catch (e) {
-        // ignore parse errors
         console.warn('invalid dias_semana format', e);
       }
     }
 
-    // If event is paid, save valores linked to categories
+
     if (gratis_pago) {
       for (let i = 0; i < tiposBoleteria.length; i++) {
         const nombreCat = tiposBoleteria[i];
         const costoRaw = costos[i] || '';
-        // parse numeric value removing non-numeric chars
+
         const valor = parseFloat(costoRaw.replace(/[^0-9.,-]/g, '').replace(',', '.')) || 0;
 
-        // obtain or create categoria_boleto
-        let catRes = await client.query(`SELECT id_categoria_boleto FROM tabla_categoria_boleto WHERE nombre_categoria_boleto = $1`, [nombreCat]);
+
+        let catRes = await client.query(`SELECT id_categoria_boleto FROM tabla_categoria_boletos WHERE nombre_categoria_boleto = $1`, [nombreCat]);
         let id_categoria_boleto: number;
         if (catRes && catRes.rows && catRes.rows.length > 0) {
           id_categoria_boleto = catRes.rows[0].id_categoria_boleto;
         } else {
-          const nextRes = await client.query(`SELECT COALESCE(MAX(id_categoria_boleto),0)+1 AS next FROM tabla_categoria_boleto`);
+          const nextRes = await client.query(`SELECT COALESCE(MAX(id_categoria_boleto),0)+1 AS next FROM tabla_categoria_boletos`);
           const nextId = (nextRes.rows && nextRes.rows[0] && nextRes.rows[0].next) ? nextRes.rows[0].next : 1;
-          await client.query(`INSERT INTO tabla_categoria_boleto (id_categoria_boleto, nombre_categoria_boleto) VALUES ($1,$2)`, [nextId, nombreCat]);
+          await client.query(`INSERT INTO tabla_categoria_boletos (id_categoria_boleto, nombre_categoria_boleto) VALUES ($1,$2)`, [nextId, nombreCat]);
           id_categoria_boleto = nextId;
         }
 
-        // insert into tabla_valores
+
         await client.query(`INSERT INTO tabla_valores (id_evento, id_categoria_boleto, valor) VALUES ($1,$2,$3)`, [newEventId, id_categoria_boleto, valor]);
       }
     }
@@ -179,7 +176,7 @@ export async function POST(req: Request) {
   }
 }
 
-// GET: listar eventos con imágenes, documentos, valores y links
+
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
@@ -231,12 +228,12 @@ export async function GET(req: Request) {
       LEFT JOIN tabla_usuarios u ON e.id_usuario = u.numero_documento
       LEFT JOIN tabla_sitios s ON e.id_sitio = s.id_sitio
       LEFT JOIN tabla_municipios m ON e.id_municipio = m.id_municipio
-      LEFT JOIN tabla_categorias_eventos ce ON e.id_categoria_evento = ce.id_categoria_evento
+      LEFT JOIN tabla_categoria_eventos ce ON e.id_categoria_evento = ce.id_categoria_evento
       LEFT JOIN tabla_tipo_eventos te ON e.id_tipo_evento = te.id_tipo_evento
       LEFT JOIN tabla_imagenes_eventos i ON e.id_evento = i.id_evento
       LEFT JOIN tabla_documentos_eventos d ON e.id_evento = d.id_evento
       LEFT JOIN tabla_valores v ON e.id_evento = v.id_evento
-      LEFT JOIN tabla_categoria_boleto cb ON v.id_categoria_boleto = cb.id_categoria_boleto
+      LEFT JOIN tabla_categoria_boletos cb ON v.id_categoria_boleto = cb.id_categoria_boleto
       LEFT JOIN tabla_links l ON e.id_evento = l.id_evento
       LEFT JOIN tabla_valoraciones vr ON e.id_evento = vr.id_evento
       ${idParam ? 'WHERE e.id_evento = $1' : ''}
@@ -286,7 +283,6 @@ export async function GET(req: Request) {
       }
 
       if (row.url_documento_evento) {
-        // avoid duplicates
         if (!eventosMap[row.id_evento].documentos.some((d: any) => d.url_documento_evento === row.url_documento_evento)) {
           eventosMap[row.id_evento].documentos.push({
             id_documento_evento: row.id_documento_evento,
@@ -313,7 +309,6 @@ export async function GET(req: Request) {
 
     const eventos = Object.values(eventosMap);
 
-    // map site/creator/valoraciones properly
     const mapped = eventos.map((ev: any) => ({
       ...ev,
       creador: ev.creador_num_doc ? { numero_documento: ev.creador_num_doc, nombres: ev.creador_nombres, apellidos: ev.creador_apellidos } : null,

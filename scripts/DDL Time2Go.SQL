@@ -8,19 +8,20 @@
 */
 -- BORRADO TABLAS
 DROP TABLE IF EXISTS tabla_validacion_email_tokens;
-DROP TABLE IF EXISTS tabla_reservas_eventos;
-DROP TABLE IF EXISTS tabla_costos_eventos;
-DROP TABLE IF EXISTS tabla_costos;
+DROP TABLE IF EXISTS tabla_reserva_eventos;
+DROP TABLE IF EXISTS tabla_links;
+DROP TABLE IF EXISTS tabla_valores;
+DROP TABLE IF EXISTS tabla_categoria_boletos;
 DROP TABLE IF EXISTS tabla_valoraciones;
-DROP TABLE IF EXISTS tabla_eventos;
+DROP TABLE IF EXISTS tabla_imagenes_eventos;
+DROP TABLE IF EXISTS tabla_documentos_eventos;
 DROP TABLE IF EXISTS tabla_eventos_x_dias;
+DROP TABLE IF EXISTS tabla_eventos;
 DROP TABLE IF EXISTS tabla_tipo_eventos;
-DROP TABLE IF EXISTS tabla_categorias_eventos;
+DROP TABLE IF EXISTS tabla_categoria_eventos;
 DROP TABLE IF EXISTS tabla_baneados;
-DROP TABLE IF EXISTS tabla_menu_usuarios;
 DROP TABLE IF EXISTS tabla_usuarios;
 DROP TABLE IF EXISTS tabla_roles;
-DROP TABLE IF EXISTS tabla_menu;
 DROP TABLE IF EXISTS tabla_sitios_disc;
 DROP TABLE IF EXISTS tabla_tipo_infraest_disc;
 DROP TABLE IF EXISTS tabla_sitios;
@@ -28,7 +29,6 @@ DROP TABLE IF EXISTS tabla_tipo_sitios;
 DROP TABLE IF EXISTS tabla_municipios;
 DROP TABLE IF EXISTS tabla_departamentos;
 DROP TABLE IF EXISTS tabla_paises;
-DROP TABLE IF EXISTS tabla_imagenes;
 
 -- CREACION DE TIPOS ENUM
 CREATE TYPE tip_doc     AS ENUM ('Cédula de Ciudadanía', 'Cédula de Extranjería', 'Pasaporte');
@@ -74,7 +74,6 @@ CREATE TABLE IF NOT EXISTS tabla_sitios (
     id_sitio                INT                         PRIMARY KEY,
     nombre_sitio            VARCHAR                     NOT NULL        CHECK (char_length(nombre_sitio) >= 3),
     id_tipo_sitio           INT                         NOT NULL,
-    descripcion             TEXT                        NOT NULL,
     acceso_discapacidad     BOOLEAN                     NOT NULL,
     id_municipio            INT                         NOT NULL,
     direccion               VARCHAR                     NOT NULL        UNIQUE CHECK (char_length(direccion) >= 6),
@@ -104,16 +103,11 @@ CREATE TABLE IF NOT EXISTS tabla_sitios_disc (
     fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS tabla_menu (
-    id_menu                 INT                         PRIMARY KEY,
-    nombre_opcion           VARCHAR                     NOT NULL        UNIQUE CHECK (char_length(nombre_opcion) >= 5),
-    fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE TABLE IF NOT EXISTS tabla_roles (
     id_rol                  INT,
     nombre_rol              VARCHAR NOT NULL,
+    fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id_rol)
 );
 
@@ -138,24 +132,13 @@ CREATE TABLE IF NOT EXISTS tabla_usuarios (
     FOREIGN KEY (id_rol)  REFERENCES tabla_roles(id_rol)
 );
 
-CREATE TABLE IF NOT EXISTS tabla_menu_usuarios (
-    id_menu_usuario         INT                         PRIMARY KEY,
-    id_rol                  INT                         NOT NULL,
-    id_menu                 INT                         NOT NULL,
-    permisos                BOOLEAN                     NOT NULL        DEFAULT FALSE,
-    fecha_asignacion        TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
-    fecha_revocacion        TIMESTAMP   WITH TIME ZONE,
-    FOREIGN KEY (id_rol) REFERENCES tabla_roles(id_rol),
-    FOREIGN KEY (id_menu) REFERENCES tabla_menu(id_menu)
-);
-
 CREATE TABLE IF NOT EXISTS tabla_validacion_email_tokens (
     id_token                SERIAL                      PRIMARY KEY,
     numero_documento        VARCHAR(10)                 NOT NULL,
     token                   VARCHAR(64)                 NOT NULL        UNIQUE,
     utilizado               BOOLEAN                     NOT NULL        DEFAULT FALSE,
     fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    fecha_expiracion        TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP + INTERVAL '24 hours',
+    fecha_expiracion        TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     fecha_validacion        TIMESTAMP   WITH TIME ZONE,
     FOREIGN KEY (numero_documento) REFERENCES tabla_usuarios(numero_documento) ON DELETE CASCADE
 );
@@ -173,7 +156,7 @@ CREATE TABLE IF NOT EXISTS tabla_baneados (
     FOREIGN KEY (responsable) REFERENCES tabla_usuarios(numero_documento)
 );
 
-CREATE TABLE IF NOT EXISTS tabla_categorias_eventos (
+CREATE TABLE IF NOT EXISTS tabla_categoria_eventos (
     id_categoria_evento     INT                         PRIMARY KEY,
     nombre                  VARCHAR                     NOT NULL        UNIQUE CHECK (char_length(nombre) >= 3),
     fecha_creacion          TIMESTAMP WITH TIME ZONE    NOT NULL        DEFAULT CURRENT_TIMESTAMP,
@@ -186,7 +169,7 @@ CREATE TABLE IF NOT EXISTS tabla_tipo_eventos (
     nombre                  VARCHAR                     NOT NULL        UNIQUE CHECK (char_length(nombre) >= 3),
     fecha_creacion          TIMESTAMP WITH TIME ZONE    NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion     TIMESTAMP WITH TIME ZONE                    DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_categoria_evento) REFERENCES tabla_categorias_eventos(id_categoria_evento)
+    FOREIGN KEY (id_categoria_evento) REFERENCES tabla_categoria_eventos(id_categoria_evento)
 );
 
 CREATE TABLE IF NOT EXISTS tabla_eventos (
@@ -213,7 +196,7 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
     fecha_desactivacion     TIMESTAMP   WITH TIME ZONE,
     FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(numero_documento),
     FOREIGN KEY (id_tipo_evento) REFERENCES tabla_tipo_eventos(id_tipo_evento),
-    FOREIGN KEY (id_categoria_evento) REFERENCES tabla_categorias_eventos(id_categoria_evento),
+    FOREIGN KEY (id_categoria_evento) REFERENCES tabla_categoria_eventos(id_categoria_evento),
     FOREIGN KEY (id_sitio) REFERENCES tabla_sitios(id_sitio),
     FOREIGN KEY (id_municipio) REFERENCES tabla_municipios(id_municipio)
 );
@@ -239,7 +222,9 @@ CREATE TABLE IF NOT EXISTS tabla_documentos_eventos (
 CREATE TABLE IF NOT EXISTS tabla_eventos_x_dias (
     id_evento_x_dia         SERIAL                      PRIMARY KEY,
     id_evento               INT                         NOT NULL,
-    dia                     DATE                        NOT NULL, 
+    dia                     DATE                        NOT NULL,
+	fecha_creación			TIMESTAMP	WITH TIME ZONE	 NOT NULL		DEFAULT CURRENT_TIMESTAMP,
+	fecha_actualizacion		TIMESTAMP	WITH TIME ZONE	 NOT NULL 		DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
 );
 
@@ -255,7 +240,7 @@ CREATE TABLE IF NOT EXISTS tabla_valoraciones (
     FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
 );
 
-CREATE TABLE IF NOT EXISTS tabla_reservas_eventos (
+CREATE TABLE IF NOT EXISTS tabla_reserva_eventos (
     id_reserva_evento       SERIAL                      PRIMARY KEY,
     id_usuario              VARCHAR                     NOT NULL,
     id_evento               INT                         NOT NULL,
@@ -266,9 +251,11 @@ CREATE TABLE IF NOT EXISTS tabla_reservas_eventos (
     FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
 );
 
-CREATE TABLE IF NOT EXISTS tabla_categoria_boleto (
+CREATE TABLE IF NOT EXISTS tabla_categoria_boletos (
     id_categoria_boleto     INT                         PRIMARY KEY,
-    nombre_categoria_boleto VARCHAR                     NOT NULL        UNIQUE CHECK (char_length(nombre_categoria_boleto) >= 3)   
+    nombre_categoria_boleto VARCHAR                     NOT NULL        UNIQUE CHECK (char_length(nombre_categoria_boleto) >= 3),
+    fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP   
     );
 
 CREATE TABLE IF NOT EXISTS tabla_valores (
@@ -276,16 +263,18 @@ CREATE TABLE IF NOT EXISTS tabla_valores (
     id_evento               INT                         NOT NULL,
     id_categoria_boleto     INT                         NOT NULL        DEFAULT 1,
     valor                   DECIMAL(9,2)                NOT NULL,
-    fecha_actualizacion     TIMESTAMP WITH TIME ZONE                    DEFAULT CURRENT_TIMESTAMP,
+    fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento),
-    FOREIGN KEY (id_categoria_boleto) REFERENCES tabla_categoria_boleto(id_categoria_boleto)
+    FOREIGN KEY (id_categoria_boleto) REFERENCES tabla_categoria_boletos(id_categoria_boleto)
 );
 
 CREATE TABLE IF NOT EXISTS tabla_links (
     id_link                 SERIAL                      PRIMARY KEY,
     id_evento               INT                         NOT NULL,
     link                    VARCHAR                     NOT NULL,
-    fecha_actualizacion     TIMESTAMP                   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
+    fecha_creacion          TIMESTAMP   WITH TIME ZONE  NOT NULL        DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
 );
 
@@ -310,37 +299,75 @@ BEGIN
   NEW.fecha_actualizacion := CURRENT_TIMESTAMP;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;|
-
-CREATE TRIGGER trig_update_usuarios BEFORE UPDATE ON tabla_usuarios
-FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
-
-CREATE TRIGGER trig_update_qr BEFORE UPDATE ON tabla_qr
-FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trig_update_paises BEFORE UPDATE ON tabla_paises
+FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_departamentos
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
 CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_municipios
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_tipo_sitios
+FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_sitios
+FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_tipo_infraest_disc
+FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_sitios_disc
+FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_roles
+FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_usuarios
+FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_validacion_email_tokens
+FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_baneados
+FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_categoria_eventos
+FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_tipo_eventos
+FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
 CREATE TRIGGER trig_update_eventos BEFORE UPDATE ON tabla_eventos
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
-CREATE TRIGGER trig_update_imagenes BEFORE UPDATE ON tabla_imagenes
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_imagenes_eventos
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
--- Asegurar columna dias_semana en caso de migraciones parciales
-ALTER TABLE tabla_eventos ADD COLUMN IF NOT EXISTS dias_semana TEXT;
-
-CREATE TRIGGER trig_update_tipo_eventos BEFORE UPDATE ON tabla_tipo_eventos
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_documentos_eventos
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
-CREATE TRIGGER trig_update_valoraciones BEFORE UPDATE ON tabla_valoraciones
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_eventos_x_dias
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
-CREATE TRIGGER trig_update_valoraciones BEFORE UPDATE ON tabla_reembolsos
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_valoraciones
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_reserva_eventos
+FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
+CREATE TRIGGER trig_update_imagenes BEFORE UPDATE ON tabla_categoria_boletos
+FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_valores
+FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_links
+FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
+-- CARGA DE DATOS INICIALES
 
 -- Cargar en tabla_roles.
 INSERT INTO tabla_roles VALUES  (1,'Usuario');

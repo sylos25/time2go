@@ -3,10 +3,9 @@ import pool from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { verifyToken } from "@/lib/jwt";
 
-// GET /api/me - returns the authenticated user's public profile if session exists
+
 export async function GET(req: Request) {
   try {
-    // First: check Authorization: Bearer <token>
     const authHeader = req.headers.get("authorization") || "";
     let userId: number | null = null;
 
@@ -16,10 +15,9 @@ export async function GET(req: Request) {
       if (!payload || !payload.numero_documento) {
         return NextResponse.json({ ok: false, message: "Invalid token" }, { status: 401 });
       }
-      // numero_documento is stored as string
+
       var numeroDocumento = String(payload.numero_documento);
     } else {
-      // Fallback to better-auth session (cookie)
       const session = await auth.api.getSession({ headers: req.headers as any });
       const sid = (session && session.user && (session.user as any).numero_documento) || null;
       if (!sid) {
@@ -54,7 +52,6 @@ export async function GET(req: Request) {
     }
 
     const user = result.rows[0];
-    // hide sensitive fields if any
     delete user.contrasena_hash;
 
     return NextResponse.json({ ok: true, user });

@@ -51,6 +51,7 @@ import {
   Target,
 } from "lucide-react"
 import { InsertDataTab } from "@/components/dashboard/insert-data-tab"
+import ViewDataTab from "@/components/dashboard/view-data-tab"
 
 interface Event {
   id: number
@@ -400,8 +401,9 @@ export default function EventDashboard() {
   const menuItems = [
     { id: "overview", name: "Resumen General", icon: Home },
     { id: "kpis", name: "KPIs y Objetivos", icon: Target },
-    { id: "checklist", name: "Tareas Pendientes", icon: CheckSquare },
     { id: "events", name: "Gestión de Eventos", icon: Calendar },
+    { id: "ingresar-datos", name: "Ingresar Datos", icon: MapPin },
+    { id: "ver-datos", name: "Ver Datos", icon: Search },
     { id: "analytics", name: "Analíticas", icon: TrendingUp },
     { id: "users", name: "Usuarios", icon: Users },
     { id: "settings", name: "Configuración", icon: Settings },
@@ -480,7 +482,7 @@ export default function EventDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-amber-50/30 to-indigo-50/50">
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 lg:hidden"
@@ -495,17 +497,13 @@ export default function EventDashboard() {
       >
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
-              <Calendar className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="text-xl font-bold text-gray-900">Time2Go</h1>
+            <img 
+              src="/images/logo_color.png" 
+              alt="Logo" 
+              className="w-full h-full object-cover"
+            />
           </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
+        
         </div>
 
         <nav className="p-4 space-y-1">
@@ -518,8 +516,8 @@ export default function EventDashboard() {
               }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all ${
                 activeTab === item.id
-                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/25"
-                  : "text-gray-700 hover:bg-gray-50"
+                  ? "bg-gradient-to-tr from-green-700 to-lime-500 text-white shadow-md shadow-sky-600/25 cursor-pointer"
+                  : "bg-gradient-to-tr from-fuchsia-50 to-sky-50 text-gray-700 hover:bg-gray-50 cursor-pointer"
               }`}
             >
               <item.icon className="w-5 h-5" />
@@ -528,17 +526,7 @@ export default function EventDashboard() {
           ))}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-100 bg-gray-50/50">
-          <div className="text-right">
-            <button
-              onClick={() => router.push("/")}
-              className="flex items-center justify-end gap-2 text-gray-600 hover:text-gray-900 transition-colors text-sm"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Cerrar sesión</span>
-            </button>
-          </div>
-        </div>
+
       </aside>
 
       <div className="lg:ml-72">
@@ -555,7 +543,7 @@ export default function EventDashboard() {
                 <h2 className="text-2xl font-bold text-gray-900">
                   {menuItems.find((item) => item.id === activeTab)?.name}
                 </h2>
-                <p className="text-sm text-gray-500 mt-0.5">Bienvenido de nuevo, {meUser?.nombres || meUser?.name || 'Usuario'}</p>
+                <p className="text-sm text-gray-500 mt-0.5">Bienvenido , {meUser?.nombres || meUser?.name || 'Usuario'}</p>
               </div>
             </div>
 
@@ -828,127 +816,6 @@ export default function EventDashboard() {
             </div>
           )}
 
-          {activeTab === "checklist" && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-900">Tareas Pendientes</h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {checklistItems.filter((item) => item.completed).length} de {checklistItems.length} tareas
-                    completadas
-                  </p>
-                </div>
-                <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all">
-                  <Plus className="w-4 h-4" />
-                  Nueva Tarea
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                  <div className="space-y-2">
-                    {checklistItems.map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => toggleChecklistItem(item.id)}
-                        className="w-full flex items-center gap-4 p-4 rounded-lg hover:bg-gray-50 transition-colors group border border-gray-100"
-                      >
-                        <div
-                          className={`flex-shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
-                            item.completed
-                              ? "bg-blue-600 border-blue-600"
-                              : "border-gray-300 group-hover:border-blue-400"
-                          }`}
-                        >
-                          {item.completed && <CheckCircle className="w-5 h-5 text-white" />}
-                        </div>
-                        <span
-                          className={`text-base font-medium text-left flex-1 ${
-                            item.completed ? "text-gray-400 line-through" : "text-gray-900"
-                          }`}
-                        >
-                          {item.text}
-                        </span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setChecklistItems(checklistItems.filter((i) => i.id !== item.id))
-                          }}
-                          className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4 text-red-500" />
-                        </button>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-lg font-bold text-gray-900">Progreso</h4>
-                      <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center">
-                        <CheckSquare className="w-6 h-6 text-blue-600" />
-                      </div>
-                    </div>
-
-                    <div className="text-center mb-6">
-                      <div className="text-5xl font-bold text-blue-600 mb-2">
-                        {Math.round(
-                          (checklistItems.filter((item) => item.completed).length / checklistItems.length) * 100,
-                        )}
-                        %
-                      </div>
-                      <p className="text-sm text-gray-500">Tareas completadas</p>
-                    </div>
-
-                    <div className="h-3 bg-gray-100 rounded-full overflow-hidden mb-4">
-                      <div
-                        className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full transition-all duration-500"
-                        style={{
-                          width: `${(checklistItems.filter((item) => item.completed).length / checklistItems.length) * 100}%`,
-                        }}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
-                      <div>
-                        <p className="text-sm text-gray-500">Completadas</p>
-                        <p className="text-2xl font-bold text-green-600">
-                          {checklistItems.filter((item) => item.completed).length}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Pendientes</p>
-                        <p className="text-2xl font-bold text-orange-600">
-                          {checklistItems.filter((item) => !item.completed).length}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-sm border border-blue-100 p-6">
-                    <h4 className="text-lg font-bold text-gray-900 mb-3">Consejos</h4>
-                    <ul className="space-y-2 text-sm text-gray-700">
-                      <li className="flex items-start gap-2">
-                        <span className="text-blue-600 mt-0.5">•</span>
-                        <span>Prioriza las tareas más importantes</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-blue-600 mt-0.5">•</span>
-                        <span>Divide tareas grandes en sub- tareas</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-blue-600 mt-0.5">•</span>
-                        <span>Revisa tu progreso diariamente</span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {activeTab === "events" && (
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -1163,6 +1030,18 @@ export default function EventDashboard() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {activeTab === "ingresar-datos" && (
+            <div className="space-y-6">
+              <InsertDataTab initialTable="sitios" />
+            </div>
+          )}
+
+          {activeTab === "ver-datos" && (
+            <div className="space-y-6">
+              <ViewDataTab />
             </div>
           )}
 
