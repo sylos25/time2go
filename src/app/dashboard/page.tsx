@@ -81,21 +81,6 @@ interface ChecklistItem {
   completed: boolean
 }
 
-interface KPISubObjective {
-  id: number
-  name: string
-  progress: number
-}
-
-interface KPI {
-  id: number
-  name: string
-  description: string
-  progress: number
-  color: string
-  subObjectives: KPISubObjective[]
-}
-
 export default function EventDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activeTab, setActiveTab] = useState("overview")
@@ -214,99 +199,6 @@ export default function EventDashboard() {
     { id: 5, text: "Planificar próximo festival", completed: false },
   ])
 
-  const [kpis, setKpis] = useState<KPI[]>([
-    {
-      id: 1,
-      name: "Actividad de Usuarios",
-      description: "Incrementar la participación y uso recurrente del sistema",
-      progress: 0,
-      color: "#3B82F6",
-      subObjectives: [
-        { id: 1, name: "Usuarios activos diarios (DAU) - Meta: crecer 20% mensual", progress: 0 },
-        { id: 2, name: "Retención 7 días - Meta: 35-50%", progress: 0 },
-        { id: 3, name: "Usuarios por municipio - Meta: aumentar cobertura en zonas clave", progress: 0 },
-        { id: 4, name: "Usuarios nuevos por mes - Meta: +15% mensual", progress: 0 },
-      ],
-    },
-    {
-      id: 2,
-      name: "Interacción con Eventos",
-      description: "Aumentar el interés por los eventos y mejorar su visibilidad",
-      progress: 0,
-      color: "#10B981",
-      subObjectives: [
-        { id: 1, name: "Vistas promedio por evento - Meta: +30%", progress: 0 },
-        { id: 2, name: "Eventos favoritos o guardados - Meta: crecer en 25%", progress: 0 },
-        { id: 3, name: "Duración promedio por sesión - Meta: +10%", progress: 0 },
-        { id: 4, name: "Tasa de scroll / interacción dentro del evento - Meta: +20%", progress: 0 },
-      ],
-    },
-    {
-      id: 3,
-      name: "Conversiones y Reservas",
-      description: "Mejorar la conversión en eventos gratuitos y la salida hacia boleterías externas",
-      progress: 0,
-      color: "#F97316",
-      subObjectives: [
-        { id: 1, name: "Tasa de reserva en eventos gratuitos - Meta: 25-35%", progress: 0 },
-        { id: 2, name: "Clics hacia boleterías externas - Meta: +20% mensual", progress: 0 },
-        { id: 3, name: "Eventos gratuitos agotados - Meta: 70% del cupo llenado", progress: 0 },
-        { id: 4, name: "Tasa de abandono antes de reservar - Meta: disminuir 15%", progress: 0 },
-      ],
-    },
-    {
-      id: 4,
-      name: "Rendimiento Técnico",
-      description: "Garantizar que el sistema sea rápido, estable y confiable",
-      progress: 0,
-      color: "#EAB308",
-      subObjectives: [
-        { id: 1, name: "Tiempo promedio de carga del sitio - Meta: < 2.5s", progress: 0 },
-        { id: 2, name: "Tiempo de respuesta del backend/API - Meta: < 600ms", progress: 0 },
-        { id: 3, name: "Errores 4xx y 5xx por mes - Meta: reducción del 30%", progress: 0 },
-        { id: 4, name: "Disponibilidad del sistema (Uptime) - Meta: 99.5%", progress: 0 },
-      ],
-    },
-    {
-      id: 5,
-      name: "Gestión de Organizadores",
-      description: "Medir qué tan bien usan el CMS para subir contenidos",
-      progress: 18,
-      color: "#78350F",
-      subObjectives: [
-        { id: 1, name: "Eventos creados por organizador - Meta: min. 3/mes", progress: 10 },
-        { id: 2, name: "Tiempo promedio para crear un evento - Meta: < 5 minutos", progress: 5 },
-        { id: 3, name: "Eventos aprobados sin errores - Meta: > 90%", progress: 3 },
-        { id: 4, name: "Tasa de rechazo por errores de datos - Meta: reducir 25%", progress: 0 },
-      ],
-    },
-    {
-      id: 6,
-      name: "Calidad del Contenido",
-      description: "Asegurar que los eventos y datos publicados sean útiles y claros",
-      progress: 0,
-      color: "#DC2626",
-      subObjectives: [
-        { id: 1, name: "Eventos con información completa - Meta: 95%", progress: 0 },
-        { id: 2, name: "Valoración promedio de eventos - Meta: 4.5/5", progress: 0 },
-        { id: 3, name: "Tasa de correcciones posteriores - Meta: reducir 30%", progress: 0 },
-        { id: 4, name: "Fotos/medios cargados correctamente - Meta: 98%", progress: 0 },
-      ],
-    },
-    {
-      id: 7,
-      name: "Expansión del Mercado",
-      description: "Aumentar la cantidad de municipios con eventos activos",
-      progress: 0,
-      color: "#8B5CF6",
-      subObjectives: [
-        { id: 1, name: "Municipios con al menos un evento activo - Meta: +3 por mes", progress: 0 },
-        { id: 2, name: "Número de organizadores registrados - Meta: +10% mensual", progress: 0 },
-        { id: 3, name: "Crecimiento de eventos mensuales - Meta: +15%", progress: 0 },
-        { id: 4, name: "Diversidad de categorías de eventos - Meta: aumentar variedad", progress: 0 },
-      ],
-    },
-  ])
 
   const [stats, setStats] = useState<StatCard[]>([
     { title: "Eventos Activos", value: 0, icon: Calendar, color: "from-blue-500 to-blue-600" },
@@ -400,7 +292,6 @@ export default function EventDashboard() {
 
   const menuItems = [
     { id: "overview", name: "Resumen General", icon: Home },
-    { id: "kpis", name: "KPIs y Objetivos", icon: Target },
     { id: "events", name: "Gestión de Eventos", icon: Calendar },
     { id: "ingresar-datos", name: "Ingresar Datos", icon: MapPin },
     { id: "ver-datos", name: "Ver Datos", icon: Search },
@@ -471,12 +362,6 @@ export default function EventDashboard() {
     }
   }
 
-  const kpiRadarData = kpis.map((kpi) => ({
-    subject: kpi.name.split(" ").slice(0, 2).join(" "),
-    value: kpi.progress,
-    fullMark: 100,
-  }))
-
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Cargando tu panel...</div>
   }
@@ -491,14 +376,14 @@ export default function EventDashboard() {
       )}
 
       <aside
-        className={`fixed top-0 left-0 z-40 w-72 h-screen bg-white border-r border-gray-200 shadow-sm transform transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed top-0 left-0 z-40 w-72 h-screen bg-gradient-to-tr from-green-700 to-lime-500 transform transition-transform duration-300 lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <img 
-              src="/images/logo_color.png" 
+              src="/images/logo.png" 
               alt="Logo" 
               className="w-full h-full object-cover"
             />
@@ -516,8 +401,8 @@ export default function EventDashboard() {
               }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all ${
                 activeTab === item.id
-                  ? "bg-gradient-to-tr from-green-700 to-lime-500 text-white shadow-md shadow-sky-600/25 cursor-pointer"
-                  : "bg-gradient-to-tr from-fuchsia-50 to-sky-50 text-gray-700 hover:bg-gray-50 cursor-pointer"
+                  ? "bg-gradient-to-bl from-fuchsia-700 to-red-600 text-white shadow-md shadow-sky-600/25 cursor-pointer"
+                  : "bg-gradient-to-bl from-yellow-50 to-green-50 text-gray-700 hover:bg-gray-50 cursor-pointer"
               }`}
             >
               <item.icon className="w-5 h-5" />
@@ -530,7 +415,7 @@ export default function EventDashboard() {
       </aside>
 
       <div className="lg:ml-72">
-        <header className="bg-white/80 backdrop-blur-xl shadow-sm border-b border-gray-200 sticky top-0 z-20">
+        <header className="bg-gradient-to-l from-green-700 to-lime-500 backdrop-blur-xl sticky top-0 z-20">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4">
               <button
@@ -540,26 +425,14 @@ export default function EventDashboard() {
                 <Menu className="w-5 h-5 text-gray-700" />
               </button>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {menuItems.find((item) => item.id === activeTab)?.name}
-                </h2>
-                <p className="text-sm text-gray-500 mt-0.5">Bienvenido , {meUser?.nombres || meUser?.name || 'Usuario'}</p>
+                <p className="text-3xl text-white font-sans font-bold mt-0.5">Bienvenido , {meUser?.nombres || meUser?.name || 'Usuario'}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <button onClick={() => router.push('/')} className="px-3 py-1 text-sm bg-white text-gray-700 rounded-lg shadow-sm hover:bg-gray-50">
+              <button onClick={() => router.push('/')} className="px-3 py-1 text-sm bg-white text-gray-700 rounded-lg shadow-sm hover:bg-gray-50 curs">
                 Salir
               </button>
-              <button className="relative p-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1.5 right-1.5 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-semibold">
-                  3
-                </span>
-              </button>
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">
-                {meUser?.nombres ? meUser.nombres.charAt(0).toUpperCase() : 'U'}
-              </div>
             </div>
           </div>
         </header>
@@ -682,136 +555,6 @@ export default function EventDashboard() {
                     <Bar dataKey="views" fill="#8B5CF6" name="Vistas" radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "kpis" && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-900">KPIs y Objetivos Estratégicos</h3>
-                  <p className="text-sm text-gray-500 mt-1">Seguimiento del progreso de objetivos clave</p>
-                </div>
-                <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all">
-                  <Plus className="w-4 h-4" />
-                  Agregar KPI
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-4">
-                  {kpis.map((kpi) => (
-                    <div key={kpi.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <h4 className="text-lg font-bold text-gray-900">{kpi.name}</h4>
-                          <p className="text-sm text-gray-500 mt-1">{kpi.description}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-2xl font-bold" style={{ color: kpi.color }}>
-                            {kpi.progress}%
-                          </span>
-                          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                            <MoreVertical className="w-4 h-4 text-gray-400" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
-                          <span>Progreso General</span>
-                          <span className="font-semibold">{kpi.progress}%</span>
-                        </div>
-                        <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{
-                              width: `${kpi.progress}%`,
-                              backgroundColor: kpi.color,
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-3 pt-4 border-t border-gray-100">
-                        <h5 className="text-sm font-semibold text-gray-700 mb-3">Sub-objetivos</h5>
-                        {kpi.subObjectives.map((sub) => (
-                          <div key={sub.id}>
-                            <div className="flex items-center justify-between text-xs text-gray-600 mb-1.5">
-                              <span className="font-medium">{sub.name}</span>
-                              <span className="font-semibold">{sub.progress}%</span>
-                            </div>
-                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                              <div
-                                className="h-full rounded-full transition-all duration-500"
-                                style={{
-                                  width: `${sub.progress}%`,
-                                  backgroundColor: kpi.color,
-                                  opacity: 0.7,
-                                }}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                  <div className="mb-6">
-                    <h3 className="text-lg font-bold text-gray-900">Resumen de KPIs</h3>
-                    <p className="text-sm text-gray-500 mt-1">Vista general del progreso</p>
-                  </div>
-
-                  <ResponsiveContainer width="100%" height={300}>
-                    <RadarChart data={kpiRadarData}>
-                      <PolarGrid stroke="#e5e7eb" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: "#6b7280" }} />
-                      <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10 }} />
-                      <Radar name="Progreso" dataKey="value" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.6} />
-                      <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }} />
-                    </RadarChart>
-                  </ResponsiveContainer>
-
-                  <div className="mt-6 space-y-3">
-                    <h4 className="text-sm font-semibold text-gray-700">KPIs por progreso</h4>
-                    {kpis
-                      .sort((a, b) => b.progress - a.progress)
-                      .map((kpi, index) => (
-                        <div key={kpi.id} className="flex items-center gap-3">
-                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold">
-                            {index + 1}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: kpi.color }} />
-                              <span className="text-sm text-gray-700 truncate">{kpi.name}</span>
-                            </div>
-                          </div>
-                          <span className="text-sm font-semibold text-gray-900">{kpi.progress}%</span>
-                        </div>
-                      ))}
-                  </div>
-
-                  <div className="mt-6 pt-6 border-t border-gray-100">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold text-gray-700">Progreso Promedio</span>
-                      <span className="text-lg font-bold text-blue-600">
-                        {Math.round(kpis.reduce((acc, kpi) => acc + kpi.progress, 0) / kpis.length)}%
-                      </span>
-                    </div>
-                    <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full transition-all duration-500"
-                        style={{
-                          width: `${Math.round(kpis.reduce((acc, kpi) => acc + kpi.progress, 0) / kpis.length)}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           )}
