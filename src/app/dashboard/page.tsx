@@ -50,6 +50,7 @@ import {
   MoreVertical,
   Target,
 } from "lucide-react"
+import { InsertDataTab } from "@/components/dashboard/insert-data-tab"
 
 interface Event {
   id: number
@@ -1278,6 +1279,8 @@ export default function EventDashboard() {
               </div>
             </div>
           )}
+
+          {activeTab === "insert-data" && <InsertDataTab />}
 
           {activeTab === "settings" && (
             <div className="text-center py-20">

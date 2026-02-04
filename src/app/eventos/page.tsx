@@ -214,18 +214,8 @@ const handleAddEvent = async () => {
     return municipios[location] || 0;
   }
   
-  // Puedes conservar estas funciones si aún usas campos visuales
-  const updateHighlight = (index: number, value: string) => {
-    const updatedHighlights = [...(newEvent.highlights || [])];
-    updatedHighlights[index] = value;
-    setNewEvent({ ...newEvent, highlights: updatedHighlights });
-  };
   
-  const updateAdditionalImage = (index: number, value: string) => {
-    const updatedImages = [...(newEvent.additionalImages || [])];
-    updatedImages[index] = value;
-    setNewEvent({ ...newEvent, additionalImages: updatedImages });
-  };
+  // Funciones comentadas - usar cuando sea necesario
 
   // Fix implicit any in maps elsewhere
   // examples in render: ensure callbacks have typed params

@@ -289,13 +289,13 @@ CREATE TABLE IF NOT EXISTS tabla_links (
     FOREIGN KEY (id_evento) REFERENCES tabla_eventos(id_evento)
 );
 
-CREATE INDEX idx_ciudades_id_pais ON tabla_ciudades(id_pais);
+CREATE INDEX idx_municipios_id_pais ON tabla_municipios(id_pais);
 CREATE INDEX idx_usuarios_id_pais ON tabla_usuarios(id_pais);
 CREATE INDEX idx_usuarios_id_ciudad ON tabla_usuarios(id_ciudad);
 CREATE INDEX idx_eventos_id_pais ON tabla_eventos(id_pais);
 CREATE INDEX idx_eventos_id_ciudad ON tabla_eventos(id_ciudad);
 CREATE INDEX idx_eventos_id_tipo_evento ON tabla_eventos(id_tipo_evento);
-CREATE INDEX idx_eventos_id_imagen ON tabla_eventos(id_imagen);
+CREATE INDEX idx_eventos_id_imagen_evento ON tabla_eventos(id_imagenes_eventos);
 CREATE INDEX idx_verificaciones_usuario ON tabla_verificaciones(id_usuario);
 CREATE INDEX idx_valoraciones_evento ON tabla_valoraciones(id_evento);
 CREATE INDEX idx_reserva_evento_usuario ON tabla_reserva_eventos(id_usuario);

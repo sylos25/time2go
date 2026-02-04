@@ -18,7 +18,7 @@ import {
   SidebarTrigger,
   SidebarInset,
 } from "@/components/ui/sidebar"
-import { BarChart3, Calendar, Home, Settings, Users } from "lucide-react"
+import { BarChart3, Calendar, Home, Settings, Users, Database } from "lucide-react"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -31,6 +31,7 @@ const menuItems = [
   { id: "events", name: "Eventos", icon: Calendar },
   { id: "users", name: "Usuarios", icon: Users },
   { id: "analytics", name: "Analíticas", icon: BarChart3 },
+  { id: "insert-data", name: "Insertar Datos", icon: Database },
   { id: "settings", name: "Configuración", icon: Settings },
 ]
 

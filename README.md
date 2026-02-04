@@ -4,9 +4,32 @@ Este es un proyecto [Next.js](https://nextjs.org) - Plataforma de eventos.
 
 ## 📚 Documentación
 
-Para consultar la documentación del proyecto, incluyendo la configuración de reset de contraseña:
+Para consultar la documentación del proyecto, incluyendo la configuración de reset de contraseña y la guía de inserción de datos:
 
 👉 **[Ver documentación en la carpeta `/docs`](./docs/README.md)**
+
+### 📖 Guías Disponibles
+- [Email Validation Guide](./docs/EMAIL_VALIDATION_GUIDE.md)
+- [Gmail Setup Guide](./docs/GMAIL_SETUP_GUIDE.md)
+- [Insert Data Guide](./docs/INSERT_DATA_GUIDE.md) - **Nuevo: Módulo de inserción de datos en dashboard**
+- [Login Validation Guide](./docs/LOGIN_VALIDATION_GUIDE.md)
+- [Reset Password Configuration](./docs/RESET_PASSWORD_CONFIG.md)
+- [Setup Checklist](./docs/SETUP_CHECKLIST.md)
+
+## 🆕 Módulo de Inserción de Datos
+
+Se ha agregado un nuevo módulo al dashboard que permite insertar datos en la base de datos de forma segura:
+
+**Acceso:** Dashboard → Menú → "Insertar Datos"
+
+**Características:**
+- ✅ 6 tablas disponibles (Países, Sitios, Municipios, Usuarios, Categorías, Tipos de Eventos)
+- ✅ Validación automática de integridad referencial
+- ✅ Hash seguro de contraseñas (bcrypt)
+- ✅ Mensajes de error claros y específicos
+- ✅ Formularios dinámicos adaptados a cada tabla
+
+Para más detalles: [Guía de Inserción de Datos](./docs/INSERT_DATA_GUIDE.md)
 
 ## Getting Started
 

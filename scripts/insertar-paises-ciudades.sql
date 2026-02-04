@@ -2,16 +2,16 @@
 INSERT INTO tabla_paises VALUES
 (1, 'Argentina'),
 (2, 'Bolivia'),
-(2, 'Brasil'),
-(3, 'Chile'),  
-(4, 'Colombia'),
-(5, 'Ecuador'),
-(6, 'Guyana'),
-(7, 'Paraguay'),
-(5, 'Perú'),
-(8, 'Surinam'),
-(9, 'Uruguay'),
-(10, 'Venezuela');
+(3, 'Brasil'),
+(4, 'Chile'),  
+(6, 'Colombia'),
+(7, 'Ecuador'),
+(8, 'Guyana'),
+(9, 'Paraguay'),
+(10, 'Perú'),
+(11, 'Surinam'),
+(12, 'Uruguay'),
+(13, 'Venezuela');
 
 -- Cargar en tabla_departamentos.
 INSERT INTO tabla_departamentos VALUES  (91,'Amazonas',1);

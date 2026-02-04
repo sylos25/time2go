@@ -1,0 +1,111 @@
+import { NextRequest, NextResponse } from "next/server"
+import pool from "@/lib/db"
+import bcrypt from "bcrypt"
+
+export async function POST(req: NextRequest) {
+  try {
+    const { table, data } = await req.json()
+
+    if (!table || !data) {
+      return NextResponse.json({ error: "Tabla y datos son requeridos" }, { status: 400 })
+    }
+
+    let query = ""
+    let values: any[] = []
+    let result
+
+    switch (table) {
+      case "paises":
+        query = `INSERT INTO tabla_paises (id_pais, nombre_pais) VALUES ($1, $2) RETURNING *`
+        values = [data.id_pais, data.nombre_pais]
+        break
+
+      case "municipios":
+        query = `INSERT INTO tabla_municipios (id_departamento, id_municipio, nombre_municipio, distrito, area_metropolitana) 
+                 VALUES ($1, $2, $3, $4, $5) RETURNING *`
+        values = [data.id_departamento, data.id_municipio, data.nombre_municipio, data.distrito || false, data.area_metropolitana || false]
+        break
+
+      case "sitios":
+        query = `INSERT INTO tabla_sitios (id_sitio, nombre_sitio, id_tipo_sitio, descripcion, acceso_discapacidad, 
+                 id_municipio, direccion, latitud, longitud, telefono_1, telefono_2, sitio_web) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`
+        values = [
+          data.id_sitio,
+          data.nombre_sitio,
+          data.id_tipo_sitio,
+          data.descripcion,
+          data.acceso_discapacidad || false,
+          data.id_municipio,
+          data.direccion,
+          data.latitud,
+          data.longitud,
+          data.telefono_1,
+          data.telefono_2 || null,
+          data.sitio_web || null,
+        ]
+        break
+
+      case "usuarios":
+        // Hash de la contraseña
+        const hashedPassword = await bcrypt.hash(data.contrasena, 10)
+        query = `INSERT INTO tabla_usuarios (numero_documento, tipo_documento, nombres, apellidos, id_pais, 
+                 correo, contrasena_hash, validacion_correo, telefono) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING numero_documento, nombres, apellidos, correo`
+        values = [
+          data.numero_documento,
+          data.tipo_documento,
+          data.nombres,
+          data.apellidos,
+          data.id_pais,
+          data.correo,
+          hashedPassword,
+          data.validacion_correo || false,
+          data.telefono || null,
+        ]
+        break
+
+      case "categorias_eventos":
+        query = `INSERT INTO tabla_categorias_eventos (id_categoria_evento, nombre) VALUES ($1, $2) RETURNING *`
+        values = [data.id_categoria_evento, data.nombre]
+        break
+
+      case "tipo_eventos":
+        query = `INSERT INTO tabla_tipo_eventos (id_tipo_evento, id_categoria_evento, nombre) 
+                 VALUES ($1, $2, $3) RETURNING *`
+        values = [data.id_tipo_evento, data.id_categoria_evento, data.nombre]
+        break
+
+      default:
+        return NextResponse.json({ error: `Tabla desconocida: ${table}` }, { status: 400 })
+    }
+
+    result = await pool.query(query, values)
+
+    return NextResponse.json(
+      { 
+        success: true, 
+        message: `Datos insertados exitosamente en ${table}`,
+        data: result.rows[0]
+      },
+      { status: 201 }
+    )
+  } catch (error: any) {
+    console.error("Error inserting data:", error)
+
+    // Manejo específico de errores de base de datos
+    let errorMessage = "Error al insertar los datos"
+
+    if (error.code === "23505") {
+      errorMessage = "El registro ya existe (violación de unicidad)"
+    } else if (error.code === "23503") {
+      errorMessage = "Error de integridad referencial: la clave foránea no existe"
+    } else if (error.code === "23502") {
+      errorMessage = "Falta un campo obligatorio"
+    } else if (error.code === "22001") {
+      errorMessage = "El valor es demasiado largo para el campo"
+    }
+
+    return NextResponse.json({ error: errorMessage }, { status: 500 })
+  }
+}
