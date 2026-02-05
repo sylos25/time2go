@@ -4,7 +4,7 @@ import pool from "@/lib/db";
 export async function GET(request: NextRequest) {
   try {
     const result = await pool.query(
-      "SELECT id_categoria_boleto, nombre_categoria_boleto FROM tabla_categoria_boleto ORDER BY nombre_categoria_boleto"
+      "SELECT id_categoria_boleto, nombre_categoria_boleto FROM tabla_categoria_boletos ORDER BY nombre_categoria_boleto"
     );
 
     return NextResponse.json(result.rows);

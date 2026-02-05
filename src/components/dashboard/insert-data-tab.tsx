@@ -144,22 +144,26 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="border-lime-100 bg-yellow-50">
         <CardHeader>
-          <CardTitle>Insertar Datos en Base de Datos</CardTitle>
-          <CardDescription>Selecciona la tabla y completa los campos requeridos para insertar nuevos datos</CardDescription>
+          <CardTitle className="text-lg text-gray-800">
+            Insertar Datos en Base de Datos
+          </CardTitle>
+          <CardDescription className="text-sm italic text-gray-500">
+            Selecciona la tabla y completa los campos requeridos para insertar nuevos datos.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={selectedTable} onValueChange={(value) => setSelectedTable(value as DataTable)}>
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-8">
-              <TabsTrigger value="paises">Países</TabsTrigger>
-              <TabsTrigger value="tipo_sitios">Tipo Sitios</TabsTrigger>
-              <TabsTrigger value="sitios">Sitios</TabsTrigger>
-              <TabsTrigger value="tipo_infraest_disc">Infraestructura</TabsTrigger>
-              <TabsTrigger value="sitios_disc">Sitios Disc</TabsTrigger>
-              <TabsTrigger value="categoria_eventos">Categorías</TabsTrigger>
-              <TabsTrigger value="tipo_eventos">Tipos de Eventos</TabsTrigger>
-              <TabsTrigger value="categoria_boletos">Categoría Boletos</TabsTrigger>
+            <TabsList className="bg-lime-100 flex flex-wrap gap-2 w-full">
+              <TabsTrigger value="paises"             className="cursor-pointer px-3 py-2 rounded-md text-gray-700 hover:bg-lime-200 data-[state=active]:bg-green-700 data-[state=active]:text-white">Países</TabsTrigger>
+              <TabsTrigger value="tipo_sitios"        className="cursor-pointer px-3 py-2 rounded-md text-gray-700 hover:bg-lime-200 data-[state=active]:bg-green-700 data-[state=active]:text-white">Tipo de sitios</TabsTrigger>
+              <TabsTrigger value="sitios"             className="cursor-pointer px-3 py-2 rounded-md text-gray-700 hover:bg-lime-200 data-[state=active]:bg-green-700 data-[state=active]:text-white">Sitios</TabsTrigger>
+              <TabsTrigger value="tipo_infraest_disc" className="cursor-pointer px-3 py-2 rounded-md text-gray-700 hover:bg-lime-200 data-[state=active]:bg-green-700 data-[state=active]:text-white">Infraestructura discapacitados</TabsTrigger>
+              <TabsTrigger value="sitios_disc"        className="cursor-pointer px-3 py-2 rounded-md text-gray-700 hover:bg-lime-200 data-[state=active]:bg-green-700 data-[state=active]:text-white">Sitio con condiciones para discapacitados</TabsTrigger>
+              <TabsTrigger value="categoria_eventos"  className="cursor-pointer px-3 py-2 rounded-md text-gray-700 hover:bg-lime-200 data-[state=active]:bg-green-700 data-[state=active]:text-white">Categoría de eventos</TabsTrigger>
+              <TabsTrigger value="tipo_eventos"       className="cursor-pointer px-3 py-2 rounded-md text-gray-700 hover:bg-lime-200 data-[state=active]:bg-green-700 data-[state=active]:text-white">Tipo de eventos</TabsTrigger>
+              <TabsTrigger value="categoria_boletos"  className="cursor-pointer px-3 py-2 rounded-md text-gray-700 hover:bg-lime-200 data-[state=active]:bg-green-700 data-[state=active]:text-white">Categoría Boletos</TabsTrigger>
             </TabsList>
 
             {["paises", "tipo_sitios", "sitios", "tipo_infraest_disc", "sitios_disc", "categoria_eventos", "tipo_eventos", "categoria_boletos"].map((tableKey) => (
@@ -247,8 +251,8 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
                     ))}
                   </div>
 
-                  <Button type="submit" disabled={loading} className="w-full">
-                    {loading && <Loader className="h-4 w-4 mr-2 animate-spin" />}
+                  <Button type="submit" disabled={loading} className="w-auto px-3 py-1 bg-green-700 hover:bg-lime-500">
+                    {loading && <Loader className="h-2 w-2 mr-2 animate-spin" />}
                     {loading ? "Insertando..." : "Insertar Datos"}
                   </Button>
                 </form>

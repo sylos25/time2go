@@ -44,26 +44,30 @@ export function ViewDataTab() {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="border-lime-100 bg-yellow-50">
         <CardHeader>
-          <CardTitle>Ver Datos</CardTitle>
-          <CardDescription>Visualiza registros existentes en las tablas del sistema</CardDescription>
+          <CardTitle className="text-lg text-gray-800">
+            Ver Datos
+          </CardTitle>
+          <CardDescription className="text-sm italic text-gray-500">
+            Visualiza registros existentes.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="mb-4">
             <Select value={table} onValueChange={(v) => setTable(v as TableKey)}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-green-700 px-3 py-1 text-white cursor-pointer ">
                 <SelectValue placeholder="Selecciona una tabla" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="paises">Países</SelectItem>
-                <SelectItem value="tipo_sitios">Tipo Sitios</SelectItem>
-                <SelectItem value="sitios">Sitios</SelectItem>
-                <SelectItem value="tipo_infraest_disc">Infraestructura</SelectItem>
-                <SelectItem value="sitios_disc">Sitios Disc</SelectItem>
-                <SelectItem value="categoria_eventos">Categorías</SelectItem>
-                <SelectItem value="tipo_eventos">Tipos de Eventos</SelectItem>
-                <SelectItem value="categoria_boletos">Categoría Boletos</SelectItem>
+                <SelectItem value="paises"              className="cursor-pointer bg-lime-50">Países</SelectItem>
+                <SelectItem value="tipo_sitios"         className="cursor-pointer bg-green-50">Tipos del sitio</SelectItem>
+                <SelectItem value="sitios"              className="cursor-pointer bg-lime-50">Sitios para eventos</SelectItem>
+                <SelectItem value="tipo_infraest_disc"  className="cursor-pointer bg-green-50">Acceso para discapacitados</SelectItem>
+                <SelectItem value="sitios_disc"         className="cursor-pointer bg-lime-50">Sitios con acceso inclusivo</SelectItem>
+                <SelectItem value="categoria_eventos"   className="cursor-pointer bg-green-50">Categorías de los eventos</SelectItem>
+                <SelectItem value="tipo_eventos"        className="cursor-pointer bg-lime-50">Tipos de eventos</SelectItem>
+                <SelectItem value="categoria_boletos"   className="cursor-pointer bg-green-50">Categorías de los boletos</SelectItem>
               </SelectContent>
             </Select>
           </div>

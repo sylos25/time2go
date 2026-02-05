@@ -7,7 +7,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   
   try {
-    const result = await pool.query("SELECT id_categoria_evento, nombre FROM tabla_categorias_eventos");
+    const result = await pool.query("SELECT id_categoria_evento, nombre FROM tabla_categoria_eventos");
     res.status(200).json(result.rows);
   } catch (error) {
     res.status(500).json({ message: "Error al obtener categorías" });

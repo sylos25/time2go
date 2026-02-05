@@ -379,5 +379,5 @@ INSERT INTO tabla_roles VALUES  (4,'Administrador');
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- Cargar en tabla_usuarios.
-INSERT INTO tabla_usuarios VALUES ('Cédula de Ciudadanía', '1095951827', 'Brayhan Jahir', 'Orduz Perez', 1, 3143413720, TRUE, 'bryhanorduz14@gmail.com', TRUE, crypt('BhyOP06*', gen_salt('bf', 12)), NOW (), NULL, TRUE, 4, NOW());
-INSERT INTO tabla_usuarios VALUES ('Cédula de Ciudadanía', '1095581203', 'William', 'Rojas', 1, 3167598925, TRUE, 'williamrojas@gmail.com', TRUE, crypt('William15.*', gen_salt('bf', 12)), NOW (), NULL, TRUE, 4, NOW());
+INSERT INTO tabla_usuarios VALUES ('Cédula de Ciudadanía', '1095951827', 'Brayhan Jahir', 'Orduz Perez', 6, 3143413720, TRUE, 'bryhanorduz14@gmail.com', TRUE, crypt('BhyOP06*', gen_salt('bf', 12)), NOW (), NULL, TRUE, 4, NOW());
+INSERT INTO tabla_usuarios VALUES ('Cédula de Ciudadanía', '1095581203', 'William', 'Rojas', 6, 3167598925, TRUE, 'willirojasorduz@gmail.com', TRUE, crypt('William15.', gen_salt('bf', 12)), NOW (), NULL, TRUE, 4, NOW());
