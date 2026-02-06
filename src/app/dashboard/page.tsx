@@ -52,6 +52,10 @@ import {
 } from "lucide-react"
 import { InsertDataTab } from "@/components/dashboard/insert-data-tab"
 import ViewDataTab from "@/components/dashboard/view-data-tab"
+import { EditEventModal } from "@/components/dashboard/edit-event-modal"
+import { ToggleEventStatusModal } from "@/components/dashboard/toggle-event-status-modal"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 
 interface Event {
   id: number
@@ -66,6 +70,7 @@ interface Event {
   visibility: boolean
   image: string
   promoter: string
+  documentos?: any[]
 }
 
 interface StatCard {
@@ -93,7 +98,45 @@ export default function EventDashboard() {
   const [users, setUsers] = useState<any[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [searchUsers, setSearchUsers] = useState('')
+  const [editingEvent, setEditingEvent] = useState<any>(null)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [statusModalOpen, setStatusModalOpen] = useState(false)
+  const [statusModalEvent, setStatusModalEvent] = useState<any>(null)
+  const [pdfModalOpen, setPdfModalOpen] = useState(false)
+  const [pdfModalUrl, setPdfModalUrl] = useState<string | null>(null)
   const router = useRouter()
+
+  const refreshEvents = async () => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+      const headers: any = {}
+      if (token) headers['Authorization'] = `Bearer ${token}`
+      const eventsRes = await fetch('/api/events', { headers })
+      if (eventsRes.ok) {
+        const eventsData = await eventsRes.json()
+        const serverEvents = eventsData.eventos || []
+        const mapped = serverEvents.map((ev: any) => ({
+          id: ev.id_evento,
+          name: ev.nombre_evento || 'Sin título',
+          date: ev.fecha_inicio || ev.fecha_creacion,
+          time: ev.hora_inicio || '',
+          location: ev.sitio?.nombre_sitio || ev.municipio?.nombre_municipio || '',
+          category: ev.categoria_nombre || '',
+          capacity: ev.cupo || 0,
+          ticketsSold: (ev.valores && ev.valores.reduce((acc: number, v: any) => acc + (v.valor || 0), 0)) || 0,
+          status: ev.estado ? 'published' : 'hidden',
+          visibility: !!ev.estado,
+          image: (ev.imagenes && ev.imagenes[0] && ev.imagenes[0].url_imagen_evento) || '/images/placeholder.jpg',
+          promoter: ev.creador?.nombres || '',
+          creatorId: ev.creador?.numero_documento || null,
+          documentos: ev.documentos || [],
+        }))
+        setEvents(mapped)
+      }
+    } catch (err) {
+      console.error('Failed to refresh events', err)
+    }
+  }
 
   // On mount: validate session and fetch dashboard data (events + user)
   useEffect(() => {
@@ -133,6 +176,7 @@ export default function EventDashboard() {
             image: (ev.imagenes && ev.imagenes[0] && ev.imagenes[0].url_imagen_evento) || '/images/placeholder.jpg',
             promoter: ev.creador?.nombres || '',
             creatorId: ev.creador?.numero_documento || null,
+            documentos: ev.documentos || [],
           }))
           if (!canceled) setEvents(mapped)
 
@@ -737,18 +781,58 @@ export default function EventDashboard() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
+                              {event.documentos && event.documentos.length > 0 && (
+                                <button
+                                  onClick={() => {
+                                    if (event.documentos.length === 1) {
+                                      const proxied = `/api/events/document?url=${encodeURIComponent(event.documentos[0].url_documento_evento)}`
+                                      setPdfModalUrl(proxied)
+                                      setPdfModalOpen(true)
+                                    } else {
+                                      // Si hay múltiples documentos, mostrar un menú simple
+                                      const listText = event.documentos.map((d: any, i: number) => `${i + 1}. Documento ${i + 1}`).join('\n')
+                                      const docNum = prompt(
+                                        `Hay ${event.documentos.length} documentos. Ingresa el número (1-${event.documentos.length}) del documento que deseas ver:\n\n${listText}`,
+                                        '1'
+                                      )
+                                      if (docNum && !isNaN(parseInt(docNum))) {
+                                        const idx = parseInt(docNum) - 1
+                                        if (idx >= 0 && idx < event.documentos.length) {
+                                          const proxied = `/api/events/document?url=${encodeURIComponent(event.documentos[idx].url_documento_evento)}`
+                                          setPdfModalUrl(proxied)
+                                          setPdfModalOpen(true)
+                                        }
+                                      }
+                                    }
+                                  }}
+                                  className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                                  title="Ver documento/PDF del evento"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
+                              )}
                               <button
-                                onClick={() => toggleVisibility(event.id)}
-                                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                title={event.visibility ? "Ocultar evento" : "Mostrar evento"}
+                                onClick={() => {
+                                  setStatusModalEvent(event)
+                                  setStatusModalOpen(true)
+                                }}
+                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                title="Validar/Inhabilitar evento"
                               >
                                 {event.visibility ? (
-                                  <Eye className="w-4 h-4" />
+                                  <CheckCircle className="w-4 h-4" />
                                 ) : (
                                   <EyeOff className="w-4 h-4 text-gray-400" />
                                 )}
                               </button>
-                              <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                              <button 
+                                onClick={() => {
+                                  setEditingEvent(event)
+                                  setEditModalOpen(true)
+                                }}
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Editar evento"
+                              >
                                 <Edit className="w-4 h-4" />
                               </button>
                               <button
@@ -912,6 +996,53 @@ export default function EventDashboard() {
             </div>
           )}
         </main>
+
+        {/* Modales */}
+        {editingEvent && (
+          <EditEventModal
+            isOpen={editModalOpen}
+            onClose={() => {
+              setEditModalOpen(false)
+              setEditingEvent(null)
+            }}
+            event={editingEvent}
+            onSave={async (updatedEvent) => {
+              await refreshEvents()
+            }}
+          />
+        )}
+
+        {statusModalEvent && (
+          <ToggleEventStatusModal
+            isOpen={statusModalOpen}
+            onClose={() => {
+              setStatusModalOpen(false)
+              setStatusModalEvent(null)
+            }}
+            event={statusModalEvent}
+            onSave={async (updatedEvent) => {
+              await refreshEvents()
+            }}
+          />
+        )}
+        {/* PDF Viewer Modal */}
+        <Dialog open={pdfModalOpen} onOpenChange={() => setPdfModalOpen(false)}>
+          <DialogContent className="max-w-5xl w-full max-h-[90vh]">
+            <DialogHeader>
+              <DialogTitle>Documento</DialogTitle>
+            </DialogHeader>
+            <div className="h-[75vh]">
+              {pdfModalUrl ? (
+                <iframe src={pdfModalUrl} title="Documento" className="w-full h-full border-0" />
+              ) : (
+                <div className="flex items-center justify-center h-full">No hay documento</div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setPdfModalOpen(false)}>Cerrar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
