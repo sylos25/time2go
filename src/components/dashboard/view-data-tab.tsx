@@ -3,6 +3,9 @@
 import React, { useEffect, useState } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Search, Plus } from "lucide-react"
 
 type TableKey =
   | "paises"
@@ -19,6 +22,7 @@ export function ViewDataTab() {
   const [rows, setRows] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
 
   useEffect(() => {
     let cancelled = false
@@ -44,14 +48,24 @@ export function ViewDataTab() {
 
   return (
     <div className="space-y-6">
-      <Card className="border-lime-100 bg-yellow-50">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h3 className="text-lg font-semibold">Ver Datos</h3>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input placeholder="Buscar registros..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+          </div>
+          <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
+        </div>
+      </div>
+
+      <Card>
         <CardHeader>
-          <CardTitle className="text-lg text-gray-800">
-            Ver Datos
-          </CardTitle>
-          <CardDescription className="text-sm italic text-gray-500">
-            Visualiza registros existentes.
-          </CardDescription>
+          <CardTitle className="text-lg text-gray-800">Ver Datos</CardTitle>
+          <CardDescription className="text-sm italic text-gray-500">Visualiza registros existentes.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="mb-4">
@@ -60,14 +74,14 @@ export function ViewDataTab() {
                 <SelectValue placeholder="Selecciona una tabla" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="paises"              className="cursor-pointer bg-lime-50">Países</SelectItem>
-                <SelectItem value="tipo_sitios"         className="cursor-pointer bg-green-50">Tipos del sitio</SelectItem>
-                <SelectItem value="sitios"              className="cursor-pointer bg-lime-50">Sitios para eventos</SelectItem>
-                <SelectItem value="tipo_infraest_disc"  className="cursor-pointer bg-green-50">Acceso para discapacitados</SelectItem>
-                <SelectItem value="sitios_disc"         className="cursor-pointer bg-lime-50">Sitios con acceso inclusivo</SelectItem>
-                <SelectItem value="categoria_eventos"   className="cursor-pointer bg-green-50">Categorías de los eventos</SelectItem>
-                <SelectItem value="tipo_eventos"        className="cursor-pointer bg-lime-50">Tipos de eventos</SelectItem>
-                <SelectItem value="categoria_boletos"   className="cursor-pointer bg-green-50">Categorías de los boletos</SelectItem>
+                <SelectItem value="paises" className="cursor-pointer bg-lime-50">Países</SelectItem>
+                <SelectItem value="tipo_sitios" className="cursor-pointer bg-green-50">Tipos del sitio</SelectItem>
+                <SelectItem value="sitios" className="cursor-pointer bg-lime-50">Sitios para eventos</SelectItem>
+                <SelectItem value="tipo_infraest_disc" className="cursor-pointer bg-green-50">Acceso para discapacitados</SelectItem>
+                <SelectItem value="sitios_disc" className="cursor-pointer bg-lime-50">Sitios con acceso inclusivo</SelectItem>
+                <SelectItem value="categoria_eventos" className="cursor-pointer bg-green-50">Categorías de los eventos</SelectItem>
+                <SelectItem value="tipo_eventos" className="cursor-pointer bg-lime-50">Tipos de eventos</SelectItem>
+                <SelectItem value="categoria_boletos" className="cursor-pointer bg-lime-50">Categorías de los boletos</SelectItem>
               </SelectContent>
             </Select>
           </div>

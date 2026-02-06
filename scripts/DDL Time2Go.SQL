@@ -381,3 +381,6 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- Cargar en tabla_usuarios.
 INSERT INTO tabla_usuarios VALUES ('Cédula de Ciudadanía', '1095951827', 'Brayhan Jahir', 'Orduz Perez', 6, 3143413720, TRUE, 'bryhanorduz14@gmail.com', TRUE, crypt('BhyOP06*', gen_salt('bf', 12)), NOW (), NULL, TRUE, 4, NOW());
 INSERT INTO tabla_usuarios VALUES ('Cédula de Ciudadanía', '1095581203', 'William', 'Rojas', 6, 3167598925, TRUE, 'willirojasorduz@gmail.com', TRUE, crypt('William15.', gen_salt('bf', 12)), NOW (), NULL, TRUE, 4, NOW());
+INSERT INTO tabla_usuarios VALUES ('Cédula de Ciudadanía', '1091234567', 'Usuario', 'Prueba', 6, 3001234567, TRUE, 'usuario_prueba@correo.com', TRUE, crypt('Usuario123.', gen_salt('bf', 12)), NOW (), NULL, TRUE, 1, NOW());
+INSERT INTO tabla_usuarios VALUES ('Cédula de Extranjería', '1097654321', 'Promotor', 'Prueba', 6, 3007654321, TRUE, 'promotor_prueba@correo.com', TRUE, crypt('Promotor123.', gen_salt('bf', 12)), NOW (), NULL, TRUE, 2, NOW());
+INSERT INTO tabla_usuarios VALUES ('Pasaporte', '12A24578B', 'Moderador', 'Prueba', 6, 3001122334, TRUE, 'moderador_prueba@correo.com', TRUE, crypt('Moderador123.', gen_salt('bf', 12)), NOW (), NULL, TRUE, 3, NOW());

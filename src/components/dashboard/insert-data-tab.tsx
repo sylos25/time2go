@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AlertCircle, CheckCircle, Loader } from "lucide-react"
+import { AlertCircle, CheckCircle, Loader, Plus, Search } from "lucide-react"
 
 type DataTable = "paises" | "tipo_sitios" | "sitios" | "tipo_infraest_disc" | "sitios_disc" | "categoria_eventos" | "tipo_eventos" | "categoria_boletos"
 
@@ -85,6 +85,7 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
   const [formData, setFormData] = useState<FormState>({})
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
 
   const currentConfig = tableConfigs[selectedTable]
 
@@ -144,14 +145,29 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
 
   return (
     <div className="space-y-6">
-      <Card className="border-lime-100 bg-yellow-50">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h3 className="text-lg font-semibold">Insertar Datos</h3>
+        <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+          <Plus className="h-4 w-4 mr-2" />
+          Nuevo registro
+        </Button>
+      </div>
+
+      <Card>
         <CardHeader>
-          <CardTitle className="text-lg text-gray-800">
-            Insertar Datos en Base de Datos
-          </CardTitle>
-          <CardDescription className="text-sm italic text-gray-500">
-            Selecciona la tabla y completa los campos requeridos para insertar nuevos datos.
-          </CardDescription>
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Buscar tabla..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+          <CardTitle className="text-lg text-gray-800">Insertar Datos en Base de Datos</CardTitle>
+          <CardDescription className="text-sm italic text-gray-500">Selecciona la tabla y completa los campos requeridos para insertar nuevos datos.</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={selectedTable} onValueChange={(value) => setSelectedTable(value as DataTable)}>

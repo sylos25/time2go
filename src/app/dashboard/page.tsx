@@ -56,6 +56,7 @@ import { EditEventModal } from "@/components/dashboard/edit-event-modal"
 import { ToggleEventStatusModal } from "@/components/dashboard/toggle-event-status-modal"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 
 interface Event {
   id: number
@@ -881,17 +882,21 @@ export default function EventDashboard() {
           )}
 
           {activeTab === "users" && (
+            <Card className="border-lime-100 bg-yellow-50">
             <div className="space-y-6">
               <div className="flex items-center justify-between gap-4">
+                <CardContent>
                 <div className="relative flex-1 max-w-md">
                   <input
                     type="text"
                     placeholder="Buscar usuarios..."
                     value={searchUsers}
                     onChange={(e) => setSearchUsers(e.target.value)}
-                    className="w-full pl-4 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-3 pr-30 py-1.5 bg-white border border-green-600 rounded-lg placeholder-lime-600 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
                   />
                 </div>
+                </CardContent>
+                <CardContent className="w-full pl-1 pr-30 py-1.5">
                 <div className="flex items-center gap-3">
                   <button
                     onClick={async () => {
@@ -900,8 +905,7 @@ export default function EventDashboard() {
                         const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
                         const headers: any = {}
                         if (token) headers['Authorization'] = `Bearer ${token}`
-                                        // By default load only active users with role=1 (Usuarios)
-                        const res = await fetch('/api/usuarios?role=1&estado=true', { headers })
+                        const res = await fetch('/api/usuarios?estado=true', { headers })
                         if (res.ok) {
                           const data = await res.json()
                           setUsers(data.usuarios || [])
@@ -912,33 +916,34 @@ export default function EventDashboard() {
                         setLoadingUsers(false)
                       }
                     }}
-                    className="px-4 py-2.5 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50"
+                    className="px-4 py-1.5 bg-green-800 border rounded-lg shadow-sm hover:bg-lime-600 text-white cursor-pointer transition-colors"
                   >
                     Actualizar
                   </button>
                 </div>
+                </CardContent>
               </div>
-
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <CardContent>
+              <div className="bg-white rounded-sm shadow-sm border border-green-600 overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+                  <table className="table-fixed w-full border-collapse border border-green-600">
+                    <thead className="bg-lime-100 border-b border-green-600">
                       <tr>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Documento</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tipo Doc</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nombres</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Apellidos</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">País</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Teléfono</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tel. Val.</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Correo</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Correo Val.</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Estado</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rol</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fecha Reg.</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fecha Desac.</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fecha Actualiz.</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
+                        <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Documento</th>
+                        <th className="w-42 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Tipo Documento</th>
+                        <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Nombres</th>
+                        <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Apellidos</th>
+                        <th className="w-30 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">País</th>
+                        <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Teléfono</th>
+                        <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Tel. Validado</th>
+                        <th className="w-80 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Correo</th>
+                        <th className="w-45 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Correo Validado</th>
+                        <th className="w-26 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Estado</th>
+                        <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Rol</th>
+                        <th className="w-50 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Fecha Registro</th>
+                        <th className="w-50 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Fecha Desactivación</th>
+                        <th className="w-50 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Fecha Actualización</th>
+                        <th className="w-28 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -950,20 +955,20 @@ export default function EventDashboard() {
                         })
                         .map((u) => (
                           <tr key={u.numero_documento} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-6 py-4 text-sm text-gray-700">{u.numero_documento}</td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{u.tipo_documento}</td>
-                            <td className="px-6 py-4 text-sm text-gray-900">{u.nombres}</td>
-                            <td className="px-6 py-4 text-sm text-gray-900">{u.apellidos}</td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{u.pais || '-'}</td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{u.telefono || '-'}</td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{u.validacion_telefono ? 'Sí' : 'No'}</td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{u.correo}</td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{u.validacion_correo ? 'Sí' : 'No'}</td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{u.estado ? 'Activo' : 'Inactivo'}</td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{u.rol || '-'}</td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{u.fecha_registro ? new Date(u.fecha_registro).toLocaleString() : '-'}</td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{u.fecha_desactivacion ? new Date(u.fecha_desactivacion).toLocaleString() : '-'}</td>
-                            <td className="px-6 py-4 text-sm text-gray-700">{u.fecha_actualizacion ? new Date(u.fecha_actualizacion).toLocaleString() : '-'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.numero_documento}</td>
+                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.tipo_documento}</td>
+                            <td className="px-6 py-4 text-center text-sm text-gray-900">{u.nombres}</td>
+                            <td className="px-6 py-4 text-center text-sm text-gray-900">{u.apellidos}</td>
+                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.pais || '-'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.telefono || '-'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.validacion_telefono ? 'Sí' : 'No'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.correo}</td>
+                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.validacion_correo ? 'Sí' : 'No'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.estado ? 'Activo' : 'Inactivo'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.rol || '-'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.fecha_registro ? new Date(u.fecha_registro).toLocaleString() : '-'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.fecha_desactivacion ? new Date(u.fecha_desactivacion).toLocaleString() : '-'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.fecha_actualizacion ? new Date(u.fecha_actualizacion).toLocaleString() : '-'}</td>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-2">
                                 <button className="px-3 py-1 bg-white border border-gray-200 rounded-lg">Ver</button>
@@ -983,8 +988,9 @@ export default function EventDashboard() {
                   </div>
                 )}
               </div>
+              </CardContent>
             </div>
-          )}
+          </Card>)}
 
           {activeTab === "insert-data" && <InsertDataTab />}
 

@@ -1,9 +1,13 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts"
-import { TrendingUp } from "lucide-react"
+import { TrendingUp, Plus, Search } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const salesData = [
   { name: "Ene", ventas: 4000, usuarios: 2400 },
@@ -16,12 +20,42 @@ const salesData = [
 ]
 
 export function AnalyticsTab() {
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filter, setFilter] = useState("all")
+
   return (
     <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h3 className="text-lg font-semibold">Gestión de Eventos</h3>
+        <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+          <Plus className="h-4 w-4 mr-2" />
+          Nuevo Evento
+        </Button>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Ventas Mensuales</CardTitle>
+            <div className="flex flex-col lg:flex-row gap-4 w-full">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Buscar eventos..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={filter} onValueChange={setFilter}>
+                <SelectTrigger className="w-full lg:w-[200px]">
+                  <SelectValue placeholder="Filtrar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="active">Activos</SelectItem>
+                  <SelectItem value="cancelled">Cancelados</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent>
             <ChartContainer
