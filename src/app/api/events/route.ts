@@ -182,12 +182,20 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const idParam = url.searchParams.get('id');
 
+    // Validate id parameter to avoid passing NaN to the DB query
+    const idNum = idParam !== null ? Number(idParam) : null;
+    if (idParam !== null && (!Number.isFinite(idNum) || Number.isNaN(idNum))) {
+      return NextResponse.json({ ok: false, message: 'Invalid id parameter' }, { status: 400 });
+    }
+
     const result = await pool.query(`
       SELECT e.id_evento,
              e.nombre_evento,
              e.descripcion,
              e.fecha_inicio,
              e.fecha_fin,
+             e.hora_inicio,
+             e.hora_final,
              e.dias_semana,
              e.gratis_pago,
              e.cupo,
@@ -236,9 +244,9 @@ export async function GET(req: Request) {
       LEFT JOIN tabla_categoria_boletos cb ON v.id_categoria_boleto = cb.id_categoria_boleto
       LEFT JOIN tabla_links l ON e.id_evento = l.id_evento
       LEFT JOIN tabla_valoraciones vr ON e.id_evento = vr.id_evento
-      ${idParam ? 'WHERE e.id_evento = $1' : ''}
+      ${idNum !== null ? 'WHERE e.id_evento = $1' : ''}
       ORDER BY e.id_evento DESC;
-    `, idParam ? [Number(idParam)] : []);
+    `, idNum !== null ? [idNum] : []);
 
     const eventosMap: Record<string, any> = {};
     result.rows.forEach((row) => {
@@ -249,6 +257,8 @@ export async function GET(req: Request) {
           descripcion: row.descripcion,
           fecha_inicio: row.fecha_inicio,
           fecha_fin: row.fecha_fin,
+          hora_inicio: row.hora_inicio,
+          hora_final: row.hora_final,
           dias_semana: row.dias_semana,
           gratis_pago: row.gratis_pago,
           cupo: row.cupo,
@@ -314,6 +324,7 @@ export async function GET(req: Request) {
       creador: ev.creador_num_doc ? { numero_documento: ev.creador_num_doc, nombres: ev.creador_nombres, apellidos: ev.creador_apellidos } : null,
       sitio: ev.id_sitio ? { id_sitio: ev.id_sitio, nombre_sitio: ev.nombre_sitio, direccion: ev.sitio_direccion, telefono_1: ev.sitio_telefono_1, telefono_2: ev.sitio_telefono_2 } : null,
       municipio: ev.id_municipio ? { id_municipio: ev.id_municipio, nombre_municipio: ev.nombre_municipio } : null,
+      categoria: ev.categoria_evento ? { id_categoria_evento: ev.id_categoria_evento, nombre: ev.nombre } : null,
       fecha_creacion: ev.fecha_creacion_evento,
     }));
 

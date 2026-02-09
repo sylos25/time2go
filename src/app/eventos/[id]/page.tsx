@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
@@ -19,11 +19,14 @@ import {
   Link as LinkIcon,
   Users,
   Grid3X3,
+  TagIcon,
 } from "lucide-react";
 import Valoraciones from "./valoraciones";
 
-export default function EventLanding({ params }: { params: { id: string } }) {
+export default function EventLanding() {
   const router = useRouter();
+  const params = useParams();
+  const id = params?.id && Array.isArray(params.id) ? params.id[0] : params?.id;
   const [event, setEvent] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -70,15 +73,21 @@ export default function EventLanding({ params }: { params: { id: string } }) {
     }
   };
 
-  const formatTime = (t: any) => {
+  const formatTime = (t: string | Date | null | undefined): string => {
     if (!t) return "—";
     try {
-      const parts = String(t).split(":");
+      if (t instanceof Date) {
+        return t.toTimeString().slice(0, 5);
+      }
+      // Handle time string from database (HH:MM:SS format)
+      const timeStr = String(t).trim();
+      const parts = timeStr.split(":");
       return parts.slice(0, 2).join(":");
     } catch {
       return String(t);
     }
   };
+    
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("es-CO", {
@@ -92,7 +101,13 @@ export default function EventLanding({ params }: { params: { id: string } }) {
     const fetchEvent = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/events?id=${encodeURIComponent(params.id)}`);
+        if (!id) {
+          setEvent(null);
+          setLoading(false);
+          return;
+        }
+
+        const res = await fetch(`/api/events?id=${encodeURIComponent(id)}`);
         const json = await res.json();
         if (json.ok && json.event) setEvent(json.event);
         else setEvent(null);
@@ -104,7 +119,7 @@ export default function EventLanding({ params }: { params: { id: string } }) {
       }
     };
     fetchEvent();
-  }, [params.id]);
+  }, [id]);
 
   if (loading) {
     return (
@@ -283,6 +298,15 @@ export default function EventLanding({ params }: { params: { id: string } }) {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <Card className="bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
+                  <TagIcon className="h-5 w-5 mx-auto mb-2 text-blue-500" />
+                  <p className="text-xs text-muted-foreground">Categoria</p>
+                  <p className="font-semibold text-sm truncate">
+                    {event.categoria?.nombre || "—"}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-white/80 backdrop-blur-sm">
+                <CardContent className="p-4 text-center">
                   <Calendar className="h-5 w-5 mx-auto mb-2 text-blue-500" />
                   <p className="text-xs text-muted-foreground">Fecha</p>
                   <p className="font-semibold text-sm">
@@ -295,29 +319,48 @@ export default function EventLanding({ params }: { params: { id: string } }) {
                   <Clock className="h-5 w-5 mx-auto mb-2 text-blue-500" />
                   <p className="text-xs text-muted-foreground">Hora</p>
                   <p className="font-semibold text-sm">
-                    {formatTime(event.hora_inicio)}
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="bg-white/80 backdrop-blur-sm">
-                <CardContent className="p-4 text-center">
-                  <MapPin className="h-5 w-5 mx-auto mb-2 text-blue-500" />
-                  <p className="text-xs text-muted-foreground">Lugar</p>
-                  <p className="font-semibold text-sm truncate">
-                    {event.sitio?.nombre_sitio || "—"}
+                    {formattedHorario}
                   </p>
                 </CardContent>
               </Card>
               <Card className="bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
                   <Users className="h-5 w-5 mx-auto mb-2 text-blue-500" />
-                  <p className="text-xs text-muted-foreground">Cupo</p>
+                  <p className="text-xs text-muted-foreground">Aforo para</p>
                   <p className="font-semibold text-sm">
                     {Number(event.cupo ?? 0).toLocaleString()}
                   </p>
                 </CardContent>
               </Card>
             </div>
+
+            {/* Location Details */}
+            <Card className="bg-white/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Ubicación
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                    <MapPin className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">
+                      {event.sitio?.nombre_sitio || "Lugar por confirmar"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {event.sitio?.direccion}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {event.municipio?.nombre_municipio}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Description */}
             <Card className="bg-white/80 backdrop-blur-sm">
@@ -364,127 +407,6 @@ export default function EventLanding({ params }: { params: { id: string } }) {
                 </CardContent>
               </Card>
             )}
-
-            {/* Location Details */}
-            <Card className="bg-white/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Ubicación
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                    <MapPin className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">
-                      {event.sitio?.nombre_sitio || "Lugar por confirmar"}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {event.sitio?.direccion}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {event.municipio?.nombre_municipio}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Event Details Card */}
-            <Card className="bg-white/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Grid3X3 className="h-4 w-4" />
-                  Información completa del evento
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <span className="text-muted-foreground block mb-1">
-                      Creado por
-                    </span>
-                    <span className="font-medium">
-                      {event.creador
-                        ? `${event.creador.nombres} ${event.creador.apellidos}`
-                        : "—"}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block mb-1">
-                      Categoría
-                    </span>
-                    <span className="font-medium">
-                      {event.categoria_nombre ??
-                        event.nombre_categoria_boleto ??
-                        "—"}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block mb-1">
-                      Tipo
-                    </span>
-                    <span className="font-medium">
-                      {event.tipo_nombre ?? "—"}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block mb-1">
-                      Entrada
-                    </span>
-                    <Badge
-                      variant={event.gratis_pago ? "default" : "secondary"}
-                    >
-                      {event.gratis_pago ? "PAGO" : "GRATIS"}
-                    </Badge>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block mb-1">
-                      Fechas
-                    </span>
-                    <span className="font-medium">
-                      {formattedFechaInicio}
-                      {formattedFechaFin ? ` - ${formattedFechaFin}` : ""}
-                    </span>
-                  </div>
-                  {formattedDias && (
-                    <div>
-                      <span className="text-muted-foreground block mb-1">
-                        Días
-                      </span>
-                      <span className="font-medium">{formattedDias}</span>
-                    </div>
-                  )}
-                  <div>
-                    <span className="text-muted-foreground block mb-1">
-                      Horario
-                    </span>
-                    <span className="font-medium">{formattedHorario}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block mb-1">
-                      Capacidad
-                    </span>
-                    <span className="font-medium">
-                      {Number(event.cupo ?? 0).toLocaleString()} personas
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block mb-1">
-                      Creado el
-                    </span>
-                    <span className="font-medium">
-                      {event.fecha_creacion
-                        ? new Date(event.fecha_creacion).toLocaleDateString()
-                        : "—"}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Valoraciones */}
             <Card className="bg-white/80 backdrop-blur-sm">
@@ -573,24 +495,50 @@ export default function EventLanding({ params }: { params: { id: string } }) {
                 </div>
                 
                 {/* calendario */}
-                {diasArr.length > 0 && (
+                {(event.fecha_inicio || diasArr.length > 0) && (
                   <div className="mt-4 pt-4 border-t">
                     <p className="text-muted-foreground mb-3 font-medium">
                       Días del evento
                     </p>
                     <div className="grid grid-cols-7 gap-1">
                       {(() => {
-                        const dates = diasArr.map(d => new Date(d));
-                        const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
-                        const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+                        const eventDates = new Set<string>();
                         
-                        // Get first day of month
-                        const firstDay = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
+                        // Add fecha_inicio to fecha_fin range
+                        if (event.fecha_inicio) {
+                          const startDate = new Date(event.fecha_inicio);
+                          const endDate = event.fecha_fin ? new Date(event.fecha_fin) : startDate;
+                          
+                          for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                            eventDates.add(dateStr);
+                          }
+                        }
+                        
+                        // Add dias_semana dates
+                        diasArr.forEach(d => {
+                          try {
+                            const date = new Date(d);
+                            const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                            eventDates.add(dateStr);
+                          } catch (e) {
+                            // Skip invalid dates
+                          }
+                        });
+                        
+                        // Determine calendar bounds
+                        const allDates = Array.from(eventDates).map(d => new Date(d));
+                        if (allDates.length === 0) return [];
+                        
+                        const minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
+                        const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
+                        
+                        // Display calendar starting from minDate month
+                        const displayMonth = minDate.getMonth();
+                        const displayYear = minDate.getFullYear();
+                        const firstDay = new Date(displayYear, displayMonth, 1);
                         const startingDayOfWeek = firstDay.getDay();
-                        
-                        // Get last day of month
-                        const lastDay = new Date(maxDate.getFullYear(), maxDate.getMonth() + 1, 0);
-                        const daysInMonth = lastDay.getDate();
+                        const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate();
                         
                         const calendarCells = [];
                         
@@ -610,12 +558,8 @@ export default function EventLanding({ params }: { params: { id: string } }) {
                         
                         // Day cells
                         for (let day = 1; day <= daysInMonth; day++) {
-                          const currentDate = new Date(minDate.getFullYear(), minDate.getMonth(), day);
-                          const isEventDay = dates.some(d => 
-                            d.getDate() === currentDate.getDate() &&
-                            d.getMonth() === currentDate.getMonth() &&
-                            d.getFullYear() === currentDate.getFullYear()
-                          );
+                          const dateStr = `${displayYear}-${String(displayMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                          const isEventDay = eventDates.has(dateStr);
                           
                           calendarCells.push(
                             <div
