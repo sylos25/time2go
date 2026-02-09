@@ -282,7 +282,7 @@ export function Header({
 
       {/* Header */}
       <header
-        className={`fixed top-0 left-0 right-0 z-70 transition-all duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-[70] transition-all duration-300 ${
           scrolled
             ? "bg-gradient-to-r from-lime-600 via-lime-500 to-lime-600"
             : "bg-gradient-to-r from-lime-500 via-lime-400 to-lime-500 w-full shadow-md shadow-black/10"
@@ -306,7 +306,7 @@ export function Header({
               onClick={() => navigateTo("/")}
               className="flex items-center space-x-3 hover:opacity-80 transition-opacity cursor-pointer"
             >
-              <div className="w-10 h-10 lg:w-40 lg:h-50 relative">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-40 lg:h-40 relative">
                 <Image src="/images/logo_header.png?height=48&width=48" alt="Time2Go Logo" fill className="object-contain" />
               </div>
             </button>
@@ -386,103 +386,92 @@ export function Header({
               )}
             </nav>
 
-            {/* Mobile CTA */}
-            {!isLoggedIn ? (
-              <Button
-                onClick={() => router.push("/auth")}
-                size="sm"
-                className="lg:hidden bg-white text-purple-900 hover:bg-white/90 rounded-sm"
-              >
-                Únete
-              </Button>
-            ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="lg:hidden hover:bg-white/10 rounded-sm">
-                    <div className="w-8 h-8 rounded-sm bg-white flex items-center justify-center text-purple-900 font-medium text-sm">
-                      {userName.charAt(0).toUpperCase()}
-                    </div>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigateTo("/dashboard")} className="cursor-pointer">
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                    Dashboard
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigateTo("/perfil")} className="cursor-pointer">
-                    <User className="h-4 w-4 mr-2" />
-                    Mi Perfil
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigateTo("/mis-eventos")} className="cursor-pointer">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Mis Eventos
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigateTo("/configuracion")} className="cursor-pointer">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Configuración
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Cerrar Sesión
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+
           </div>
         </div>
       </header>
 
       {/* Mobile Navigation */}
       <nav
-        className={`fixed top-0 left-0 h-full w-80 bg-white/95 backdrop-blur-md shadow-2xl transform transition-transform duration-300 z-40 lg:hidden ${
+        className={`fixed top-0 left-0 h-full w-72 sm:w-80 max-w-full bg-white/95 backdrop-blur-md shadow-2xl transform transition-transform duration-300 z-40 lg:hidden ${
           menuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="pt-24 px-6">
-          <ul className="space-y-4">
+          <ul className="space-y-2">
             {navigationItems.map((item) => (
               <li key={item.name}>
                 <button
                   onClick={() => navigateTo(item.path)}
-                  className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 font-medium text-lg py-4 px-4 rounded-xl hover:bg-blue-50 transition-all w-full text-left group"
+                  className="flex items-center space-x-3 text-gray-800 hover:text-lime-600 font-semibold text-base py-3 px-4 rounded-lg hover:bg-lime-50 transition-all w-full text-left group"
                 >
-                  <span className="w-2 h-2 bg-blue-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <span className="w-2 h-2 bg-lime-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                   <span>{item.name}</span>
                 </button>
               </li>
             ))}
+            {loggedIn && (
+              <>
+                <li>
+                  <button
+                    onClick={() => navigateTo("/eventos/crear")}
+                    className="flex items-center space-x-3 text-gray-800 hover:text-lime-600 font-semibold text-base py-3 px-4 rounded-lg hover:bg-lime-50 transition-all w-full text-left group"
+                  >
+                    <span className="w-2 h-2 bg-lime-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span>Crear Evento</span>
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigateTo("/dashboard")}
+                    className="flex items-center space-x-3 text-gray-800 hover:text-lime-600 font-semibold text-base py-3 px-4 rounded-lg hover:bg-lime-50 transition-all w-full text-left group"
+                  >
+                    <span className="w-2 h-2 bg-lime-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span>Dashboard</span>
+                  </button>
+                </li>
+              </>
+            )}
           </ul>
 
-          <div className="mt-8 pt-8 border-t border-white/20">
-            {!isLoggedIn ? (
+          <div className="mt-8 pt-8 border-t border-gray-200">
+            {!loggedIn ? (
               <Button
                 onClick={() => router.push("/auth")}
-                className="w-full bg-white text-purple-900 hover:bg-white/90 font-medium shadow-lg hover:shadow-xl transition-all rounded-sm"
+                className="w-full bg-gradient-to-r from-lime-500 to-lime-600 text-white hover:from-lime-600 hover:to-lime-700 font-semibold shadow-lg hover:shadow-xl transition-all rounded-lg py-6 text-base"
               >
                 Únete a Time2Go
               </Button>
             ) : (
-              <div className="space-y-3">
-                <Button
-                  onClick={() => navigateTo("/dashboard")}
-                  variant="outline"
-                  className="w-full border-red-400/30 text-red-400 hover:bg-red-400/10 bg-transparent rounded-sm cursor-pointer"
+              <div className="space-y-2">
+                <button
+                  onClick={() => navigateTo("/perfil")}
+                  className="flex items-center space-x-3 text-gray-800 hover:text-lime-600 font-semibold text-base py-3 px-4 rounded-lg hover:bg-lime-50 transition-all w-full text-left"
                 >
-                  <LayoutDashboard className="h-4 w-4 mr-2" />
-                  Dashboard
-                </Button>
-                <Button
+                  <User className="h-5 w-5 text-lime-600" />
+                  <span>Mi Perfil</span>
+                </button>
+                <button
+                  onClick={() => navigateTo("/mis-eventos")}
+                  className="flex items-center space-x-3 text-gray-800 hover:text-lime-600 font-semibold text-base py-3 px-4 rounded-lg hover:bg-lime-50 transition-all w-full text-left"
+                >
+                  <Calendar className="h-5 w-5 text-lime-600" />
+                  <span>Mis Eventos</span>
+                </button>
+                <button
+                  onClick={() => navigateTo("/configuracion")}
+                  className="flex items-center space-x-3 text-gray-800 hover:text-lime-600 font-semibold text-base py-3 px-4 rounded-lg hover:bg-lime-50 transition-all w-full text-left"
+                >
+                  <Settings className="h-5 w-5 text-lime-600" />
+                  <span>Configuración</span>
+                </button>
+                <button
                   onClick={handleLogout}
-                  variant="outline"
-                  className="w-full border-red-600 text-red-600 hover:bg-red-50 bg-transparent"
+                  className="flex items-center space-x-3 text-red-600 hover:text-red-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-red-50 transition-all w-full text-left mt-4"
                 >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Cerrar Sesión
-                </Button>
+                  <LogOut className="h-5 w-5" />
+                  <span>Cerrar Sesión</span>
+                </button>
               </div>
             )}
           </div>
