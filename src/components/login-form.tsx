@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { Eye, EyeOff, Lock, AlertCircle } from "lucide-react"
+import { Turnstile } from "@marsidev/react-turnstile"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -20,38 +21,51 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   const [error, setError] = useState("")
   const [emailValidationError, setEmailValidationError] = useState(false)
   const [resetPasswordOpen, setResetPasswordOpen] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [turnstileError, setTurnstileError] = useState("")
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({
     email: false,
     password: false,
   })
 
+// Manejo de blur para marcar campos como tocados (touched) y mostrar validación  
   const handleBlur = (field: string) => {
     setTouchedFields((prev) => ({ ...prev, [field]: true }))
   }
 
+// Manejo de cambios en el campo de email
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setEmail(value)
   }
 
+// Manejo de submit del formulario  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setEmailValidationError(false)
+    setTurnstileError("")
 
-    // Validate required fields
+    // Validar campos requeridos
     if (!email || !password) {
       if (!email) setTouchedFields((prev) => ({ ...prev, email: true }))
       if (!password) setTouchedFields((prev) => ({ ...prev, password: true }))
       return
     }
 
+    // Validar token de Turnstile
+    if (!turnstileToken) {
+      setTurnstileError("Por favor, completa la verificación del captcha")
+      return
+    }
+
+    // Enviar datos al backend
     try {
       const res = await fetch("/api/login", {
         method: "POST",
         credentials: 'include',
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, turnstileToken }),
       })
       const data = await res.json()
       
@@ -68,7 +82,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         return
       }
 
-      // Respect cookie consent: if user rejected non-essential cookies, avoid storing token/user data in localStorage
+// Login exitoso: manejar almacenamiento de token y datos de usuario según consentimiento de cookies
       const readConsent = () => {
         try {
           const v = document.cookie.split(';').map(s => s.trim()).find(s => s.startsWith('cookie_consent='))
@@ -79,6 +93,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         }
       }
 
+// Determinar nombre de usuario para mostrar (usar parte local del email si no se proporciona un nombre específico)      
       const consent = readConsent()
       const name = data.name || (email ? email.split("@")[0] : "Usuario")
 
@@ -87,13 +102,13 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         if (data.numero_documento) localStorage.setItem("userDocument", String(data.numero_documento))
         localStorage.setItem("userName", name)
       } else {
-        // Clear any existing persisted auth data to fully respect rejection
+        // Si el consentimiento es rechazado, asegurarse de no almacenar datos en localStorage y limpiar cualquier dato existente
         localStorage.removeItem("token")
         localStorage.removeItem("userDocument")
         localStorage.removeItem("userName")
       }
 
-      // Notificar al header (include token only when consent allows it)
+      // Emitir evento global de login con detalles del usuario (incluyendo token solo si el consentimiento no es 'rejected')
       window.dispatchEvent(
         new CustomEvent("user:login", {
           detail: {
@@ -189,6 +204,32 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           ¿Olvidaste tu contraseña?
         </Button>
       </div>
+
+      {/* Turnstile Captcha */}
+      <div className="flex justify-center">
+        <Turnstile
+          siteKey={process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY || ""}
+          onSuccess={(token) => {
+            setTurnstileToken(token)
+            setTurnstileError("")
+          }}
+          onError={() => {
+            setTurnstileToken(null)
+            setTurnstileError("Error al cargar el captcha. Por favor, intenta nuevamente.")
+          }}
+          onExpire={() => {
+            setTurnstileToken(null)
+            setTurnstileError("La verificación del captcha ha expirado. Por favor, intenta nuevamente.")
+          }}
+        />
+      </div>
+
+      {turnstileError && (
+        <div className="p-4 rounded-lg bg-red-50 border border-red-200 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5 text-red-600" />
+          <p className="text-sm text-red-700">{turnstileError}</p>
+        </div>
+      )}
 
       {error && (
         <div className={`p-4 rounded-lg flex items-start gap-3 ${

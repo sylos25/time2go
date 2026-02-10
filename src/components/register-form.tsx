@@ -24,10 +24,41 @@ interface FormFields {
   acceptTerms: boolean
 }
 
+// Dominios de correos temporales y falsos a rechazar
+const TEMPORARY_EMAIL_DOMAINS = [
+  "tempmail.com",
+  "10minutemail.com",
+  "guerrillamail.com",
+  "mailinator.com",
+  "temp-mail.org",
+  "throwaway.email",
+  "trashmail.com",
+  "yopmail.com",
+  "maildrop.cc",
+  "temp.email",
+  "fakeinbox.com",
+  "mailnesia.com",
+  "tempmail.ninja",
+  "disposablemail.com",
+  "sharklasers.com",
+  "spam4.me",
+  "mytrashmail.com",
+  "maildrop.cc",
+  "temp-smtp.com",
+  "ethereal.email",
+]
+
+// Función para validar si un email es temporalario o falso
+const isTemporaryEmail = (email: string): boolean => {
+  const domain = email.split("@")[1]?.toLowerCase()
+  return TEMPORARY_EMAIL_DOMAINS.includes(domain || "")
+}
+
 export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [registroError, setRegistroError] = useState("")
+  const [emailError, setEmailError] = useState("")
   const [showModal, setShowModal] = useState(false)
   const [passwordValidation, setPasswordValidation] = useState<{ isValid: boolean; errors: string[] }>({ isValid: false, errors: [] })
   const acceptButtonRef = useRef<HTMLButtonElement | null>(null)
@@ -66,15 +97,16 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
     acceptTerms: false,
   })
 
-  // Cargar lista de países
-  useEffect(() => {
-    fetch("/api/llamar_pais")
-      .then((res) => res.json())
-      .then((data) => setListaPaises(data))
-      .catch((err) => console.error("Error al cargar países:", err))
-  }, [])
+// Hace un llamado a los paises
+    useEffect(() => {
+      fetch("/api/llamar_pais")
+        .then((res) => res.json())
+        .then((data) => setListaPaises(data))
+        .catch((err) => console.error("Error al cargar países:", err))
+    }, [])
 
-  // Control del focus en el modal de política
+
+// Control del focus en el modal de políticas
   useEffect(() => {
     if (!showModal) return
     const previousOverflow = document.body.style.overflow
@@ -109,7 +141,6 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
         }
       }
     }
-
     document.addEventListener("keydown", onKey, true)
     setTimeout(() => {
       acceptButtonRef.current?.focus()
@@ -120,23 +151,27 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
     }
   }, [showModal])
 
+// Funciones para manejar cambios y validaciones de campos  
   const handleBlur = (field: keyof FormFields) => {
     setTouchedFields((prev) => ({ ...prev, [field]: true }))
   }
 
+// Función para manejar cambios en los campos del formulario  
   const handleInputChange = (field: keyof FormFields, value: string | boolean | number) => {
     setFormData((prev: FormFields) => ({ ...prev, [field]: value } as FormFields))
   }
 
+// Función para manejar cambios en campos con validaciones particulares  
   const handleTipDocChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value
     handleInputChange("tipDoc", value)
     handleInputChange("document", "")
   }
 
+// Función para manejar el control en el campo de número de documento con validaciones según el tipo de documento seleccionado  
   const handleNumDocChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase()
-
+    if (value.length > 11) return
     if (formData.tipDoc === "Pasaporte") {
       if (/^[A-Z0-9]*$/.test(value)) {
         const lettersCount = (value.match(/[A-Z]/g) || []).length
@@ -155,6 +190,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
     }
   }
 
+// Funciones para manejar el control en los campos de texto con validación de caracteres permitidos (nombres, apellidos)  
   const handleFirstnameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(value)) {
@@ -169,6 +205,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
     }
   }
 
+// Función para manejar el control en el campo de teléfono con validación de caracteres permitidos  
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     if (/^[0-9]*$/.test(value) && value.length <= 10) {
@@ -176,15 +213,25 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
     }
   }
 
+// Función para manejar el control en el campo de email con validación de caracteres permitidos  
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     handleInputChange("email", value)
+    if (!emailRegex.test(value)) {
+      setEmailError("Formato de correo inválido")
+      return
+    }
+    if (isTemporaryEmail(value)) {
+      setEmailError("No se permiten correos temporales o falsos. Por favor, usa un correo real.")
+      return
+    }
+    setEmailError("")
   }
 
-  // Función para validar contraseña
+// Función para validar contraseña
   const validatePassword = (password: string): { isValid: boolean; errors: string[] } => {
     const errors: string[] = []
-    
     if (password.length > 12) {
       errors.push("Máximo 12 caracteres")
     }
@@ -197,33 +244,35 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
     if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
       errors.push("Al menos un carácter especial")
     }
-    
     return {
       isValid: errors.length === 0,
       errors,
     }
   }
 
+// Funciones para manejar la aceptación y rechazo de términos y condiciones en el modal  
   const handleAccept = () => {
     handleInputChange("acceptTerms", true)
     setShowModal(false)
   }
-
+  
   const handleReject = () => {
     setFormData(formDataInicial)
     setRegistroError("")
     setShowModal(false)
   }
 
+// Función para manejar el cierre del modal de campos duplicados  
   const handleDuplicateModalClose = () => {
     setDuplicateModal({ open: false, duplicates: [], message: undefined })
   }
 
+// Función para manejar el envío del formulario con validaciones y comunicación con el backend  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setRegistroError("")
 
-    // Validate required fields
+// Validar campos obligatorios
     const requiredFields: (keyof FormFields)[] = [
       "tipDoc",
       "document",
@@ -243,27 +292,33 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       setRegistroError("Por favor completa los campos obligatorios.")
       return
     }
-
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email)) {
+      setTouchedFields((prev) => ({ ...prev, email: true }))
+      setRegistroError("Formato de correo inválido.")
+      return
+    }
+    if (isTemporaryEmail(formData.email)) {
+      setTouchedFields((prev) => ({ ...prev, email: true }))
+      setRegistroError("No se permiten correos temporales o falsos. Por favor, usa un correo real.")
+      return
+    }
     if (!formData.acceptTerms) {
       setTouchedFields((prev) => ({ ...prev, acceptTerms: true }))
       setRegistroError("Debe aceptar los términos y condiciones.")
       return
     }
-
     if (!formData.password || formData.password !== formData.confirmPassword) {
       setTouchedFields((prev) => ({ ...prev, password: true, confirmPassword: true }))
       setRegistroError("Las contraseñas no coinciden.")
       return
     }
-
-    // Validar fortaleza de contraseña
     const passwordValidation = validatePassword(formData.password)
     if (!passwordValidation.isValid) {
       setTouchedFields((prev) => ({ ...prev, password: true }))
       setRegistroError(`Contraseña inválida: ${passwordValidation.errors.join(", ")}`)
       return
     }
-
     try {
       const res = await fetch("/api/usuario_formulario", {
         method: "POST",
@@ -278,7 +333,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
           email: formData.email,
           password: formData.password,
         }),
-      })
+      })   
 
       const data = await res.json()
       if (!res.ok) {
@@ -289,10 +344,9 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
         }
         return
       }
-
+      
       setRegistroError("")
       setFormData(formDataInicial)
-      // Redirigir a auth con parámetro de registro exitoso
       setTimeout(() => {
         onSuccess()
       }, 500)
@@ -455,11 +509,14 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             onChange={handleEmailChange}
             onBlur={() => handleBlur("email")}
             className={`w-full border rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              touchedFields.email && !formData.email ? "border-red-500 ring-red-500" : "border-gray-300"
+              (touchedFields.email && !formData.email) || emailError ? "border-red-500 ring-red-500" : "border-gray-300"
             }`}
             placeholder="ejemplo@correo.com"
           />
-          {touchedFields.email && !formData.email && (
+          {emailError && (
+            <p className="text-red-500 text-xs -mt-1">{emailError}</p>
+          )}
+          {touchedFields.email && !formData.email && !emailError && (
             <p className="text-red-500 text-xs -mt-1">Este campo es obligatorio</p>
           )}
         </div>
@@ -614,7 +671,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             <Button
               type="button"
               variant="link"
-              className="text-lime-600 hover:text-lime-700 p-0 h-auto cursor-pointer"
+              className="text-green-800 hover:text-lime-600 p-0 h-auto cursor-pointer"
               onClick={() => setShowModal(true)}
             >
               Política de seguridad de la información.
@@ -633,7 +690,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             aria-modal="true"
             aria-labelledby="policy-title"
             aria-describedby="policy-body"
-            className="fixed inset-0 z-[9999] bg-black bg-opacity-75 flex items-center justify-center"
+            className="fixed inset-0 z-[9999] bg-black bg-opacity-40 flex items-center justify-center"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -665,7 +722,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                   Rechazar
                 </Button>
                 <Button ref={acceptButtonRef} onClick={handleAccept}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-emerald-600 hover:to-green-700 text-white font-medium rounded-md">
+                className="bg-gradient-to-tr from-green-800 to-lime-600 hover:from-green-700 hover:to-lime-500 text-white font-medium rounded-md">
                   Aceptar
                 </Button>
               </div>

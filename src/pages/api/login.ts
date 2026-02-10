@@ -12,8 +12,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { email, password } = req.body || {};
+    const { email, password, turnstileToken } = req.body || {};
     if (!email || !password) return res.status(400).json({ message: "Email y contraseña requeridos" });
+
+    // Verificar token de Cloudflare Turnstile
+    const turnstileSecret = process.env.CLOUDFLARE_TURNSTILE_SECRET
+    if (!turnstileSecret) {
+      console.warn('Turnstile secret no configurado; omitiendo verificación de captcha')
+    } else {
+      if (!turnstileToken) return res.status(400).json({ message: 'Captcha requerido' })
+
+      const params = new URLSearchParams()
+      params.append('secret', turnstileSecret)
+      params.append('response', String(turnstileToken))
+      // incluir IP remota si está disponible
+      const remoteIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress
+      if (remoteIp) params.append('remoteip', String(remoteIp))
+
+      const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+      })
+
+      const verifyJson = await verifyRes.json()
+      if (!verifyJson.success) {
+        console.warn('Turnstile verification failed', verifyJson)
+        return res.status(403).json({ message: 'Falló la verificación del captcha', error: 'turnstile_failed', details: verifyJson['error-codes'] })
+      }
+    }
 
     const client = await pool.connect();
     try {

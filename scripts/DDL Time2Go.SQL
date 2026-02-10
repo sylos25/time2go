@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS tabla_roles (
 
 CREATE TABLE IF NOT EXISTS tabla_usuarios (
 	tipo_documento          tip_doc                     NOT NULL,
-    numero_documento        VARCHAR(10)                 NOT NULL        UNIQUE,
+    numero_documento        VARCHAR(11)                 NOT NULL        UNIQUE,
     nombres                 VARCHAR(30)                 NOT NULL        CHECK (char_length(nombres) >= 3),
     apellidos               VARCHAR(30)                 NOT NULL        CHECK (char_length(apellidos) >= 3),
     id_pais                 INT                         NOT NULL,
