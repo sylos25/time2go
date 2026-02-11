@@ -51,24 +51,25 @@ export async function sendEmailValidationEmail(
       subject: "Time2Go - Valida tu correo electrónico",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(to right, #2563eb, #9333ea, #7c3aed); padding: 20px; border-radius: 8px 8px 0 0; color: white;">
+          <img src="https://res.cloudinary.com/dljthy97e/image/upload/v1770842202/banner_top_azaedp.jpg" alt="Banner" style="width: 100%; border-radius: 8px 8px 0 0; display: block;" />
+          <div style="background: linear-gradient(to bottom left, #a21caf, #dc2626); padding: 20px; border-radius: 0 0 8px 8px; color: white; text-align: center;">
             <h2 style="margin: 0;">Validación de Correo Electrónico</h2>
           </div>
-          <div style="padding: 20px; background: #f9fafb; border-radius: 0 0 8px 8px;">
+          <div style="padding: 20px; background: #FBFEFF; border-radius: 0 0 8px 8px;">
             <p>¡Hola!</p>
             <p>Gracias por registrarte en Time2Go. Para completar tu registro, necesitas validar tu correo electrónico.</p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${validationUrl}" style="background: linear-gradient(to right, #2563eb, #9333ea, #7c3aed); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+              <a href="${validationUrl}" style="background: linear-gradient(to top right, #15803d, #84cc16); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
                 Validar Correo Electrónico
               </a>
             </div>
             <p style="color: #666;">
               O copia y pega este enlace en tu navegador:
             </p>
-            <p style="background: white; padding: 10px; border-radius: 4px; word-break: break-all; font-size: 12px; color: #0066cc;">
+            <p style="background: white; padding: 10px; border-radius: 4px; word-break: break-all; font-size: 12px; color: #15803d;">
               ${validationUrl}
             </p>
-            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+            <hr style="border: none; border-top: 1px solid #F7FCFF; margin: 20px 0;">
             <p style="font-size: 12px; color: #999;">
               Este enlace expirará en 24 horas. Si no solicitaste este registro, por favor ignora este correo.
             </p>
@@ -76,6 +77,7 @@ export async function sendEmailValidationEmail(
         </div>
       `,
     }
+
 
     try {
       await transporter.verify()
@@ -108,14 +110,15 @@ export async function sendResetPasswordEmail(email: string, newPassword: string)
       subject: "Time2Go - Esta es tu nueva contraseña",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(to right, #2563eb, #9333ea, #7c3aed); padding: 20px; border-radius: 8px 8px 0 0; color: white;">
+          <img src="https://res.cloudinary.com/dljthy97e/image/upload/v1770842202/banner_top_azaedp.jpg" alt="Banner" style="width: 100%; border-radius: 8px 8px 0 0; display: block;" />
+          <div style="background: linear-gradient(to bottom left, #a21caf, #dc2626); padding: 20px; border-radius: 8px 8px 0 0; color: white;">
             <h2 style="margin: 0;">Restablecimiento de Contraseña</h2>
           </div>
-          <div style="padding: 20px; background: #f9fafb; border-radius: 0 0 8px 8px;">
+          <div style="padding: 20px; background: #FBFEFF; border-radius: 0 0 8px 8px;">
             <p>Hola,</p>
             <p>Has solicitado restablecer tu contraseña en Time2Go. Tu nueva contraseña temporal es:</p>
-            <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #2563eb; margin: 20px 0;">
-              <p style="margin: 0; font-family: monospace; font-size: 18px; font-weight: bold; color: #1f2937;">
+            <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #15803d; margin: 20px 0;">
+              <p style="margin: 0; font-family: monospace; font-size: 18px; font-weight: bold; color: #84cc16;">
                 ${newPassword}
               </p>
             </div>
@@ -123,7 +126,7 @@ export async function sendResetPasswordEmail(email: string, newPassword: string)
               <strong>Por seguridad:</strong> Te recomendamos cambiar esta contraseña en tu próximo inicio de sesión.
             </p>
             <p>Si no solicitaste este cambio, por favor ignora este correo.</p>
-            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+            <hr style="border: none; border-top: 1px solid #F7FCFF; margin: 20px 0;">
             <p style="font-size: 12px; color: #999;">
               Este es un correo automático, por favor no respondas directamente a este mensaje.
             </p>
