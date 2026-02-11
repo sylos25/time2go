@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { Mail, MapPin, Send, Zap, Shield, BarChart3, Clock, Star, Quote } from "lucide-react"
 
-const contactInfo = [
+const contactInfo = [ 
   {
     icon: Mail,
     title: "Email",
@@ -117,7 +117,7 @@ export default function ContactoPage() {
             <Card className="bg-white/80 backdrop-blur-sm border-white/50 rounded-sm">
               <CardContent className="p-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
-                  <Send className="w-6 h-6 mr-2 text-purple-600" />
+                  <Send className="w-6 h-6 mr-2 text-green-600" />
                   Contáctanos
                 </h2>
                 <p className="text-gray-600 mb-6">Completa el formulario y te responderemos pronto</p>
@@ -176,7 +176,7 @@ export default function ContactoPage() {
 
                   <Button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-sm cursor-pointer"
+                    className="w-full bg-gradient-to-tr from-green-700 to-lime-500 hover:from-green-500 hover:to-lime-5 00 text-white font-medium rounded-sm cursor-pointer"
                   >
                     <Send className="w-4 h-4 mr-2" />
                     Enviar mensaje
@@ -254,7 +254,7 @@ export default function ContactoPage() {
             {softwareFeatures.map((feature, index) => (
               <Card key={index} className="bg-white/80 backdrop-blur-sm border-white/50 rounded-sm">
                 <CardContent className="p-6">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-sm flex items-center justify-center mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-fuchsia-700 to-red-600 rounded-sm flex items-center justify-center mb-4">
                     <feature.icon className="w-6 h-6 text-white" />
                   </div>
                   <h3 className="text-lg font-bold text-gray-900 mb-2">{feature.title}</h3>
@@ -276,7 +276,7 @@ export default function ContactoPage() {
             {testimonials.map((testimonial, index) => (
               <Card key={index} className="bg-white/80 backdrop-blur-sm border-white/50 rounded-sm">
                 <CardContent className="p-6">
-                  <Quote className="w-8 h-8 text-purple-400 mb-4" />
+                  <Quote className="w-8 h-8 text-fuchsia-400 mb-4" />
                   <p className="text-gray-600 mb-4 italic">"{testimonial.comment}"</p>
                   <div className="flex items-center gap-1 mb-3">
                     {[...Array(testimonial.rating)].map((_, i) => (
