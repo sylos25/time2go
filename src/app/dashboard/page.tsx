@@ -106,6 +106,7 @@ export default function EventDashboard() {
   const [pdfModalOpen, setPdfModalOpen] = useState(false)
   const [pdfModalUrl, setPdfModalUrl] = useState<string | null>(null)
   const router = useRouter()
+  const [authorized, setAuthorized] = useState<boolean | null>(null)
 
   const refreshEvents = async () => {
     try {
@@ -150,12 +151,19 @@ export default function EventDashboard() {
         if (token) headers['Authorization'] = `Bearer ${token}`
         const meRes = await fetch('/api/me', { headers })
         if (!meRes.ok) {
-          // Not authenticated — redirect to home/login
-          router.push('/')
+          // Not authenticated — block access
+          if (!canceled) setAuthorized(false)
           return
         }
         const meData = await meRes.json()
         if (!canceled) setMeUser(meData.user)
+        const role = meData?.user?.id_rol ?? meData?.user?.role ?? undefined
+        const roleNum = role !== undefined ? Number(role) : undefined
+        if (!canceled) setAuthorized(roleNum === 3 || roleNum === 4)
+        if (!canceled && !(roleNum === 3 || roleNum === 4)) {
+          // user authenticated but not allowed
+          return
+        }
 
         // Fetch events (server returns all events)
         const eventsRes = await fetch('/api/events')
@@ -211,6 +219,14 @@ export default function EventDashboard() {
     return () => { canceled = true }
   }, [router])
 
+  if (authorized === null) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-gray-600">Comprobando permisos...</div>
+      </main>
+    )
+  }
+
   // When user opens the Users tab, fetch users list
   useEffect(() => {
     let cancelled = false
@@ -235,6 +251,22 @@ export default function EventDashboard() {
     loadUsers()
     return () => { cancelled = true }
   }, [activeTab])
+
+  if (authorized === false) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="bg-white rounded-3xl shadow-xl p-8 text-center">
+            <h2 className="text-2xl font-semibold text-red-600">Acceso denegado</h2>
+            <p className="mt-4 text-gray-600">No tienes permisos para ver el dashboard.</p>
+            <div className="mt-6">
+              <Button onClick={() => router.push('/')} className="bg-lime-600 text-white">Volver al inicio</Button>
+            </div>
+          </div>
+        </div>
+      </main>
+    )
+  }
 
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([
     { id: 1, text: "Revisar eventos del mes", completed: true },

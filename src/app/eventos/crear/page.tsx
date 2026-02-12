@@ -21,6 +21,7 @@ interface ImagenEvento {
 
 export default function CrearEventoPage() {
   const router = useRouter();
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [categorias, setCategorias] = useState<{ id_categoria_evento: number; nombre: string }[]>([]);
   const [tiposDeEvento, setTiposDeEvento] = useState<{ id_tipo_evento: number; nombre: string }[]>([]);
   const [sitios, setSitios] = useState<{ id_sitio: number; nombre_sitio: string }[]>([]);
@@ -209,6 +210,29 @@ export default function CrearEventoPage() {
     fetchCategorias();
   }, []);
 
+  // Authorization: ensure user is authenticated and has role 2,3 or 4 to create events
+  useEffect(() => {
+    let cancelled = false;
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/me', { credentials: 'include' });
+        if (!res.ok) {
+          if (!cancelled) setAuthorized(false);
+          return;
+        }
+        const data = await res.json();
+        const role = data?.user?.id_rol ?? data?.user?.role ?? undefined;
+        const roleNum = role !== undefined ? Number(role) : undefined;
+        if (!cancelled) setAuthorized(roleNum === 2 || roleNum === 3 || roleNum === 4);
+      } catch (err) {
+        console.error('Auth check error', err);
+        if (!cancelled) setAuthorized(false);
+      }
+    }
+    checkAuth();
+    return () => { cancelled = true }
+  }, [router]);
+
   // Fetch categorías de boletos
   useEffect(() => {
     const fetchCategoriasBoleto = async () => {
@@ -343,6 +367,22 @@ export default function CrearEventoPage() {
       <Header />
 
       <div className="pt-24 pb-16">
+        {authorized === false && (
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div className="bg-white rounded-3xl shadow-xl p-8 text-center">
+              <h2 className="text-2xl font-semibold text-red-600">Acceso denegado</h2>
+              <p className="mt-4 text-gray-600">No estás autorizado para crear eventos. Inicia sesión con una cuenta que tenga permisos.</p>
+              <div className="mt-6">
+                <Button onClick={() => router.push('/')} className="bg-lime-600 text-white">Volver al inicio</Button>
+              </div>
+            </div>
+          </div>
+        )}
+        {authorized === null ? (
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+            <div className="text-gray-600">Comprobando permisos...</div>
+          </div>
+        ) : authorized === true ? (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header with back button */}
           <div className="flex items-center gap-4 mb-8">
@@ -925,7 +965,7 @@ export default function CrearEventoPage() {
               </Button>
             </div>
           </div>
-        </div>
+        ) : null}
       </div>
 
       <Footer />

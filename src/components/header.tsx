@@ -85,9 +85,10 @@ export function Header({
       const token = localStorage.getItem("token");
       const storedName = localStorage.getItem("userName");
       const storedDoc = localStorage.getItem("userDocument");
+      const storedRole = localStorage.getItem("userRole");
       if (token) {
         const exp = parseJwtExp(token);
-        setUser({ token, name: storedName || undefined, numero_documento: storedDoc || undefined });
+        setUser({ token, name: storedName || undefined, numero_documento: storedDoc || undefined, role: storedRole ? Number(storedRole) : undefined });
         if (exp) scheduleAutoLogout(exp);
       }
       // if no token, don't immediately clear user here — we'll validate session with the server
@@ -122,8 +123,11 @@ export function Header({
             if (data?.ok && data.user) {
               const name = data.user.nombres || data.user.correo || storedName || user?.name;
               const numero_documento = data.user.numero_documento || localStorage.getItem('userDocument') || undefined;
+              const roleFromServer = data.user.id_rol ?? data.user.role ?? data.user.idRol ?? undefined;
+              const roleNumber = roleFromServer !== undefined ? Number(roleFromServer) : undefined;
               if (numero_documento) localStorage.setItem('userDocument', String(numero_documento));
-              setUser({ token, name, numero_documento });
+              if (roleNumber !== undefined) localStorage.setItem('userRole', String(roleNumber));
+              setUser({ token, name, numero_documento, role: roleNumber });
             } else {
               clearSessionSilent();
             }
@@ -146,8 +150,11 @@ export function Header({
           const name = data.user.nombres || data.user.correo || localStorage.getItem('userName') || user?.name;
           const tokenFromStorage = localStorage.getItem('token') || (user as any)?.token;
           const numero_documento = data.user.numero_documento || localStorage.getItem('userDocument') || undefined;
+          const roleFromServer = data.user.id_rol ?? data.user.role ?? data.user.idRol ?? undefined;
+          const roleNumber = roleFromServer !== undefined ? Number(roleFromServer) : undefined;
           if (numero_documento) localStorage.setItem('userDocument', String(numero_documento));
-          setUser({ token: tokenFromStorage, name, numero_documento });
+          if (roleNumber !== undefined) localStorage.setItem('userRole', String(roleNumber));
+          setUser({ token: tokenFromStorage, name, numero_documento, role: roleNumber });
           const expFromToken = tokenFromStorage ? parseJwtExp(tokenFromStorage) : undefined;
           if (expFromToken) scheduleAutoLogout(expFromToken);
         } else {
@@ -168,10 +175,13 @@ export function Header({
       const token = detail.token || localStorage.getItem("token");
       const name = detail.name || detail.nombre || localStorage.getItem("userName") || "Usuario";
       const numero_documento = detail.numero_documento || localStorage.getItem("userDocument") || undefined;
+      const roleFromDetail = detail.id_rol ?? detail.role ?? detail.idRol ?? undefined;
+      const roleNumber = roleFromDetail !== undefined ? Number(roleFromDetail) : undefined;
       if (token) localStorage.setItem("token", token);
       if (name) localStorage.setItem("userName", name);
       if (numero_documento) localStorage.setItem("userDocument", String(numero_documento));
-      setUser({ token, name, numero_documento });
+      if (roleNumber !== undefined) localStorage.setItem('userRole', String(roleNumber));
+      setUser({ token, name, numero_documento, role: roleNumber });
       const exp = detail.expiresAt || parseJwtExp(token || "");
       if (exp) scheduleAutoLogout(exp);
     };
@@ -192,6 +202,10 @@ export function Header({
         const storedName = localStorage.getItem('userName');
         setUser((prev: any) => (prev ? { ...prev, name: storedName || prev.name } : prev));
       }
+      if (e.key === 'userRole') {
+        const storedRole = localStorage.getItem('userRole');
+        setUser((prev: any) => (prev ? { ...prev, role: storedRole !== null ? Number(storedRole) : prev.role } : prev));
+      }
     };
 
     window.addEventListener("user:login", onLogin);
@@ -206,6 +220,13 @@ export function Header({
   // derive login state and display name from local user state (fallback to props)
   const loggedIn = Boolean(user) || isLoggedIn;
   const displayName = (user?.name || user?.firstName || user?.name || user?.firstName || userName) as string;
+
+  // determine role (1 = usuario regular per DB) — prefer in-memory user, fallback to localStorage
+  const userRole = user?.role !== undefined ? Number(user.role) : Number(typeof window !== 'undefined' ? localStorage.getItem('userRole') || 0 : 0);
+  const isRegularUser = userRole === 1;
+  const isPromotor = userRole === 2;
+  const canCreate = isPromotor || userRole === 3 || userRole === 4;
+  const canDashboard = userRole === 3 || userRole === 4;
 
   const navigationItems = [
     { name: "Inicio", path: "/" },
@@ -229,6 +250,7 @@ export function Header({
 
     localStorage.removeItem("token");
     localStorage.removeItem("userName");
+    localStorage.removeItem('userRole');
     setUser(null);
     if (logoutTimerRef.current) {
       window.clearTimeout(logoutTimerRef.current);
@@ -244,6 +266,7 @@ export function Header({
   const clearSessionSilent = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userName");
+    localStorage.removeItem('userRole');
     setUser(null);
     if (logoutTimerRef.current) {
       window.clearTimeout(logoutTimerRef.current);
@@ -333,21 +356,25 @@ export function Header({
                 </Button>
               ) : (
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => navigateTo("/eventos/crear")}
-                    className="text-white/90 hover:text-white font-medium transition-colors relative group cursor-pointer flex items-center"
-                  >
-                    Crear Evento
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full" />
-                  </button>
+                  {canCreate && (
+                    <button
+                      onClick={() => navigateTo("/eventos/crear")}
+                      className="text-white/90 hover:text-white font-medium transition-colors relative group cursor-pointer flex items-center"
+                    >
+                      Crear Evento
+                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full" />
+                    </button>
+                  )}
 
-                  <button
-                    onClick={() => navigateTo("/dashboard")}
-                    className="text-white/90 hover:text-white font-medium transition-colors relative group cursor-pointer flex items-center"
-                  >
-                    Dashboard
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full" />
-                  </button>
+                  {canDashboard && (
+                    <button
+                      onClick={() => navigateTo("/dashboard")}
+                      className="text-white/90 hover:text-white font-medium transition-colors relative group cursor-pointer flex items-center"
+                    >
+                      Dashboard
+                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full" />
+                    </button>
+                  )}
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -412,24 +439,28 @@ export function Header({
             ))}
             {loggedIn && (
               <>
-                <li>
-                  <button
-                    onClick={() => navigateTo("/eventos/crear")}
-                    className="flex items-center space-x-3 text-gray-800 hover:text-lime-600 font-semibold text-base py-3 px-4 rounded-lg hover:bg-lime-50 transition-all w-full text-left group"
-                  >
-                    <span className="w-2 h-2 bg-lime-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <span>Crear Evento</span>
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={() => navigateTo("/dashboard")}
-                    className="flex items-center space-x-3 text-gray-800 hover:text-lime-600 font-semibold text-base py-3 px-4 rounded-lg hover:bg-lime-50 transition-all w-full text-left group"
-                  >
-                    <span className="w-2 h-2 bg-lime-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <span>Dashboard</span>
-                  </button>
-                </li>
+                {canCreate && (
+                  <li>
+                    <button
+                      onClick={() => navigateTo("/eventos/crear")}
+                      className="flex items-center space-x-3 text-gray-800 hover:text-lime-600 font-semibold text-base py-3 px-4 rounded-lg hover:bg-lime-50 transition-all w-full text-left group"
+                    >
+                      <span className="w-2 h-2 bg-lime-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <span>Crear Evento</span>
+                    </button>
+                  </li>
+                )}
+                {canDashboard && (
+                  <li>
+                    <button
+                      onClick={() => navigateTo("/dashboard")}
+                      className="flex items-center space-x-3 text-gray-800 hover:text-lime-600 font-semibold text-base py-3 px-4 rounded-lg hover:bg-lime-50 transition-all w-full text-left group"
+                    >
+                      <span className="w-2 h-2 bg-lime-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <span>Dashboard</span>
+                    </button>
+                  </li>
+                )}
               </>
             )}
           </ul>
