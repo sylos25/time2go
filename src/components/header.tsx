@@ -123,8 +123,7 @@ export function Header({
             if (data?.ok && data.user) {
               const name = data.user.nombres || data.user.correo || storedName || user?.name;
               const numero_documento = data.user.numero_documento || localStorage.getItem('userDocument') || undefined;
-              const roleFromServer = data.user.id_rol ?? data.user.role ?? data.user.idRol ?? undefined;
-              const roleNumber = roleFromServer !== undefined ? Number(roleFromServer) : undefined;
+              const roleNumber = data.user.id_rol !== undefined ? Number(data.user.id_rol) : undefined;
               if (numero_documento) localStorage.setItem('userDocument', String(numero_documento));
               if (roleNumber !== undefined) localStorage.setItem('userRole', String(roleNumber));
               setUser({ token, name, numero_documento, role: roleNumber });
@@ -150,8 +149,7 @@ export function Header({
           const name = data.user.nombres || data.user.correo || localStorage.getItem('userName') || user?.name;
           const tokenFromStorage = localStorage.getItem('token') || (user as any)?.token;
           const numero_documento = data.user.numero_documento || localStorage.getItem('userDocument') || undefined;
-          const roleFromServer = data.user.id_rol ?? data.user.role ?? data.user.idRol ?? undefined;
-          const roleNumber = roleFromServer !== undefined ? Number(roleFromServer) : undefined;
+          const roleNumber = data.user.id_rol !== undefined ? Number(data.user.id_rol) : undefined;
           if (numero_documento) localStorage.setItem('userDocument', String(numero_documento));
           if (roleNumber !== undefined) localStorage.setItem('userRole', String(roleNumber));
           setUser({ token: tokenFromStorage, name, numero_documento, role: roleNumber });
@@ -175,8 +173,7 @@ export function Header({
       const token = detail.token || localStorage.getItem("token");
       const name = detail.name || detail.nombre || localStorage.getItem("userName") || "Usuario";
       const numero_documento = detail.numero_documento || localStorage.getItem("userDocument") || undefined;
-      const roleFromDetail = detail.id_rol ?? detail.role ?? detail.idRol ?? undefined;
-      const roleNumber = roleFromDetail !== undefined ? Number(roleFromDetail) : undefined;
+      const roleNumber = detail.id_rol !== undefined ? Number(detail.id_rol) : undefined;
       if (token) localStorage.setItem("token", token);
       if (name) localStorage.setItem("userName", name);
       if (numero_documento) localStorage.setItem("userDocument", String(numero_documento));
@@ -262,7 +259,7 @@ export function Header({
     setLogoutDialogOpen(false);
   }
 
-  // Silent session clear: clear auth state without redirecting (used for background checks)
+  // Limpiar sesión sin redirigir ni disparar eventos (usado para expiración automática o invalidación silenciosa)
   const clearSessionSilent = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userName");
@@ -305,12 +302,7 @@ export function Header({
 
       {/* Header */}
       <header
-        className={`fixed top-0 left-0 right-0 z-[70] transition-all duration-300 ${
-          scrolled
-            ? "bg-gradient-to-r from-lime-600 via-lime-500 to-lime-600"
-            : "bg-gradient-to-r from-lime-500 via-lime-400 to-lime-500 w-full shadow-md shadow-black/10"
-        }`} 
-      >
+        className="fixed top-0 left-0 right-0 z-[70] w-full bg-gradient-to-tr from-green-700 to-lime-500 shadow-md shadow-black/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Mobile menu button */}
@@ -340,10 +332,10 @@ export function Header({
                 <button
                   key={item.name}
                   onClick={() => navigateTo(item.path)}
-                  className="text-white hover:text-green-800 font-medium transition-colors relative group cursor-pointer"
+                  className="text-white hover:text-lime-400 font-medium transition-colors relative group cursor-pointer"
                 >
                   {item.name}
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-600 transition-all group-hover:w-full" />
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-lime-500 transition-all group-hover:w-full" />
                 </button>
               ))}
 
@@ -359,20 +351,20 @@ export function Header({
                   {canCreate && (
                     <button
                       onClick={() => navigateTo("/eventos/crear")}
-                      className="text-white/90 hover:text-white font-medium transition-colors relative group cursor-pointer flex items-center"
+                      className="text-white hover:text-lime-400 font-medium transition-colors relative group cursor-pointer"
                     >
                       Crear Evento
-                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full" />
+                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-lime-500 transition-all group-hover:w-full" />
                     </button>
                   )}
 
                   {canDashboard && (
                     <button
                       onClick={() => navigateTo("/dashboard")}
-                      className="text-white/90 hover:text-white font-medium transition-colors relative group cursor-pointer flex items-center"
+                      className="text-white hover:text-lime-400 font-medium transition-colors relative group cursor-pointer"
                     >
                       Dashboard
-                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full" />
+                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-lime-500 transition-all group-hover:w-full" />
                     </button>
                   )}
 
@@ -380,8 +372,8 @@ export function Header({
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="flex items-center gap-2 hover:bg-white/10 text-white rounded-sm">
-                        <div className="w-8 h-8 rounded-sm bg-white flex items-center justify-center text-purple-900 font-medium">
+                        className="flex items-center gap-2 hover:bg-white/10 text-white">
+                        <div className="w-8 h-8 rounded-sm bg-white flex items-center justify-center text-lime-600 font-medium">
                           {displayName.charAt(0).toUpperCase()}
                         </div>
                         <span className="font-medium">{displayName}</span>

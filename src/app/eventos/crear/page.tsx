@@ -221,8 +221,7 @@ export default function CrearEventoPage() {
           return;
         }
         const data = await res.json();
-        const role = data?.user?.id_rol ?? data?.user?.role ?? undefined;
-        const roleNum = role !== undefined ? Number(role) : undefined;
+        const roleNum = data?.user?.id_rol !== undefined ? Number(data.user.id_rol) : undefined;
         if (!cancelled) setAuthorized(roleNum === 2 || roleNum === 3 || roleNum === 4);
       } catch (err) {
         console.error('Auth check error', err);
@@ -363,47 +362,47 @@ export default function CrearEventoPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <Header />
-
-      <div className="pt-24 pb-16">
-        {authorized === false && (
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-            <div className="bg-white rounded-3xl shadow-xl p-8 text-center">
-              <h2 className="text-2xl font-semibold text-red-600">Acceso denegado</h2>
-              <p className="mt-4 text-gray-600">No estás autorizado para crear eventos. Inicia sesión con una cuenta que tenga permisos.</p>
-              <div className="mt-6">
-                <Button onClick={() => router.push('/')} className="bg-lime-600 text-white">Volver al inicio</Button>
+    <div className="min-h-screen flex flex-col">
+      <Header isLoggedIn={true} />
+      <main className="flex-grow bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+        <div className="pt-24 pb-16">
+          {authorized === false && (
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+              <div className="bg-white rounded-3xl shadow-xl p-8 text-center">
+                <h2 className="text-2xl font-semibold text-red-600">Acceso denegado</h2>
+                <p className="mt-4 text-gray-600">No estás autorizado para crear eventos. Inicia sesión con una cuenta que tenga permisos.</p>
+                <div className="mt-6">
+                  <Button onClick={() => router.push('/')} className="bg-lime-600 text-white">Volver al inicio</Button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-        {authorized === null ? (
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-            <div className="text-gray-600">Comprobando permisos...</div>
-          </div>
-        ) : authorized === true ? (
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header with back button */}
-          <div className="flex items-center gap-4 mb-8">
-            <Button
-              onClick={() => router.back()}
-              variant="ghost"
-              className="rounded-full h-10 w-10 p-0 hover:bg-gray-200"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900">Crear Nuevo Evento</h1>
-              <p className="text-gray-600 mt-2">Completa el formulario para crear tu evento</p>
+          )}
+          {authorized === null ? (
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+              <div className="text-gray-600">Comprobando permisos...</div>
             </div>
-          </div>
+          ) : authorized === true ? (
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+              {/* Header with back button */}
+              <div className="flex items-center gap-4 mb-8">
+                <Button
+                  onClick={() => router.back()}
+                  variant="ghost"
+                  className="rounded-full h-10 w-10 p-0 hover:bg-gray-200"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+                <div>
+                  <h1 className="text-4xl font-bold text-gray-900">Crear Nuevo Evento</h1>
+                  <p className="text-gray-600 mt-2">Completa el formulario para crear tu evento</p>
+                </div>
+              </div>
 
-          {/* Form */}
-          <div className="bg-white rounded-3xl shadow-xl p-8 space-y-6">
-            {/* Basic Info */}
-            <div className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
+              {/* Form */}
+              <div className="bg-white rounded-3xl shadow-xl p-8 space-y-6">
+              {/* Basic Info */}
+              <div className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="title">Nombre del Evento</Label>
                   <Input
@@ -964,11 +963,12 @@ export default function CrearEventoPage() {
                 Cancelar
               </Button>
             </div>
-          </div>
-        ) : null}
-      </div>
-
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </main>
       <Footer />
-    </main>
-  );
-}
+    </div>
+    );
+  }

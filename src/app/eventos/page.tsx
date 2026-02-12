@@ -273,7 +273,7 @@ const handleAddEvent = async () => {
 
   
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <main className="min-h-screen bg-gradient-to-tr from-purple-50 via-indigo-50 to-sky-100">
       <Header onAuthClick={openAuthModal} />
 
       {/* Hero Section */}
@@ -404,7 +404,7 @@ const handleAddEvent = async () => {
                   )}
 
                   {/* Badge: PAGO / GRATIS */}
-                  <span className={`inline-block text-sm font-semibold px-3 py-1 rounded-full ${typeof expandedEvent.price === 'number' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
+                  <span className={`inline-block text-sm font-semibold px-3 py-1 rounded-full ${typeof expandedEvent.price === 'number' ? 'bg-red-600 text-white' : 'bg-green-400 text-white'}`}>
                     {typeof expandedEvent.price === 'number' ? 'PAGO' : 'GRATIS'}
                   </span>
                 </div>

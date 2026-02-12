@@ -190,7 +190,7 @@ export default function EventLanding() {
     : "Gratis";
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <main className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-sky-100">
       <Header onAuthClick={() => {}} />
 
       {/* Header Section */}

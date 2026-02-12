@@ -157,8 +157,7 @@ export default function EventDashboard() {
         }
         const meData = await meRes.json()
         if (!canceled) setMeUser(meData.user)
-        const role = meData?.user?.id_rol ?? meData?.user?.role ?? undefined
-        const roleNum = role !== undefined ? Number(role) : undefined
+        const roleNum = meData?.user?.id_rol !== undefined ? Number(meData.user.id_rol) : undefined
         if (!canceled) setAuthorized(roleNum === 3 || roleNum === 4)
         if (!canceled && !(roleNum === 3 || roleNum === 4)) {
           // user authenticated but not allowed

@@ -62,7 +62,8 @@ export async function GET(req: Request) {
         u.correo,
         u.validacion_correo,
         u.estado,
-        r.nombre_rol AS rol,
+        u.id_rol,
+        r.nombre_rol,
         u.fecha_registro,
         u.fecha_desactivacion,
         u.fecha_actualizacion
