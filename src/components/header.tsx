@@ -319,11 +319,13 @@ export function Header({
             {/* Logo */}
             <button
               onClick={() => navigateTo("/")}
-              className="flex items-center space-x-3 hover:opacity-80 transition-opacity cursor-pointer"
-            >
-              <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-40 lg:h-40 relative">
-                <Image src="/images/logo_header.png?height=48&width=48" alt="Time2Go Logo" fill className="object-contain" />
-              </div>
+              className="flex items-center space-x-3 hover:opacity-80 transition-opacity cursor-pointer">
+                <div className="relative w-[90px] h-[90px] md:w-[130px] md:h-[130px] lg:w-[160px] lg:h-[160px]">
+                  <Image src="/images/logo_header.png" 
+                  alt="Time2Go Logo" 
+                  fill 
+                  className="object-contain" />
+                </div>
             </button>
 
             {/* Desktop Navigation */}
@@ -422,7 +424,7 @@ export function Header({
               <li key={item.name}>
                 <button
                   onClick={() => navigateTo(item.path)}
-                  className="flex items-center space-x-3 text-gray-800 hover:text-lime-600 font-semibold text-base py-3 px-4 rounded-lg hover:bg-lime-50 transition-all w-full text-left group"
+                  className="flex items-center space-x-3 text-gray-800 hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-teal-50 transition-all w-full text-left group"
                 >
                   <span className="w-2 h-2 bg-lime-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                   <span>{item.name}</span>
@@ -435,7 +437,7 @@ export function Header({
                   <li>
                     <button
                       onClick={() => navigateTo("/eventos/crear")}
-                      className="flex items-center space-x-3 text-gray-800 hover:text-lime-600 font-semibold text-base py-3 px-4 rounded-lg hover:bg-lime-50 transition-all w-full text-left group"
+                      className="flex items-center space-x-3 text-gray-800 hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-teal-50 transition-all w-full text-left group"
                     >
                       <span className="w-2 h-2 bg-lime-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                       <span>Crear Evento</span>
@@ -446,7 +448,7 @@ export function Header({
                   <li>
                     <button
                       onClick={() => navigateTo("/dashboard")}
-                      className="flex items-center space-x-3 text-gray-800 hover:text-lime-600 font-semibold text-base py-3 px-4 rounded-lg hover:bg-lime-50 transition-all w-full text-left group"
+                      className="flex items-center space-x-3 text-gray-800 hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-teal-50 transition-all w-full text-left group"
                     >
                       <span className="w-2 h-2 bg-lime-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                       <span>Dashboard</span>
@@ -461,7 +463,7 @@ export function Header({
             {!loggedIn ? (
               <Button
                 onClick={() => router.push("/auth")}
-                className="w-full bg-gradient-to-r from-lime-500 to-lime-600 text-white hover:from-lime-600 hover:to-lime-700 font-semibold shadow-lg hover:shadow-xl transition-all rounded-lg py-6 text-base"
+                className="w-full bg-gradient-to-tr from-green-700 to-lime-500 text-white hover:from-emerald-800 hover:to-lime-500 font-semibold shadow-lg hover:shadow-xl transition-all rounded-lg py-6 text-base"
               >
                 Únete a Time2Go
               </Button>
@@ -469,21 +471,21 @@ export function Header({
               <div className="space-y-2">
                 <button
                   onClick={() => navigateTo("/perfil")}
-                  className="flex items-center space-x-3 text-gray-800 hover:text-lime-600 font-semibold text-base py-3 px-4 rounded-lg hover:bg-lime-50 transition-all w-full text-left"
+                  className="flex items-center space-x-3 text-gray-800 hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-amber-50 transition-all w-full text-left group"
                 >
                   <User className="h-5 w-5 text-lime-600" />
                   <span>Mi Perfil</span>
                 </button>
                 <button
                   onClick={() => navigateTo("/mis-eventos")}
-                  className="flex items-center space-x-3 text-gray-800 hover:text-lime-600 font-semibold text-base py-3 px-4 rounded-lg hover:bg-lime-50 transition-all w-full text-left"
+                  className="flex items-center space-x-3 text-gray-800 hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-amber-50 transition-all w-full text-left group"
                 >
                   <Calendar className="h-5 w-5 text-lime-600" />
                   <span>Mis Eventos</span>
                 </button>
                 <button
                   onClick={() => navigateTo("/configuracion")}
-                  className="flex items-center space-x-3 text-gray-800 hover:text-lime-600 font-semibold text-base py-3 px-4 rounded-lg hover:bg-lime-50 transition-all w-full text-left"
+                  className="flex items-center space-x-3 text-gray-800 hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-amber-50 transition-all w-full text-left group"
                 >
                   <Settings className="h-5 w-5 text-lime-600" />
                   <span>Configuración</span>
