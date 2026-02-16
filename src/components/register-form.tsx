@@ -12,16 +12,12 @@ interface RegisterFormProps {
 }
 
 interface FormFields {
-  tipDoc: string
-  document: string
   firstName: string
   lastName: string
   pais: string | number
   telefono: string
   email: string
   password: string
-  confirmPassword: string
-  acceptTerms: boolean
 }
 
 // Dominios de correos temporales y falsos a rechazar
@@ -57,6 +53,8 @@ const isTemporaryEmail = (email: string): boolean => {
 export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [terminosCondiciones, setTerminosCondiciones] = useState(false)
   const [registroError, setRegistroError] = useState("")
   const [emailError, setEmailError] = useState("")
   const [showModal, setShowModal] = useState(false)
@@ -71,31 +69,25 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
   }>({ open: false, duplicates: [] })
 
   const formDataInicial: FormFields = {
-    tipDoc: "",
-    document: "",
     firstName: "",
     lastName: "",
     pais: "",
     telefono: "",
     email: "",
     password: "",
-    confirmPassword: "",
-    acceptTerms: false,
   }
 
   const [formData, setFormData] = useState<FormFields>(formDataInicial)
   const [touchedFields, setTouchedFields] = useState<Record<keyof FormFields, boolean>>({
-    tipDoc: false,
-    document: false,
     firstName: false,
     lastName: false,
     pais: false,
     telefono: false,
     email: false,
     password: false,
-    confirmPassword: false,
-    acceptTerms: false,
   })
+  const [touchedConfirmPassword, setTouchedConfirmPassword] = useState(false)
+  const [touchedTerminosCondiciones, setTouchedTerminosCondiciones] = useState(false)
 
 // Hace un llamado a los paises
     useEffect(() => {
@@ -104,7 +96,6 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
         .then((data) => setListaPaises(data))
         .catch((err) => console.error("Error al cargar países:", err))
     }, [])
-
 
 // Control del focus en el modal de políticas
   useEffect(() => {
@@ -151,6 +142,9 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
     }
   }, [showModal])
 
+
+
+
 // Funciones para manejar cambios y validaciones de campos  
   const handleBlur = (field: keyof FormFields) => {
     setTouchedFields((prev) => ({ ...prev, [field]: true }))
@@ -159,35 +153,6 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
 // Función para manejar cambios en los campos del formulario  
   const handleInputChange = (field: keyof FormFields, value: string | boolean | number) => {
     setFormData((prev: FormFields) => ({ ...prev, [field]: value } as FormFields))
-  }
-
-// Función para manejar cambios en campos con validaciones particulares  
-  const handleTipDocChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value
-    handleInputChange("tipDoc", value)
-    handleInputChange("document", "")
-  }
-
-// Función para manejar el control en el campo de número de documento con validaciones según el tipo de documento seleccionado  
-  const handleNumDocChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.toUpperCase()
-    if (value.length > 11) return
-    if (formData.tipDoc === "Pasaporte") {
-      if (/^[A-Z0-9]*$/.test(value)) {
-        const lettersCount = (value.match(/[A-Z]/g) || []).length
-        if (lettersCount < 3) {
-          setFormData({ ...formData, document: value })
-        } else {
-          if (/^[A-Z]{3}[0-9]*$/.test(value)) {
-            setFormData({ ...formData, document: value })
-          }
-        }
-      }
-    } else {
-      if (/^[0-9]*$/.test(value)) {
-        setFormData({ ...formData, document: value })
-      }
-    }
   }
 
 // Funciones para manejar el control en los campos de texto con validación de caracteres permitidos (nombres, apellidos)  
@@ -250,21 +215,21 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
     }
   }
 
-// Funciones para manejar la aceptación y rechazo de términos y condiciones en el modal  
-  const handleAccept = () => {
-    handleInputChange("acceptTerms", true)
-    setShowModal(false)
-  }
-  
-  const handleReject = () => {
-    setFormData(formDataInicial)
-    setRegistroError("")
-    setShowModal(false)
-  }
-
 // Función para manejar el cierre del modal de campos duplicados  
   const handleDuplicateModalClose = () => {
     setDuplicateModal({ open: false, duplicates: [], message: undefined })
+  }
+
+// Funciones para manejar la aceptación y rechazo de términos y condiciones en el modal
+  const handleAccept = () => {
+    setTerminosCondiciones(true)
+    setTouchedTerminosCondiciones(true)
+    setShowModal(false)
+  }
+
+  const handleReject = () => {
+    setTerminosCondiciones(false)
+    setShowModal(false)
   }
 
 // Función para manejar el envío del formulario con validaciones y comunicación con el backend  
@@ -274,15 +239,12 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
 
 // Validar campos obligatorios
     const requiredFields: (keyof FormFields)[] = [
-      "tipDoc",
-      "document",
       "firstName",
       "lastName",
       "pais",
       "telefono",
       "email",
       "password",
-      "confirmPassword",
     ]
     const missing = requiredFields.filter((f) => !formData[f] || String(formData[f]).trim() === "")
     if (missing.length > 0) {
@@ -303,13 +265,14 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       setRegistroError("No se permiten correos temporales o falsos. Por favor, usa un correo real.")
       return
     }
-    if (!formData.acceptTerms) {
-      setTouchedFields((prev) => ({ ...prev, acceptTerms: true }))
+    if (!terminosCondiciones) {
+      setTouchedTerminosCondiciones(true)
       setRegistroError("Debe aceptar los términos y condiciones.")
       return
     }
-    if (!formData.password || formData.password !== formData.confirmPassword) {
-      setTouchedFields((prev) => ({ ...prev, password: true, confirmPassword: true }))
+    if (!formData.password || formData.password !== confirmPassword) {
+      setTouchedFields((prev) => ({ ...prev, password: true }))
+      setTouchedConfirmPassword(true)
       setRegistroError("Las contraseñas no coinciden.")
       return
     }
@@ -324,14 +287,13 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          tipDoc: formData.tipDoc,
-          document: formData.document,
           firstName: formData.firstName,
           lastName: formData.lastName,
           pais: formData.pais,
           telefono: formData.telefono,
           email: formData.email,
           password: formData.password,
+          terminosCondiciones: terminosCondiciones,
         }),
       })   
 
@@ -347,6 +309,8 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       
       setRegistroError("")
       setFormData(formDataInicial)
+      setConfirmPassword("")
+      setTerminosCondiciones(false)
       setTimeout(() => {
         onSuccess()
       }, 500)
@@ -359,56 +323,8 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Tipo de Documento */}
-        <div className="space-y-2">
-          <Label htmlFor="tipDoc" className="text-sm font-medium">
-            Tipo de Documento
-          </Label>
-          <select
-            id="tipDoc"
-            value={formData.tipDoc}
-            onChange={handleTipDocChange}
-            onBlur={() => handleBlur("tipDoc")}
-            className={`w-full border rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer ${
-              touchedFields.tipDoc && !formData.tipDoc ? "border-red-500 ring-red-500" : "border-gray-300"
-            }`}
-          >
-            <option value="">Selecciona un tipo de documento</option>
-            <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>
-            <option value="Cédula de Extranjería">Cédula de Extranjería</option>
-            <option value="Pasaporte">Pasaporte</option>
-          </select>
-          {touchedFields.tipDoc && !formData.tipDoc && (
-            <p className="text-red-500 text-xs -mt-1">Este campo es obligatorio</p>
-          )}
-        </div>
-
-        {/* Número de Documento */}
-        <div className="space-y-2">
-          <Label htmlFor="document" className="text-sm font-medium">
-            Número de Documento
-          </Label>
-          <input
-            id="document"
-            value={formData.document}
-            onChange={handleNumDocChange}
-            disabled={!formData.tipDoc}
-            aria-disabled={!formData.tipDoc}
-            onBlur={() => handleBlur("document")}
-            className={`w-full border rounded-md px-3 py-2 text-sm ${
-              !formData.tipDoc ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "text-gray-700"
-            } ${
-              touchedFields.document && !formData.document ? "border-red-500 ring-red-500" : "border-gray-300"
-            } focus:outline-none focus:ring-2`}
-            placeholder="Ingrese el número de documento"
-          />
-          {touchedFields.document && !formData.document && (
-            <p className="text-red-500 text-xs -mt-1">Este campo es obligatorio</p>
-          )}
-        </div>
-
         {/* Nombres y Apellidos */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="firstname" className="text-sm font-medium">
               Nombres
@@ -449,6 +365,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             )}
           </div>
         </div>
+
 
         {/* País */}
         <div className="space-y-2">
@@ -533,6 +450,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               type={showPassword ? "text" : "password"}
               placeholder="••••••••"
               value={formData.password}
+              onBlur={() => handleBlur("password")}
               onChange={(e) => {
                 const value = e.target.value
                 handleInputChange("password", value)
@@ -556,6 +474,9 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               )}
             </button>
           </div>
+          {touchedFields.password && !formData.password && (
+            <p className="text-red-500 text-xs mt-0.5">Este campo es obligatorio</p>
+          )}
           
           {/* Requisitos de contraseña */}
           {formData.password && (
@@ -608,13 +529,13 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               id="confirmPassword"
               type={showConfirmPassword ? "text" : "password"}
               placeholder="••••••••"
-              value={formData.confirmPassword}
-              onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-              onBlur={() => handleBlur("confirmPassword")}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              onBlur={() => setTouchedConfirmPassword(true)}
               className={`pl-10 pr-10 w-full border rounded-md py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword
+                formData.password && confirmPassword && formData.password !== confirmPassword
                   ? "border-red-500 ring-red-500"
-                  : formData.password && formData.confirmPassword && formData.password === formData.confirmPassword
+                  : formData.password && confirmPassword && formData.password === confirmPassword
                   ? "border-green-500 ring-green-500"
                   : "border-gray-300"
               }`}
@@ -633,13 +554,13 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
           </div>
           
           {/* Validación de contraseña confirmada */}
-          {formData.confirmPassword && (
+          {confirmPassword && (
             <div className={`p-3 rounded-lg text-sm flex items-center gap-2 ${
-              formData.password === formData.confirmPassword
+              formData.password === confirmPassword
                 ? "bg-green-50 border border-green-200"
                 : "bg-red-50 border border-red-200"
             }`}>
-              {formData.password === formData.confirmPassword ? (
+              {formData.password === confirmPassword ? (
                 <>
                   <span className="text-green-600 font-semibold">✓</span>
                   <p className="text-green-700">Las contraseñas coinciden</p>
@@ -653,33 +574,41 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             </div>
           )}
           
-          {touchedFields.confirmPassword && !formData.confirmPassword && (
+          {touchedConfirmPassword && !confirmPassword && (
             <p className="text-red-500 text-xs mt-0.5">Este campo es obligatorio</p>
           )}
         </div>
 
         {/* Accept Terms */}
-        <div className="flex items-start space-x-2">
-          <Checkbox
-            className="cursor-pointer mt-1"
-            id="acceptTerms"
-            checked={formData.acceptTerms}
-            onCheckedChange={(checked) => handleInputChange("acceptTerms", checked as boolean)}
-          />
-          <Label htmlFor="acceptTerms" className="text-sm text-gray-600">
-            Acepto los{" "}
-            <Button
-              type="button"
-              variant="link"
-              className="text-green-800 hover:text-lime-600 p-0 h-auto cursor-pointer"
-              onClick={() => setShowModal(true)}
-            >
-              Política de seguridad de la información.
-            </Button>
-          </Label>
-
-          {touchedFields.acceptTerms && !formData.acceptTerms && (
-            <p className="text-red-500 text-xs mt-0.5">Debe aceptar los términos y condiciones</p>
+        <div className="space-y-1">
+          <div className="flex items-start space-x-2">
+            <Checkbox
+              className="cursor-pointer mt-1"
+              id="terminosCondiciones"
+              checked={terminosCondiciones}
+              onCheckedChange={(checked) => {
+                if (checked) {
+                  setShowModal(true)
+                } else {
+                  setTerminosCondiciones(false)
+                }
+                setTouchedTerminosCondiciones(true)
+              }}
+            />
+            <Label htmlFor="terminosCondiciones" className="text-sm text-gray-600">
+              Acepto los{" "}
+              <Button
+                type="button"
+                variant="link"
+                className="text-green-800 hover:text-lime-600 p-0 h-auto cursor-pointer"
+                onClick={() => setShowModal(true)}
+              >
+                términos y condiciones de servicio
+              </Button>
+            </Label>
+          </div>
+          {touchedTerminosCondiciones && !terminosCondiciones && (
+            <p className="text-red-500 text-xs">Debe aceptar los términos y condiciones</p>
           )}
         </div>
 
@@ -710,19 +639,22 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               className="bg-white p-6 w-full max-w-md rounded-lg shadow-xl max-h-[80vh] overflow-auto"
             >
               <h2 id="policy-title" className="text-lg font-semibold mb-4 text-center">
-                Política de seguridad de la información
+                Politica de seguridad de la informacion
               </h2>
               <div id="policy-body" className="text-sm text-gray-700 space-y-3 mb-6">
-                <p>Al registrarse en Time2Go, el usuario autoriza de manera previa, expresa e informada el tratamiento de sus datos personales conforme a lo establecido en la Ley 1581 de 2012 y demás normas concordantes.</p>
-                <p>Los datos personales suministrados serán tratados por Time2Go con la finalidad de permitir el registro en la plataforma, brindar información sobre eventos en la ciudad de Bucaramanga, enviar comunicaciones informativas y mejorar la experiencia del usuario.</p>
-                <p>El titular podrá ejercer en cualquier momento sus derechos de acceso, actualización, rectificación y supresión de datos, así como revocar la autorización otorgada, conforme a la Política de Tratamiento de Datos Personales, disponible en el sitio web.</p>
+                <p>Al registrarse en Time2Go, el usuario autoriza de manera previa, expresa e informada el tratamiento de sus datos personales conforme a lo establecido en la Ley 1581 de 2012 y demas normas concordantes.</p>
+                <p>Los datos personales suministrados seran tratados por Time2Go con la finalidad de permitir el registro en la plataforma, brindar informacion sobre eventos en la ciudad de Bucaramanga, enviar comunicaciones informativas y mejorar la experiencia del usuario.</p>
+                <p>El titular podra ejercer en cualquier momento sus derechos de acceso, actualizacion, rectificacion y supresion de datos, asi como revocar la autorizacion otorgada, conforme a la Politica de Tratamiento de Datos Personales, disponible en el sitio web.</p>
               </div>
               <div className="flex justify-center space-x-2">
                 <Button variant="outline" onClick={handleReject}>
                   Rechazar
                 </Button>
-                <Button ref={acceptButtonRef} onClick={handleAccept}
-                className="bg-gradient-to-tr from-green-800 to-lime-600 hover:from-green-700 hover:to-lime-500 text-white font-medium rounded-md">
+                <Button
+                  ref={acceptButtonRef}
+                  onClick={handleAccept}
+                  className="bg-gradient-to-tr from-green-800 to-lime-600 hover:from-green-700 hover:to-lime-500 text-white font-medium rounded-md"
+                >
                   Aceptar
                 </Button>
               </div>
