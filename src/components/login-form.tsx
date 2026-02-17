@@ -150,7 +150,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           placeholder="ejemplo@correo.com"
         />
         {touchedFields.email && !email && (
-          <p className="text-red-500 text-xs -mt-1">Este campo es obligatorio</p>
+          <p className="text-red-500 text-xs -mt-0.5">Este campo es obligatorio</p>
         )}
       </div>
 
@@ -203,7 +203,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         <Button 
           type="button"
           variant="link" 
-          className="text-sm text-lime-600 hover:text-lime-700 p-0 cursor-pointer"
+          className="text-sm text-green-600 hover:text-lime-500 p-0 cursor-pointer"
           onClick={() => setResetPasswordOpen(true)}
         >
           ¿Olvidaste tu contraseña?
@@ -255,7 +255,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
       <Button
         type="submit"
-        className="w-80 bg-gradient-to-br from-amber-300 via-amber-300 to-amber-300 text-amber-700 font-medium py-6 rounded-sm text-lg transition duration-300 ease-in-out hover:from-amber-300 hover:via-yellow-300 hover:to-amber-300 hover:text-amber-600"
+        className="w-80 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white font-medium py-6 rounded-sm text-lg transition-all duration-300 ease-in-out hover:scale-103 hover:from-fuchsia-600 hover:to-red-500 hover:text-white"
       >
         Iniciar Sesión
       </Button>

@@ -341,7 +341,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               placeholder="Ingrese sus nombres"
             />
             {touchedFields.firstName && !formData.firstName && (
-              <p className="text-red-500 text-xs -mt-1">Este campo es obligatorio</p>
+              <p className="text-red-500 text-xs -mt-0.5">Este campo es obligatorio</p>
             )}
           </div>
 
@@ -361,7 +361,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               placeholder="Ingrese sus apellidos"
             />
             {touchedFields.lastName && !formData.lastName && (
-              <p className="text-red-500 text-xs -mt-1">Este campo es obligatorio</p>
+              <p className="text-red-500 text-xs -mt-0.5">Este campo es obligatorio</p>
             )}
           </div>
         </div>
@@ -431,10 +431,10 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             placeholder="ejemplo@correo.com"
           />
           {emailError && (
-            <p className="text-red-500 text-xs -mt-1">{emailError}</p>
+            <p className="text-red-500 text-xs -mt-0.5">{emailError}</p>
           )}
           {touchedFields.email && !formData.email && !emailError && (
-            <p className="text-red-500 text-xs -mt-1">Este campo es obligatorio</p>
+            <p className="text-red-500 text-xs -mt-0.5">Este campo es obligatorio</p>
           )}
         </div>
 
@@ -600,7 +600,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               <Button
                 type="button"
                 variant="link"
-                className="text-green-800 hover:text-lime-600 p-0 h-auto cursor-pointer"
+                className="text-green-600 hover:text-lime-500 p-0 h-auto cursor-pointer"
                 onClick={() => setShowModal(true)}
               >
                 términos y condiciones de servicio
@@ -666,7 +666,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
         <div className="flex flex-col items-center space-y-4">
         <Button
           type="submit"
-          className="w-80 bg-gradient-to-br from-amber-300 via-amber-300 to-amber-300 text-amber-700 font-medium py-6 rounded-sm text-lg transition duration-300 ease-in-out hover:from-amber-300 hover:via-yellow-300 hover:to-amber-300 hover:text-amber-600">
+          className="w-80 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white font-medium py-6 rounded-sm text-lg transition-all duration-300 ease-in-out hover:scale-103 hover:from-fuchsia-600 hover:to-red-500 hover:text-white">
           Crear Cuenta
         </Button>
         </div>

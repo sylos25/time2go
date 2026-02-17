@@ -355,7 +355,7 @@ export function Header({
               {!loggedIn ? (
                 <Button
                   onClick={() => router.push("/auth")}
-                  className="bg-amber-300 text-amber-800 hover:bg-yellow-300 font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-sm"
+                  className="bg-gradient-to-tr from-fuchsia-700 to-red-600 text-white font-medium shadow-lg rounded-sm transition-all duration-300 hover:scale-105 hover:from-fuchsia-600 hover:to-red-450 hover:shadow-md"
                 >
                   Únete
                 </Button>

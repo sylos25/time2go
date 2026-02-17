@@ -65,11 +65,3 @@ INSERT INTO tabla_imagenes_eventos VALUES
 (3, 'https://res.cloudinary.com/dljthy97e/image/upload/v1769572317/Microfutbol_ni%C3%B1o1_at3cnl.jpg', 1, NOW(), NOW()),
 (4, 'https://res.cloudinary.com/dljthy97e/image/upload/v1769572316/Microfutbol_joven_kvtx0h.jpg', 1, NOW(), NOW()),
 (5, 'https://res.cloudinary.com/dljthy97e/image/upload/v1769572316/Microfutbol_adulto_uuupv8.jpg', 1, NOW(), NOW());
-
-
--- Cargar en tabla_categoria_boletos.
-INSERT INTO tabla_categoria_boletos VALUES (1, 'General');
-INSERT INTO tabla_categoria_boletos VALUES (2, 'VIP');
-INSERT INTO tabla_categoria_boletos VALUES (3, 'Platea');
-INSERT INTO tabla_categoria_boletos VALUES (4, 'Balcon');
-INSERT INTO tabla_categoria_boletos VALUES (5, 'Preferencial');

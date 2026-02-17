@@ -91,7 +91,7 @@ export default function AuthPage() {
               <div className="flex flex-col items-center space-y-4">
                 <Button
                   onClick={() => setStep("login")}
-                  className="w-80 bg-gradient-to-br from-amber-300 via-amber-300 to-amber-300 text-amber-700 font-medium py-6 rounded-sm text-lg transition duration-300 ease-in-out hover:from-amber-300 hover:via-yellow-300 hover:to-amber-300 hover:text-amber-600"
+                  className="w-80 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white font-medium py-6 rounded-sm text-lg transition-all duration-300 ease-in-out hover:scale-103 hover:from-fuchsia-600 hover:to-red-500 hover:text-white"
                 >
                   Iniciar Sesión
                 </Button>
@@ -99,7 +99,7 @@ export default function AuthPage() {
                 <Button
                   onClick={() => setStep("register")}
                   variant="outline"
-                  className="w-80 border-2 border-lime-500 text-lime-500 hover:bg-lime-50 hover:text-lime-600 font-medium py-6 rounded-sm text-lg"
+                  className="w-80 border-2 border-lime-500 text-green-600 hover:scale-103 hover:bg-teal-50 hover:text-lime-600 font-medium py-6 rounded-sm text-lg"
                 >
                   Crear Cuenta
                 </Button>
@@ -109,9 +109,9 @@ export default function AuthPage() {
                 <Button
                   variant="link"
                   onClick={() => router.push("/")}
-                  className="text-gray-600 hover:text-gray-800"
+                  className="text-gray-500 hover:text-gray-600"
                 >
-                  'ACA SE VA PONER EL ACCESO CON GMAIL'
+                  Regresar
                 </Button>
               </div>
             </div>
@@ -120,7 +120,7 @@ export default function AuthPage() {
           {step === "login" && (
             <div className="bg-white rounded-lg shadow-lg p-8">
               <div className="text-center mb-6">
-                <h1 className="text-4xl font-bold leading-relaxed bg-gradient-to-r from-lime-500 via-lime-400 to-lime-500 bg-clip-text text-transparent mb-2">
+                <h1 className="text-4xl font-bold leading-relaxed bg-gradient-to-tr from-green-600 to-lime-500 bg-clip-text text-transparent mb-2">
                   Bienvenido
                 </h1>
                 <p className="mt-1 text-1xl text-gray-600">
@@ -134,7 +134,7 @@ export default function AuthPage() {
                 <Button
                   variant="link"
                   onClick={() => setStep("choice")}
-                  className="text-gray-600 hover:text-gray-800"
+                  className="text-gray-500 hover:text-gray-600"
                 >
                   Volver atrás
                 </Button>
@@ -149,7 +149,7 @@ export default function AuthPage() {
           {step === "register" && (
             <div className="bg-white rounded-lg shadow-lg p-8">
               <div className="text-center mb-8">
-                <h1 className="text-4xl font-bold leading-relaxed bg-gradient-to-r from-lime-500 via-lime-400 to-lime-500 bg-clip-text text-transparent mb-2">
+                <h1 className="text-4xl font-bold leading-relaxed bg-gradient-to-tr from-green-600 to-lime-500 bg-clip-text text-transparent mb-2">
                   Registrate
                 </h1>
                 <p className="mt-2 text-gray-600">Crea tu cuenta y descubre los eventos de la ciudad</p>
@@ -161,7 +161,7 @@ export default function AuthPage() {
                 <Button
                   variant="link"
                   onClick={() => setStep("choice")}
-                  className="text-gray-600 hover:text-gray-800"
+                  className="text-gray-500 hover:text-gray-600"
                 >
                   Volver atrás
                 </Button>
