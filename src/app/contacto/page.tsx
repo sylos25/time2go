@@ -49,27 +49,6 @@ const softwareFeatures = [
   },
 ]
 
-const testimonials = [
-  {
-    name: "María González",
-    role: "Organizadora de Eventos",
-    comment: "Time2Go transformó la manera en que gestionamos nuestros eventos. La plataforma es intuitiva y el soporte es excepcional.",
-    rating: 5,
-  },
-  {
-    name: "Carlos Ramírez",
-    role: "Director de Festival",
-    comment: "Desde que usamos Time2Go, nuestras ventas aumentaron un 40%. La mejor inversión que hemos hecho.",
-    rating: 5,
-  },
-  {
-    name: "Ana Martínez",
-    role: "Productora Musical",
-    comment: "La facilidad de uso y las herramientas de análisis nos ayudan a tomar mejores decisiones para cada evento.",
-    rating: 5,
-  },
-]
-
 const faqs = [
   {
     question: "¿Cómo puedo crear un evento en Time2Go?",
@@ -176,7 +155,7 @@ export default function ContactoPage() {
 
                   <Button
                     type="submit"
-                    className="w-full bg-gradient-to-tr from-green-700 to-lime-500 hover:from-green-500 hover:to-lime-5 00 text-white font-medium rounded-sm cursor-pointer"
+                    className="w-full bg-gradient-to-tr from-fuchsia-700 to-red-500 hover:scale-103 hover:from-fuchsia-600 hover:to-red-500 text-white font-medium rounded-sm cursor-pointer"
                   >
                     <Send className="w-4 h-4 mr-2" />
                     Enviar mensaje
@@ -193,10 +172,9 @@ export default function ContactoPage() {
                   <Card key={index} className="bg-white/80 backdrop-blur-sm border-white/50 rounded-sm">
                     <CardContent className="p-5">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-sm flex items-center justify-center flex-shrink-0">
-                          <info.icon className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
+                        {/* Ícono directo, sin contenedor */}
+                        <info.icon className="mt-3 w-9 h-9 text-green-600 flex-shrink-0" />
+                        <div className="ml-3">
                           <h3 className="font-bold text-gray-900 mb-1">{info.title}</h3>
                           {info.details.map((detail, idx) => (
                             <p key={idx} className="text-gray-600 text-sm">{detail}</p>
@@ -254,37 +232,13 @@ export default function ContactoPage() {
             {softwareFeatures.map((feature, index) => (
               <Card key={index} className="bg-white/80 backdrop-blur-sm border-white/50 rounded-sm">
                 <CardContent className="p-6">
-                  <div className="w-12 h-12 bg-gradient-to-r from-fuchsia-700 to-red-600 rounded-sm flex items-center justify-center mb-4">
-                    <feature.icon className="w-6 h-6 text-white" />
+                  {/* Contenedor solo para controlar posición del ícono */}
+                  <div className="flex justify-start ml-25 mb-4">
+                    <feature.icon className="w-9 h-9 text-green-700" />
                   </div>
+
                   <h3 className="text-lg font-bold text-gray-900 mb-2">{feature.title}</h3>
                   <p className="text-gray-600 text-sm">{feature.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonios */}
-      <section className="pb-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 text-center mb-8">
-            Lo que dicen nuestros clientes
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="bg-white/80 backdrop-blur-sm border-white/50 rounded-sm">
-                <CardContent className="p-6">
-                  <Quote className="w-8 h-8 text-fuchsia-400 mb-4" />
-                  <p className="text-gray-600 mb-4 italic">"{testimonial.comment}"</p>
-                  <div className="flex items-center gap-1 mb-3">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                    ))}
-                  </div>
-                  <p className="font-bold text-gray-900">{testimonial.name}</p>
-                  <p className="text-sm text-gray-500">{testimonial.role}</p>
                 </CardContent>
               </Card>
             ))}
@@ -305,16 +259,6 @@ export default function ContactoPage() {
                 Nuestra visión es revolucionar la industria de eventos, conectando a organizadores y asistentes 
                 a través de tecnología innovadora que simplifica cada paso del proceso.
               </p>
-              <div className="flex items-center justify-center gap-6 text-sm text-gray-500">
-                <span className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                  +10,000 eventos   
-                </span>
-                <span>|</span>
-                <span>+500,000 usuarios</span>
-                <span>|</span>
-                <span>+50 ciudades</span>
-              </div>
             </CardContent>
           </Card>
         </div>
