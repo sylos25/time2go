@@ -107,6 +107,77 @@ export default function EventDashboard() {
   const [pdfModalUrl, setPdfModalUrl] = useState<string | null>(null)
   const router = useRouter()
   const [authorized, setAuthorized] = useState<boolean | null>(null)
+  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([
+    { id: 1, text: "Revisar eventos del mes", completed: true },
+    { id: 2, text: "Confirmar proveedores", completed: true },
+    { id: 3, text: "Actualizar precios", completed: false },
+    { id: 4, text: "Enviar reporte financiero", completed: false },
+    { id: 5, text: "Planificar próximo festival", completed: false },
+  ])
+  const [stats, setStats] = useState<StatCard[]>([
+    { title: "Eventos Activos", value: 0, icon: Calendar, color: "from-blue-500 to-blue-600" },
+    { title: "Total Asistentes", value: 0, icon: Users, color: "from-green-500 to-emerald-600" },
+    { title: "Vistas del Mes", value: 0, icon: Eye, color: "from-purple-500 to-purple-600" },
+    { title: "Usuarios Activos", value: 0, icon: Users, color: "from-orange-500 to-red-500" },
+  ])
+  const [events, setEvents] = useState<Event[]>([
+    {
+      id: 1,
+      name: "La Madriguera",
+      date: "2024-12-15",
+      time: "20:00",
+      location: "Teatro Municipal",
+      category: "Teatro",
+      capacity: 450,
+      ticketsSold: 380,
+      status: "published",
+      visibility: true,
+      image: "/images/teatro.jpg",
+      promoter: "Eventos Colombia",
+    },
+    {
+      id: 2,
+      name: "Festival de la Carranga",
+      date: "2024-12-20",
+      time: "14:00",
+      location: "Plaza Central",
+      category: "Música",
+      capacity: 2000,
+      ticketsSold: 1850,
+      status: "published",
+      visibility: true,
+      image: "/images/carranga.jpg",
+      promoter: "MusicFest Pro",
+    },
+    {
+      id: 3,
+      name: "Concierto de Rock",
+      date: "2024-11-28",
+      time: "21:00",
+      location: "Auditorio Nacional",
+      category: "Música",
+      capacity: 800,
+      ticketsSold: 800,
+      status: "completed",
+      visibility: false,
+      image: "/images/rock.jpg",
+      promoter: "Rock Nation",
+    },
+    {
+      id: 4,
+      name: "Festival de Jazz",
+      date: "2024-12-10",
+      time: "19:00",
+      location: "Centro Cultural",
+      category: "Música",
+      capacity: 300,
+      ticketsSold: 245,
+      status: "published",
+      visibility: true,
+      image: "/images/jazz.jpg",
+      promoter: "Jazz Internacional",
+    },
+  ])
 
   const refreshEvents = async () => {
     try {
@@ -218,14 +289,6 @@ export default function EventDashboard() {
     return () => { canceled = true }
   }, [router])
 
-  if (authorized === null) {
-    return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-gray-600">Comprobando permisos...</div>
-      </main>
-    )
-  }
-
   // When user opens the Users tab, fetch users list
   useEffect(() => {
     let cancelled = false
@@ -251,6 +314,14 @@ export default function EventDashboard() {
     return () => { cancelled = true }
   }, [activeTab])
 
+  if (authorized === null) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-gray-600">Comprobando permisos...</div>
+      </main>
+    )
+  }
+
   if (authorized === false) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
@@ -266,81 +337,6 @@ export default function EventDashboard() {
       </main>
     )
   }
-
-  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([
-    { id: 1, text: "Revisar eventos del mes", completed: true },
-    { id: 2, text: "Confirmar proveedores", completed: true },
-    { id: 3, text: "Actualizar precios", completed: false },
-    { id: 4, text: "Enviar reporte financiero", completed: false },
-    { id: 5, text: "Planificar próximo festival", completed: false },
-  ])
-
-
-  const [stats, setStats] = useState<StatCard[]>([
-    { title: "Eventos Activos", value: 0, icon: Calendar, color: "from-blue-500 to-blue-600" },
-    { title: "Total Asistentes", value: 0, icon: Users, color: "from-green-500 to-emerald-600" },
-    { title: "Vistas del Mes", value: 0, icon: Eye, color: "from-purple-500 to-purple-600" },
-    { title: "Usuarios Activos", value: 0, icon: Users, color: "from-orange-500 to-red-500" },
-  ])
-
-  const [events, setEvents] = useState<Event[]>([
-    {
-      id: 1,
-      name: "La Madriguera",
-      date: "2024-12-15",
-      time: "20:00",
-      location: "Teatro Municipal",
-      category: "Teatro",
-      capacity: 450,
-      ticketsSold: 380,
-      status: "published",
-      visibility: true,
-      image: "/images/teatro.jpg",
-      promoter: "Eventos Colombia",
-    },
-    {
-      id: 2,
-      name: "Festival de la Carranga",
-      date: "2024-12-20",
-      time: "14:00",
-      location: "Plaza Central",
-      category: "Música",
-      capacity: 2000,
-      ticketsSold: 1850,
-      status: "published",
-      visibility: true,
-      image: "/images/carranga.jpg",
-      promoter: "MusicFest Pro",
-    },
-    {
-      id: 3,
-      name: "Concierto de Rock",
-      date: "2024-11-28",
-      time: "21:00",
-      location: "Auditorio Nacional",
-      category: "Música",
-      capacity: 800,
-      ticketsSold: 800,
-      status: "completed",
-      visibility: false,
-      image: "/images/rock.jpg",
-      promoter: "Rock Nation",
-    },
-    {
-      id: 4,
-      name: "Festival de Jazz",
-      date: "2024-12-10",
-      time: "19:00",
-      location: "Centro Cultural",
-      category: "Música",
-      capacity: 300,
-      ticketsSold: 245,
-      status: "published",
-      visibility: true,
-      image: "/images/jazz.jpg",
-      promoter: "Jazz Internacional",
-    },
-  ])
 
   const eventData = [
     { month: "Jul", vistas: 8500, asistentes: 2100 },

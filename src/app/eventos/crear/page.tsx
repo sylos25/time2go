@@ -50,6 +50,7 @@ export default function CrearEventoPage() {
     hora_inicio: "",
     hora_final: "",
     pago: false,
+    reservar_anticipado: false,
     boletas: [{ nombre_boleto: "", precio_boleto: "", servicio: "" }],
     linksBoleteria: [""] as string[],
     cupo: "",
@@ -416,6 +417,7 @@ export default function CrearEventoPage() {
       formData.append("telefono_1", newEvent.telefono1 || newEvent.telefono_1 || "");
       formData.append("telefono_2", newEvent.telefono2 || newEvent.telefono_2 || "");
       formData.append("gratis_pago", String(newEvent.pago ?? false));
+      formData.append("reservar_anticipado", String(newEvent.reservar_anticipado ?? false));
       
       // Boletas (tabla_boleteria)
       formData.append("boletas", JSON.stringify(newEvent.boletas || []));
@@ -787,6 +789,7 @@ export default function CrearEventoPage() {
                         setNewEvent({
                           ...newEvent,
                           pago: false,
+                          reservar_anticipado: false,
                           boletas: [{ nombre_boleto: "", precio_boleto: "", servicio: "" }],
                           linksBoleteria: [""]
                         })
@@ -799,11 +802,27 @@ export default function CrearEventoPage() {
                       type="radio"
                       name="tipoEntrada"
                       checked={newEvent.pago}
-                      onChange={() => setNewEvent({ ...newEvent, pago: true })}
+                      onChange={() => setNewEvent({ ...newEvent, pago: true, reservar_anticipado: false })}
                     />
                     Pago
                   </label>
                 </div>
+
+                {!newEvent.pago && (
+                  <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <input
+                      id="reservar_anticipado"
+                      type="checkbox"
+                      checked={newEvent.reservar_anticipado}
+                      onChange={(e) => setNewEvent({ ...newEvent, reservar_anticipado: e.target.checked })}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <label htmlFor="reservar_anticipado" className="cursor-pointer">
+                      <span className="font-medium text-gray-900">¿Se requiere reserva anticipada?</span>
+                      <p className="text-xs text-gray-600">Marca esta opción si los usuarios deben reservar entrada antes del evento</p>
+                    </label>
+                  </div>
+                )}
 
                 {newEvent.pago && (
                   <div className="space-y-4 p-4 border rounded-lg shadow-md">
