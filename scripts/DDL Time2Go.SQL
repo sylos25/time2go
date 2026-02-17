@@ -54,8 +54,8 @@ CREATE TABLE IF NOT EXISTS tabla_departamentos (
 );
 
 CREATE TABLE IF NOT EXISTS tabla_municipios (
-    id_municipio                             INT                          PRIMARY KEY,
     id_departamento                          INT                          NOT NULL,
+    id_municipio                             INT                          PRIMARY KEY,
     nombre_municipio                         VARCHAR                      NOT NULL        CHECK (char_length(nombre_municipio) >= 3),
     distrito                                 BOOLEAN                      NOT NULL,
     area_metropolitana                       BOOLEAN                      NOT NULL,
@@ -219,8 +219,7 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
     FOREIGN KEY (id_usuario)                            REFERENCES       tabla_usuarios(id_usuario),
     FOREIGN KEY (id_tipo_evento)                        REFERENCES       tabla_tipo_eventos(id_tipo_evento),
     FOREIGN KEY (id_categoria_evento)                   REFERENCES       tabla_categoria_eventos(id_categoria_evento),
-    FOREIGN KEY (id_sitio)                              REFERENCES       tabla_sitios(id_sitio),
-    FOREIGN KEY (id_municipio)                          REFERENCES       tabla_municipios(id_municipio)
+    FOREIGN KEY (id_sitio)                              REFERENCES       tabla_sitios(id_sitio)
 );
 
 CREATE TABLE IF NOT EXISTS tabla_imagenes_eventos (
@@ -243,26 +242,26 @@ CREATE TABLE IF NOT EXISTS tabla_documentos_eventos (
 
 CREATE TABLE IF NOT EXISTS tabla_valoraciones (
     id_valoracion                           INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    id_usuario                              VARCHAR                      NOT NULL,
+    id_usuario                              INT                       	  NOT NULL,
     id_evento                               INT                          NOT NULL,
     valoracion                              INT                          NOT NULL       CHECK (valoracion BETWEEN 1 AND 5),
     comentario                              VARCHAR,
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_usuario)                REFERENCES  tabla_usuarios(numero_documento),
+    FOREIGN KEY (id_usuario)                REFERENCES  tabla_usuarios(id_usuario),
     FOREIGN KEY (id_evento)                 REFERENCES  tabla_eventos(id_evento)
 );
 
 CREATE TABLE IF NOT EXISTS tabla_reserva_eventos (
     id_reserva_evento                       INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    id_usuario                              VARCHAR                      NOT NULL,
+    id_usuario                              INT                      	  NOT NULL,
     id_evento                               INT                          NOT NULL,
     tipo_documento                          tip_doc                      NOT NULL,
     numero_documento                        VARCHAR                      NOT NULL,
     fecha_reserva                           TIMESTAMP                    NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     estado                                  BOOLEAN                      NOT NULL        DEFAULT 'TRUE',
     fecha_actualizacion                     TIMESTAMP                    NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_usuario)                REFERENCES  tabla_usuarios(numero_documento),
+    FOREIGN KEY (id_usuario)                REFERENCES  tabla_usuarios(id_usuario),
     FOREIGN KEY (id_evento)                 REFERENCES  tabla_eventos(id_evento)
 );
 
@@ -274,8 +273,7 @@ CREATE TABLE IF NOT EXISTS tabla_boleteria (
     servicio                                DECIMAL(9,2),
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                   DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_evento)                 REFERENCES  tabla_eventos(id_evento),
-    FOREIGN KEY (id_categoria_boleto)       REFERENCES  tabla_categoria_boletos(id_categoria_boleto)
+    FOREIGN KEY (id_evento)                 REFERENCES  tabla_eventos(id_evento)
 );
 
 CREATE TABLE IF NOT EXISTS tabla_links (
@@ -351,9 +349,6 @@ FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_documentos_eventos
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
-CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_eventos_x_dias
-FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
-
 CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_valoraciones
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
@@ -376,7 +371,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_generar_id_publico AFTER INSERT ON tabla_usuarios
+CREATE TRIGGER trg_generar_id_publico BEFORE INSERT ON tabla_usuarios
 FOR EACH ROW EXECUTE FUNCTION generar_id_publico();
 
 -- Cargar en tabla_roles.

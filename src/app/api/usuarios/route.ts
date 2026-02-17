@@ -52,8 +52,7 @@ export async function GET(req: Request) {
 
     const res = await pool.query(`
       SELECT
-        u.numero_documento,
-        u.tipo_documento,
+        u.id_usuario AS numero_documento,
         u.nombres,
         u.apellidos,
         p.nombre_pais AS pais,

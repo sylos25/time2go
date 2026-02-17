@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { LoginForm } from "@/components/login-form"
+import { GoogleLoginButton } from "@/components/google-login-button"
 import { RegisterForm } from "@/components/register-form"
 import { CheckCircle } from "lucide-react"
 
@@ -137,6 +138,10 @@ export default function AuthPage() {
                 >
                   Volver atrás
                 </Button>
+              </div>
+
+              <div className="mt-6">
+                <GoogleLoginButton onSuccess={handleLoginSuccess} />
               </div>
             </div>
           )}

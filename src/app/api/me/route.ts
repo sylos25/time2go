@@ -7,7 +7,7 @@ import { verifyToken } from "@/lib/jwt";
 export async function GET(req: Request) {
   try {
     const authHeader = req.headers.get("authorization") || "";
-    let userId: number | null = null;
+    let userId: string | null = null;
 
     if (authHeader.startsWith("Bearer ")) {
       const token = authHeader.slice(7).trim();
@@ -16,19 +16,23 @@ export async function GET(req: Request) {
         return NextResponse.json({ ok: false, message: "Invalid token" }, { status: 401 });
       }
 
-      var numeroDocumento = String(payload.numero_documento);
+      userId = String(payload.numero_documento);
     } else {
       const session = await auth.api.getSession({ headers: req.headers as any });
       const sid = (session && session.user && (session.user as any).numero_documento) || null;
       if (!sid) {
         return NextResponse.json({ ok: false, message: "No authenticated user" }, { status: 401 });
       }
-      var numeroDocumento = String(sid);
+      userId = String(sid);
+    }
+
+    if (!userId) {
+      return NextResponse.json({ ok: false, message: "No authenticated user" }, { status: 401 });
     }
 
     const result = await pool.query(
       `SELECT 
-        u.numero_documento, 
+        u.id_usuario AS numero_documento,
         u.nombres, 
         u.apellidos, 
         u.correo, 
@@ -43,8 +47,8 @@ export async function GET(req: Request) {
       FROM tabla_usuarios u
       LEFT JOIN tabla_paises p ON u.id_pais = p.id_pais
       LEFT JOIN tabla_roles r ON u.id_rol = r.id_rol
-      WHERE u.numero_documento = $1 LIMIT 1`,
-      [numeroDocumento]
+      WHERE u.id_usuario = $1 LIMIT 1`,
+      [userId]
     );
 
     if (!result.rows || result.rows.length === 0) {

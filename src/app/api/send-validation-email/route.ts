@@ -5,9 +5,10 @@ import { sendEmailValidationEmail, generateEmailValidationToken } from "@/lib/em
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, numero_documento, baseUrl } = await req.json();
+    const { email, id_usuario, numero_documento, baseUrl } = await req.json();
+    const userId = id_usuario ?? numero_documento;
 
-    if (!email || !numero_documento) {
+    if (!email || !userId) {
       return NextResponse.json(
         { error: "Email y número de documento son requeridos" },
         { status: 400 }
@@ -16,8 +17,8 @@ export async function POST(req: NextRequest) {
 
 
     const userCheck = await pool.query(
-      "SELECT numero_documento FROM tabla_usuarios WHERE numero_documento = $1 AND correo = $2",
-      [numero_documento, email]
+      "SELECT id_usuario FROM tabla_usuarios WHERE id_usuario = $1 AND correo = $2",
+      [userId, email]
     );
 
     if (userCheck.rowCount === 0) {
@@ -33,9 +34,9 @@ export async function POST(req: NextRequest) {
 
 
     await pool.query(
-      `INSERT INTO tabla_validacion_email_tokens (numero_documento, token, fecha_expiracion)
+      `INSERT INTO tabla_validacion_email_tokens (id_usuario, token, fecha_expiracion)
        VALUES ($1, $2, $3)`,
-      [numero_documento, token, expirationTime]
+      [userId, token, expirationTime]
     );
 
 

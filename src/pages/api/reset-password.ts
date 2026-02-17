@@ -21,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const client = await pool.connect()
     try {
       const userQuery = `
-        SELECT numero_documento, correo, nombres
+        SELECT id_usuario, correo, nombres
         FROM tabla_usuarios
         WHERE correo = $1
         LIMIT 1
@@ -45,9 +45,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const updateQuery = `
         UPDATE tabla_usuarios
         SET contrasena_hash = $1
-        WHERE numero_documento = $2
+        WHERE id_usuario = $2
       `
-      await client.query(updateQuery, [hashedPassword, user.numero_documento])
+      await client.query(updateQuery, [hashedPassword, user.id_usuario])
 
 
       const emailSent = await sendResetPasswordEmail(email, newPassword)

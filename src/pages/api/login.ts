@@ -45,7 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const client = await pool.connect();
     try {
       const q = `
-        SELECT numero_documento, correo, nombres, contrasena_hash, validacion_correo
+        SELECT id_usuario, correo, nombres, contrasena_hash, validacion_correo
         FROM tabla_usuarios
         WHERE correo = $1
         LIMIT 1
@@ -66,7 +66,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const hash = user.contrasena_hash;
       if (!hash || typeof hash !== "string" || hash.trim() === "") {
-        console.warn("Login: hash de contraseña ausente para usuario:", user.numero_documento ?? user.correo);
+        console.warn("Login: hash de contraseña ausente para usuario:", user.id_usuario ?? user.correo);
         return res.status(401).json({ message: "Credenciales inválidas" });
       }
 
@@ -77,8 +77,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const jwt = require('jsonwebtoken');
       const secret = process.env.BETTER_AUTH_SECRET || process.env.JWT_SECRET || 'dev-secret';
       const expiresIn = 60 * 30; // 30 minutes
-      // Use numero_documento as the stable user identifier in tokens
-      const token = jwt.sign({ numero_documento: user.numero_documento, name: user.nombres || user.correo.split('@')[0] }, secret, { expiresIn });
+      // Keep the token claim name for compatibility, but store id_usuario
+      const token = jwt.sign({ numero_documento: user.id_usuario, name: user.nombres || user.correo.split('@')[0] }, secret, { expiresIn });
 
       const secure = process.env.NODE_ENV === 'production';
       const cookie = serializeCookie('token', token, {
@@ -95,7 +95,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json({
         success: true,
         token,
-        numero_documento: user.numero_documento,
+        numero_documento: user.id_usuario,
         expiresAt: Math.floor(Date.now() / 1000) + expiresIn,
         name: user.nombres || user.correo.split("@")[0],
       });

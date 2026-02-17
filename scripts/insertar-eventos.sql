@@ -40,17 +40,17 @@ INSERT INTO tabla_sitios VALUES (6, 'Parque Temático', 5, TRUE, 68547, 'Cl. 2a 
 INSERT INTO tabla_sitios VALUES (7, 'Estadio municipal villa Concha', 6, FALSE, 68547, 'I-45A #9-43, La Castallena.', '6,99533°', '-73,05006°', 3173552126, NULL, NULL);
 INSERT INTO tabla_sitios VALUES (8, 'Parque recrear Juan Pablo II', 7, FALSE, 68307, 'a 37-60,, Cra. 22b #37-2', '7,0732°', '-73,1689°', NULL, NULL, NULL);
 
--- Cargar en tabla_tipo_infraest_disc.
-INSERT INTO tabla_tipo_infraest_disc VALUES (1, 'Ascensor' );
-INSERT INTO tabla_tipo_infraest_disc VALUES (2, 'Rampa' );
-INSERT INTO tabla_tipo_infraest_disc VALUES (3, 'Estacionamiento' );
-INSERT INTO tabla_tipo_infraest_disc VALUES (4, 'Señalización en Braille' );
+-- Cargar en tabla_tipo_infraestructura_discapacitados.
+INSERT INTO tabla_tipo_infraestructura_discapacitados VALUES (1, 'Ascensor' );
+INSERT INTO tabla_tipo_infraestructura_discapacitados VALUES (2, 'Rampa' );
+INSERT INTO tabla_tipo_infraestructura_discapacitados VALUES (3, 'Estacionamiento' );
+INSERT INTO tabla_tipo_infraestructura_discapacitados VALUES (4, 'Señalización en Braille' );
 
--- Cargar en tabla_sitios_disc.
-INSERT INTO tabla_sitios_disc VALUES (1, 1, 2, 'Rampa en la entrada del Teatro Santander');
-INSERT INTO tabla_sitios_disc VALUES (2, 2, 2, 'Rampa en la entrada y para acceder entre los pisos de Neomundo');
-INSERT INTO tabla_sitios_disc VALUES (3, 2, 3, 'Señalización para discapacitados en Neomundo');
-INSERT INTO tabla_sitios_disc VALUES (4, 6, 2, 'Rampa de acceso al Parque Temático');
+-- Cargar en tabla_sitios_discapacitados.
+INSERT INTO tabla_sitios_discapacitados VALUES (1, 1, 2, 'Rampa en la entrada del Teatro Santander');
+INSERT INTO tabla_sitios_discapacitados VALUES (2, 2, 2, 'Rampa en la entrada y para acceder entre los pisos de Neomundo');
+INSERT INTO tabla_sitios_discapacitados VALUES (3, 2, 3, 'Señalización para discapacitados en Neomundo');
+INSERT INTO tabla_sitios_discapacitados VALUES (4, 6, 2, 'Rampa de acceso al Parque Temático');
 
 -- Cargar en tabla_eventos.
 INSERT INTO tabla_eventos VALUES (1, 'Torneo de Fútbol Amistoso', '1095951827', 3, 12, 4, 68276, 'Un torneo de fútbol amistoso para promover la actividad física y la camaradería entre los participantes.', 3123456789, NULL, '2026-09-15', '2026-09-15', '10:00:00', '16:00:00', NULL, FALSE, 60, TRUE, NOW(), NULL, NULL);

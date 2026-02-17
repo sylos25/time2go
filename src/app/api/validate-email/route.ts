@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
 
 
     const tokenResult = await pool.query(
-      `SELECT numero_documento, utilizado, fecha_expiracion 
+      `SELECT id_usuario, utilizado, fecha_expiracion 
        FROM tabla_validacion_email_tokens 
        WHERE token = $1`,
       [token]
@@ -51,8 +51,8 @@ export async function GET(req: NextRequest) {
     await pool.query(
       `UPDATE tabla_usuarios 
        SET validacion_correo = TRUE, fecha_actualizacion = CURRENT_TIMESTAMP
-       WHERE numero_documento = $1`,
-      [tokenData.numero_documento]
+       WHERE id_usuario = $1`,
+      [tokenData.id_usuario]
     );
 
 
@@ -66,7 +66,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       { 
         message: "Correo validado correctamente",
-        numero_documento: tokenData.numero_documento
+        id_usuario: tokenData.id_usuario,
+        numero_documento: tokenData.id_usuario
       },
       { status: 200 }
     );
