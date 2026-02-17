@@ -381,11 +381,6 @@ INSERT INTO tabla_roles VALUES  (3,'Moderador');
 INSERT INTO tabla_roles VALUES  (4,'Administrador');
 
 -- Cargar en tabla_usuarios.
-INSERT INTO tabla_usuarios VALUES ('Cédula de Ciudadanía', '1095951827', 'Brayhan Jahir', 'Orduz Perez', 6, 3143413720, TRUE, 'bryhanorduz14@gmail.com', TRUE, crypt('BhyOP06*', gen_salt('bf', 12)), NOW (), NULL, TRUE, 4, NOW());
-INSERT INTO tabla_usuarios VALUES ('Cédula de Ciudadanía', '1095581203', 'William', 'Rojas', 6, 3167598925, TRUE, 'willirojasorduz@gmail.com', TRUE, crypt('William15.', gen_salt('bf', 12)), NOW (), NULL, TRUE, 4, NOW());
-
-
-
 INSERT INTO tabla_usuarios (id_rol, ig_google, nombres, apellidos, id_pais, telefono, validacion_telefono, correo, validacion_correo, contrasena_hash, confirmacion_contrasena_hash, terminos_condiciones, estado, fecha_registro, fecha_actualizacion, fecha_desactivacion) 
     VALUES (1, NULL, 'Usuario', 'Prueba', 6, 3001234567, TRUE, 'usuario_prueba@correo.com', TRUE, crypt('Usuario123.', gen_salt('bf', 12)), crypt('Usuario123.', gen_salt('bf', 12)), TRUE, TRUE, NOW(), NOW(), NOW());
 
@@ -397,3 +392,20 @@ INSERT INTO tabla_usuarios (id_rol, ig_google, nombres, apellidos, id_pais, tele
 
 INSERT INTO tabla_usuarios (id_rol, ig_google, nombres, apellidos, id_pais, telefono, validacion_telefono, correo, validacion_correo, contrasena_hash, confirmacion_contrasena_hash, terminos_condiciones, estado, fecha_registro, fecha_actualizacion, fecha_desactivacion) 
     VALUES (4, NULL, 'Administrador', 'Prueba', 6, 3009876543, TRUE, 'administrador_prueba@correo.com', TRUE, crypt('Administrador123.', gen_salt('bf', 12)), crypt('Administrador123.', gen_salt('bf', 12)), TRUE, TRUE, NOW(), NOW(), NOW());
+
+-- Cargar en tabla_accesibilidad_menu.
+INSERT INTO tabla_accesibilidad_menu VALUES (1, 'Crear Evento', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (2, 'Editar Evento', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (3, 'Eliminar Evento', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (4, 'Aprobar Evento', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (5, 'Ver Dashboard', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (6, 'Gestionar Usuarios', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (7, 'Gestionar Sitios', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (8, 'Gestionar Roles', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (9, 'Gestionar Accesibilidad', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (10, 'Gestionar Baneados', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (11, 'Gestionar Categorías y Tipos de Eventos', NOW(), NOW());
+
+-- Cargar en tabla_accesibilidad_menu_x_rol.
+INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (1, 1, 4, NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (2, 5, 4, NOW(), NOW());

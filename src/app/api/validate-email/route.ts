@@ -66,8 +66,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       { 
         message: "Correo validado correctamente",
-        id_usuario: tokenData.id_usuario,
-        numero_documento: tokenData.id_usuario
+        id_usuario: tokenData.id_usuario
       },
       { status: 200 }
     );

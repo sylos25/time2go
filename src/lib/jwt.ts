@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 
 export interface JwtPayload {
+  id_usuario?: string;
   numero_documento?: string;
   name?: string;
   iat?: number;

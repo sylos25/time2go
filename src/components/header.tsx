@@ -84,11 +84,11 @@ export function Header({
     const syncFromStorage = () => {
       const token = localStorage.getItem("token");
       const storedName = localStorage.getItem("userName");
-      const storedDoc = localStorage.getItem("userDocument");
+      const storedUserId = localStorage.getItem("userId") || localStorage.getItem("userDocument");
       const storedRole = localStorage.getItem("userRole");
       if (token) {
         const exp = parseJwtExp(token);
-        setUser({ token, name: storedName || undefined, numero_documento: storedDoc || undefined, role: storedRole ? Number(storedRole) : undefined });
+        setUser({ token, name: storedName || undefined, id_usuario: storedUserId || undefined, role: storedRole ? Number(storedRole) : undefined });
         if (exp) scheduleAutoLogout(exp);
       }
       // if no token, don't immediately clear user here — we'll validate session with the server
@@ -122,11 +122,14 @@ export function Header({
             const data = await res.json();
             if (data?.ok && data.user) {
               const name = data.user.nombres || data.user.correo || storedName || user?.name;
-              const numero_documento = data.user.numero_documento || localStorage.getItem('userDocument') || undefined;
+              const userId = data.user.id_usuario || data.user.numero_documento || localStorage.getItem('userId') || localStorage.getItem('userDocument') || undefined;
               const roleNumber = data.user.id_rol !== undefined ? Number(data.user.id_rol) : undefined;
-              if (numero_documento) localStorage.setItem('userDocument', String(numero_documento));
+              if (userId) {
+                localStorage.setItem('userId', String(userId));
+                localStorage.removeItem('userDocument');
+              }
               if (roleNumber !== undefined) localStorage.setItem('userRole', String(roleNumber));
-              setUser({ token, name, numero_documento, role: roleNumber });
+              setUser({ token, name, id_usuario: userId, role: roleNumber });
             } else {
               clearSessionSilent();
             }
@@ -148,11 +151,14 @@ export function Header({
         if (data?.ok && data.user) {
           const name = data.user.nombres || data.user.correo || localStorage.getItem('userName') || user?.name;
           const tokenFromStorage = localStorage.getItem('token') || (user as any)?.token;
-          const numero_documento = data.user.numero_documento || localStorage.getItem('userDocument') || undefined;
+          const userId = data.user.id_usuario || data.user.numero_documento || localStorage.getItem('userId') || localStorage.getItem('userDocument') || undefined;
           const roleNumber = data.user.id_rol !== undefined ? Number(data.user.id_rol) : undefined;
-          if (numero_documento) localStorage.setItem('userDocument', String(numero_documento));
+          if (userId) {
+            localStorage.setItem('userId', String(userId));
+            localStorage.removeItem('userDocument');
+          }
           if (roleNumber !== undefined) localStorage.setItem('userRole', String(roleNumber));
-          setUser({ token: tokenFromStorage, name, numero_documento, role: roleNumber });
+          setUser({ token: tokenFromStorage, name, id_usuario: userId, role: roleNumber });
           const expFromToken = tokenFromStorage ? parseJwtExp(tokenFromStorage) : undefined;
           if (expFromToken) scheduleAutoLogout(expFromToken);
         } else {
@@ -172,13 +178,16 @@ export function Header({
       const detail = ev.detail ?? {};
       const token = detail.token || localStorage.getItem("token");
       const name = detail.name || detail.nombre || localStorage.getItem("userName") || "Usuario";
-      const numero_documento = detail.numero_documento || localStorage.getItem("userDocument") || undefined;
+      const userId = detail.id_usuario || detail.numero_documento || localStorage.getItem("userId") || localStorage.getItem("userDocument") || undefined;
       const roleNumber = detail.id_rol !== undefined ? Number(detail.id_rol) : undefined;
       if (token) localStorage.setItem("token", token);
       if (name) localStorage.setItem("userName", name);
-      if (numero_documento) localStorage.setItem("userDocument", String(numero_documento));
+      if (userId) {
+        localStorage.setItem("userId", String(userId));
+        localStorage.removeItem("userDocument");
+      }
       if (roleNumber !== undefined) localStorage.setItem('userRole', String(roleNumber));
-      setUser({ token, name, numero_documento, role: roleNumber });
+      setUser({ token, name, id_usuario: userId, role: roleNumber });
       const exp = detail.expiresAt || parseJwtExp(token || "");
       if (exp) scheduleAutoLogout(exp);
     };
@@ -220,10 +229,8 @@ export function Header({
 
   // determine role (1 = usuario regular per DB) — prefer in-memory user, fallback to localStorage
   const userRole = user?.role !== undefined ? Number(user.role) : Number(typeof window !== 'undefined' ? localStorage.getItem('userRole') || 0 : 0);
-  const isRegularUser = userRole === 1;
-  const isPromotor = userRole === 2;
-  const canCreate = isPromotor || userRole === 3 || userRole === 4;
-  const canDashboard = userRole === 3 || userRole === 4;
+  const canCreate = userRole === 4;
+  const canDashboard = userRole === 4;
 
   const navigationItems = [
     { name: "Inicio", path: "/" },
@@ -248,6 +255,8 @@ export function Header({
     localStorage.removeItem("token");
     localStorage.removeItem("userName");
     localStorage.removeItem('userRole');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userDocument');
     setUser(null);
     if (logoutTimerRef.current) {
       window.clearTimeout(logoutTimerRef.current);
@@ -264,6 +273,8 @@ export function Header({
     localStorage.removeItem("token");
     localStorage.removeItem("userName");
     localStorage.removeItem('userRole');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userDocument');
     setUser(null);
     if (logoutTimerRef.current) {
       window.clearTimeout(logoutTimerRef.current);

@@ -26,14 +26,15 @@ export async function POST(req: Request) {
     const comentario = String(body.comentario || null);
 
     // Determine user from Bearer token if provided
-    let id_usuario = body.id_usuario || null;
+    let id_usuario = body.id_usuario || body.numero_documento || null;
     const authHeader = (req.headers.get('authorization') || '').trim();
     if (authHeader.startsWith('Bearer ')) {
       try {
         const { verifyToken } = await import('@/lib/jwt');
         const t = authHeader.slice(7).trim();
         const payload = verifyToken(t);
-        if (payload && payload.numero_documento) id_usuario = payload.numero_documento;
+        const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
+        if (payload && userIdFromToken) id_usuario = userIdFromToken;
       } catch (e) {
         console.error('token verification failed', e);
       }

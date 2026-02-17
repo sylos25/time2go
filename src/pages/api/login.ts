@@ -78,7 +78,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const secret = process.env.BETTER_AUTH_SECRET || process.env.JWT_SECRET || 'dev-secret';
       const expiresIn = 60 * 30; // 30 minutes
       // Keep the token claim name for compatibility, but store id_usuario
-      const token = jwt.sign({ numero_documento: user.id_usuario, name: user.nombres || user.correo.split('@')[0] }, secret, { expiresIn });
+      const token = jwt.sign({ id_usuario: user.id_usuario, name: user.nombres || user.correo.split('@')[0] }, secret, { expiresIn });
 
       const secure = process.env.NODE_ENV === 'production';
       const cookie = serializeCookie('token', token, {
@@ -95,7 +95,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json({
         success: true,
         token,
-        numero_documento: user.id_usuario,
+        id_usuario: user.id_usuario,
         expiresAt: Math.floor(Date.now() / 1000) + expiresIn,
         name: user.nombres || user.correo.split("@")[0],
       });

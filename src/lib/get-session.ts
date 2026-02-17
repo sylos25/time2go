@@ -10,8 +10,9 @@ export async function getSession() {
   if (authHeader.startsWith('Bearer ')) {
     const token = authHeader.slice(7).trim();
     const payload = verifyToken(token as string);
-    if (payload && payload.numero_documento) {
-      return { user: { numero_documento: payload.numero_documento, name: payload.name } } as any;
+    const userId = payload?.id_usuario || payload?.numero_documento;
+    if (payload && userId) {
+      return { user: { id_usuario: userId, name: payload.name } } as any;
     }
   }
 
@@ -22,8 +23,9 @@ export async function getSession() {
     const token = cookies['token']
     if (token) {
       const payload = verifyToken(token as string)
-      if (payload && payload.numero_documento) {
-        return { user: { numero_documento: payload.numero_documento, name: payload.name } } as any;
+      const userId = payload?.id_usuario || payload?.numero_documento
+      if (payload && userId) {
+        return { user: { id_usuario: userId, name: payload.name } } as any;
       }
     }
   }

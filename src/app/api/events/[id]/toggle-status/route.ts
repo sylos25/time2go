@@ -12,19 +12,20 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 
     // Verify user owns the event or is admin
     const authHeader = (req.headers.get("authorization") || "").trim();
-    let numero_documento = "";
+    let userId = "";
     if (authHeader.startsWith("Bearer ")) {
       try {
         const { verifyToken } = await import("@/lib/jwt");
         const t = authHeader.slice(7).trim();
         const payload = verifyToken(t);
-        if (payload && payload.numero_documento) numero_documento = String(payload.numero_documento);
+        const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
+        if (payload && userIdFromToken) userId = String(userIdFromToken);
       } catch (e) {
         console.error("token verification failed", e);
       }
     }
 
-    if (!numero_documento) {
+    if (!userId) {
       return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
     }
 
@@ -34,7 +35,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       return NextResponse.json({ ok: false, message: "Event not found" }, { status: 404 });
     }
 
-    if (String(eventCheck.rows[0].id_usuario) !== numero_documento) {
+    if (String(eventCheck.rows[0].id_usuario) !== userId) {
       return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
     }
 

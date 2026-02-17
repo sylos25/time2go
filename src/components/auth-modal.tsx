@@ -290,12 +290,16 @@ const formDataInicial: FormFields = {
 
           // guardar token, nombre y documento
           if (data.token) localStorage.setItem("token", data.token);
-          if (data.numero_documento) localStorage.setItem("userDocument", String(data.numero_documento));
+          const userId = data.id_usuario ?? data.numero_documento;
+          if (userId) {
+            localStorage.setItem("userId", String(userId));
+            localStorage.removeItem("userDocument");
+          }
           const name = data.name || (formData.email ? formData.email.split("@")[0] : "Usuario");
           localStorage.setItem("userName", name);
 
-          // notificar al header (incluye numero_documento)
-          window.dispatchEvent(new CustomEvent("user:login", { detail: { token: data.token, name, expiresAt: data.expiresAt, numero_documento: data.numero_documento } }));
+          // notificar al header (incluye id_usuario)
+          window.dispatchEvent(new CustomEvent("user:login", { detail: { token: data.token, name, expiresAt: data.expiresAt, id_usuario: userId } }));
 
           // cerrar modal
           onClose();
@@ -766,7 +770,7 @@ const formDataInicial: FormFields = {
                   <ul className="list-disc list-inside text-sm text-gray-700 mb-4">
                     {duplicateModal.duplicates.map((d) => (
                       <li key={d}>
-                        {d === 'correo' ? 'Correo electrónico' : d === 'telefono' ? 'Teléfono' : d === 'numero_documento' ? 'Número de documento' : d}
+                        {d === 'correo' ? 'Correo electrónico' : d === 'telefono' ? 'Teléfono' : d === 'id_usuario' ? 'ID de usuario' : d}
                       </li>
                     ))}
                   </ul>

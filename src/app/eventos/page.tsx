@@ -31,7 +31,7 @@ interface Event {
   hora_inicio: string;
   hora_final: string;
   dias_semana?: string;             // opcional si no lo usas en BD
-  numero_documento?: string;
+  id_usuario?: string;
   id_categoria_evento: number;
   id_tipo_evento: number;
   id_municipio: number;

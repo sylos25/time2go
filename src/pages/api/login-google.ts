@@ -108,9 +108,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const secret =
         process.env.BETTER_AUTH_SECRET || process.env.JWT_SECRET || "dev-secret"
       const expiresIn = 60 * 30
-      const numeroDocumento = String(user.id_usuario)
+      const userId = String(user.id_usuario)
       const token = jwt.sign(
-        { numero_documento: numeroDocumento, name: user.nombres || email.split("@")[0] },
+        { id_usuario: userId, name: user.nombres || email.split("@")[0] },
         secret,
         { expiresIn }
       )
@@ -130,7 +130,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json({
         success: true,
         token,
-        numero_documento: numeroDocumento,
+        id_usuario: userId,
         id_publico: user.id_publico,
         expiresAt: Math.floor(Date.now() / 1000) + expiresIn,
         name: user.nombres || email.split("@")[0],

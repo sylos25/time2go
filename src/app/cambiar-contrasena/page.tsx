@@ -19,7 +19,7 @@ import {
 } from "lucide-react"
 
 interface UserData {
-  numero_documento: string
+  id_usuario: string
   nombres: string
   apellidos: string
   correo: string

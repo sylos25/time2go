@@ -130,7 +130,7 @@ export default function EventDashboard() {
           visibility: !!ev.estado,
           image: (ev.imagenes && ev.imagenes[0] && ev.imagenes[0].url_imagen_evento) || '/images/placeholder.jpg',
           promoter: ev.creador?.nombres || '',
-          creatorId: ev.creador?.numero_documento || null,
+          creatorId: ev.creador?.id_usuario || null,
           documentos: ev.documentos || [],
         }))
         setEvents(mapped)
@@ -158,8 +158,8 @@ export default function EventDashboard() {
         const meData = await meRes.json()
         if (!canceled) setMeUser(meData.user)
         const roleNum = meData?.user?.id_rol !== undefined ? Number(meData.user.id_rol) : undefined
-        if (!canceled) setAuthorized(roleNum === 3 || roleNum === 4)
-        if (!canceled && !(roleNum === 3 || roleNum === 4)) {
+        if (!canceled) setAuthorized(roleNum === 4)
+        if (!canceled && roleNum !== 4) {
           // user authenticated but not allowed
           return
         }
@@ -183,7 +183,7 @@ export default function EventDashboard() {
             visibility: !!ev.estado,
             image: (ev.imagenes && ev.imagenes[0] && ev.imagenes[0].url_imagen_evento) || '/images/placeholder.jpg',
             promoter: ev.creador?.nombres || '',
-            creatorId: ev.creador?.numero_documento || null,
+            creatorId: ev.creador?.id_usuario || null,
             documentos: ev.documentos || [],
           }))
           if (!canceled) setEvents(mapped)
@@ -400,7 +400,7 @@ export default function EventDashboard() {
     setChecklistItems(checklistItems.map((item) => (item.id === id ? { ...item, completed: !item.completed } : item)))
   }
 
-  const eventsScoped = eventsScope === 'all' ? events : (events as any[]).filter((ev) => String(ev.creatorId) === String(meUser?.numero_documento))
+  const eventsScoped = eventsScope === 'all' ? events : (events as any[]).filter((ev) => String(ev.creatorId) === String(meUser?.id_usuario))
 
   const filteredEvents = eventsScoped.filter((event) => {
     const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -981,12 +981,12 @@ export default function EventDashboard() {
                       {users
                         .filter(u => {
                           if (!searchUsers) return true
-                          const hay = `${u.numero_documento} ${u.nombres} ${u.apellidos} ${u.correo} ${u.pais} ${u.rol}`.toLowerCase()
+                          const hay = `${u.id_usuario} ${u.nombres} ${u.apellidos} ${u.correo} ${u.pais} ${u.rol}`.toLowerCase()
                           return hay.includes(searchUsers.toLowerCase())
                         })
                         .map((u) => (
-                          <tr key={u.numero_documento} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.numero_documento}</td>
+                          <tr key={u.id_usuario} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.id_usuario}</td>
                             <td className="px-6 py-4 text-center text-sm text-gray-700">{u.tipo_documento}</td>
                             <td className="px-6 py-4 text-center text-sm text-gray-900">{u.nombres}</td>
                             <td className="px-6 py-4 text-center text-sm text-gray-900">{u.apellidos}</td>

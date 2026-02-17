@@ -12,17 +12,27 @@ export async function GET(req: Request) {
     if (authHeader.startsWith("Bearer ")) {
       const token = authHeader.slice(7).trim();
       const payload = verifyToken(token);
-      if (!payload || !payload.numero_documento) {
+      const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
+      if (!payload || !userIdFromToken) {
         return NextResponse.json({ ok: false, message: "Invalid token" }, { status: 401 });
       }
-      requesterId = String(payload.numero_documento);
+      requesterId = String(userIdFromToken);
     } else {
       const session = await auth.api.getSession({ headers: req.headers as any });
-      const sid = (session && session.user && (session.user as any).numero_documento) || null;
+      const sid = (session && session.user && ((session.user as any).id_usuario || (session.user as any).numero_documento)) || null;
       if (!sid) {
         return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
       }
       requesterId = String(sid);
+    }
+
+    const roleRes = await pool.query(
+      "SELECT id_rol FROM tabla_usuarios WHERE id_usuario = $1 LIMIT 1",
+      [requesterId]
+    );
+    const role = roleRes.rows && roleRes.rows[0] ? Number(roleRes.rows[0].id_rol) : null;
+    if (role !== 4) {
+      return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
     }
 
     const eventsRes = await pool.query(`SELECT COUNT(*)::int AS count FROM tabla_eventos WHERE estado = TRUE`);

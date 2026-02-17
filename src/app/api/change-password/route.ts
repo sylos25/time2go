@@ -45,19 +45,20 @@ export async function POST(req: Request) {
     const token = authHeader.slice(7).trim();
     const payload = verifyToken(token);
 
-    if (!payload || !payload.numero_documento) {
+    const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
+    if (!payload || !userIdFromToken) {
       return NextResponse.json(
         { ok: false, message: "Token inválido" },
         { status: 401 }
       );
     }
 
-    const numeroDocumento = String(payload.numero_documento);
+    const userId = String(userIdFromToken);
 
     // Obtener el usuario de la base de datos
     const userResult = await pool.query(
-      `SELECT contrasena_hash FROM tabla_usuarios WHERE numero_documento = $1`,
-      [numeroDocumento]
+      `SELECT contrasena_hash FROM tabla_usuarios WHERE id_usuario = $1`,
+      [userId]
     );
 
     if (!userResult.rows || userResult.rows.length === 0) {
@@ -84,8 +85,8 @@ export async function POST(req: Request) {
 
     // Actualizar la contraseña en la base de datos
     await pool.query(
-      `UPDATE tabla_usuarios SET contrasena_hash = $1, fecha_actualizacion = CURRENT_TIMESTAMP WHERE numero_documento = $2`,
-      [hashedPassword, numeroDocumento]
+      `UPDATE tabla_usuarios SET contrasena_hash = $1, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id_usuario = $2`,
+      [hashedPassword, userId]
     );
 
     return NextResponse.json({

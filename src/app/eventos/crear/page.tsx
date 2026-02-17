@@ -35,10 +35,9 @@ export default function CrearEventoPage() {
 
   const [newEvent, setNewEvent] = useState<any>({
     nombre_evento: "",
-    numero_documento: "",
+    id_usuario: "",
     id_categoria_evento: 0,
     id_tipo_evento: 0,
-    id_municipio: 0,
     id_sitio: 0,
     descripcion: "",
     telefono1: "",
@@ -210,19 +209,22 @@ export default function CrearEventoPage() {
     fetchCategorias();
   }, []);
 
-  // Authorization: ensure user is authenticated and has role 2,3 or 4 to create events
+  // Authorization: ensure user is authenticated and has role 4 to create events
   useEffect(() => {
     let cancelled = false;
     const checkAuth = async () => {
       try {
-        const res = await fetch('/api/me', { credentials: 'include' });
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        const headers: any = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch('/api/me', { headers, credentials: 'include' });
         if (!res.ok) {
           if (!cancelled) setAuthorized(false);
           return;
         }
         const data = await res.json();
         const roleNum = data?.user?.id_rol !== undefined ? Number(data.user.id_rol) : undefined;
-        if (!cancelled) setAuthorized(roleNum === 2 || roleNum === 3 || roleNum === 4);
+        if (!cancelled) setAuthorized(roleNum === 4);
       } catch (err) {
         console.error('Auth check error', err);
         if (!cancelled) setAuthorized(false);
@@ -294,16 +296,13 @@ export default function CrearEventoPage() {
         .then((data) => {
           if (data.length > 0) {
             setBusquedaMunicipio(data[0].nombre_municipio);
-            setNewEvent((prev: any) => ({ ...prev, id_municipio: data[0].id_municipio }));
           } else {
             setBusquedaMunicipio("");
-            setNewEvent((prev: any) => ({ ...prev, id_municipio: 0 }));
           }
         })
         .catch((err) => console.error("Error cargando municipios:", err));
     } else {
       setBusquedaMunicipio("");
-      setNewEvent((prev: any) => ({ ...prev, id_municipio: 0 }));
     }
   }, [newEvent.id_sitio]);
 
@@ -322,10 +321,10 @@ export default function CrearEventoPage() {
       formData.append("hora_final", newEvent.hora_final || "");
       const diasStrings = (newEvent.diasSeleccionados || []).map((d: Date) => d.toISOString().split('T')[0]);
       formData.append("dias_semana", JSON.stringify(diasStrings));
-      formData.append("numero_documento", String(newEvent.numero_documento || localStorage.getItem('userDocument') || ""));
+      const storedUserId = localStorage.getItem('userId') || localStorage.getItem('userDocument') || "";
+      formData.append("id_usuario", String(newEvent.id_usuario || storedUserId));
       formData.append("id_categoria_evento", String(newEvent.id_categoria_evento || 0));
       formData.append("id_tipo_evento", String(newEvent.id_tipo_evento || 0));
-      formData.append("id_municipio", String(newEvent.id_municipio || 0));
       formData.append("id_sitio", String(newEvent.id_sitio || 0));
       formData.append("telefono_1", newEvent.telefono1 || newEvent.telefono_1 || "");
       formData.append("telefono_2", newEvent.telefono2 || newEvent.telefono_2 || "");
@@ -415,11 +414,11 @@ export default function CrearEventoPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="promotor_doc">Número de Documento del Promotor</Label>
+                  <Label htmlFor="promotor_doc">ID de Usuario del Promotor</Label>
                   <Input
                     id="promotor_doc"
-                    value={newEvent.numero_documento}
-                    onChange={(e) => setNewEvent({ ...newEvent, numero_documento: e.target.value })}
+                    value={newEvent.id_usuario}
+                    onChange={(e) => setNewEvent({ ...newEvent, id_usuario: e.target.value })}
                     placeholder="1234567890"
                     className="rounded-xl"
                   />

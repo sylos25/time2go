@@ -30,7 +30,7 @@ import {
 } from "lucide-react"
 
 interface UserData {
-  numero_documento: string
+  id_usuario: string
   nombres: string
   apellidos: string
   correo: string
@@ -181,12 +181,12 @@ export default function PerfilPage() {
                   </div>
                 </div>
 
-                {/* Número de Documento */}
+                {/* ID de Usuario */}
                 <div className="border border-gray-200 rounded-lg p-5 hover:bg-gray-50 transition-colors">
                   <div className="flex items-start gap-4">
                     <div className="flex-1">
-                      <p className="text-gray-600 text-sm font-bold mb-1">NÚMERO DE DOCUMENTO</p>
-                      <p className="text-gray-900 text-lg font-medium">{user.numero_documento}</p>
+                      <p className="text-gray-600 text-sm font-bold mb-1">ID DE USUARIO</p>
+                      <p className="text-gray-900 text-lg font-medium">{user.id_usuario}</p>
                     </div>
                   </div>
                 </div>
@@ -271,6 +271,7 @@ export default function PerfilPage() {
                   onClick={() => {
                     localStorage.removeItem("token")
                     localStorage.removeItem("userName")
+                    localStorage.removeItem("userId")
                     localStorage.removeItem("userDocument")
                     router.push("/")
                   }}

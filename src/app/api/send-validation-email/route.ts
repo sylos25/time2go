@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
 
     if (!email || !userId) {
       return NextResponse.json(
-        { error: "Email y número de documento son requeridos" },
+        { error: "Email e id_usuario son requeridos" },
         { status: 400 }
       );
     }

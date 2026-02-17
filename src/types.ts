@@ -15,7 +15,7 @@
     export type Evento = {
         id_evento: number;
         nombre_evento: string;
-        numero_documento?: string;
+        id_usuario?: string;
         id_tipo_evento: number;
         id_municipio: number;
         id_sitio: number;

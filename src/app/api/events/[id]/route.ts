@@ -15,19 +15,20 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 
     // Verify user owns the event or is admin
     const authHeader = (req.headers.get("authorization") || "").trim();
-    let numero_documento = "";
+    let userId = "";
     if (authHeader.startsWith("Bearer ")) {
       try {
         const { verifyToken } = await import("@/lib/jwt");
         const t = authHeader.slice(7).trim();
         const payload = verifyToken(t);
-        if (payload && payload.numero_documento) numero_documento = String(payload.numero_documento);
+        const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
+        if (payload && userIdFromToken) userId = String(userIdFromToken);
       } catch (e) {
         console.error("token verification failed", e);
       }
     }
 
-    if (!numero_documento) {
+    if (!userId) {
       return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
     }
 
@@ -37,7 +38,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       return NextResponse.json({ ok: false, message: "Event not found" }, { status: 404 });
     }
 
-    if (String(eventCheck.rows[0].id_usuario) !== numero_documento) {
+    if (String(eventCheck.rows[0].id_usuario) !== userId) {
       return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
     }
 
@@ -137,49 +138,25 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       await client.query("INSERT INTO tabla_imagenes_eventos (url_imagen_evento, id_evento) VALUES ($1, $2)", [url, eventId]);
     }
 
-    // Sync tickets (tabla_valores) and links (tabla_links) and dias (tabla_eventos_x_dias)
+    // Sync tickets (tabla_boleteria) and links (tabla_links)
     // Delete existing rows and re-insert based on submitted arrays
-    await client.query("DELETE FROM tabla_valores WHERE id_evento = $1", [eventId]);
+    await client.query("DELETE FROM tabla_boleteria WHERE id_evento = $1", [eventId]);
     await client.query("DELETE FROM tabla_links WHERE id_evento = $1", [eventId]);
-    await client.query("DELETE FROM tabla_eventos_x_dias WHERE id_evento = $1", [eventId]);
 
     // Insert links
     for (const link of (linksBoleteria || []).filter(Boolean)) {
       await client.query(`INSERT INTO tabla_links (id_evento, link) VALUES ($1,$2)`, [eventId, link]);
     }
 
-    // Insert dias from dias_semana JSON
-    if (dias_semana) {
-      try {
-        const diasArr: string[] = JSON.parse(dias_semana);
-        for (const d of diasArr) {
-          await client.query(`INSERT INTO tabla_eventos_x_dias (id_evento, dia) VALUES ($1,$2)`, [eventId, d]);
-        }
-      } catch (e) {
-        console.warn('invalid dias_semana format on update', e);
-      }
-    }
-
     // Insert ticket values if paid
     if (gratis_pago) {
       for (let i = 0; i < tiposBoleteria.length; i++) {
-        const nombreCat = tiposBoleteria[i];
+        const nombreBoleto = tiposBoleteria[i];
         const costoRaw = costos[i] || '';
 
-        const valor = parseFloat(costoRaw.replace(/[^0-9.,-]/g, '').replace(',', '.')) || 0;
+        const precioBoleto = parseFloat(costoRaw.replace(/[^0-9.,-]/g, '').replace(',', '.')) || 0;
 
-        let catRes = await client.query(`SELECT id_categoria_boleto FROM tabla_categoria_boletos WHERE nombre_categoria_boleto = $1`, [nombreCat]);
-        let id_categoria_boleto: number;
-        if (catRes && catRes.rows && catRes.rows.length > 0) {
-          id_categoria_boleto = catRes.rows[0].id_categoria_boleto;
-        } else {
-          const nextRes = await client.query(`SELECT COALESCE(MAX(id_categoria_boleto),0)+1 AS next FROM tabla_categoria_boletos`);
-          const nextId = (nextRes.rows && nextRes.rows[0] && nextRes.rows[0].next) ? nextRes.rows[0].next : 1;
-          await client.query(`INSERT INTO tabla_categoria_boletos (id_categoria_boleto, nombre_categoria_boleto) VALUES ($1,$2)`, [nextId, nombreCat]);
-          id_categoria_boleto = nextId;
-        }
-
-        await client.query(`INSERT INTO tabla_valores (id_evento, id_categoria_boleto, valor) VALUES ($1,$2,$3)`, [eventId, id_categoria_boleto, valor]);
+        await client.query(`INSERT INTO tabla_boleteria (id_evento, nombre_boleto, precio_boleto) VALUES ($1,$2,$3)`, [eventId, nombreBoleto, precioBoleto]);
       }
     }
 
@@ -192,9 +169,9 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
               s.nombre_sitio, m.nombre_municipio,
               ce.nombre as categoria_nombre, te.nombre as tipo_nombre
        FROM tabla_eventos e
-       LEFT JOIN tabla_usuarios u ON e.id_usuario = u.numero_documento
+      LEFT JOIN tabla_usuarios u ON e.id_usuario = u.id_usuario
        LEFT JOIN tabla_sitios s ON e.id_sitio = s.id_sitio
-       LEFT JOIN tabla_municipios m ON e.id_municipio = m.id_municipio
+      LEFT JOIN tabla_municipios m ON s.id_municipio = m.id_municipio
        LEFT JOIN tabla_categoria_eventos ce ON e.id_categoria_evento = ce.id_categoria_evento
        LEFT JOIN tabla_tipo_eventos te ON e.id_tipo_evento = te.id_tipo_evento
        WHERE e.id_evento = $1`,
