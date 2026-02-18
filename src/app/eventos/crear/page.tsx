@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, X } from "lucide-react";
 import { NumericFormat } from "react-number-format";
-import imageCompression from "browser-image-compression";
+// imageCompression removed — file upload UI simplified
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -29,7 +29,7 @@ export default function CrearEventoPage() {
   const [busquedaMunicipio, setBusquedaMunicipio] = useState("");
   const [municipios, setMunicipios] = useState([]);
   const [showTelefono2, setShowTelefono2] = useState(false);
-  const [preview, setPreview] = useState<string[]>([]);
+  // image preview state removed (no image upload in simplified form)
   const [isLoading, setIsLoading] = useState(false);
 
   const [newEvent, setNewEvent] = useState<any>({
@@ -130,59 +130,9 @@ export default function CrearEventoPage() {
     setNewEvent((prev: any) => ({ ...prev, boletas: [{ nombre_boleto: "", precio_boleto: "", servicio: "" }] }));
   };
 
-  // Handlers para links de boletería
-  const addLinkBoleteria = () => {
-    if (newEvent.linksBoleteria.length < 5) {
-      setNewEvent({ ...newEvent, linksBoleteria: [...newEvent.linksBoleteria, ""] });
-    }
-  };
+  // ticket link handlers removed from UI (kept as optional server-side field)
 
-  const updateLinkBoleteria = (index: number, value: string) => {
-    const updatedLinks = [...newEvent.linksBoleteria];
-    updatedLinks[index] = value;
-    setNewEvent({ ...newEvent, linksBoleteria: updatedLinks });
-  };
-
-  const removeLinkBoleteria = (index: number) => {
-    const updatedLinks = newEvent.linksBoleteria.filter((_: string, i: number) => i !== index);
-    setNewEvent({ ...newEvent, linksBoleteria: updatedLinks });
-  };
-
-  const removeAllLinksBoleteria = () => {
-    setNewEvent({ ...newEvent, linksBoleteria: [""] });
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    let files = Array.from(e.target.files);
-
-    if (files.length > 6) {
-      alert("Solo puedes subir 6 imágenes por evento.");
-      files = files.slice(0, 6);
-    }
-
-    const compressedFiles = await Promise.all(
-      files.map(async (file) => {
-        if (file.type !== "image/jpeg") {
-          alert("Solo se permiten imágenes en formato JPG.");
-          return null;
-        }
-
-        const options = {
-          maxSizeMB: 2,
-          maxWidthOrHeight: 1280,
-          useWebWorker: true,
-        };
-        return await imageCompression(file, options);
-      })
-    );
-
-    const validFiles = compressedFiles.filter((f): f is File => f !== null);
-    setNewEvent((prev: any) => ({ ...prev, imagenes: validFiles }));
-
-    const previews = validFiles.map((file) => URL.createObjectURL(file));
-    setPreview(previews);
-  };
+  // image upload handler removed (no image upload in simplified form)
 
   // Fetch categorías
   useEffect(() => {
@@ -384,11 +334,7 @@ export default function CrearEventoPage() {
           }
         }
 
-        const linksValidos = newEvent.linksBoleteria.filter((l: string) => l && l.trim());
-        if (linksValidos.length === 0) {
-          alert("Debes agregar al menos un link de compra para eventos de pago.");
-          return;
-        }
+        // ticket purchase links are optional in simplified form
       }
 
       const formData = new FormData();
@@ -422,8 +368,7 @@ export default function CrearEventoPage() {
       // Boletas (tabla_boleteria)
       formData.append("boletas", JSON.stringify(newEvent.boletas || []));
       
-      // Links de compra (tabla_links)
-      formData.append("linksBoleteria", JSON.stringify(newEvent.linksBoleteria || []));
+      // Links de compra (tabla_links) are optional and handled server-side if provided
       
       formData.append("cupo", String(newEvent.cupo || 0));
       formData.append("estado", String(newEvent.estado ?? false));
@@ -484,8 +429,8 @@ export default function CrearEventoPage() {
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
-                <div>
-                  <h1 className="text-4xl font-bold text-gray-900">Crear Nuevo Evento</h1>
+                <div className="ml-45 text-center">
+                  <h1 className="text-4xl font-bold bg-gradient-to-tr from-fuchsia-700 to-red-600 bg-clip-text text-transparent">Crear Nuevo Evento</h1>
                   <p className="text-gray-600 mt-2">Completa el formulario para crear tu evento</p>
                 </div>
               </div>
@@ -496,7 +441,7 @@ export default function CrearEventoPage() {
               <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Nombre del Evento *</Label>
+                  <Label htmlFor="title">Nombre del Evento</Label>
                   <Input
                     id="title"
                     value={newEvent.nombre_evento}
@@ -507,7 +452,7 @@ export default function CrearEventoPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="pulep_evento">Código público del evento *</Label>
+                  <Label htmlFor="pulep_evento">PULEP del evento</Label>
                   <Input
                     id="pulep_evento"
                     value={newEvent.pulep_evento}
@@ -519,7 +464,7 @@ export default function CrearEventoPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="responsable_evento">Nombre del responsable del evento *</Label>
+                  <Label htmlFor="responsable_evento">Nombre de la entidad responsable del evento</Label>
                   <Input
                     id="responsable_evento"
                     value={newEvent.responsable_evento}
@@ -529,19 +474,9 @@ export default function CrearEventoPage() {
                   />
                 </div>
 
+                
                 <div className="space-y-2">
-                  <Label htmlFor="promotor_doc">ID de Usuario del Promotor *</Label>
-                  <Input
-                    id="promotor_doc"
-                    value={newEvent.id_usuario}
-                    onChange={(e) => setNewEvent({ ...newEvent, id_usuario: e.target.value })}
-                    placeholder="1234567890"
-                    className="rounded-xl"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="id_tipo_evento">Categoría del Evento *</Label>
+                  <Label htmlFor="id_tipo_evento">Categoría del Evento</Label>
                   <Select
                     value={String(newEvent.id_categoria_evento || 0)}
                     onValueChange={(value) =>setNewEvent({ ...newEvent, id_categoria_evento: Number(value), id_tipo_evento: 0 })}
@@ -563,7 +498,7 @@ export default function CrearEventoPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="category">Tipo de Evento *</Label>
+                  <Label htmlFor="category">Tipo de Evento</Label>
                   <Select
                     value={String(newEvent.id_tipo_evento || 0)}
                     onValueChange={(value) =>
@@ -588,7 +523,7 @@ export default function CrearEventoPage() {
                 </div>
 
                 <div className="space-y-2 relative">
-                  <Label htmlFor="sitio">Sitio del evento *</Label>
+                  <Label htmlFor="sitio">Sitio del evento</Label>
                   <Input
                     id="sitio"
                     value={busquedaSitio}
@@ -618,21 +553,11 @@ export default function CrearEventoPage() {
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="municipio">Municipio *</Label>
-                  <Input
-                    id="municipio"
-                    value={busquedaMunicipio}
-                    onChange={(e) => setBusquedaMunicipio(e.target.value)}
-                    readOnly={!!newEvent.id_sitio}
-                    placeholder="Ciudad del lugar donde se hará el evento."
-                    className="rounded-xl cursor-default"
-                  />
-                </div>
+                
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Descripción del evento *</Label>
+                <Label htmlFor="description">Descripción del evento</Label>
                 <Textarea
                   id="description"
                   value={newEvent.descripcion}
@@ -646,7 +571,7 @@ export default function CrearEventoPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="fullDescription">Información adicional del evento *</Label>
+                <Label htmlFor="fullDescription">Información adicional del evento</Label>
                 <Textarea
                   id="fullDescription"
                   value={newEvent.informacion_adicional}
@@ -915,60 +840,7 @@ export default function CrearEventoPage() {
                 )}
               </div>
 
-              {/* Ticket Links */}
-              {newEvent.pago && (
-                <div className="space-y-4 p-4 border rounded-lg shadow-md bg-white-50 cursor-default">
-                  <h2 className="text-lg font-semibold">Links de la boletería</h2>
-                  <p className="text-xs text-gray-600 italic -translate-y-3 cursor-default"> 
-                    Agrega los links donde los usuarios pueden comprar la entrada al evento.
-                  </p>
-                  {newEvent.linksBoleteria.map((link: string, index: number) => (
-                    <div key={index} className="flex items-center gap-2 -translate-y-3">
-                      <Input
-                        type="url"
-                        value={link}
-                        onChange={(e) => updateLinkBoleteria(index, e.target.value)}
-                        placeholder="https://example.com/tickets"
-                        className="rounded-xl flex-1"
-                      />
-                      {newEvent.linksBoleteria.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeLinkBoleteria(index)}
-                          className="bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-800 whitespace-nowrap cursor-pointer">
-                          Quitar
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <div className="flex justify-between items-center gap-3 -translate-y-3">
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={addLinkBoleteria}
-                        disabled={newEvent.linksBoleteria.length >= 5}
-                        className={`px-3 py-1 rounded-md text-white ${
-                          newEvent.linksBoleteria.length >= 5
-                            ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-blue-500 hover:bg-blue-600 cursor-pointer"
-                        }`}>
-                        + Añadir link     
-                      </button>
-                      {newEvent.linksBoleteria.length >= 2 && (
-                        <button
-                          type="button"
-                          onClick={removeAllLinksBoleteria}
-                          className="px-3 py-1 rounded-md text-white bg-red-600 hover:bg-red-700 cursor-pointer">
-                          Eliminar todos
-                        </button>
-                      )}
-                    </div>
-                    <span className="text-sm text-gray-600">
-                      {newEvent.linksBoleteria.length}/5 links
-                    </span>
-                  </div>
-                </div>
-              )}
+              
 
               {/* Capacity */}
               <div className="space-y-2">
@@ -990,78 +862,9 @@ export default function CrearEventoPage() {
                 </p>
               </div>
 
-              {/* Images */}
-              <div className="flex flex-col space-y-2">
-                <label htmlFor="imagenes" className="font-medium">
-                  Imágenes del evento
-                </label>
+              
 
-                <label
-                  htmlFor="imagenes"
-                  className="cursor-pointer rounded-md border px-2 py-1 bg-blue-500 text-white text-sm hover:bg-blue-600 w-60 text-center"
-                >
-                  Cargar imágenes
-                </label>
-
-                <input
-                  id="imagenes"
-                  type="file"
-                  multiple
-                  accept="image/jpeg"
-                  className="hidden"
-                  onChange={handleImageUpload}
-                />
-                {preview.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {preview.map((src, i) => (
-                      <img
-                        key={i}
-                        src={src}
-                        alt={`preview-${i}`}
-                        className="w-32 h-32 object-cover rounded-lg border"
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* PDF Document */}
-              <div className="flex flex-col space-y-2">
-                <label htmlFor="documento" className="font-medium">
-                  Permiso del IMCT
-                </label>
-
-                <label
-                  htmlFor="documento"
-                  className="cursor-pointer rounded-md border px-3 py-1 bg-blue-500 text-white text-sm hover:bg-blue-600 w-60 text-center"
-                >
-                  Cargar PDF
-                </label>
-
-                <input
-                  id="documento"
-                  type="file"
-                  accept="application/pdf"
-                  className="hidden"
-                  onChange={(e) => {
-                    if (!e.target.files) return;
-                    const file = e.target.files[0];
-
-                    if (file && file.type !== "application/pdf") {
-                      alert("Solo se permiten archivos PDF.");
-                      return;
-                    }
-
-                    setNewEvent((prev: any) => ({ ...prev, documento: file }));
-                  }}
-                />
-
-                {newEvent.documento && (
-                  <p className="text-sm text-gray-600 mt-2">
-                    Archivo seleccionado: {newEvent.documento.name}
-                  </p>
-                )}
-              </div>
+              
             </div>
 
             {/* Buttons */}

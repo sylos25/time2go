@@ -241,6 +241,15 @@ CREATE TABLE IF NOT EXISTS tabla_documentos_eventos (
     FOREIGN KEY (id_evento)                 REFERENCES  tabla_eventos(id_evento)
 );
 
+CREATE TABLE IF NOT EXISTS tabla_documentos_usuarios (
+    id_documento_usuario                    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    url_documento_usuario                   VARCHAR                      NOT NULL       UNIQUE,
+    id_usuario                              INT                          NOT NULL,
+    fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario)                REFERENCES  tabla_usuarios(id_usuario)
+);
+
 CREATE TABLE IF NOT EXISTS tabla_valoraciones (
     id_valoracion                           INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     id_usuario                              INT                       	 NOT NULL,
@@ -352,6 +361,9 @@ FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_documentos_eventos
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
+CREATE TRIGGER trig_update_documentos_usuarios BEFORE UPDATE ON tabla_documentos_usuarios
+FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
 CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_valoraciones
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
@@ -377,6 +389,19 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_generar_id_publico BEFORE INSERT ON tabla_usuarios
 FOR EACH ROW EXECUTE FUNCTION generar_id_publico();
 
+
+-- Trigger para crear id_publico_evento en la tabla eventos.
+CREATE OR REPLACE FUNCTION generar_id_publico_evento()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.id_publico_evento :=
+    substring(encode(digest(NEW.id_evento::text, 'sha256'), 'hex') from 1 for 12);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_generar_id_publico BEFORE INSERT ON tabla_eventos
+FOR EACH ROW EXECUTE FUNCTION generar_id_publico_evento();
 
 -- Cargar en tabla_roles.
 INSERT INTO tabla_roles VALUES  (1,'Usuario');

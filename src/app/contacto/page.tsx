@@ -17,7 +17,7 @@ const contactInfo = [
   {
     icon: Mail,
     title: "Email",
-    details: ["info@time2go.com", "soporte@time2go.com"],
+    details: ["time2go.jowibra@gmail.com"],
   },
   {
     icon: MapPin,
@@ -52,11 +52,11 @@ const softwareFeatures = [
 const faqs = [
   {
     question: "¿Cómo puedo crear un evento en Time2Go?",
-    answer: "Regístrate como organizador y sigue nuestro proceso guiado de creación de eventos en minutos.",
+    answer: "Inicia sesión con tu perfil de promotor y en el menú encontraras una opción llamada 'Crear Evento'.",
   },
   {
-    question: "¿como me registro como organizador?",
-    answer: "crea una cuenta y sigue los pasos para tu validación como organizador, nosotro nos encargamos del resto.",
+    question: "¿Cómo puedo ser un promotor?",
+    answer: "Crea una cuenta, entra al perfil y envia el formulario para ser validado como promotor, nosotro nos encargamos del resto.",
   },
 ]
 
@@ -237,7 +237,7 @@ export default function ContactoPage() {
                     <feature.icon className="w-9 h-9 text-green-700" />
                   </div>
 
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">{feature.title}</h3>
+                  <h3 className="text-center text-lg font-bold text-gray-900 mb-2">{feature.title}</h3>
                   <p className="text-gray-600 text-sm">{feature.description}</p>
                 </CardContent>
               </Card>
