@@ -590,7 +590,7 @@ const handleAddEvent = async () => {
                     </div>
                   </div>
 
-                  <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-amber-400 transition-colors">
+                  <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-lime-500 transition-colors">
                     {event.title}
                   </h3>
                   <p className="text-gray-600 mb-4 line-clamp-2">{event.description}</p>
@@ -606,10 +606,10 @@ const handleAddEvent = async () => {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold text-lime-700">{typeof event.price === 'number' ? `$${event.price}` : event.price}</div>
+                    <div className="text-2xl font-bold text-lime-500">{typeof event.price === 'number' ? `$${event.price}` : event.price}</div>
                     <Button
                       onClick={() => (window.location.href = `/eventos/${event.id_evento ?? event.id}`)}
-                      className="bg-gradient-to-tr from-violet-600 to-indigo-700 hover:from-blue-700 hover:to-cyan-700 rounded-xl px-6"
+                      className="bg-gradient-to-tr from-fuchsia-500 to-red-600 hover:from-fuchsia-600 hover:to-red-700 rounded-xl px-6"
                     >
                       Detalles
                     </Button>

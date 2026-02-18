@@ -200,7 +200,7 @@ export default function EventLanding() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => router.back()}
+            onClick={() => router.push("/eventos")}
             className="bg-white/80 backdrop-blur-sm hover:bg-white shadow-md"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -272,7 +272,7 @@ export default function EventLanding() {
                     onClick={() => setSelectedImage(i)}
                     className={`flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
                       selectedImage === i
-                        ? "border-blue-500 ring-2 ring-blue-500/20"
+                        ? "border-lime-500 ring-2 ring-lime-500/20"
                         : "border-gray-200 hover:border-gray-300"
                     }`}
                   >
@@ -298,7 +298,7 @@ export default function EventLanding() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <Card className="bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
-                  <TagIcon className="h-5 w-5 mx-auto mb-2 text-blue-500" />
+                  <TagIcon className="h-5 w-5 mx-auto mb-2 text-green-500" />
                   <p className="text-xs text-muted-foreground">Categoria</p>
                   <p className="font-semibold text-sm truncate">
                     {event.categoria?.nombre || "—"}
@@ -307,7 +307,7 @@ export default function EventLanding() {
               </Card>
               <Card className="bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
-                  <Calendar className="h-5 w-5 mx-auto mb-2 text-blue-500" />
+                  <Calendar className="h-5 w-5 mx-auto mb-2 text-green-500" />
                   <p className="text-xs text-muted-foreground">Fecha</p>
                   <p className="font-semibold text-sm">
                     {formatShortDate(event.fecha_inicio)}
@@ -316,7 +316,7 @@ export default function EventLanding() {
               </Card>
               <Card className="bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
-                  <Clock className="h-5 w-5 mx-auto mb-2 text-blue-500" />
+                  <Clock className="h-5 w-5 mx-auto mb-2 text-green-500" />
                   <p className="text-xs text-muted-foreground">Hora</p>
                   <p className="font-semibold text-sm">
                     {formattedHorario}
@@ -325,7 +325,7 @@ export default function EventLanding() {
               </Card>
               <Card className="bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
-                  <Users className="h-5 w-5 mx-auto mb-2 text-blue-500" />
+                  <Users className="h-5 w-5 mx-auto mb-2 text-green-500" />
                   <p className="text-xs text-muted-foreground">Aforo para</p>
                   <p className="font-semibold text-sm">
                     {Number(event.cupo ?? 0).toLocaleString()}
@@ -392,7 +392,7 @@ export default function EventLanding() {
                       >
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                            <Ticket className="h-5 w-5 text-blue-600" />
+                            <Ticket className="h-5 w-5 text-lime-600" />
                           </div>
                           <span className="font-medium">
                             {v.nombre_categoria_boleto}
@@ -428,17 +428,17 @@ export default function EventLanding() {
                   <p className="text-sm text-muted-foreground mb-1">
                     {event.gratis_pago ? "Desde" : "Entrada"}
                   </p>
-                  <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                  <p className="text-3xl font-bold bg-gradient-to-r from-green-600 to-lime-600 bg-clip-text text-transparent">
                     {priceLabel}
                   </p>
                 </div>
 
                 <Button
-                  className="w-full mb-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600"
+                  className="w-full mb-3 bg-gradient-to-r from-red-500 to-fuchsia-500 text-white hover:from-red-600 hover:to-fuchsia-700"
                   size="lg"
                 >
                   <Ticket className="h-5 w-5 mr-2" />
-                  Reservar / Comprar
+                  Reservar
                 </Button>
 
                 {event.links && event.links.length > 0 && (
@@ -566,7 +566,7 @@ export default function EventLanding() {
                               key={`day-${day}`}
                               className={`text-center py-1.5 text-xs rounded-md ${
                                 isEventDay
-                                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold'
+                                  ? 'bg-gradient-to-r from-lime-500 to-green-500 text-white font-bold'
                                   : 'text-muted-foreground'
                               }`}
                             >
@@ -626,13 +626,13 @@ export default function EventLanding() {
             <p className="text-xs text-muted-foreground">
               {event.gratis_pago ? "Desde" : "Entrada"}
             </p>
-            <p className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+            <p className="text-xl font-bold bg-gradient-to-r from-lime-600 to-green-600 bg-clip-text text-transparent">
               {priceLabel}
             </p>
           </div>
           <Button
             size="lg"
-            className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600"
+            className="flex-1 bg-gradient-to-r from-lime-500 to-green-500 text-white hover:from-lime-600 hover:to-green-600"
           >
             <Ticket className="h-5 w-5 mr-2" />
             Reservar
