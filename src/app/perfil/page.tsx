@@ -140,7 +140,12 @@ export default function PerfilPage() {
           {/* Contenedor Principal */}
           <Card className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
             {/* Encabezado */}
-            <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600 h-32" />
+            <div 
+              className="h-32 bg-cover bg-center bg-no-repeat" 
+              style={{
+                backgroundImage: 'url(https://res.cloudinary.com/dljthy97e/image/upload/v1771390899/banner_perfil_g8cmuw.jpg)'
+              }}
+            />
 
             <div className="px-8 pb-8">
               {/* Avatar y Nombre */}

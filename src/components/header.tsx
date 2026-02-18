@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Menu, X, User, LogOut, Settings, LayoutDashboard, Calendar } from "lucide-react"
+import { usePermission, PERMISSIONS } from "@/hooks/use-permissions"
 import type { JSX } from "react"
 
 interface HeaderProps {
@@ -229,8 +230,10 @@ export function Header({
 
   // determine role (1 = usuario regular per DB) — prefer in-memory user, fallback to localStorage
   const userRole = user?.role !== undefined ? Number(user.role) : Number(typeof window !== 'undefined' ? localStorage.getItem('userRole') || 0 : 0);
-  const canCreate = userRole === 4;
-  const canDashboard = userRole === 4;
+  
+  // Verificar permisos usando el sistema de accesibilidad
+  const { hasAccess: canCreate } = usePermission(loggedIn ? PERMISSIONS.CREAR_EVENTOS : null, userRole);
+  const { hasAccess: canDashboard } = usePermission(loggedIn ? PERMISSIONS.VER_DASHBOARD : null, userRole);
 
   const navigationItems = [
     { name: "Inicio", path: "/" },
@@ -392,7 +395,7 @@ export function Header({
                         <span className="font-medium">{displayName}</span>
                       </Button>
                     </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuContent align="end" className="w-56 z-[80]">
                         <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => navigateTo("/perfil")} className="cursor-pointer">
