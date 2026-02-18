@@ -155,7 +155,7 @@ export default function ContactoPage() {
 
                   <Button
                     type="submit"
-                    className="w-full bg-gradient-to-tr from-fuchsia-700 to-red-500 hover:scale-103 hover:from-fuchsia-600 hover:to-red-500 text-white font-medium rounded-sm cursor-pointer"
+                    className="w-full bg-linear-to-tr from-fuchsia-700 to-red-500 hover:scale-103 hover:from-fuchsia-600 hover:to-red-500 text-white font-medium rounded-sm cursor-pointer"
                   >
                     <Send className="w-4 h-4 mr-2" />
                     Enviar mensaje

@@ -501,8 +501,8 @@ export default function EventDashboard() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <button onClick={() => router.push('/')} className="px-3 py-1 text-sm bg-white text-gray-700 rounded-lg shadow-sm hover:bg-gray-50 curs">
+            <div className="flex items-center gap-3 ">
+              <button onClick={() => router.push('/')} className="px-3 py-1 text-sm bg-white text-gray-700 rounded-lg shadow-sm hover:bg-gray-50 cursor-pointer">
                 Salir
               </button>
             </div>
@@ -649,13 +649,13 @@ export default function EventDashboard() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setEventsScope('all')}
-                      className={`px-3 py-1 rounded ${eventsScope === 'all' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-200'}`}
+                      className={`px-3 py-1 rounded ${eventsScope === 'all' ? 'bg-lime-500 text-white' : 'bg-white text-gray-700 border border-gray-200'}`}
                     >
                       Todos
                     </button>
                     <button
                       onClick={() => setEventsScope('mine')}
-                      className={`px-3 py-1 rounded ${eventsScope === 'mine' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-200'}`}
+                      className={`px-3 py-1 rounded ${eventsScope === 'mine' ? 'bg-lime-500 text-white' : 'bg-white text-gray-700 border border-gray-200'}`}
                     >
                       Míos
                     </button>
@@ -664,7 +664,7 @@ export default function EventDashboard() {
                   <select
                     value={filterCategory}
                     onChange={(e) => setFilterCategory(e.target.value)}
-                    className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   >
                     <option value="all">Todas las categorías</option>
                     <option value="Música">Música</option>
@@ -673,7 +673,7 @@ export default function EventDashboard() {
                     <option value="Arte">Arte</option>
                   </select>
 
-                  <button className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all">
+                  <button className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-lime-600 to-green-600 text-white rounded-lg hover:shadow-lg transition-all">
                     <Plus className="w-4 h-4" />
                     Nuevo Evento
                   </button>
@@ -760,7 +760,7 @@ export default function EventDashboard() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-500 rounded-lg flex items-center justify-center">
                                 <Calendar className="w-6 h-6 text-white" />
                               </div>
                               <div>

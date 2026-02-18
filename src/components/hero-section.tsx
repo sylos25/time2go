@@ -4,7 +4,6 @@ import { Swiper, SwiperSlide } from "swiper/react"
 import { Navigation, Pagination, Autoplay, EffectFade } from "swiper/modules"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 
 import "swiper/css"
@@ -51,38 +50,38 @@ export function HeroSection() {
   }
 
   return (
-    <section className="pt-16 lg:pt-20 pb-12 lg:pb-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="pt-16 lg:pt-20 pb-12 lg:pb-20 overflow-hidden">
+      {/* Full-width: usa w-screen + translate para romper cualquier padding del padre */}
+      <div className="relative mt-8 w-screen left-1/2 -translate-x-1/2">
+        <Swiper
+          modules={[Navigation, Pagination, Autoplay, EffectFade]}
+          className="hero-swiper w-full h-[400px] sm:h-[500px] lg:h-[650px] xl:h-[750px]"
+          loop={true}
+          effect="fade"
+          autoplay={{
+            delay: 5000,
+            disableOnInteraction: false,
+            pauseOnMouseEnter: true,
+          }}
+          pagination={{
+            clickable: true,
+            dynamicBullets: true,
+          }}
+          navigation={true}
+        >
+          {heroSlides.map((slide) => (
+            <SwiperSlide key={slide.id} className="relative group">
+              <img
+                src={slide.image || "/placeholder.svg"}
+                alt={slide.title}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
 
-        <div className="relative mt-8">
-          <Swiper
-            modules={[Navigation, Pagination, Autoplay, EffectFade]}
-            className="w-full max-w-7xl mx-auto h-[400px] sm:h-[500px] lg:h-[650px] xl:h-[750px] rounded-3xl overflow-hidden shadow-2xl"
-            loop={true}
-            effect="fade"
-            autoplay={{
-              delay: 5000,
-              disableOnInteraction: false,
-              pauseOnMouseEnter: true,
-            }}
-            pagination={{
-              clickable: true,
-              dynamicBullets: true,
-            }}
-            navigation={true}
-          >
-            {heroSlides.map((slide) => (
-              <SwiperSlide key={slide.id} className="relative group">
-                
-                <img
-                  src={slide.image || "/placeholder.svg"}
-                  alt={slide.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-                <div className="absolute bottom-8 left-8 right-8 text-white">
+              {/* Contenido alineado al max-width de la app */}
+              <div className="absolute bottom-8 left-0 right-0 text-white">
+                <div className="max-w-7xl mx-auto px-8">
                   <div className="inline-flex items-center px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium mb-4">
                     {slide.category}
                   </div>
@@ -100,14 +99,14 @@ export function HeroSection() {
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
-              </SwiperSlide>
-            ))}
-          </Swiper>
-        </div>
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
       </div>
 
       <style jsx global>{`
-        .swiper-pagination-bullet {
+        .hero-swiper .swiper-pagination-bullet {
           background: rgba(255, 255, 255, 0.6) !important;
           opacity: 1 !important;
           width: 12px !important;
@@ -115,34 +114,35 @@ export function HeroSection() {
           transition: all 0.3s ease !important;
         }
         
-        .swiper-pagination-bullet-active {
+        .hero-swiper .swiper-pagination-bullet-active {
           background: white !important;
           transform: scale(1.3) !important;
           box-shadow: 0 0 20px rgba(255, 255, 255, 0.8) !important;
         }
         
-        .swiper-button-next,
-        .swiper-button-prev {
+        /* Flechas muy transparentes */
+        .hero-swiper .swiper-button-next,
+        .hero-swiper .swiper-button-prev {
           width: 56px !important;
           height: 56px !important;
-          background: rgba(255, 255, 255, 0.15) !important;
-          backdrop-filter: blur(12px) !important;
+          background: rgba(255, 255, 255, 0.07) !important;
+          backdrop-filter: blur(4px) !important;
           border-radius: 50% !important;
-          border: 2px solid rgba(255, 255, 255, 0.2) !important;
-          color: white !important;
+          border: 1px solid rgba(255, 255, 255, 0.12) !important;
+          color: rgba(255, 255, 255, 0.6) !important;
           transition: all 0.3s ease !important;
         }
         
-        .swiper-button-next:hover,
-        .swiper-button-prev:hover {
-          background: rgba(255, 255, 255, 0.25) !important;
+        .hero-swiper .swiper-button-next:hover,
+        .hero-swiper .swiper-button-prev:hover {
+          background: rgba(255, 255, 255, 0.15) !important;
+          color: white !important;
           transform: scale(1.1) !important;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
         }
         
-        .swiper-button-next:after,
-        .swiper-button-prev:after {
-          font-size: 20px !important;
+        .hero-swiper .swiper-button-next:after,
+        .hero-swiper .swiper-button-prev:after {
+          font-size: 18px !important;
           font-weight: bold !important;
         }
       `}</style>
