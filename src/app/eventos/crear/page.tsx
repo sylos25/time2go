@@ -476,9 +476,9 @@ export default function CrearEventoPage() {
               <div className="text-gray-600">Comprobando permisos...</div>
             </div>
           ) : authorized === true ? (
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-10 mt-8">
               {/* Header with back button */}
-              <div className="flex items-center gap-4 mb-8">
+              <div className="flex items-center gap-4 mb-10">
                 <Button
                   onClick={() => router.back()}
                   variant="ghost"
@@ -486,8 +486,8 @@ export default function CrearEventoPage() {
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
-                <div className="ml-45 text-center">
-                  <h1 className="text-4xl font-bold bg-gradient-to-tr from-fuchsia-700 to-red-600 bg-clip-text text-transparent">Crear Nuevo Evento</h1>
+                <div className="ml-29 text-center">
+                  <h1 className="text-5xl font-bold bg-gradient-to-tr from-fuchsia-700 to-red-600 bg-clip-text text-transparent">Crear Nuevo Evento</h1>
                   <p className="text-gray-600 mt-2">Completa el formulario para crear tu evento</p>
                 </div>
               </div>
@@ -505,7 +505,7 @@ export default function CrearEventoPage() {
                       clearFieldError("nombre_evento");
                       setNewEvent({ ...newEvent, nombre_evento: e.target.value });
                     }}
-                    placeholder="Nombre completo del evento (mínimo 6 caracteres)"
+                    placeholder="Nombre completo del evento"
                     className="rounded-xl"
                   />
                   {formErrors.nombre_evento && (
@@ -522,7 +522,7 @@ export default function CrearEventoPage() {
                       clearFieldError("pulep_evento");
                       setNewEvent({ ...newEvent, pulep_evento: e.target.value });
                     }}
-                    placeholder="Código único (mínimo 6 caracteres)"
+                    placeholder="Código del Portal Único de Espectáculos Públicos de las Artes Escénicas"
                     className="rounded-xl"
                   />
                   <p className="text-xs text-gray-500">Este código identifica públicamente tu evento</p>
@@ -540,7 +540,7 @@ export default function CrearEventoPage() {
                       clearFieldError("responsable_evento");
                       setNewEvent({ ...newEvent, responsable_evento: e.target.value });
                     }}
-                    placeholder="Nombre completo (mínimo 6 caracteres)"
+                    placeholder="Nombre completo de la entidad responsable del evento"
                     className="rounded-xl"
                   />
                   {formErrors.responsable_evento && (
@@ -558,7 +558,7 @@ export default function CrearEventoPage() {
                         setNewEvent({ ...newEvent, id_categoria_evento: Number(value), id_tipo_evento: 0 });
                       }}
                     >
-                      <SelectTrigger className="rounded-xl cursor-pointer">
+                      <SelectTrigger className="w-80 rounded-xl cursor-pointer">
                         <SelectValue placeholder="Selecciona una categoría" />
                       </SelectTrigger>
                       <SelectContent>
@@ -589,7 +589,7 @@ export default function CrearEventoPage() {
                       }
                       disabled={!tiposDeEvento.length}
                     >
-                      <SelectTrigger className="rounded-xl cursor-pointer">
+                      <SelectTrigger className="w-80 rounded-xl cursor-pointer">
                         <SelectValue placeholder="Selecciona un tipo de evento" />
                       </SelectTrigger>
                       <SelectContent>
@@ -635,7 +635,7 @@ export default function CrearEventoPage() {
                             setNewEvent({ ...newEvent, id_sitio: sitio.id_sitio });
                             setSitios([]);
                           }}
-                          className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                          className="px-4 py-2 hover:bg-sky-50 cursor-pointer"
                         >
                           {sitio.nombre_sitio}
                         </li>
@@ -655,7 +655,7 @@ export default function CrearEventoPage() {
                     clearFieldError("descripcion");
                     setNewEvent({ ...newEvent, descripcion: e.target.value });
                   }}
-                  placeholder="Descripción breve del evento (mínimo 10 caracteres)"
+                  placeholder="Descripción breve del evento"
                   className="rounded-xl min-h-[100px]"
                 />
                 <p className="text-xs text-gray-500">
@@ -675,7 +675,7 @@ export default function CrearEventoPage() {
                     clearFieldError("informacion_adicional");
                     setNewEvent({ ...newEvent, informacion_adicional: e.target.value });
                   }}
-                  placeholder="Información detallada y adicional del evento (mínimo 100 caracteres). Incluye detalles sobre qué esperar, normas de comportamiento, seguridad, accesibilidad, etc."
+                  placeholder="Información detallada y adicional del evento. Incluye detalles sobre qué esperar, normas de comportamiento, seguridad, accesibilidad, etc."
                   className="rounded-xl min-h-[150px]"
                 />
                 <p className="text-xs text-gray-500">
@@ -713,7 +713,7 @@ export default function CrearEventoPage() {
                 <Button
                   type="button"
                   onClick={() => setShowTelefono2(true)}
-                  className="cursor-pointer rounded-md border px-2 py-1 bg-blue-500 text-white text-sm hover:bg-blue-600 w-60 text-center"
+                  className="cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-green-700 to-lime-500 text-white text-sm hover:bg-gradient-to-tr hover:from-green-600 hover:to-lime-400 hover:scale-102 w-45 text-center"
                 >
                   + Agregar otro teléfono
                 </Button>
@@ -747,7 +747,7 @@ export default function CrearEventoPage() {
                       setShowTelefono2(false);
                       setNewEvent({ ...newEvent, telefono2: "" });
                     }}
-                    className="cursor-pointer rounded-md border px-2 py-1 bg-red-500 text-white text-sm hover:bg-red-600 w-60 text-center"
+                    className="cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white text-sm hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-400 hover:scale-102 w-45 text-center"
                   >
                     – Quitar teléfono
                   </Button>
@@ -768,7 +768,7 @@ export default function CrearEventoPage() {
                     dateFormat="dd/MM/yyyy"
                     minDate={new Date()}
                     placeholderText="01/01/2025"
-                    className="cursor-pointer w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+                    className="cursor-pointer w-75 rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
                   />
                   {formErrors.fecha_inicio && (
                     <p className="text-xs text-red-600">{formErrors.fecha_inicio}</p>
@@ -792,7 +792,7 @@ export default function CrearEventoPage() {
                     dateFormat="dd/MM/yyyy"
                     minDate={newEvent.fecha_inicio || new Date()} 
                     placeholderText="31/12/2025"
-                    className="cursor-pointer w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+                    className="cursor-pointer w-75 rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
                   />
                   {formErrors.fecha_final && (
                     <p className="text-xs text-red-600">{formErrors.fecha_final}</p>
@@ -812,7 +812,7 @@ export default function CrearEventoPage() {
                       clearFieldError("hora_inicio");
                       setNewEvent({ ...newEvent, hora_inicio: e.target.value });
                     }}
-                    className="rounded-xl"
+                    className="w-75 rounded-xl"
                   />
                   {formErrors.hora_inicio && (
                     <p className="text-xs text-red-600">{formErrors.hora_inicio}</p>
@@ -828,7 +828,7 @@ export default function CrearEventoPage() {
                       clearFieldError("hora_final");
                       setNewEvent({ ...newEvent, hora_final: e.target.value });
                     }}
-                    className="rounded-xl"
+                    className="w-75 rounded-xl"
                   />
                   {formErrors.hora_final && (
                     <p className="text-xs text-red-600">{formErrors.hora_final}</p>
@@ -868,7 +868,7 @@ export default function CrearEventoPage() {
                 </div>
 
                 {!newEvent.pago && (
-                  <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-500">
                     <input
                       id="reservar_anticipado"
                       type="checkbox"
@@ -878,7 +878,7 @@ export default function CrearEventoPage() {
                     />
                     <label htmlFor="reservar_anticipado" className="cursor-pointer">
                       <span className="font-medium text-gray-900">¿Se requiere reserva anticipada?</span>
-                      <p className="text-xs text-gray-600">Marca esta opción si los usuarios deben reservar entrada antes del evento</p>
+                      <p className="text-xs text-gray-600">Marca esta opción si los usuarios deben reservar entrada para asistir al evento</p>
                     </label>
                   </div>
                 )}
@@ -887,7 +887,7 @@ export default function CrearEventoPage() {
                   <div className="space-y-4 p-4 border rounded-lg shadow-md">
                     <h2 className="text-lg font-semibold cursor-default">Tipos de Boletas y Precios</h2>
                     <p className="text-xs text-gray-600 italic -translate-y-3 cursor-default"> 
-                      Define los diferentes tipos de boletas disponibles para tu evento con sus precios. Según tabla_boleteria.
+                      Define los diferentes tipos de boletas disponibles para tu evento con sus precios.
                     </p>
                     {formErrors.boletas && (
                       <p className="text-xs text-red-600">{formErrors.boletas}</p>
@@ -895,20 +895,19 @@ export default function CrearEventoPage() {
                     {newEvent.boletas.map((boleta: any, index: number) => (
                       <div key={index} className="space-y-3 p-3 bg-gray-50 rounded-lg">
                         <div className="space-y-2">
-                          <Label className="text-xs">Nombre de la boleta *</Label>
+                          <Label className="text-xs">Nombre de la boleta</Label>
                           <Input
                             type="text"
                             value={boleta.nombre_boleto}
                             onChange={(e) => updateBoleta(index, "nombre_boleto", e.target.value)}
-                            placeholder="Ej: General, VIP, Early Bird (mínimo 3 caracteres)"
+                            placeholder="Ej: General, VIP, Early Bird, etc."
                             className="rounded-xl text-sm"
                           />
-                          <p className="text-xs text-gray-500">{boleta.nombre_boleto.length} caracteres</p>
                         </div>
 
                         <div className="grid md:grid-cols-2 gap-3">
                           <div className="space-y-2">
-                            <Label className="text-xs">Precio *</Label>
+                            <Label className="text-xs">Precio</Label>
                             <NumericFormat
                               value={boleta.precio_boleto}
                               prefix="$"
@@ -935,12 +934,14 @@ export default function CrearEventoPage() {
                         </div>
 
                         {newEvent.boletas.length > 1 && newEvent.pago && (
+                          <div className="flex justify-end">
                           <button
                             type="button"
                             onClick={() => removeBoletaField(index)}
-                            className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 cursor-pointer text-sm w-full">
+                            className="cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white text-sm hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-400 hover:scale-102 w-30 text-center ">
                             Quitar
                           </button>
+                        </div>
                         )}
                       </div>
                     ))}
@@ -950,10 +951,10 @@ export default function CrearEventoPage() {
                           type="button"
                           onClick={addBoletaField}
                           disabled={newEvent.boletas.length >= 12}
-                          className={`px-3 py-1 rounded-md text-white text-sm ${
+                          className={`px-3 py-1.5 rounded-md text-white text-sm ${
                             newEvent.boletas.length >= 12
-                              ? "bg-gray-400 cursor-not-allowed"
-                              : "bg-blue-500 hover:bg-blue-600 cursor-pointer"
+                              ? "bg-gray-300 cursor-not-allowed"
+                              : "cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-green-700 to-lime-500 text-white text-sm hover:bg-gradient-to-tr hover:from-green-600 hover:to-lime-400 hover:scale-102 w-45 text-center"
                           }`}>
                           + Añadir tipo de boleta
                         </button>
@@ -961,7 +962,7 @@ export default function CrearEventoPage() {
                           <button
                             type="button"
                             onClick={removeAllBoletas}
-                            className="px-3 py-1 rounded-md text-white bg-red-600 hover:bg-red-700 cursor-pointer text-sm">
+                            className="cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white text-sm hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-400 hover:scale-102 w-45 text-center">
                             Eliminar todas
                           </button>
                         )}
@@ -1020,7 +1021,6 @@ export default function CrearEventoPage() {
                     }}
                     className="rounded-xl"
                   />
-                  <p className="text-xs text-gray-500">Se guardan en la tabla_imagenes_eventos</p>
                   {formErrors.imagenes && (
                     <p className="text-xs text-red-600">{formErrors.imagenes}</p>
                   )}
@@ -1069,7 +1069,6 @@ export default function CrearEventoPage() {
                     }}
                     className="rounded-xl"
                   />
-                  <p className="text-xs text-gray-500">Se guarda en la tabla_documentos_eventos</p>
                   {formErrors.documento && (
                     <p className="text-xs text-red-600">{formErrors.documento}</p>
                   )}
@@ -1096,11 +1095,11 @@ export default function CrearEventoPage() {
               </div>
 
               {/* Buttons */}
-              <div className="flex gap-4 pt-6 border-t">
+              <div className="flex gap-50 pt-6 border-t">
                 <Button
                   onClick={handleAddEvent}
                   disabled={isLoading}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-700 hover:to-cyan-700 rounded-xl py-6 text-lg font-semibold"
+                  className="flex-1 bg-gradient-to-tr from-green-700 to-lime-500 hover:from-green-600 hover:to-lime-400 rounded-xl py-5 text-lg font-semibold"
                 >
                   {isLoading ? "Creando..." : "Crear Evento"}
                 </Button>
@@ -1108,7 +1107,7 @@ export default function CrearEventoPage() {
                   onClick={() => router.back()}
                   variant="outline"
                   disabled={isLoading}
-                  className="flex-1 rounded-xl py-6 text-lg"
+                  className="flex-1 rounded-xl py-5 text-lg"
                 >
                   Cancelar
                 </Button>

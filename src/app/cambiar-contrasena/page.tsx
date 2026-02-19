@@ -9,13 +9,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   AlertCircle,
-  User,
   Lock,
   Loader2,
   CheckCircle,
   Eye,
   EyeOff,
   ArrowLeft,
+  Rat,
 } from "lucide-react"
 
 interface UserData {
@@ -186,7 +186,7 @@ export default function CambiarContrasenaPage() {
           {/* Botón Atrás */}
           <button
             onClick={() => router.push("/perfil")}
-            className="flex items-center gap-2 text-purple-600 hover:text-purple-700 mb-6 transition-colors font-medium"
+            className="flex items-center gap-2 text-green-700 hover:text-lime-500 mb-6 transition-colors font-medium cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Volver al perfil</span>
@@ -201,18 +201,23 @@ export default function CambiarContrasenaPage() {
           )}
 
           {/* Contenedor Principal */}
-          <Card className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+          <Card className="bg-gradient-to-tr from-stone-50 to-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
             {/* Encabezado */}
-            <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600 h-32" />
+            <div 
+              className="h-32 bg-cover bg-center bg-no-repeat" 
+              style={{
+                backgroundImage: 'url(https://res.cloudinary.com/dljthy97e/image/upload/v1771390899/banner_perfil_g8cmuw.jpg)'
+              }}
+            />
 
             <div className="px-8 pb-8">
               {/* Avatar y Nombre */}
-              <div className="flex items-end gap-6 mb-8 relative -mt-16">
-                <div className="w-32 h-32 rounded-lg bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center border-4 border-white shadow-lg">
-                  <User className="h-16 w-16 text-white" />
+              <div className="flex items-end gap-6 mb-8 relative -mt-12">
+                <div className="w-32 h-32 rounded-lg bg-white flex items-center justify-center border-4 border-green-700 shadow-lg">
+                  <Rat className="h-16 w-16 text-lime-500" />
                 </div>
                 <div className="flex-1 pb-4">
-                  <h1 className="text-4xl font-bold text-gray-900">
+                  <h1 className="text-4xl font-bold bg-gradient-to-tr from-green-600 to-lime-400 text-transparent bg-clip-text">
                     {user.nombres} {user.apellidos}
                   </h1>
                   <div className="flex items-center gap-4 mt-2">
@@ -221,7 +226,7 @@ export default function CambiarContrasenaPage() {
                         Registrado el {new Date(user.fecha_registro).toLocaleDateString("es-ES")}
                       </span>
                     )}
-                    <span className="inline-block px-3 py-1 bg-purple-100 text-purple-700 text-sm font-medium rounded-full">
+                    <span className="inline-block px-3 py-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white text-sm font-medium rounded-full">
                       {user.nombre_rol || "Usuario"}
                     </span>
                   </div>
@@ -230,7 +235,7 @@ export default function CambiarContrasenaPage() {
 
               {/* Formulario de Cambio de Contraseña */}
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-gray-900">Cambiar Contraseña</h2>
+                <h2 className="text-2xl font-bold text-lime-500">Cambiar Contraseña</h2>
 
                 {passwordError && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
@@ -242,7 +247,7 @@ export default function CambiarContrasenaPage() {
                 <form onSubmit={handleChangePassword} className="space-y-5">
                   {/* Contraseña Actual */}
                   <div className="space-y-2">
-                    <Label className="text-gray-700 font-medium">Contraseña Actual</Label>
+                    <Label className="text-green-700 font-medium">Contraseña Actual</Label>
                     <div className="relative">
                       <Input
                         type={showPasswords.current ? "text" : "password"}
@@ -265,14 +270,14 @@ export default function CambiarContrasenaPage() {
 
                   {/* Contraseña Nueva */}
                   <div className="space-y-2">
-                    <Label className="text-gray-700 font-medium">Contraseña Nueva</Label>
+                    <Label className="text-green-700 font-medium">Contraseña Nueva</Label>
                     <div className="relative">
                       <Input
                         type={showPasswords.new ? "text" : "password"}
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         className="border-gray-300 text-gray-900 pr-10"
-                        placeholder="Ingresa tu nueva contraseña (mín. 8 caracteres)"
+                        placeholder="Ingresa tu nueva contraseña"
                       />
                       <button
                         type="button"
@@ -288,7 +293,7 @@ export default function CambiarContrasenaPage() {
 
                   {/* Confirmar Contraseña */}
                   <div className="space-y-2">
-                    <Label className="text-gray-700 font-medium">Confirmar Contraseña</Label>
+                    <Label className="text-green-700 font-medium">Confirmar Contraseña</Label>
                     <div className="relative">
                       <Input
                         type={showPasswords.confirm ? "text" : "password"}
@@ -310,19 +315,19 @@ export default function CambiarContrasenaPage() {
                   </div>
 
                   {/* Botones */}
-                  <div className="flex gap-3 pt-4">
+                  <div className="mt-8 grid grid-cols-2 gap-50">
                     <Button
                       type="button"
                       onClick={() => router.push("/perfil")}
                       variant="outline"
-                      className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 font-medium"
+                      className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 hover:scale-102 font-medium"
                     >
                       Cancelar
                     </Button>
                     <Button
                       type="submit"
                       disabled={saving}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2"
+                      className="flex-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 hover:from-fuchsia-600 hover:to-red-500 hover:scale-102 text-white font-medium flex items-center justify-center gap-2"
                     >
                       {saving ? (
                         <>
@@ -340,9 +345,9 @@ export default function CambiarContrasenaPage() {
                 </form>
 
                 {/* Información adicional */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
-                  <h3 className="font-semibold text-blue-900 mb-2">Recomendaciones de Seguridad:</h3>
-                  <ul className="space-y-1 text-sm text-blue-800">
+                <div className="bg-yellow-50 border border-green-600 rounded-lg p-4 mt-6">
+                  <h3 className="font-semibold text-green-900 mb-2">Recomendaciones de Seguridad:</h3>
+                  <ul className="space-y-1 text-sm text-green-800">
                     <li>• Usa una contraseña con al menos 8 caracteres</li>
                     <li>• Incluye mayúsculas, minúsculas y números</li>
                     <li>• Evita usar información personal (nombre, fecha de nacimiento)</li>

@@ -5,28 +5,12 @@ import { useRouter } from "next/navigation"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog"
 import {
   AlertCircle,
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  FileText,
   Lock,
   Loader2,
   CheckCircle,
-  Eye,
-  EyeOff,
+  Rat,
 } from "lucide-react"
 
 interface UserData {
@@ -138,7 +122,7 @@ export default function PerfilPage() {
           )}
 
           {/* Contenedor Principal */}
-          <Card className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+          <Card className="bg-gradient-to-tr from-stone-50 to-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
             {/* Encabezado */}
             <div 
               className="h-32 bg-cover bg-center bg-no-repeat" 
@@ -149,12 +133,12 @@ export default function PerfilPage() {
 
             <div className="px-8 pb-8">
               {/* Avatar y Nombre */}
-              <div className="flex items-end gap-6 mb-8 relative -mt-16">
-                <div className="w-32 h-32 rounded-lg bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center border-4 border-white shadow-lg">
-                  <User className="h-16 w-16 text-white" />
+              <div className="flex items-end gap-6 mb-8 relative -mt-12">
+                <div className="w-32 h-32 rounded-lg bg-white flex items-center justify-center border-4 border-green-700 shadow-lg">
+                  <Rat className="h-16 w-16 text-lime-500" />
                 </div>
                 <div className="flex-1 pb-4">
-                  <h1 className="text-4xl font-bold text-gray-900">
+                  <h1 className="text-4xl font-bold bg-gradient-to-tr from-green-600 to-lime-400 text-transparent bg-clip-text">
                     {user.nombres} {user.apellidos}
                   </h1>
                   <div className="flex items-center gap-4 mt-2">
@@ -163,7 +147,7 @@ export default function PerfilPage() {
                         Registrado el {new Date(user.fecha_registro).toLocaleDateString("es-ES")}
                       </span>
                     )}
-                    <span className="inline-block px-3 py-1 bg-purple-100 text-purple-700 text-sm font-medium rounded-full">
+                    <span className="inline-block px-3 py-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white text-sm font-medium rounded-full">
                       {user.nombre_rol || "Usuario"}
                     </span>
                   </div>
@@ -172,36 +156,26 @@ export default function PerfilPage() {
 
               {/* Información Personal */}
               <div className="space-y-4">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Información Personal</h2>
+                <h2 className="text-2xl font-bold text-lime-500 mb-6">Información Personal</h2>
 
                 {/* Nombres */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:bg-gray-50 transition-colors">
+                <div className="border border-gray-200 rounded-lg p-5 hover:bg-teal-50 hover:border-green-500 transition-colors">
                   <div className="flex items-start gap-4">
                     <div className="flex-1">
-                      <p className="text-gray-600 text-sm font-bold mb-1">NOMBRE COMPLETO</p>
-                      <p className="text-gray-900 text-lg font-medium">
+                      <p className="text-green-600 text-sm font-bold mb-1">NOMBRE COMPLETO</p>
+                      <p className="text-gray-700 text-lg font-medium">
                         {user.nombres} {user.apellidos}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* ID de Usuario */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-1">
-                      <p className="text-gray-600 text-sm font-bold mb-1">ID DE USUARIO</p>
-                      <p className="text-gray-900 text-lg font-medium">{user.id_usuario}</p>
-                    </div>
-                  </div>
-                </div>
-
                 {/* País */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:bg-gray-50 transition-colors">
+                <div className="border border-gray-200 rounded-lg p-5 hover:bg-teal-50 hover:border-green-500 transition-colors">
                   <div className="flex items-start gap-4">
                     <div className="flex-1">
-                      <p className="text-gray-600 text-sm font-bold mb-1">PAÍS</p>
-                      <p className="text-gray-900 text-lg font-medium">
+                      <p className="text-green-700 text-sm font-bold mb-1">PAÍS</p>
+                      <p className="text-gray-700 text-lg font-medium">
                         {user.nombre_pais || "No especificado"}
                       </p>
                     </div>
@@ -209,12 +183,12 @@ export default function PerfilPage() {
                 </div>
 
                 {/* Correo */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:bg-gray-50 transition-colors">
+                <div className="border border-gray-200 rounded-lg p-5 hover:bg-teal-50 hover:border-green-500 transition-colors">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4 flex-1">
                       <div className="flex-1">
-                        <p className="text-gray-600 text-sm font-bold mb-1">CORREO ELECTRÓNICO</p>
-                        <p className="text-gray-900 text-lg font-medium break-all">{user.correo}</p>
+                        <p className="text-green-700 text-sm font-bold mb-1">CORREO ELECTRÓNICO</p>
+                        <p className="text-gray-700 text-lg font-medium break-all">{user.correo}</p>
                       </div>
                     </div>
                     <div className="flex-shrink-0 pt-2">
@@ -234,12 +208,12 @@ export default function PerfilPage() {
                 </div>
 
                 {/* Teléfono */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:bg-gray-50 transition-colors">
+                <div className="border border-gray-200 rounded-lg p-5 hover:bg-teal-50 hover:border-green-500 transition-colors">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4 flex-1">
                       <div className="flex-1">
-                        <p className="text-gray-600 text-sm font-bold mb-1">NÚMERO DE TELÉFONO</p>
-                        <p className="text-gray-900 text-lg font-medium">
+                        <p className="text-green-700 text-sm font-bold mb-1">NÚMERO DE TELÉFONO</p>
+                        <p className="text-gray-700 text-lg font-medium">
                           {user.telefono ? String(user.telefono) : "No registrado"}
                         </p>
                       </div>
@@ -264,10 +238,10 @@ export default function PerfilPage() {
               </div>
 
               {/* Acciones */}
-              <div className="mt-8 space-y-3">
+              <div className="mt-8 grid grid-cols-2 gap-50">
                 <Button
                   onClick={() => router.push("/cambiar-contrasena")}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2"
+                  className="w-full bg-gradient-to-tr from-fuchsia-700 to-red-600 hover:from-fuchsia-600 hover:to-red-500 hover:scale-102 text-white font-medium flex items-center justify-center gap-2"
                 >
                   <Lock className="h-4 w-4" />
                   Cambiar Contraseña
@@ -281,7 +255,7 @@ export default function PerfilPage() {
                     router.push("/")
                   }}
                   variant="outline"
-                  className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 font-medium"
+                  className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 hover:scale-102 font-medium"
                 >
                   Cerrar Sesión
                 </Button>
