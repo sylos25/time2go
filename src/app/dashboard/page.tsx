@@ -54,6 +54,7 @@ import { InsertDataTab } from "@/components/dashboard/insert-data-tab"
 import ViewDataTab from "@/components/dashboard/view-data-tab"
 import { EditEventModal } from "@/components/dashboard/edit-event-modal"
 import { ToggleEventStatusModal } from "@/components/dashboard/toggle-event-status-modal"
+import { PDFViewer } from "@/components/pdf-viewer"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -229,8 +230,25 @@ export default function EventDashboard() {
         const meData = await meRes.json()
         if (!canceled) setMeUser(meData.user)
         const roleNum = meData?.user?.id_rol !== undefined ? Number(meData.user.id_rol) : undefined
-        if (!canceled) setAuthorized(roleNum === 4)
-        if (!canceled && roleNum !== 4) {
+        if (roleNum === undefined || Number.isNaN(roleNum)) {
+          if (!canceled) setAuthorized(false)
+          return
+        }
+
+        const permissionRes = await fetch(`/api/permissions/check?id_accesibilidad=6&id_rol=${roleNum}`, {
+          headers,
+          credentials: 'include',
+        })
+
+        if (!permissionRes.ok) {
+          if (!canceled) setAuthorized(false)
+          return
+        }
+
+        const permissionData = await permissionRes.json()
+        const hasDashboardAccess = Boolean(permissionData?.hasAccess)
+        if (!canceled) setAuthorized(hasDashboardAccess)
+        if (!canceled && !hasDashboardAccess) {
           // user authenticated but not allowed
           return
         }
@@ -1060,20 +1078,18 @@ export default function EventDashboard() {
         )}
         {/* PDF Viewer Modal */}
         <Dialog open={pdfModalOpen} onOpenChange={() => setPdfModalOpen(false)}>
-          <DialogContent className="max-w-5xl w-full max-h-[90vh]">
-            <DialogHeader>
-              <DialogTitle>Documento</DialogTitle>
-            </DialogHeader>
-            <div className="h-[75vh]">
-              {pdfModalUrl ? (
-                <iframe src={pdfModalUrl} title="Documento" className="w-full h-full border-0" />
-              ) : (
-                <div className="flex items-center justify-center h-full">No hay documento</div>
-              )}
-            </div>
-            <DialogFooter>
-              <Button variant="ghost" onClick={() => setPdfModalOpen(false)}>Cerrar</Button>
-            </DialogFooter>
+          <DialogContent className="max-w-5xl w-full max-h-[90vh] p-0 border-0">
+            {pdfModalUrl ? (
+              <PDFViewer 
+                pdfUrl={pdfModalUrl} 
+                fileName="documento.pdf"
+                onClose={() => setPdfModalOpen(false)}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-96">
+                <p className="text-gray-500">No hay documento</p>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>

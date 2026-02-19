@@ -3,6 +3,7 @@ import { cloudinary, uploadBuffer } from "@/lib/cloudinary";
 import pool from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { verifyToken } from "@/lib/jwt";
+import { PERMISSION_IDS } from "@/lib/permissions";
 
 export const runtime = "nodejs";
 
@@ -35,14 +36,32 @@ export async function POST(req: Request) {
       [requesterId]
     );
     const role = roleRes.rows && roleRes.rows[0] ? Number(roleRes.rows[0].id_rol) : null;
-    if (role !== 4) {
+    if (!role) {
+      return NextResponse.json({ ok: false, message: "User role not found" }, { status: 403 });
+    }
+
+    const permissionRes = await client.query(
+      `SELECT id_accesibilidad_menu_x_rol
+       FROM tabla_accesibilidad_menu_x_rol
+       WHERE id_accesibilidad = $1 AND id_rol = $2
+       LIMIT 1`,
+      [PERMISSION_IDS.CREAR_EVENTOS, role]
+    );
+
+    if (!permissionRes.rows || permissionRes.rows.length === 0) {
       return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
     }
 
     const formData = await req.formData();
 
 
+    const maxImages = 8;
+    const maxDocBytes = 5 * 1024 * 1024;
+
     const files = formData.getAll("additionalImages") as File[];
+    if (files.length > maxImages) {
+      return NextResponse.json({ ok: false, message: "Maximo 8 imagenes" }, { status: 400 });
+    }
     const imageUrls: string[] = [];
     for (const f of files) {
       const buffer = Buffer.from(await f.arrayBuffer());
@@ -54,6 +73,10 @@ export async function POST(req: Request) {
     const docFile = formData.get("documento") as File | null;
     let documentoUrl: string | null = null;
     if (docFile && (docFile as unknown as any).size) {
+      const docSize = (docFile as unknown as any).size as number;
+      if (docSize > maxDocBytes) {
+        return NextResponse.json({ ok: false, message: "Documento supera 5 MB" }, { status: 400 });
+      }
       const bufferDoc = Buffer.from(await docFile.arrayBuffer());
       const docResult = await uploadBuffer(bufferDoc, "eventos/documents", { resource_type: "raw" });
       documentoUrl = docResult.secure_url;

@@ -31,6 +31,35 @@ export default function CrearEventoPage() {
   const [showTelefono2, setShowTelefono2] = useState(false);
   // image preview state removed (no image upload in simplified form)
   const [isLoading, setIsLoading] = useState(false);
+  const [formErrors, setFormErrors] = useState<{
+    nombre_evento?: string;
+    pulep_evento?: string;
+    responsable_evento?: string;
+    id_categoria_evento?: string;
+    id_tipo_evento?: string;
+    id_sitio?: string;
+    descripcion?: string;
+    informacion_adicional?: string;
+    telefono1?: string;
+    telefono2?: string;
+    fecha_inicio?: string;
+    fecha_final?: string;
+    hora_inicio?: string;
+    hora_final?: string;
+    cupo?: string;
+    boletas?: string;
+    imagenes?: string;
+    documento?: string;
+    general?: string;
+  }>({});
+
+  const setFieldError = (field: keyof typeof formErrors, message: string) => {
+    setFormErrors({ [field]: message });
+  };
+
+  const clearFieldError = (field: keyof typeof formErrors) => {
+    setFormErrors((prev) => ({ ...prev, [field]: undefined, general: undefined }));
+  };
 
   const [newEvent, setNewEvent] = useState<any>({
     nombre_evento: "",
@@ -148,7 +177,7 @@ export default function CrearEventoPage() {
     fetchCategorias();
   }, []);
 
-  // Authorization: ensure user is authenticated and has role 4 to create events
+  // Authorization: ensure user is authenticated and has permission to create events
   useEffect(() => {
     let cancelled = false;
     const checkAuth = async () => {
@@ -163,7 +192,23 @@ export default function CrearEventoPage() {
         }
         const data = await res.json();
         const roleNum = data?.user?.id_rol !== undefined ? Number(data.user.id_rol) : undefined;
-        if (!cancelled) setAuthorized(roleNum === 4);
+        if (roleNum === undefined || Number.isNaN(roleNum)) {
+          if (!cancelled) setAuthorized(false);
+          return;
+        }
+
+        const permissionRes = await fetch(
+          `/api/permissions/check?id_accesibilidad=1&id_rol=${roleNum}`,
+          { headers, credentials: 'include' }
+        );
+
+        if (!permissionRes.ok) {
+          if (!cancelled) setAuthorized(false);
+          return;
+        }
+
+        const permissionData = await permissionRes.json();
+        if (!cancelled) setAuthorized(Boolean(permissionData?.hasAccess));
       } catch (err) {
         console.error('Auth check error', err);
         if (!cancelled) setAuthorized(false);
@@ -233,81 +278,82 @@ export default function CrearEventoPage() {
 
   const handleAddEvent = async () => {
     try {
+      setFormErrors({});
       setIsLoading(true);
 
       // Validaciones según la tabla_eventos
       if (!newEvent.nombre_evento || newEvent.nombre_evento.length < 6) {
-        alert("El nombre del evento debe tener al menos 6 caracteres.");
+        setFieldError("nombre_evento", "El nombre del evento debe tener al menos 6 caracteres.");
         return;
       }
 
       if (!newEvent.pulep_evento || newEvent.pulep_evento.length < 6) {
-        alert("El código público del evento debe tener al menos 6 caracteres.");
+        setFieldError("pulep_evento", "El código público del evento debe tener al menos 6 caracteres.");
         return;
       }
 
       if (!newEvent.responsable_evento || newEvent.responsable_evento.length < 6) {
-        alert("El nombre del responsable debe tener al menos 6 caracteres.");
+        setFieldError("responsable_evento", "El nombre del responsable debe tener al menos 6 caracteres.");
         return;
       }
 
       if (!newEvent.descripcion || newEvent.descripcion.length < 10) {
-        alert("La descripción debe tener al menos 10 caracteres.");
+        setFieldError("descripcion", "La descripción debe tener al menos 10 caracteres.");
         return;
       }
 
       if (!newEvent.informacion_adicional || newEvent.informacion_adicional.length < 100) {
-        alert("La información adicional debe tener al menos 100 caracteres.");
+        setFieldError("informacion_adicional", "La información adicional debe tener al menos 100 caracteres.");
         return;
       }
 
       if (!newEvent.telefono1 || newEvent.telefono1.length !== 10 || Number(newEvent.telefono1) <= 2999999999) {
-        alert("El teléfono debe tener 10 dígitos y ser válido (mayor a 2999999999).");
+        setFieldError("telefono1", "El teléfono debe tener 10 dígitos y ser válido (mayor a 2999999999).");
         return;
       }
 
       if (newEvent.telefono2 && (newEvent.telefono2.length !== 10 || Number(newEvent.telefono2) <= 2999999999)) {
-        alert("El teléfono 2 debe tener 10 dígitos y ser válido (mayor a 2999999999).");
+        setFieldError("telefono2", "El teléfono 2 debe tener 10 dígitos y ser válido (mayor a 2999999999).");
         return;
       }
 
       if (!newEvent.id_categoria_evento || newEvent.id_categoria_evento === 0) {
-        alert("Debes seleccionar una categoría.");
+        setFieldError("id_categoria_evento", "Debes seleccionar una categoría.");
         return;
       }
 
       if (!newEvent.id_tipo_evento || newEvent.id_tipo_evento === 0) {
-        alert("Debes seleccionar un tipo de evento.");
+        setFieldError("id_tipo_evento", "Debes seleccionar un tipo de evento.");
         return;
       }
 
       if (!newEvent.id_sitio || newEvent.id_sitio === 0) {
-        alert("Debes seleccionar un sitio.");
+        setFieldError("id_sitio", "Debes seleccionar un sitio.");
         return;
       }
 
       if (!newEvent.fecha_inicio) {
-        alert("Debes seleccionar una fecha de inicio.");
+        setFieldError("fecha_inicio", "Debes seleccionar una fecha de inicio.");
         return;
       }
 
       if (!newEvent.fecha_final) {
-        alert("Debes seleccionar una fecha final.");
+        setFieldError("fecha_final", "Debes seleccionar una fecha final.");
         return;
       }
 
       if (!newEvent.hora_inicio) {
-        alert("Debes seleccionar una hora de inicio.");
+        setFieldError("hora_inicio", "Debes seleccionar una hora de inicio.");
         return;
       }
 
       if (!newEvent.hora_final) {
-        alert("Debes seleccionar una hora final.");
+        setFieldError("hora_final", "Debes seleccionar una hora final.");
         return;
       }
 
       if (!newEvent.cupo || Number(newEvent.cupo) < 1 || Number(newEvent.cupo) > 5000) {
-        alert("El aforo debe estar entre 1 y 5000.");
+        setFieldError("cupo", "El aforo debe estar entre 1 y 5000.");
         return;
       }
 
@@ -315,21 +361,21 @@ export default function CrearEventoPage() {
       if (newEvent.pago) {
         const boletasValidas = newEvent.boletas.filter((b: any) => b.nombre_boleto && b.precio_boleto);
         if (boletasValidas.length === 0) {
-          alert("Debes definir al menos una boleta con nombre y precio.");
+          setFieldError("boletas", "Debes definir al menos una boleta con nombre y precio.");
           return;
         }
         
         for (let boleta of boletasValidas) {
           if (boleta.nombre_boleto.length < 3) {
-            alert("Cada nombre de boleta debe tener al menos 3 caracteres.");
+            setFieldError("boletas", "Cada nombre de boleta debe tener al menos 3 caracteres.");
             return;
           }
           if (Number(boleta.precio_boleto) < 0) {
-            alert("El precio de la boleta no puede ser negativo.");
+            setFieldError("boletas", "El precio de la boleta no puede ser negativo.");
             return;
           }
           if (boleta.servicio && Number(boleta.servicio) < 0) {
-            alert("El cargo por servicio no puede ser negativo.");
+            setFieldError("boletas", "El cargo por servicio no puede ser negativo.");
             return;
           }
         }
@@ -386,13 +432,24 @@ export default function CrearEventoPage() {
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Error al crear el evento");
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        const message = String(payload?.message || "Error al crear el evento");
+        if (message.toLowerCase().includes("imagen")) {
+          setFormErrors({ imagenes: message });
+        } else if (message.toLowerCase().includes("document")) {
+          setFormErrors({ documento: message });
+        } else {
+          setFormErrors({ general: message });
+        }
+        return;
+      }
 
       alert("¡Evento creado exitosamente!");
       router.push("/eventos");
     } catch (error) {
       console.error("Error al guardar el evento:", error);
-      alert("Error al crear el evento. Intenta nuevamente.");
+      setFormErrors({ general: "Error al crear el evento. Intenta nuevamente." });
     } finally {
       setIsLoading(false);
     }
@@ -439,16 +496,21 @@ export default function CrearEventoPage() {
               <div className="bg-white rounded-3xl shadow-xl p-8 space-y-6">
               {/* Basic Info */}
               <div className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="title">Nombre del Evento</Label>
                   <Input
                     id="title"
                     value={newEvent.nombre_evento}
-                    onChange={(e) => setNewEvent({ ...newEvent, nombre_evento: e.target.value })}
+                    onChange={(e) => {
+                      clearFieldError("nombre_evento");
+                      setNewEvent({ ...newEvent, nombre_evento: e.target.value });
+                    }}
                     placeholder="Nombre completo del evento (mínimo 6 caracteres)"
                     className="rounded-xl"
                   />
+                  {formErrors.nombre_evento && (
+                    <p className="text-xs text-red-600">{formErrors.nombre_evento}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -456,11 +518,17 @@ export default function CrearEventoPage() {
                   <Input
                     id="pulep_evento"
                     value={newEvent.pulep_evento}
-                    onChange={(e) => setNewEvent({ ...newEvent, pulep_evento: e.target.value })}
+                    onChange={(e) => {
+                      clearFieldError("pulep_evento");
+                      setNewEvent({ ...newEvent, pulep_evento: e.target.value });
+                    }}
                     placeholder="Código único (mínimo 6 caracteres)"
                     className="rounded-xl"
                   />
                   <p className="text-xs text-gray-500">Este código identifica públicamente tu evento</p>
+                  {formErrors.pulep_evento && (
+                    <p className="text-xs text-red-600">{formErrors.pulep_evento}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -468,58 +536,77 @@ export default function CrearEventoPage() {
                   <Input
                     id="responsable_evento"
                     value={newEvent.responsable_evento}
-                    onChange={(e) => setNewEvent({ ...newEvent, responsable_evento: e.target.value })}
+                    onChange={(e) => {
+                      clearFieldError("responsable_evento");
+                      setNewEvent({ ...newEvent, responsable_evento: e.target.value });
+                    }}
                     placeholder="Nombre completo (mínimo 6 caracteres)"
                     className="rounded-xl"
                   />
+                  {formErrors.responsable_evento && (
+                    <p className="text-xs text-red-600">{formErrors.responsable_evento}</p>
+                  )}
                 </div>
 
-                
-                <div className="space-y-2">
-                  <Label htmlFor="id_tipo_evento">Categoría del Evento</Label>
-                  <Select
-                    value={String(newEvent.id_categoria_evento || 0)}
-                    onValueChange={(value) =>setNewEvent({ ...newEvent, id_categoria_evento: Number(value), id_tipo_evento: 0 })}
-                  >
-                    <SelectTrigger className="rounded-xl cursor-pointer">
-                      <SelectValue placeholder="Selecciona una categoría" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">Selecciona una categoría</SelectItem>
-                      {categorias.map((cat) => (
-                        <SelectItem 
-                          className="rounded-xl cursor-pointer"
-                          key={cat.id_categoria_evento} value={String(cat.id_categoria_evento)}>
-                            {cat.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="id_tipo_evento">Categoría del Evento</Label>
+                    <Select
+                      value={String(newEvent.id_categoria_evento || 0)}
+                      onValueChange={(value) => {
+                        clearFieldError("id_categoria_evento");
+                        setNewEvent({ ...newEvent, id_categoria_evento: Number(value), id_tipo_evento: 0 });
+                      }}
+                    >
+                      <SelectTrigger className="rounded-xl cursor-pointer">
+                        <SelectValue placeholder="Selecciona una categoría" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">Selecciona una categoría</SelectItem>
+                        {categorias.map((cat) => (
+                          <SelectItem 
+                            className="rounded-xl cursor-pointer"
+                            key={cat.id_categoria_evento} value={String(cat.id_categoria_evento)}>
+                              {cat.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {formErrors.id_categoria_evento && (
+                      <p className="text-xs text-red-600">{formErrors.id_categoria_evento}</p>
+                    )}
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="category">Tipo de Evento</Label>
-                  <Select
-                    value={String(newEvent.id_tipo_evento || 0)}
-                    onValueChange={(value) =>
-                      setNewEvent({ ...newEvent, id_tipo_evento: Number(value) })
-                    }
-                    disabled={!tiposDeEvento.length}
-                  >
-                    <SelectTrigger className="rounded-xl cursor-pointer">
-                      <SelectValue placeholder="Selecciona un tipo de evento" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">(Selecciona un tipo)</SelectItem>
-                      {tiposDeEvento.map((tipo) => (
-                        <SelectItem 
-                          className="rounded-xl cursor-pointer"
-                          key={tipo.id_tipo_evento} value={String(tipo.id_tipo_evento)}>
-                            {tipo.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Tipo de Evento</Label>
+                    <Select
+                      value={String(newEvent.id_tipo_evento || 0)}
+                      onValueChange={(value) =>
+                        {
+                          clearFieldError("id_tipo_evento");
+                          setNewEvent({ ...newEvent, id_tipo_evento: Number(value) });
+                        }
+                      }
+                      disabled={!tiposDeEvento.length}
+                    >
+                      <SelectTrigger className="rounded-xl cursor-pointer">
+                        <SelectValue placeholder="Selecciona un tipo de evento" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">(Selecciona un tipo)</SelectItem>
+                        {tiposDeEvento.map((tipo) => (
+                          <SelectItem 
+                            className="rounded-xl cursor-pointer"
+                            key={tipo.id_tipo_evento} value={String(tipo.id_tipo_evento)}>
+                              {tipo.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {formErrors.id_tipo_evento && (
+                      <p className="text-xs text-red-600">{formErrors.id_tipo_evento}</p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2 relative">
@@ -528,12 +615,16 @@ export default function CrearEventoPage() {
                     id="sitio"
                     value={busquedaSitio}
                     onChange={(e) => {
+                      clearFieldError("id_sitio");
                       setBusquedaSitio(e.target.value);
                       setNewEvent({ ...newEvent, id_sitio: 0 });
                     }}
                     placeholder="Escribe el nombre del sitio donde será el evento"
                     className="rounded-xl"
                   />
+                  {formErrors.id_sitio && (
+                    <p className="text-xs text-red-600">{formErrors.id_sitio}</p>
+                  )}
                   {sitios.length > 0 && (
                     <ul className="absolute z-10 bg-white border rounded-xl mt-1 w-full max-h-60 overflow-y-auto shadow-lg">
                       {sitios.map((sitio) => (
@@ -553,7 +644,6 @@ export default function CrearEventoPage() {
                   )}
                 </div>
 
-                
               </div>
 
               <div className="space-y-2">
@@ -561,13 +651,19 @@ export default function CrearEventoPage() {
                 <Textarea
                   id="description"
                   value={newEvent.descripcion}
-                  onChange={(e) => setNewEvent({ ...newEvent, descripcion: e.target.value })}
+                  onChange={(e) => {
+                    clearFieldError("descripcion");
+                    setNewEvent({ ...newEvent, descripcion: e.target.value });
+                  }}
                   placeholder="Descripción breve del evento (mínimo 10 caracteres)"
                   className="rounded-xl min-h-[100px]"
                 />
                 <p className="text-xs text-gray-500">
                   {newEvent.descripcion.length}/∞ caracteres (mínimo 10)
                 </p>
+                {formErrors.descripcion && (
+                  <p className="text-xs text-red-600">{formErrors.descripcion}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -575,13 +671,19 @@ export default function CrearEventoPage() {
                 <Textarea
                   id="fullDescription"
                   value={newEvent.informacion_adicional}
-                  onChange={(e) => setNewEvent({ ...newEvent, informacion_adicional: e.target.value })}
+                  onChange={(e) => {
+                    clearFieldError("informacion_adicional");
+                    setNewEvent({ ...newEvent, informacion_adicional: e.target.value });
+                  }}
                   placeholder="Información detallada y adicional del evento (mínimo 100 caracteres). Incluye detalles sobre qué esperar, normas de comportamiento, seguridad, accesibilidad, etc."
                   className="rounded-xl min-h-[150px]"
                 />
                 <p className="text-xs text-gray-500">
                   {newEvent.informacion_adicional.length}/∞ caracteres (mínimo 100)
                 </p>
+                {formErrors.informacion_adicional && (
+                  <p className="text-xs text-red-600">{formErrors.informacion_adicional}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -592,6 +694,7 @@ export default function CrearEventoPage() {
                   onChange={(e) => {
                     const value = e.target.value;
                     if (/^\d{0,10}$/.test(value)) {
+                      clearFieldError("telefono1");
                       setNewEvent({ ...newEvent, telefono1: value });
                     }
                   }}
@@ -601,6 +704,9 @@ export default function CrearEventoPage() {
                   inputMode="numeric"
                   pattern="\d*"
                 />
+                {formErrors.telefono1 && (
+                  <p className="text-xs text-red-600">{formErrors.telefono1}</p>
+                )}
               </div>
 
               {!showTelefono2 && (
@@ -622,6 +728,7 @@ export default function CrearEventoPage() {
                     onChange={(e) => {
                       const value = e.target.value;
                       if (/^\d{0,10}$/.test(value)) {
+                        clearFieldError("telefono2");
                         setNewEvent({ ...newEvent, telefono2: value });
                       }
                     }}
@@ -631,6 +738,9 @@ export default function CrearEventoPage() {
                     inputMode="numeric"
                     pattern="\d*"
                   />
+                  {formErrors.telefono2 && (
+                    <p className="text-xs text-red-600">{formErrors.telefono2}</p>
+                  )}
                   <Button
                     type="button"
                     onClick={() => {
@@ -651,12 +761,18 @@ export default function CrearEventoPage() {
                   <DatePicker
                     id="fecha_inicio"
                     selected={newEvent.fecha_inicio}
-                    onChange={(date) => setNewEvent({ ...newEvent, fecha_inicio: date })}
+                    onChange={(date) => {
+                      clearFieldError("fecha_inicio");
+                      setNewEvent({ ...newEvent, fecha_inicio: date });
+                    }}
                     dateFormat="dd/MM/yyyy"
                     minDate={new Date()}
                     placeholderText="01/01/2025"
                     className="cursor-pointer w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
                   />
+                  {formErrors.fecha_inicio && (
+                    <p className="text-xs text-red-600">{formErrors.fecha_inicio}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="fecha_final">Fecha final del evento</Label>
@@ -664,17 +780,23 @@ export default function CrearEventoPage() {
                     id="fecha_final"
                     selected={newEvent.fecha_final}
                     onChange={(date) =>
-                      setNewEvent({
-                        ...newEvent,
-                        fecha_final: date,
-                        diasSeleccionados: []
-                      })
+                      {
+                        clearFieldError("fecha_final");
+                        setNewEvent({
+                          ...newEvent,
+                          fecha_final: date,
+                          diasSeleccionados: []
+                        })
+                      }
                     }
                     dateFormat="dd/MM/yyyy"
                     minDate={newEvent.fecha_inicio || new Date()} 
                     placeholderText="31/12/2025"
                     className="cursor-pointer w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
                   />
+                  {formErrors.fecha_final && (
+                    <p className="text-xs text-red-600">{formErrors.fecha_final}</p>
+                  )}
                 </div>
               </div>
 
@@ -686,9 +808,15 @@ export default function CrearEventoPage() {
                     id="time"
                     type="time"
                     value={newEvent.hora_inicio}
-                    onChange={(e) => setNewEvent({ ...newEvent, hora_inicio: e.target.value })}
+                    onChange={(e) => {
+                      clearFieldError("hora_inicio");
+                      setNewEvent({ ...newEvent, hora_inicio: e.target.value });
+                    }}
                     className="rounded-xl"
                   />
+                  {formErrors.hora_inicio && (
+                    <p className="text-xs text-red-600">{formErrors.hora_inicio}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="time">Hora final</Label>
@@ -696,9 +824,15 @@ export default function CrearEventoPage() {
                     id="time"
                     type="time"
                     value={newEvent.hora_final}
-                    onChange={(e) => setNewEvent({ ...newEvent, hora_final: e.target.value })}
+                    onChange={(e) => {
+                      clearFieldError("hora_final");
+                      setNewEvent({ ...newEvent, hora_final: e.target.value });
+                    }}
                     className="rounded-xl"
                   />
+                  {formErrors.hora_final && (
+                    <p className="text-xs text-red-600">{formErrors.hora_final}</p>
+                  )}
                 </div>
               </div>
 
@@ -755,21 +889,25 @@ export default function CrearEventoPage() {
                     <p className="text-xs text-gray-600 italic -translate-y-3 cursor-default"> 
                       Define los diferentes tipos de boletas disponibles para tu evento con sus precios. Según tabla_boleteria.
                     </p>
+                    {formErrors.boletas && (
+                      <p className="text-xs text-red-600">{formErrors.boletas}</p>
+                    )}
                     {newEvent.boletas.map((boleta: any, index: number) => (
                       <div key={index} className="space-y-3 p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1">
-                            <Label className="text-xs">Nombre de la boleta *</Label>
-                            <Input
-                              type="text"
-                              value={boleta.nombre_boleto}
-                              onChange={(e) => updateBoleta(index, "nombre_boleto", e.target.value)}
-                              placeholder="Ej: General, VIP, Early Bird (mínimo 3 caracteres)"
-                              className="rounded-xl text-sm"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">{boleta.nombre_boleto.length} caracteres</p>
-                          </div>
-                          <div className="w-32">
+                        <div className="space-y-2">
+                          <Label className="text-xs">Nombre de la boleta *</Label>
+                          <Input
+                            type="text"
+                            value={boleta.nombre_boleto}
+                            onChange={(e) => updateBoleta(index, "nombre_boleto", e.target.value)}
+                            placeholder="Ej: General, VIP, Early Bird (mínimo 3 caracteres)"
+                            className="rounded-xl text-sm"
+                          />
+                          <p className="text-xs text-gray-500">{boleta.nombre_boleto.length} caracteres</p>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-3">
+                          <div className="space-y-2">
                             <Label className="text-xs">Precio *</Label>
                             <NumericFormat
                               value={boleta.precio_boleto}
@@ -781,10 +919,7 @@ export default function CrearEventoPage() {
                               className="rounded-xl border px-2 py-1 w-full text-sm"
                             />
                           </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1">
+                          <div className="space-y-2">
                             <Label className="text-xs">Cargo por servicio (opcional)</Label>
                             <NumericFormat
                               value={boleta.servicio}
@@ -795,19 +930,18 @@ export default function CrearEventoPage() {
                               placeholder="$0"
                               className="rounded-xl border px-2 py-1 w-full text-sm"
                             />
-                            <p className="text-xs text-gray-500 mt-1">Cargo adicional por procesamiento/plataforma</p>
+                            <p className="text-xs text-gray-500">Cargo adicional por procesamiento/plataforma</p>
                           </div>
-                          {newEvent.boletas.length > 1 && newEvent.pago && (
-                            <div className="pt-5">
-                              <button
-                                type="button"
-                                onClick={() => removeBoletaField(index)}
-                                className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 cursor-pointer text-sm">
-                                Quitar
-                              </button>
-                            </div>
-                          )}
                         </div>
+
+                        {newEvent.boletas.length > 1 && newEvent.pago && (
+                          <button
+                            type="button"
+                            onClick={() => removeBoletaField(index)}
+                            className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 cursor-pointer text-sm w-full">
+                            Quitar
+                          </button>
+                        )}
                       </div>
                     ))}
                     <div className="flex justify-between items-center gap-3">
@@ -853,40 +987,137 @@ export default function CrearEventoPage() {
                   min={1}
                   max={5000}
                   value={newEvent.cupo === "" ? "" : newEvent.cupo}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    clearFieldError("cupo");
+                    handleChange(e);
+                  }}
                   placeholder="100"
                   className="rounded-xl border px-2 py-1 w-full"
                 />
                 <p className="text-sm text-gray-500">
                   Ingrese un número entre 1 y 5000
                 </p>
+                {formErrors.cupo && (
+                  <p className="text-xs text-red-600">{formErrors.cupo}</p>
+                )}
               </div>
 
-              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="imagenes_evento">Fotos del evento</Label>
+                  <Input
+                    id="imagenes_evento"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 8) {
+                        setFieldError("imagenes", "Puedes cargar maximo 8 imagenes.");
+                      }
+                      clearFieldError("imagenes");
+                      setNewEvent({ ...newEvent, imagenes: files.slice(0, 8) });
+                    }}
+                    className="rounded-xl"
+                  />
+                  <p className="text-xs text-gray-500">Se guardan en la tabla_imagenes_eventos</p>
+                  {formErrors.imagenes && (
+                    <p className="text-xs text-red-600">{formErrors.imagenes}</p>
+                  )}
+                  {newEvent.imagenes && newEvent.imagenes.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
+                      {newEvent.imagenes.map((file: File, index: number) => (
+                        <div key={`${file.name}-${index}`} className="rounded-xl border bg-white p-2 shadow-sm">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={file.name}
+                            className="h-24 w-full rounded-lg object-cover"
+                          />
+                          <p className="mt-2 text-xs text-gray-600 truncate">{file.name}</p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = (newEvent.imagenes || []).filter((_: File, i: number) => i !== index);
+                              setNewEvent({ ...newEvent, imagenes: updated });
+                            }}
+                            className="mt-2 w-full rounded-md border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                          >
+                            Quitar
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500">{(newEvent.imagenes || []).length}/8 imagenes</p>
+                </div>
 
-              
-            </div>
-
-            {/* Buttons */}
-            <div className="flex gap-4 pt-6 border-t">
-              <Button
-                onClick={handleAddEvent}
-                disabled={isLoading}
-                className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-700 hover:to-cyan-700 rounded-xl py-6 text-lg font-semibold"
-              >
-                {isLoading ? "Creando..." : "Crear Evento"}
-              </Button>
-              <Button
-                onClick={() => router.back()}
-                variant="outline"
-                disabled={isLoading}
-                className="flex-1 rounded-xl py-6 text-lg"
-              >
-                Cancelar
-              </Button>
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="documento_evento">Documento del evento</Label>
+                  <Input
+                    id="documento_evento"
+                    type="file"
+                    accept="application/pdf,image/*"
+                    onChange={(e) => {
+                      const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+                      if (file && file.size > 5 * 1024 * 1024) {
+                        setFieldError("documento", "El documento no puede superar 5 MB.");
+                        setNewEvent({ ...newEvent, documento: null });
+                        return;
+                      }
+                      clearFieldError("documento");
+                      setNewEvent({ ...newEvent, documento: file });
+                    }}
+                    className="rounded-xl"
+                  />
+                  <p className="text-xs text-gray-500">Se guarda en la tabla_documentos_eventos</p>
+                  {formErrors.documento && (
+                    <p className="text-xs text-red-600">{formErrors.documento}</p>
+                  )}
+                  {newEvent.documento && (
+                    <div className="mt-2 rounded-xl border bg-slate-50 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{newEvent.documento.name}</p>
+                          <p className="text-xs text-gray-600">
+                            {(newEvent.documento.size / 1024).toFixed(1)} KB
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setNewEvent({ ...newEvent, documento: null })}
+                          className="rounded-md border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                        >
+                          Quitar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Buttons */}
+              <div className="flex gap-4 pt-6 border-t">
+                <Button
+                  onClick={handleAddEvent}
+                  disabled={isLoading}
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-700 hover:to-cyan-700 rounded-xl py-6 text-lg font-semibold"
+                >
+                  {isLoading ? "Creando..." : "Crear Evento"}
+                </Button>
+                <Button
+                  onClick={() => router.back()}
+                  variant="outline"
+                  disabled={isLoading}
+                  className="flex-1 rounded-xl py-6 text-lg"
+                >
+                  Cancelar
+                </Button>
+              </div>
+              {formErrors.general && (
+                <p className="text-sm text-red-600">{formErrors.general}</p>
+              )}
             </div>
+          </div>
           ) : null}
         </div>
       </main>

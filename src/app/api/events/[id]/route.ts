@@ -45,7 +45,11 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     const formData = await req.formData();
 
     // Upload new images
+    const maxImages = 8;
     const files = formData.getAll("additionalImages") as File[];
+    if (files.length > maxImages) {
+      return NextResponse.json({ ok: false, message: "Maximo 8 imagenes" }, { status: 400 });
+    }
     const imageUrls: string[] = [];
     for (const f of files) {
       if (f && (f as any).size > 0) {
