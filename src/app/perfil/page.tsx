@@ -147,7 +147,7 @@ export default function PerfilPage() {
                         Registrado el {new Date(user.fecha_registro).toLocaleDateString("es-ES")}
                       </span>
                     )}
-                    <span className="inline-block px-3 py-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white text-sm font-medium rounded-full">
+                    <span className="inline-block px-3 py-1 bg-gradient-to-tr from-amber-500 to-orange-300 text-white text-sm font-medium rounded-full">
                       {user.nombre_rol || "Usuario"}
                     </span>
                   </div>
@@ -257,7 +257,7 @@ export default function PerfilPage() {
                   variant="outline"
                   className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 hover:scale-102 font-medium"
                 >
-                  Cerrar Sesión
+                  Volver al Inicio
                 </Button>
               </div>
             </div>

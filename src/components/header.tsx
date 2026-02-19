@@ -388,19 +388,21 @@ export function Header({
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="flex items-center gap-2 hover:bg-white/10 text-white">
+                        className="flex items-center gap-3 px-4 py-6 hover:bg-black/10 text-white">
                         <div className="w-8 h-8 rounded-sm bg-white flex items-center justify-center text-lime-600 font-medium">
                           {displayName.charAt(0).toUpperCase()}
                         </div>
                         <span className="font-medium">{displayName}</span>
                       </Button>
                     </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56 z-[80]">
-                        <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+                      <DropdownMenuContent align="end" className="w-56 z-[80] bg-gradient-to-tr from-stone-50 to-white shadow-lg">
+                        <DropdownMenuLabel className="text-green-700">
+                          <p>Mi Cuenta</p>
+                        </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => navigateTo("/perfil")} className="cursor-pointer">
                           <User className="h-4 w-4 mr-2" />
-                          Mi Perfil
+                          <p>Mi Perfil</p>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => navigateTo("/mis-eventos")} className="cursor-pointer">
                           <Calendar className="h-4 w-4 mr-2" />

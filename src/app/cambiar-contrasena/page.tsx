@@ -226,7 +226,7 @@ export default function CambiarContrasenaPage() {
                         Registrado el {new Date(user.fecha_registro).toLocaleDateString("es-ES")}
                       </span>
                     )}
-                    <span className="inline-block px-3 py-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white text-sm font-medium rounded-full">
+                    <span className="inline-block px-3 py-1 bg-gradient-to-tr from-amber-500 to-orange-300 text-white text-sm font-medium rounded-full">
                       {user.nombre_rol || "Usuario"}
                     </span>
                   </div>
