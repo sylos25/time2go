@@ -1,16 +1,26 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, type ChangeEvent } from "react"
 import { useRouter } from "next/navigation"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   AlertCircle,
   Lock,
   Loader2,
   CheckCircle,
   Rat,
+  Upload,
 } from "lucide-react"
 
 interface UserData {
@@ -29,11 +39,16 @@ interface UserData {
 }
 
 export default function PerfilPage() {
+  const MAX_PDF_SIZE_BYTES = 5 * 1024 * 1024
   const router = useRouter()
   const [user, setUser] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [isPromotorDialogOpen, setIsPromotorDialogOpen] = useState(false)
+  const [selectedPdf, setSelectedPdf] = useState<File | null>(null)
+  const [promotorError, setPromotorError] = useState<string | null>(null)
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false)
 
   useEffect(() => {
     fetchUserData()
@@ -68,6 +83,77 @@ export default function PerfilPage() {
       setError(err instanceof Error ? err.message : "Error desconocido")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleOpenPromotorDialog = () => {
+    setPromotorError(null)
+    setSelectedPdf(null)
+    setIsPromotorDialogOpen(true)
+  }
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    setPromotorError(null)
+
+    if (!file) {
+      setSelectedPdf(null)
+      return
+    }
+
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")
+    if (!isPdf) {
+      setPromotorError("Solo se permite formato PDF")
+      setSelectedPdf(null)
+      event.target.value = ""
+      return
+    }
+
+    if (file.size > MAX_PDF_SIZE_BYTES) {
+      setPromotorError("El archivo supera el máximo de 5 MB")
+      setSelectedPdf(null)
+      event.target.value = ""
+      return
+    }
+
+    setSelectedPdf(file)
+  }
+
+  const handleUploadPromotorDocument = async () => {
+    try {
+      if (!selectedPdf) {
+        setPromotorError("Debes seleccionar un archivo PDF")
+        return
+      }
+
+      setIsUploadingPdf(true)
+      setPromotorError(null)
+      const token = localStorage.getItem("token")
+      const formData = new FormData()
+      formData.append("document", selectedPdf)
+
+      const res = await fetch("/api/promotor-document", {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: formData,
+        credentials: "include",
+      })
+
+      const data = await res.json()
+
+      if (!res.ok || !data?.ok) {
+        setPromotorError(data?.message || "No se pudo subir el documento")
+        return
+      }
+
+      setSuccessMessage("Documento cargado correctamente. Tu solicitud para promotor fue registrada.")
+      setIsPromotorDialogOpen(false)
+      setSelectedPdf(null)
+    } catch (err) {
+      console.error("Error uploading promoter document:", err)
+      setPromotorError("Ocurrió un error al subir el documento")
+    } finally {
+      setIsUploadingPdf(false)
     }
   }
 
@@ -138,18 +224,32 @@ export default function PerfilPage() {
                   <Rat className="h-16 w-16 text-lime-500" />
                 </div>
                 <div className="flex-1 pb-4">
-                  <h1 className="text-4xl font-bold bg-gradient-to-tr from-green-600 to-lime-400 text-transparent bg-clip-text">
-                    {user.nombres} {user.apellidos}
-                  </h1>
-                  <div className="flex items-center gap-4 mt-2">
-                    {user.fecha_registro && (
-                      <span className="text-gray-600 text-sm">
-                        Registrado el {new Date(user.fecha_registro).toLocaleDateString("es-ES")}
-                      </span>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h1 className="text-4xl font-bold bg-gradient-to-tr from-green-600 to-lime-400 text-transparent bg-clip-text">
+                        {user.nombres} {user.apellidos}
+                      </h1>
+                      <div className="flex items-center gap-4 mt-2">
+                        {user.fecha_registro && (
+                          <span className="text-gray-600 text-sm">
+                            Registrado el {new Date(user.fecha_registro).toLocaleDateString("es-ES")}
+                          </span>
+                        )}
+                        <span className="inline-block px-3 py-1 bg-gradient-to-tr from-amber-500 to-orange-300 text-white text-sm font-medium rounded-full">
+                          {user.nombre_rol || "Usuario"}
+                        </span>
+                      </div>
+                    </div>
+                    {user.id_rol === 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleOpenPromotorDialog}
+                        className="border-green-500 text-green-700 hover:bg-green-50"
+                      >
+                        Hazte promotor
+                      </Button>
                     )}
-                    <span className="inline-block px-3 py-1 bg-gradient-to-tr from-amber-500 to-orange-300 text-white text-sm font-medium rounded-full">
-                      {user.nombre_rol || "Usuario"}
-                    </span>
                   </div>
                 </div>
               </div>
@@ -264,6 +364,66 @@ export default function PerfilPage() {
           </Card>
         </div>
       </div>
+
+      <Dialog open={isPromotorDialogOpen} onOpenChange={setIsPromotorDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hazte promotor</DialogTitle>
+            <DialogDescription>
+              Carga un archivo PDF para solicitar el rol de promotor. Tamaño máximo: 5 MB.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <Input
+              type="file"
+              accept="application/pdf,.pdf"
+              onChange={handleFileChange}
+              disabled={isUploadingPdf}
+            />
+            {selectedPdf && (
+              <p className="text-sm text-gray-600">
+                Archivo seleccionado: <span className="font-medium">{selectedPdf.name}</span>
+              </p>
+            )}
+            {promotorError && (
+              <div className="flex items-center gap-2 text-sm text-red-600">
+                <AlertCircle className="h-4 w-4" />
+                <span>{promotorError}</span>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsPromotorDialogOpen(false)}
+              disabled={isUploadingPdf}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleUploadPromotorDocument}
+              disabled={isUploadingPdf}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {isUploadingPdf ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Subiendo...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4" />
+                  Cargar PDF
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
