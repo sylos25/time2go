@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { Eye, EyeOff, Lock, AlertCircle } from "lucide-react"
 import { Turnstile } from "@marsidev/react-turnstile"
 import { Button } from "@/components/ui/button"
@@ -27,6 +27,14 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     email: false,
     password: false,
   })
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberedEmail")
+    if (savedEmail) {
+      setEmail(savedEmail)
+      setRememberMe(true)
+    }
+  }, [])
 
 // Manejo de blur para marcar campos como tocados (touched) y mostrar validación  
   const handleBlur = (field: string) => {
@@ -105,12 +113,18 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           localStorage.removeItem("userDocument")
         }
         localStorage.setItem("userName", name)
+        if (rememberMe) {
+          localStorage.setItem("rememberedEmail", email)
+        } else {
+          localStorage.removeItem("rememberedEmail")
+        }
       } else {
         // Si el consentimiento es rechazado, asegurarse de no almacenar datos en localStorage y limpiar cualquier dato existente
         localStorage.removeItem("token")
         localStorage.removeItem("userId")
         localStorage.removeItem("userDocument")
         localStorage.removeItem("userName")
+        localStorage.removeItem("rememberedEmail")
       }
 
       // Emitir evento global de login con detalles del usuario (incluyendo token solo si el consentimiento no es 'rejected')
@@ -229,27 +243,31 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         />
       </div>
 
-      {turnstileError && (
-        <div className="p-4 rounded-lg bg-red-50 border border-red-200 flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5 text-red-600" />
-          <p className="text-sm text-red-700">{turnstileError}</p>
-        </div>
-      )}
+      {(turnstileError || error) && (
+        <div className="space-y-2">
+          {turnstileError && (
+            <div className="w-full px-3 py-2 rounded-lg bg-red-50 border border-red-200 flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5 text-red-600" />
+              <p className="text-xs leading-snug text-red-700">{turnstileError}</p>
+            </div>
+          )}
 
-      {error && (
-        <div className={`p-4 rounded-lg flex items-start gap-3 ${
-          emailValidationError 
-            ? "bg-yellow-50 border border-yellow-200" 
-            : "bg-red-50 border border-red-200"
-        }`}>
-          <AlertCircle className={`h-5 w-5 flex-shrink-0 mt-0.5 ${
-            emailValidationError ? "text-yellow-600" : "text-red-600"
-          }`} />
-          <p className={`text-sm ${
-            emailValidationError ? "text-yellow-800" : "text-red-700"
-          }`}>
-            {error}
-          </p>
+          {error && (
+            <div className={`w-full px-3 py-2 rounded-lg flex items-start gap-2 ${
+              emailValidationError 
+                ? "bg-yellow-50 border border-yellow-200" 
+                : "bg-red-50 border border-red-200"
+            }`}>
+              <AlertCircle className={`h-5 w-5 flex-shrink-0 mt-0.5 ${
+                emailValidationError ? "text-yellow-600" : "text-red-600"
+              }`} />
+              <p className={`text-xs leading-snug ${
+                emailValidationError ? "text-yellow-800" : "text-red-700"
+              }`}>
+                {error}
+              </p>
+            </div>
+          )}
         </div>
       )}
 

@@ -46,6 +46,28 @@ export default function CambiarContrasenaPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [passwordError, setPasswordError] = useState<string | null>(null)
 
+  const getRoleBadgeClass = (roleName?: string) => {
+    const role = roleName?.toLowerCase().trim() || "usuario"
+
+    if (role === "admin" || role === "administrador") {
+      return "bg-gradient-to-tr from-red-400 to-rose-500"
+    }
+
+    if (role === "moderador") {
+      return "bg-gradient-to-tr from-red-600 to-fuchsia-700"
+    }
+
+    if (role === "promotor") {
+      return "bg-gradient-to-tr from-emerald-600 to-lime-500"
+    }
+
+    if (role === "cliente") {
+      return "bg-gradient-to-tr from-blue-600 to-sky-400"
+    }
+
+    return "bg-gradient-to-tr from-amber-500 to-yellow-400"
+  }
+
   useEffect(() => {
     fetchUserData()
   }, [])
@@ -226,7 +248,11 @@ export default function CambiarContrasenaPage() {
                         Registrado el {new Date(user.fecha_registro).toLocaleDateString("es-ES")}
                       </span>
                     )}
-                    <span className="inline-block px-3 py-1 bg-gradient-to-tr from-amber-500 to-orange-300 text-white text-sm font-medium rounded-full">
+                    <span
+                      className={`inline-block px-3 py-1 ${getRoleBadgeClass(
+                        user.nombre_rol
+                      )} text-white text-sm font-medium rounded-full`}
+                    >
                       {user.nombre_rol || "Usuario"}
                     </span>
                   </div>
@@ -317,14 +343,6 @@ export default function CambiarContrasenaPage() {
                   {/* Botones */}
                   <div className="mt-8 grid grid-cols-2 gap-50">
                     <Button
-                      type="button"
-                      onClick={() => router.push("/perfil")}
-                      variant="outline"
-                      className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 hover:scale-102 font-medium"
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
                       type="submit"
                       disabled={saving}
                       className="flex-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 hover:from-fuchsia-600 hover:to-red-500 hover:scale-102 text-white font-medium flex items-center justify-center gap-2"
@@ -340,6 +358,14 @@ export default function CambiarContrasenaPage() {
                           Cambiar Contraseña
                         </>
                       )}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => router.push("/perfil")}
+                      variant="outline"
+                      className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 hover:scale-102 font-medium"
+                    >
+                      Cancelar
                     </Button>
                   </div>
                 </form>

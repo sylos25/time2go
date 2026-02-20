@@ -130,6 +130,10 @@ export default function AuthPage() {
 
               <LoginForm onSuccess={handleLoginSuccess} />
 
+              <div className="mt-6">
+                <GoogleLoginButton onSuccess={handleLoginSuccess} />
+              </div>
+
               <div className="mt-4 text-center">
                 <Button
                   variant="link"
@@ -138,10 +142,6 @@ export default function AuthPage() {
                 >
                   Volver atrás
                 </Button>
-              </div>
-
-              <div className="mt-6">
-                <GoogleLoginButton onSuccess={handleLoginSuccess} />
               </div>
             </div>
           )}

@@ -287,8 +287,9 @@ export default function CrearEventoPage() {
         return;
       }
 
-      if (!newEvent.pulep_evento || newEvent.pulep_evento.length < 6) {
-        setFieldError("pulep_evento", "El código público del evento debe tener al menos 6 caracteres.");
+      // Validación opcional para pulep_evento: si se proporciona, debe tener al menos 6 caracteres
+      if (newEvent.pulep_evento && newEvent.pulep_evento.length < 6) {
+        setFieldError("pulep_evento", "Si proporcionas el código, debe tener al menos 6 caracteres.");
         return;
       }
 
@@ -386,7 +387,7 @@ export default function CrearEventoPage() {
       const formData = new FormData();
 
       formData.append("nombre_evento", newEvent.nombre_evento);
-      formData.append("pulep_evento", newEvent.pulep_evento);
+      formData.append("pulep_evento", newEvent.pulep_evento || "");
       formData.append("responsable_evento", newEvent.responsable_evento);
       formData.append("descripcion", newEvent.descripcion);
       formData.append("informacion_adicional", newEvent.informacion_adicional);
@@ -675,7 +676,7 @@ export default function CrearEventoPage() {
                     clearFieldError("informacion_adicional");
                     setNewEvent({ ...newEvent, informacion_adicional: e.target.value });
                   }}
-                  placeholder="Información detallada y adicional del evento. Incluye detalles sobre qué esperar, normas de comportamiento, seguridad, accesibilidad, etc."
+                  placeholder="Información detallada y adicional del evento. Incluye detalles sobre qué esperar, normas de comportamiento, seguridad, accesibilidad, etc. (Es importante separar cada detalle con una comilla o punto para facilitar la lectura)"
                   className="rounded-xl min-h-[150px]"
                 />
                 <p className="text-xs text-gray-500">
@@ -1099,7 +1100,7 @@ export default function CrearEventoPage() {
                 <Button
                   onClick={handleAddEvent}
                   disabled={isLoading}
-                  className="flex-1 bg-gradient-to-tr from-green-700 to-lime-500 hover:from-green-600 hover:to-lime-400 rounded-xl py-5 text-lg font-semibold"
+                  className="flex-1 bg-gradient-to-tr from-green-700 to-lime-500 hover:scale-103 hover:from-green-600 hover:to-lime-500 rounded-xl py-5 text-lg font-semibold"
                 >
                   {isLoading ? "Creando..." : "Crear Evento"}
                 </Button>
@@ -1107,7 +1108,7 @@ export default function CrearEventoPage() {
                   onClick={() => router.back()}
                   variant="outline"
                   disabled={isLoading}
-                  className="flex-1 rounded-xl py-5 text-lg"
+                  className="flex-1 rounded-xl py-5 text-lg hover:scale-103"
                 >
                   Cancelar
                 </Button>

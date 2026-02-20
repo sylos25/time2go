@@ -50,10 +50,34 @@ export default function PerfilPage() {
   const [promotorError, setPromotorError] = useState<string | null>(null)
   const [isUploadingPdf, setIsUploadingPdf] = useState(false)
 
+
+{/*Función para asignar clases de estilo según el nombre del rol*/}
+  const getRoleBadgeClass = (roleName?: string) => {
+    const role = roleName?.toLowerCase().trim() || "usuario"
+
+    if (role === "admin" || role === "administrador") {
+      return "bg-gradient-to-tr from-red-400 to-rose-500"
+    }
+
+    if (role === "moderador") {
+      return "bg-gradient-to-tr from-red-600 to-fuchsia-700"
+    }
+
+    if (role === "promotor") {
+      return "bg-gradient-to-tr from-emerald-600 to-lime-500"
+    }
+
+    if (role === "cliente") {
+      return "bg-gradient-to-tr from-blue-600 to-sky-400"
+    }
+
+    return "bg-gradient-to-tr from-amber-500 to-yellow-400"
+  }
+
+{/*Carga los datos del usuario*/} 
   useEffect(() => {
     fetchUserData()
   }, [])
-
   const fetchUserData = async () => {
     try {
       setLoading(true)
@@ -86,12 +110,14 @@ export default function PerfilPage() {
     }
   }
 
+{/*Solicitar el rol de promotor (Solo usuarios)*/}  
   const handleOpenPromotorDialog = () => {
     setPromotorError(null)
     setSelectedPdf(null)
     setIsPromotorDialogOpen(true)
   }
 
+{ /*Maneja la selección del archivo PDF, validando el formato y tamaño*/}
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     setPromotorError(null)
@@ -119,6 +145,7 @@ export default function PerfilPage() {
     setSelectedPdf(file)
   }
 
+{/*Envía el PDF para solicitar el cambio de rol, mostrando mensajes de éxito o error según corresponda*/}
   const handleUploadPromotorDocument = async () => {
     try {
       if (!selectedPdf) {
@@ -163,7 +190,7 @@ export default function PerfilPage() {
         <Header isLoggedIn={true} userName="Usuario" />
         <div className="pt-32 pb-12 px-4 flex items-center justify-center h-96">
           <div className="text-center">
-            <Loader2 className="h-12 w-12 text-purple-600 animate-spin mx-auto mb-4" />
+            <Loader2 className="h-12 w-12 text-green-800 animate-spin mx-auto mb-4" />
             <p className="text-gray-700 text-lg">Cargando datos del perfil...</p>
           </div>
         </div>
@@ -235,7 +262,11 @@ export default function PerfilPage() {
                             Registrado el {new Date(user.fecha_registro).toLocaleDateString("es-ES")}
                           </span>
                         )}
-                        <span className="inline-block px-3 py-1 bg-gradient-to-tr from-amber-500 to-orange-300 text-white text-sm font-medium rounded-full">
+                        <span
+                          className={`inline-block px-3 py-1 ${getRoleBadgeClass(
+                            user.nombre_rol
+                          )} text-white text-sm font-medium rounded-full`}
+                        >
                           {user.nombre_rol || "Usuario"}
                         </span>
                       </div>
@@ -245,7 +276,7 @@ export default function PerfilPage() {
                         type="button"
                         variant="outline"
                         onClick={handleOpenPromotorDialog}
-                        className="border-green-500 text-green-700 hover:bg-green-50"
+                        className="border-green-500 text-green-700 hover:scale-103 hover:bg-green-50 hover:text-green-800"
                       >
                         Hazte promotor
                       </Button>
@@ -370,7 +401,8 @@ export default function PerfilPage() {
           <DialogHeader>
             <DialogTitle>Hazte promotor</DialogTitle>
             <DialogDescription>
-              Carga un archivo PDF para solicitar el rol de promotor. Tamaño máximo: 5 MB.
+              <p>Carga un archivo PDF para solicitar el rol de promotor.</p>
+              <p> Tamaño máximo: 5 MB.</p>
             </DialogDescription>
           </DialogHeader>
 
@@ -397,6 +429,7 @@ export default function PerfilPage() {
           <DialogFooter>
             <Button
               type="button"
+              className="hover:scale-103"
               variant="outline"
               onClick={() => setIsPromotorDialogOpen(false)}
               disabled={isUploadingPdf}
@@ -407,7 +440,7 @@ export default function PerfilPage() {
               type="button"
               onClick={handleUploadPromotorDocument}
               disabled={isUploadingPdf}
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-gradient-to-tr from-green-600 to-lime-500 hover:scale-103 hover:bg-gradient-to-tr hover:from-green-500 hover:to-lime-500 text-white"
             >
               {isUploadingPdf ? (
                 <>

@@ -20,34 +20,20 @@ interface FormFields {
   password: string
 }
 
-// Dominios de correos temporales y falsos a rechazar
-const TEMPORARY_EMAIL_DOMAINS = [
-  "tempmail.com",
-  "10minutemail.com",
-  "guerrillamail.com",
-  "mailinator.com",
-  "temp-mail.org",
-  "throwaway.email",
-  "trashmail.com",
-  "yopmail.com",
-  "maildrop.cc",
-  "temp.email",
-  "fakeinbox.com",
-  "mailnesia.com",
-  "tempmail.ninja",
-  "disposablemail.com",
-  "sharklasers.com",
-  "spam4.me",
-  "mytrashmail.com",
-  "maildrop.cc",
-  "temp-smtp.com",
-  "ethereal.email",
+// Dominios de correo permitidos
+const ALLOWED_EMAIL_DOMAINS = [
+  "gmail.com",
+  "outlook.com",
+  "yahoo.com",
+  "icloud.com",
+  "proton.me",
+  "protonmail.com",
 ]
 
-// Función para validar si un email es temporalario o falso
-const isTemporaryEmail = (email: string): boolean => {
+// Función para validar si el dominio es permitido
+const isAllowedEmail = (email: string): boolean => {
   const domain = email.split("@")[1]?.toLowerCase()
-  return TEMPORARY_EMAIL_DOMAINS.includes(domain || "")
+  return ALLOWED_EMAIL_DOMAINS.includes(domain || "")
 }
 
 export function RegisterForm({ onSuccess }: RegisterFormProps) {
@@ -187,8 +173,8 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       setEmailError("Formato de correo inválido")
       return
     }
-    if (isTemporaryEmail(value)) {
-      setEmailError("No se permiten correos temporales o falsos. Por favor, usa un correo real.")
+    if (!isAllowedEmail(value)) {
+      setEmailError("Solo se permiten dominios: gmail.com, outlook.com, yahoo.com, icloud.com, proton.me, protonmail.com.")
       return
     }
     setEmailError("")
@@ -260,9 +246,9 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       setRegistroError("Formato de correo inválido.")
       return
     }
-    if (isTemporaryEmail(formData.email)) {
+    if (!isAllowedEmail(formData.email)) {
       setTouchedFields((prev) => ({ ...prev, email: true }))
-      setRegistroError("No se permiten correos temporales o falsos. Por favor, usa un correo real.")
+      setRegistroError("Solo se permiten dominios: gmail.com, outlook.com, yahoo.com, icloud.com, proton.me, protonmail.com.")
       return
     }
     if (!terminosCondiciones) {
@@ -450,6 +436,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               type={showPassword ? "text" : "password"}
               placeholder="••••••••"
               value={formData.password}
+              maxLength={12}
               onBlur={() => handleBlur("password")}
               onChange={(e) => {
                 const value = e.target.value
@@ -530,6 +517,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               type={showConfirmPassword ? "text" : "password"}
               placeholder="••••••••"
               value={confirmPassword}
+              maxLength={12}
               onChange={(e) => setConfirmPassword(e.target.value)}
               onBlur={() => setTouchedConfirmPassword(true)}
               className={`pl-10 pr-10 w-full border rounded-md py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -646,14 +634,14 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                 <p>Los datos personales suministrados seran tratados por Time2Go con la finalidad de permitir el registro en la plataforma, brindar informacion sobre eventos en la ciudad de Bucaramanga, enviar comunicaciones informativas y mejorar la experiencia del usuario.</p>
                 <p>El titular podra ejercer en cualquier momento sus derechos de acceso, actualizacion, rectificacion y supresion de datos, asi como revocar la autorizacion otorgada, conforme a la Politica de Tratamiento de Datos Personales, disponible en el sitio web.</p>
               </div>
-              <div className="flex justify-center space-x-2">
-                <Button variant="outline" onClick={handleReject}>
+              <div className="flex gap-10 justify-center">
+                <Button variant="outline" onClick={handleReject} className="hover:scale-103">
                   Rechazar
                 </Button>
                 <Button
                   ref={acceptButtonRef}
                   onClick={handleAccept}
-                  className="bg-gradient-to-tr from-green-800 to-lime-600 hover:from-green-700 hover:to-lime-500 text-white font-medium rounded-md"
+                  className="bg-gradient-to-tr from-green-600 to-lime-500 hover:scale-103 hover:bg-gradient-to-tr hover:from-green-500 hover:to-lime-500 text-white font-medium rounded-md"
                 >
                   Aceptar
                 </Button>

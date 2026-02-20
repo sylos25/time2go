@@ -308,8 +308,8 @@ export function Header({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setLogoutDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={performLogout} className="bg-red-600 text-white">Cerrar sesión</Button>
+            <Button variant="outline" className="hover:scale-103" onClick={() => setLogoutDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={performLogout} className="bg-gradient-to-tr from-fuchsia-700 to-red-500 hover:scale-103 hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-450 text-white">Cerrar sesión</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
