@@ -10,6 +10,7 @@
 DROP TABLE IF EXISTS tabla_validacion_email_tokens;
 DROP TABLE IF EXISTS tabla_reserva_eventos;
 DROP TABLE IF EXISTS tabla_links;
+DROP TABLE IF EXISTS tabla_evento_informacion_importante;
 DROP TABLE IF EXISTS tabla_valores;
 DROP TABLE IF EXISTS tabla_categoria_boletos;
 DROP TABLE IF EXISTS tabla_valoraciones;
@@ -177,7 +178,7 @@ CREATE TABLE IF NOT EXISTS tabla_baneados (
 );
 
 CREATE TABLE IF NOT EXISTS tabla_categoria_eventos (
-    id_categoria_evento                     INT                          PRIMARY KEY,
+    id_categoria_evento                     INT                          PRIMARY KEY,   
     nombre                                  VARCHAR                      NOT NULL       UNIQUE CHECK (char_length(nombre) >= 3),
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP
@@ -186,9 +187,9 @@ CREATE TABLE IF NOT EXISTS tabla_categoria_eventos (
 CREATE TABLE IF NOT EXISTS tabla_tipo_eventos (
     id_tipo_evento                          INT                          PRIMARY KEY,
     id_categoria_evento                     INT                          NOT NULL,
-    nombre                                  VARCHAR                      NOT NULL        UNIQUE CHECK (char_length(nombre) >= 3),
-    fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                    DEFAULT CURRENT_TIMESTAMP,
+    nombre                                  VARCHAR                      NOT NULL       UNIQUE CHECK (char_length(nombre) >= 3),
+    fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_categoria_evento)                   REFERENCES       tabla_categoria_eventos(id_categoria_evento)
 );
 
@@ -203,7 +204,6 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
     id_tipo_evento                          INT                          NOT NULL,
     id_sitio                                INT                          NOT NULL,                                                   -- ID del lugar (dentro del municipio) donde se realiza el evento.
     descripcion                             TEXT                         NOT NULL       CHECK (char_length(descripcion) >= 10),
-    informacion_adicional                   TEXT                         NOT NULL       CHECK (char_length(informacion_adicional) >= 100),                                                                 -- Información adicional del evento (opcional).
     telefono_1                              DECIMAL(10,0)                NOT NULL       CHECK (telefono_1 > 2999999999),
     telefono_2                              DECIMAL(10,0)                               CHECK (telefono_2 > 2999999999),
     fecha_inicio                            DATE                         NOT NULL,
@@ -222,6 +222,17 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
     FOREIGN KEY (id_categoria_evento)                   REFERENCES       tabla_categoria_eventos(id_categoria_evento),
     FOREIGN KEY (id_sitio)                              REFERENCES       tabla_sitios(id_sitio)
 );
+
+CREATE TABLE IF NOT EXISTS tabla_evento_informacion_importante (
+    id_evento_info_item                     INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_evento                               INT                          NOT NULL       UNIQUE,
+    detalle                                 TEXT                         NOT NULL       CHECK (char_length(detalle) >= 5),
+    obligatorio                             BOOLEAN                      NOT NULL       DEFAULT FALSE,
+    fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_evento)                             REFERENCES       tabla_eventos(id_evento)
+);
+
 
 CREATE TABLE IF NOT EXISTS tabla_imagenes_eventos (
     id_imagen_evento                        INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -374,6 +385,9 @@ CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_boleteria
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
 CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_links
+FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
+CREATE TRIGGER trig_update_evento_info_items BEFORE UPDATE ON tabla_evento_informacion_importante
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
 -- Trigger para crear id_publico en la tabla usuarios.

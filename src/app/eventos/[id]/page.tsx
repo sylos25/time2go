@@ -181,6 +181,14 @@ export default function EventLanding() {
     ? diasArr.map((d) => formatDate(d)).join(", ")
     : null;
 
+  const tipoEventoNombre =
+    event.tipo_evento?.nombre || event.tipo_nombre || "—";
+
+  const pulepEvento = event.pulep_evento || "No registrado";
+
+  const informacionImportante =
+    event.informacion_importante?.detalle || null;
+
   const minPrice = event.valores?.length
     ? Math.min(...event.valores.map((v: any) => Number(v.valor || 0)))
     : 0;
@@ -188,6 +196,18 @@ export default function EventLanding() {
   const priceLabel = event.gratis_pago
     ? `Desde ${formatCurrency(minPrice)}`
     : "Gratis";
+
+  const slugify = (value: string) =>
+    String(value || "evento")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "") || "evento";
+
+  const reservePath = `/eventos/reservar/${slugify(event.nombre_evento)}?e=${encodeURIComponent(
+    event.id_publico_evento || ""
+  )}`;
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-sky-100">
@@ -295,13 +315,22 @@ export default function EventLanding() {
           {/* Left Column - Main Info */}
           <div className="lg:col-span-2 space-y-6">
             {/* Quick Info Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <Card className="bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
                   <TagIcon className="h-5 w-5 mx-auto mb-2 text-green-500" />
                   <p className="text-xs text-muted-foreground">Categoria</p>
                   <p className="font-semibold text-sm truncate">
                     {event.categoria?.nombre || "—"}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-white/80 backdrop-blur-sm">
+                <CardContent className="p-4 text-center">
+                  <Grid3X3 className="h-5 w-5 mx-auto mb-2 text-green-500" />
+                  <p className="text-xs text-muted-foreground">Tipo</p>
+                  <p className="font-semibold text-sm truncate">
+                    {tipoEventoNombre}
                   </p>
                 </CardContent>
               </Card>
@@ -367,12 +396,36 @@ export default function EventLanding() {
               <CardHeader>
                 <CardTitle className="text-lg">Acerca del evento</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <p className="text-xs text-muted-foreground">PULEP</p>
+                  <p className="font-medium">{pulepEvento}</p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <p className="text-xs text-muted-foreground">Responsable del evento</p>
+                  <p className="font-medium">{event.responsable_evento || "No registrado"}</p>
+                </div>
                 <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
                   {event.descripcion}
                 </p>
               </CardContent>
             </Card>
+
+            {informacionImportante && (
+              <Card className="bg-white/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Información importante
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                    {informacionImportante}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Pricing */}
             {event.valores && event.valores.length > 0 && (
@@ -434,6 +487,7 @@ export default function EventLanding() {
                 </div>
 
                 <Button
+                  onClick={() => router.push(reservePath)}
                   className="w-full mb-3 bg-gradient-to-r from-red-500 to-fuchsia-500 text-white hover:from-red-600 hover:to-fuchsia-700"
                   size="lg"
                 >
@@ -631,6 +685,7 @@ export default function EventLanding() {
             </p>
           </div>
           <Button
+            onClick={() => router.push(reservePath)}
             size="lg"
             className="flex-1 bg-gradient-to-r from-lime-500 to-green-500 text-white hover:from-lime-600 hover:to-green-600"
           >

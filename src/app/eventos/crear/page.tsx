@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
@@ -19,8 +19,14 @@ interface ImagenEvento {
   url_imagen_evento: string;
 }
 
+interface EventoInfoItem {
+  detalle: string;
+  obligatorio: boolean;
+}
+
 export default function CrearEventoPage() {
   const router = useRouter();
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [categorias, setCategorias] = useState<{ id_categoria_evento: number; nombre: string }[]>([]);
   const [tiposDeEvento, setTiposDeEvento] = useState<{ id_tipo_evento: number; nombre: string }[]>([]);
@@ -39,7 +45,7 @@ export default function CrearEventoPage() {
     id_tipo_evento?: string;
     id_sitio?: string;
     descripcion?: string;
-    informacion_adicional?: string;
+    informacion_adicional_items?: string;
     telefono1?: string;
     telefono2?: string;
     fecha_inicio?: string;
@@ -70,7 +76,9 @@ export default function CrearEventoPage() {
     id_tipo_evento: 0,
     id_sitio: 0,
     descripcion: "",
-    informacion_adicional: "",
+    informacion_adicional_items: [
+      { detalle: "", obligatorio: true },
+    ] as EventoInfoItem[],
     telefono1: "",
     telefono2: "",
     fecha_inicio: null as Date | null,
@@ -157,6 +165,33 @@ export default function CrearEventoPage() {
 
   const removeAllBoletas = () => {
     setNewEvent((prev: any) => ({ ...prev, boletas: [{ nombre_boleto: "", precio_boleto: "", servicio: "" }] }));
+  };
+
+  const addInfoItem = () => {
+    if ((newEvent.informacion_adicional_items || []).length >= 20) return;
+    setNewEvent((prev: any) => ({
+      ...prev,
+      informacion_adicional_items: [
+        ...(prev.informacion_adicional_items || []),
+        { detalle: "", obligatorio: false },
+      ],
+    }));
+  };
+
+  const updateInfoItem = (index: number, field: keyof EventoInfoItem, value: string | boolean) => {
+    const updated = [...(newEvent.informacion_adicional_items || [])];
+    updated[index] = { ...updated[index], [field]: value };
+    setNewEvent({ ...newEvent, informacion_adicional_items: updated });
+  };
+
+  const removeInfoItem = (index: number) => {
+    const updated = (newEvent.informacion_adicional_items || []).filter((_: EventoInfoItem, i: number) => i !== index);
+    setNewEvent({
+      ...newEvent,
+      informacion_adicional_items: updated.length
+        ? updated
+        : [{ detalle: "", obligatorio: true }],
+    });
   };
 
   // ticket link handlers removed from UI (kept as optional server-side field)
@@ -303,8 +338,24 @@ export default function CrearEventoPage() {
         return;
       }
 
-      if (!newEvent.informacion_adicional || newEvent.informacion_adicional.length < 100) {
-        setFieldError("informacion_adicional", "La información adicional debe tener al menos 100 caracteres.");
+      const infoItems = (newEvent.informacion_adicional_items || []).filter(
+        (item: EventoInfoItem) => item.detalle?.trim()
+      );
+
+      if (infoItems.length === 0) {
+        setFieldError("informacion_adicional_items", "Debes registrar al menos un ítem de información adicional.");
+        return;
+      }
+
+      for (const item of infoItems) {
+        if (item.detalle.trim().length < 5) {
+          setFieldError("informacion_adicional_items", "Cada detalle debe tener al menos 5 caracteres.");
+          return;
+        }
+      }
+
+      if (infoItems.length > 20) {
+        setFieldError("informacion_adicional_items", "Solo puedes registrar hasta 20 ítems.");
         return;
       }
 
@@ -390,7 +441,15 @@ export default function CrearEventoPage() {
       formData.append("pulep_evento", newEvent.pulep_evento || "");
       formData.append("responsable_evento", newEvent.responsable_evento);
       formData.append("descripcion", newEvent.descripcion);
-      formData.append("informacion_adicional", newEvent.informacion_adicional);
+      formData.append(
+        "informacion_adicional_items",
+        JSON.stringify(
+          infoItems.map((item: EventoInfoItem) => ({
+            detalle: item.detalle.trim(),
+            obligatorio: Boolean(item.obligatorio),
+          }))
+        )
+      );
       
       const fechaInicioStr = newEvent.fecha_inicio ? newEvent.fecha_inicio.toISOString().split('T')[0] : "";
       const fechaFinalStr = newEvent.fecha_final ? newEvent.fecha_final.toISOString().split('T')[0] : "";
@@ -428,8 +487,15 @@ export default function CrearEventoPage() {
         formData.append("documento", newEvent.documento);
       }
 
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const res = await fetch("/api/events", {
         method: "POST",
+        headers,
         body: formData,
       });
 
@@ -489,7 +555,7 @@ export default function CrearEventoPage() {
                 </Button>
                 <div className="ml-29 text-center">
                   <h1 className="text-5xl font-bold bg-gradient-to-tr from-fuchsia-700 to-red-600 bg-clip-text text-transparent">Crear Nuevo Evento</h1>
-                  <p className="text-gray-600 mt-2">Completa el formulario para crear tu evento</p>
+                  <p className="text-gray-600 mt-2">Completa el formulario para crear el evento</p>
                 </div>
               </div>
 
@@ -667,23 +733,72 @@ export default function CrearEventoPage() {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="fullDescription">Información adicional del evento</Label>
-                <Textarea
-                  id="fullDescription"
-                  value={newEvent.informacion_adicional}
-                  onChange={(e) => {
-                    clearFieldError("informacion_adicional");
-                    setNewEvent({ ...newEvent, informacion_adicional: e.target.value });
-                  }}
-                  placeholder="Información detallada y adicional del evento. Incluye detalles sobre qué esperar, normas de comportamiento, seguridad, accesibilidad, etc. (Es importante separar cada detalle con una comilla o punto para facilitar la lectura)"
-                  className="rounded-xl min-h-[150px]"
-                />
-                <p className="text-xs text-gray-500">
-                  {newEvent.informacion_adicional.length}/∞ caracteres (mínimo 100)
-                </p>
-                {formErrors.informacion_adicional && (
-                  <p className="text-xs text-red-600">{formErrors.informacion_adicional}</p>
+              <div className="space-y-4 p-4 border rounded-lg shadow-md">
+                <div>
+                  <Label>Información adicional del evento</Label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Registra los datos clave del evento por ítems para mejorar la lectura y la escalabilidad.
+                  </p>
+                </div>
+
+                {(newEvent.informacion_adicional_items || []).map((item: EventoInfoItem, index: number) => (
+                  <div key={index} className="space-y-3 p-3 bg-gray-50 rounded-lg border">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Detalle importante</Label>
+                      <Textarea
+                        value={item.detalle}
+                        onChange={(e) => {
+                          clearFieldError("informacion_adicional_items");
+                          updateInfoItem(index, "detalle", e.target.value);
+                        }}
+                        placeholder="Ej: Ingreso desde las 7:00 PM, no se permite reingreso"
+                        className="rounded-xl min-h-[90px]"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(item.obligatorio)}
+                          onChange={(e) => updateInfoItem(index, "obligatorio", e.target.checked)}
+                          className="w-4 h-4 cursor-pointer"
+                        />
+                        Ítem obligatorio para asistentes
+                      </label>
+
+                      {(newEvent.informacion_adicional_items || []).length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeInfoItem(index)}
+                          className="cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white text-sm hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-400 hover:scale-102 w-30 text-center"
+                        >
+                          Quitar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                <div className="flex justify-between items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={addInfoItem}
+                    disabled={(newEvent.informacion_adicional_items || []).length >= 20}
+                    className={`px-3 py-1.5 rounded-md text-white text-sm ${(newEvent.informacion_adicional_items || []).length >= 20
+                      ? "bg-gray-300 cursor-not-allowed"
+                      : "cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-green-700 to-lime-500 text-white text-sm hover:bg-gradient-to-tr hover:from-green-600 hover:to-lime-400 hover:scale-102 w-45 text-center"
+                      }`}
+                  >
+                    + Añadir ítem
+                  </button>
+                  <span className="text-sm text-gray-600">
+                    {(newEvent.informacion_adicional_items || []).length}/20 ítems
+                  </span>
+                </div>
+
+                {formErrors.informacion_adicional_items && (
+                  <p className="text-xs text-red-600">{formErrors.informacion_adicional_items}</p>
                 )}
               </div>
 
@@ -1008,6 +1123,7 @@ export default function CrearEventoPage() {
                 <div className="space-y-2">
                   <Label htmlFor="imagenes_evento">Fotos del evento</Label>
                   <Input
+                    ref={imageInputRef}
                     id="imagenes_evento"
                     type="file"
                     accept="image/*"
@@ -1016,14 +1132,23 @@ export default function CrearEventoPage() {
                       const files = Array.from(e.target.files || []);
                       if (files.length > 8) {
                         setFieldError("imagenes", "Puedes cargar maximo 8 imagenes.");
+                        e.currentTarget.value = "";
+                        setNewEvent({ ...newEvent, imagenes: [] });
+                        return;
+                      } else {
+                        clearFieldError("imagenes");
                       }
-                      clearFieldError("imagenes");
                       setNewEvent({ ...newEvent, imagenes: files.slice(0, 8) });
                     }}
                     className="rounded-xl"
                   />
                   {formErrors.imagenes && (
                     <p className="text-xs text-red-600">{formErrors.imagenes}</p>
+                  )}
+                  {(newEvent.imagenes || []).length > 1 && (
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
+                      Advertencia: estás cargando más de una imagen. Verifica que todas correspondan al mismo evento.
+                    </p>
                   )}
                   {newEvent.imagenes && newEvent.imagenes.length > 0 && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
@@ -1039,6 +1164,9 @@ export default function CrearEventoPage() {
                             type="button"
                             onClick={() => {
                               const updated = (newEvent.imagenes || []).filter((_: File, i: number) => i !== index);
+                              if (updated.length === 0 && imageInputRef.current) {
+                                imageInputRef.current.value = "";
+                              }
                               setNewEvent({ ...newEvent, imagenes: updated });
                             }}
                             className="mt-2 w-full rounded-md border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
@@ -1057,11 +1185,26 @@ export default function CrearEventoPage() {
                   <Input
                     id="documento_evento"
                     type="file"
-                    accept="application/pdf,image/*"
+                    accept="application/pdf,.pdf"
                     onChange={(e) => {
                       const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+                      if (!file) {
+                        clearFieldError("documento");
+                        setNewEvent({ ...newEvent, documento: null });
+                        return;
+                      }
+
+                      const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+                      if (!isPdf) {
+                        setFieldError("documento", "Solo se permite cargar un documento PDF.");
+                        e.currentTarget.value = "";
+                        setNewEvent({ ...newEvent, documento: null });
+                        return;
+                      }
+
                       if (file && file.size > 5 * 1024 * 1024) {
                         setFieldError("documento", "El documento no puede superar 5 MB.");
+                        e.currentTarget.value = "";
                         setNewEvent({ ...newEvent, documento: null });
                         return;
                       }

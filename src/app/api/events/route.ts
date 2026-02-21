@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { cloudinary, uploadBuffer } from "@/lib/cloudinary";
 import pool from "@/lib/db";
-import { auth } from "@/lib/auth";
 import { verifyToken } from "@/lib/jwt";
 import { PERMISSION_IDS } from "@/lib/permissions";
 
@@ -23,7 +22,14 @@ export async function POST(req: Request) {
       }
       requesterId = String(userIdFromToken);
     } else {
-      const session = await auth.api.getSession({ headers: req.headers as any });
+      let session: any = null;
+      try {
+        const { auth } = await import("@/lib/auth");
+        session = await auth.api.getSession({ headers: req.headers as any });
+      } catch (error) {
+        console.error("BetterAuth session error", error);
+        return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
+      }
       const sid = (session && session.user && ((session.user as any).id_usuario || (session.user as any).numero_documento)) || null;
       if (!sid) {
         return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
@@ -73,6 +79,12 @@ export async function POST(req: Request) {
     const docFile = formData.get("documento") as File | null;
     let documentoUrl: string | null = null;
     if (docFile && (docFile as unknown as any).size) {
+      const fileName = String((docFile as any).name || "").toLowerCase();
+      const fileType = String((docFile as any).type || "").toLowerCase();
+      const isPdf = fileType === "application/pdf" || fileName.endsWith(".pdf");
+      if (!isPdf) {
+        return NextResponse.json({ ok: false, message: "Solo se permite cargar un documento PDF" }, { status: 400 });
+      }
       const docSize = (docFile as unknown as any).size as number;
       if (docSize > maxDocBytes) {
         return NextResponse.json({ ok: false, message: "Documento supera 5 MB" }, { status: 400 });
@@ -84,12 +96,14 @@ export async function POST(req: Request) {
 
 
     const nombre_evento = (formData.get("nombre_evento") as string) || "";
+  const pulep_evento = ((formData.get("pulep_evento") as string) || "").trim() || null;
+  const responsable_evento = ((formData.get("responsable_evento") as string) || "").trim();
     const descripcion = (formData.get("descripcion") as string) || "";
+    const infoItemsRaw = (formData.get("informacion_adicional_items") as string) || "[]";
     const fecha_inicio = (formData.get("fecha_inicio") as string) || null;
     const fecha_fin = (formData.get("fecha_fin") as string) || null;
     const hora_inicio = (formData.get("hora_inicio") as string) || null;
     const hora_final = (formData.get("hora_final") as string) || null;
-    const dias_semana = (formData.get("dias_semana") as string) || null; // JSON string array
     const userId = String(requesterId || "");
 
     const id_categoria_evento = Number(formData.get("id_categoria_evento") || 0);
@@ -109,24 +123,34 @@ export async function POST(req: Request) {
     const costos: string[] = costosRaw ? JSON.parse(costosRaw) : [];
     const tiposBoleteria: string[] = tiposRaw ? JSON.parse(tiposRaw) : [];
     const linksBoleteria: string[] = linksRaw ? JSON.parse(linksRaw) : [];
+    const infoItemsParsed: Array<{ detalle: string; obligatorio?: boolean }> =
+      infoItemsRaw ? JSON.parse(infoItemsRaw) : [];
+    const infoItems = (Array.isArray(infoItemsParsed) ? infoItemsParsed : [])
+      .map((item) => ({
+        detalle: String(item?.detalle || "").trim(),
+        obligatorio: Boolean(item?.obligatorio),
+      }))
+      .filter((item) => item.detalle.length >= 5)
+      .slice(0, 20);
+
+    if (!responsable_evento || responsable_evento.length < 6) {
+      return NextResponse.json({ ok: false, message: "El responsable del evento es obligatorio y debe tener al menos 6 caracteres" }, { status: 400 });
+    }
 
 
     await client.query('BEGIN');
 
-
-    const nextIdRes = await client.query(`SELECT COALESCE(MAX(id_evento),0)+1 AS next FROM tabla_eventos`);
-    const nextEventId = nextIdRes && nextIdRes.rows && nextIdRes.rows[0] ? nextIdRes.rows[0].next : 1;
-
-
-    await client.query(
+    const insertEventRes = await client.query(
       `INSERT INTO tabla_eventos (
-        id_evento, nombre_evento, id_usuario, id_categoria_evento, id_tipo_evento, id_sitio,
+        nombre_evento, pulep_evento, responsable_evento, id_usuario, id_categoria_evento, id_tipo_evento, id_sitio,
         descripcion, telefono_1, telefono_2, fecha_inicio, fecha_fin, hora_inicio, hora_final,
-        dias_semana, gratis_pago, cupo, estado
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+        gratis_pago, cupo, estado
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+      RETURNING id_evento`,
       [
-        nextEventId,
         nombre_evento,
+        pulep_evento,
+        responsable_evento,
         userId,
         id_categoria_evento,
         id_tipo_evento,
@@ -138,14 +162,26 @@ export async function POST(req: Request) {
         fecha_fin,
         hora_inicio,
         hora_final,
-        dias_semana,
         gratis_pago,
         cupo,
         estado,
       ]
     );
 
-    const newEventId = nextEventId;
+    const newEventId = Number(insertEventRes.rows[0]?.id_evento);
+
+    const detalleInformacionImportante = infoItems
+      .map((item, index) => `${index + 1}. ${item.detalle}`)
+      .join("\n");
+    const obligatorioInformacionImportante = infoItems.some((item) => item.obligatorio);
+
+    if (detalleInformacionImportante.length >= 5) {
+      await client.query(
+        `INSERT INTO tabla_evento_informacion_importante (id_evento, detalle, obligatorio)
+         VALUES ($1,$2,$3)`,
+        [newEventId, detalleInformacionImportante, obligatorioInformacionImportante]
+      );
+    }
 
 
     for (const url of imageUrls) {
@@ -195,6 +231,7 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const idParam = url.searchParams.get('id');
+    const idPublicoParam = (url.searchParams.get('idPublico') || '').trim();
 
     // Validate id parameter to avoid passing NaN to the DB query
     const idNum = idParam !== null ? Number(idParam) : null;
@@ -202,24 +239,36 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, message: 'Invalid id parameter' }, { status: 400 });
     }
 
+    if (idPublicoParam && idPublicoParam.length < 6) {
+      return NextResponse.json({ ok: false, message: 'Invalid idPublico parameter' }, { status: 400 });
+    }
+
     const result = await pool.query(`
       SELECT e.id_evento,
+             e.id_publico_evento,
+             e.pulep_evento,
              e.nombre_evento,
+             e.responsable_evento,
+             e.id_usuario,
+             e.id_categoria_evento,
+             e.id_tipo_evento,
+             e.id_sitio,
              e.descripcion,
+             e.telefono_1,
+             e.telefono_2,
              e.fecha_inicio,
              e.fecha_fin,
              e.hora_inicio,
              e.hora_final,
              e.gratis_pago,
              e.cupo,
+             e.reservar_anticipado,
              e.estado,
-             e.fecha_creacion AS fecha_creacion_evento,
-             e.id_usuario AS creador_id_usuario,
+             e.fecha_creacion,
+             e.fecha_actualizacion,
+             e.fecha_desactivacion,
              u.nombres AS creador_nombres,
              u.apellidos AS creador_apellidos,
-             e.telefono_1 AS event_telefono_1,
-             e.telefono_2 AS event_telefono_2,
-             s.id_sitio,
              s.nombre_sitio,
              s.direccion AS sitio_direccion,
              s.telefono_1 AS sitio_telefono_1,
@@ -240,6 +289,9 @@ export async function GET(req: Request) {
              b.servicio,
              l.id_link,
              l.link,
+             iinfo.id_evento_info_item,
+             iinfo.detalle AS info_importante_detalle,
+             iinfo.obligatorio AS info_importante_obligatorio,
              vr.id_valoracion AS id_valoracion,
              vr.id_usuario AS valoracion_usuario,
              vr.valoracion AS valoracion_valor,
@@ -255,40 +307,58 @@ export async function GET(req: Request) {
       LEFT JOIN tabla_documentos_eventos d ON e.id_evento = d.id_evento
       LEFT JOIN tabla_boleteria b ON e.id_evento = b.id_evento
       LEFT JOIN tabla_links l ON e.id_evento = l.id_evento
+      LEFT JOIN tabla_evento_informacion_importante iinfo ON e.id_evento = iinfo.id_evento
       LEFT JOIN tabla_valoraciones vr ON e.id_evento = vr.id_evento
-      ${idNum !== null ? 'WHERE e.id_evento = $1' : ''}
+      ${idNum !== null ? 'WHERE e.id_evento = $1' : idPublicoParam ? 'WHERE e.id_publico_evento = $1' : ''}
       ORDER BY e.id_evento DESC;
-    `, idNum !== null ? [idNum] : []);
+    `, idNum !== null ? [idNum] : idPublicoParam ? [idPublicoParam] : []);
 
     const eventosMap: Record<string, any> = {};
     result.rows.forEach((row) => {
       if (!eventosMap[row.id_evento]) {
         eventosMap[row.id_evento] = {
           id_evento: row.id_evento,
+          id_publico_evento: row.id_publico_evento,
+          pulep_evento: row.pulep_evento,
           nombre_evento: row.nombre_evento,
+          responsable_evento: row.responsable_evento,
+          id_usuario: row.id_usuario,
+          id_categoria_evento: row.id_categoria_evento,
+          id_tipo_evento: row.id_tipo_evento,
+          id_sitio: row.id_sitio,
           descripcion: row.descripcion,
+          telefono_1: row.telefono_1,
+          telefono_2: row.telefono_2,
           fecha_inicio: row.fecha_inicio,
           fecha_fin: row.fecha_fin,
           hora_inicio: row.hora_inicio,
           hora_final: row.hora_final,
           gratis_pago: row.gratis_pago,
           cupo: row.cupo,
+          reservar_anticipado: row.reservar_anticipado,
           estado: row.estado,
-          fecha_creacion_evento: row.fecha_creacion_evento,
-          creador_id_usuario: row.creador_id_usuario,
+          fecha_creacion: row.fecha_creacion,
+          fecha_actualizacion: row.fecha_actualizacion,
+          fecha_desactivacion: row.fecha_desactivacion,
           creador_nombres: row.creador_nombres,
           creador_apellidos: row.creador_apellidos,
-          event_telefono_1: row.event_telefono_1,
-          event_telefono_2: row.event_telefono_2,
-          id_sitio: row.id_sitio,
           nombre_sitio: row.nombre_sitio,
           sitio_direccion: row.sitio_direccion,
           sitio_telefono_1: row.sitio_telefono_1,
           sitio_telefono_2: row.sitio_telefono_2,
           id_municipio: row.id_municipio,
           nombre_municipio: row.nombre_municipio,
+          evento_categoria_id: row.evento_categoria_id,
           categoria_nombre: row.categoria_nombre,
+          evento_tipo_id: row.evento_tipo_id,
           tipo_nombre: row.tipo_nombre,
+          informacion_importante: row.id_evento_info_item
+            ? {
+                id_evento_info_item: row.id_evento_info_item,
+                detalle: row.info_importante_detalle,
+                obligatorio: row.info_importante_obligatorio,
+              }
+            : null,
           imagenes: [],
           documentos: [],
           valores: [],
@@ -332,14 +402,14 @@ export async function GET(req: Request) {
 
     const mapped = eventos.map((ev: any) => ({
       ...ev,
-      creador: ev.creador_id_usuario ? { id_usuario: ev.creador_id_usuario, nombres: ev.creador_nombres, apellidos: ev.creador_apellidos } : null,
+      creador: ev.id_usuario ? { id_usuario: ev.id_usuario, nombres: ev.creador_nombres, apellidos: ev.creador_apellidos } : null,
       sitio: ev.id_sitio ? { id_sitio: ev.id_sitio, nombre_sitio: ev.nombre_sitio, direccion: ev.sitio_direccion, telefono_1: ev.sitio_telefono_1, telefono_2: ev.sitio_telefono_2 } : null,
       municipio: ev.id_municipio ? { id_municipio: ev.id_municipio, nombre_municipio: ev.nombre_municipio } : null,
-      categoria: ev.categoria_evento ? { id_categoria_evento: ev.id_categoria_evento, nombre: ev.nombre } : null,
-      fecha_creacion: ev.fecha_creacion_evento,
+      categoria: ev.evento_categoria_id ? { id_categoria_evento: ev.evento_categoria_id, nombre: ev.categoria_nombre } : null,
+      tipo_evento: ev.evento_tipo_id ? { id_tipo_evento: ev.evento_tipo_id, nombre: ev.tipo_nombre } : null,
     }));
 
-    if (idParam) {
+    if (idParam || idPublicoParam) {
       const single = mapped.length ? mapped[0] : null;
       return NextResponse.json({ ok: true, event: single });
     }
