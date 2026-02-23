@@ -44,6 +44,7 @@ export async function sendEmailValidationEmail(
     }
 
     const validationUrl = `${baseUrl}/validate-email?token=${token}`
+    const bannerUrl = `${baseUrl.replace(/\/$/, "")}/images/banner_top.jpg`
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -51,7 +52,7 @@ export async function sendEmailValidationEmail(
       subject: "Time2Go - Valida tu correo electrónico",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <img src="https://res.cloudinary.com/dljthy97e/image/upload/v1770842202/banner_top_azaedp.jpg" alt="Banner" style="width: 100%; border-radius: 8px 8px 0 0; display: block;" />
+          <img src="${bannerUrl}" alt="Banner" style="width: 100%; border-radius: 8px 8px 0 0; display: block;" />
           <div style="background: linear-gradient(to bottom left, #a21caf, #dc2626); padding: 20px; border-radius: 0 0 8px 8px; color: white; text-align: center;">
             <h2 style="margin: 0;">Validación de Correo Electrónico</h2>
           </div>
@@ -104,13 +105,20 @@ export async function sendResetPasswordEmail(email: string, newPassword: string)
       return false
     }
 
+    const appBaseUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.APP_URL ||
+      process.env.BETTER_AUTH_URL ||
+      "http://localhost:3000"
+    const bannerUrl = `${appBaseUrl.replace(/\/$/, "")}/images/banner_top.jpg`
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
       subject: "Time2Go - Esta es tu nueva contraseña",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <img src="https://res.cloudinary.com/dljthy97e/image/upload/v1770842202/banner_top_azaedp.jpg" alt="Banner" style="width: 100%; border-radius: 8px 8px 0 0; display: block;" />
+          <img src="${bannerUrl}" alt="Banner" style="width: 100%; border-radius: 8px 8px 0 0; display: block;" />
           <div style="background: linear-gradient(to bottom left, #a21caf, #dc2626); padding: 20px; border-radius: 8px 8px 0 0; color: white;">
             <h2 style="margin: 0;">Restablecimiento de Contraseña</h2>
           </div>

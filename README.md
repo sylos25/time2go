@@ -15,6 +15,7 @@ Para consultar la documentación del proyecto, incluyendo la configuración de r
 - [Login Validation Guide](./docs/LOGIN_VALIDATION_GUIDE.md)
 - [Reset Password Configuration](./docs/RESET_PASSWORD_CONFIG.md)
 - [Setup Checklist](./docs/SETUP_CHECKLIST.md)
+- [Cloudflare R2 Storage Guide](./docs/R2_STORAGE_GUIDE.md) - **Nuevo: almacenamiento de imágenes y PDF**
 
 ## 🆕 Módulo de Inserción de Datos
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
-import { auth } from "@/lib/auth";
+import { getAuth } from "@/lib/auth";
 import { verifyToken } from "@/lib/jwt";
 import { parseCookies } from "@/lib/cookies";
 
@@ -34,7 +34,7 @@ export async function GET(req: Request) {
       }
 
       if (!userId) {
-      const session = await auth.api.getSession({ headers: req.headers as any });
+      const session = await getAuth().api.getSession({ headers: req.headers as any });
       const sid = (session && session.user && ((session.user as any).id_usuario || (session.user as any).numero_documento)) || null;
       if (!sid) {
         return NextResponse.json({ ok: false, message: "No authenticated user" }, { status: 401 });

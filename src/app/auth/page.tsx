@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { LoginForm } from "@/components/login-form"
@@ -9,6 +9,14 @@ import { RegisterForm } from "@/components/register-form"
 import { CheckCircle } from "lucide-react"
 
 export default function AuthPage() {
+  return (
+    <Suspense fallback={<main className="relative min-h-screen overflow-hidden bg-black" />}>
+      <AuthPageContent />
+    </Suspense>
+  )
+}
+
+function AuthPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [step, setStep] = useState<"choice" | "login" | "register">("choice")

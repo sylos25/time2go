@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cloudinary, uploadBuffer } from "@/lib/cloudinary";
+import { uploadDocumentBuffer, uploadImageBuffer } from "@/lib/document-storage";
 import pool from "@/lib/db";
 import { verifyToken } from "@/lib/jwt";
 import { PERMISSION_IDS } from "@/lib/permissions";
@@ -24,8 +24,8 @@ export async function POST(req: Request) {
     } else {
       let session: any = null;
       try {
-        const { auth } = await import("@/lib/auth");
-        session = await auth.api.getSession({ headers: req.headers as any });
+        const { getAuth } = await import("@/lib/auth");
+        session = await getAuth().api.getSession({ headers: req.headers as any });
       } catch (error) {
         console.error("BetterAuth session error", error);
         return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
@@ -68,16 +68,40 @@ export async function POST(req: Request) {
     if (files.length > maxImages) {
       return NextResponse.json({ ok: false, message: "Maximo 8 imagenes" }, { status: 400 });
     }
-    const imageUrls: string[] = [];
+    const uploadedImages: Array<{
+      url: string;
+      provider: string;
+      storageKey: string;
+      mimeType: string;
+      bytes: number;
+      originalFileName: string;
+    }> = [];
     for (const f of files) {
       const buffer = Buffer.from(await f.arrayBuffer());
-      const result = await uploadBuffer(buffer, "eventos");
-      imageUrls.push(result.secure_url);
+      const result = await uploadImageBuffer({
+        buffer,
+        contentType: String((f as any).type || "image/jpeg"),
+        originalFileName: String((f as any).name || "imagen.jpg"),
+      });
+      const imageUrl = result.publicUrl || `/api/events/image?key=${encodeURIComponent(result.storageKey)}`;
+      uploadedImages.push({
+        url: imageUrl,
+        provider: result.provider,
+        storageKey: result.storageKey,
+        mimeType: result.mimeType,
+        bytes: result.sizeBytes,
+        originalFileName: result.originalFileName,
+      });
     }
 
 
     const docFile = formData.get("documento") as File | null;
     let documentoUrl: string | null = null;
+    let documentoStorageProvider: string | null = null;
+    let documentoStorageKey: string | null = null;
+    let documentoMimeType: string | null = null;
+    let documentoBytes: number | null = null;
+    let documentoOriginalFilename: string | null = null;
     if (docFile && (docFile as unknown as any).size) {
       const fileName = String((docFile as any).name || "").toLowerCase();
       const fileType = String((docFile as any).type || "").toLowerCase();
@@ -90,8 +114,17 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: false, message: "Documento supera 5 MB" }, { status: 400 });
       }
       const bufferDoc = Buffer.from(await docFile.arrayBuffer());
-      const docResult = await uploadBuffer(bufferDoc, "eventos/documents", { resource_type: "raw" });
-      documentoUrl = docResult.secure_url;
+      const docResult = await uploadDocumentBuffer({
+        buffer: bufferDoc,
+        contentType: "application/pdf",
+        originalFileName: String((docFile as any).name || "documento.pdf"),
+      });
+      documentoUrl = docResult.publicUrl;
+      documentoStorageProvider = docResult.provider;
+      documentoStorageKey = docResult.storageKey;
+      documentoMimeType = docResult.mimeType;
+      documentoBytes = docResult.sizeBytes;
+      documentoOriginalFilename = docResult.originalFileName;
     }
 
 
@@ -170,6 +203,10 @@ export async function POST(req: Request) {
 
     const newEventId = Number(insertEventRes.rows[0]?.id_evento);
 
+    if (docFile && documentoStorageKey && !documentoOriginalFilename) {
+      documentoOriginalFilename = `evento-${newEventId}.pdf`;
+    }
+
     const detalleInformacionImportante = infoItems
       .map((item, index) => `${index + 1}. ${item.detalle}`)
       .join("\n");
@@ -184,18 +221,71 @@ export async function POST(req: Request) {
     }
 
 
-    for (const url of imageUrls) {
+    for (const image of uploadedImages) {
       await client.query(
-        `INSERT INTO tabla_imagenes_eventos (url_imagen_evento, id_evento) VALUES ($1,$2)`,
-        [url, newEventId]
+        `INSERT INTO tabla_imagenes_eventos (
+          url_imagen_evento,
+          id_evento,
+          storage_provider,
+          storage_key,
+          mime_type,
+          bytes,
+          original_filename
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [
+          image.url,
+          newEventId,
+          image.provider,
+          image.storageKey,
+          image.mimeType,
+          image.bytes,
+          image.originalFileName,
+        ]
       );
     }
 
 
     if (documentoUrl) {
       await client.query(
-        `INSERT INTO tabla_documentos_eventos (url_documento_evento, id_evento) VALUES ($1,$2)`,
-        [documentoUrl, newEventId]
+        `INSERT INTO tabla_documentos_eventos (
+          id_evento,
+          url_documento_evento,
+          storage_provider,
+          storage_key,
+          mime_type,
+          bytes,
+          original_filename
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [
+          newEventId,
+          documentoUrl,
+          documentoStorageProvider,
+          documentoStorageKey,
+          documentoMimeType,
+          documentoBytes,
+          documentoOriginalFilename,
+        ]
+      );
+    } else if (documentoStorageKey) {
+      await client.query(
+        `INSERT INTO tabla_documentos_eventos (
+          id_evento,
+          url_documento_evento,
+          storage_provider,
+          storage_key,
+          mime_type,
+          bytes,
+          original_filename
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [
+          newEventId,
+          `bucket://${documentoStorageKey}`,
+          documentoStorageProvider,
+          documentoStorageKey,
+          documentoMimeType,
+          documentoBytes,
+          documentoOriginalFilename,
+        ]
       );
     }
 
@@ -281,8 +371,18 @@ export async function GET(req: Request) {
              te.nombre AS tipo_nombre,
              i.id_imagen_evento,
              i.url_imagen_evento,
+             i.storage_provider AS imagen_storage_provider,
+             i.storage_key AS imagen_storage_key,
+             i.mime_type AS imagen_mime_type,
+             i.bytes AS imagen_bytes,
+             i.original_filename AS imagen_original_filename,
              d.id_documento_evento,
              d.url_documento_evento,
+             d.storage_provider,
+             d.storage_key,
+             d.mime_type,
+             d.bytes,
+             d.original_filename,
              b.id_boleto,
              b.nombre_boleto,
              b.precio_boleto,
@@ -367,10 +467,20 @@ export async function GET(req: Request) {
       }
 
       if (row.url_imagen_evento) {
-        eventosMap[row.id_evento].imagenes.push({
-          id_imagen_evento: row.id_imagen_evento,
-          url_imagen_evento: row.url_imagen_evento,
-        });
+        if (!eventosMap[row.id_evento].imagenes.some((img: any) => img.id_imagen_evento === row.id_imagen_evento)) {
+          eventosMap[row.id_evento].imagenes.push({
+            id_imagen_evento: row.id_imagen_evento,
+            url_imagen_evento:
+              (row.imagen_storage_provider === "r2" || row.imagen_storage_provider === "s3") && row.id_imagen_evento
+                ? `/api/events/image?id=${encodeURIComponent(String(row.id_imagen_evento))}`
+                : row.url_imagen_evento,
+            storage_provider: row.imagen_storage_provider,
+            storage_key: row.imagen_storage_key,
+            mime_type: row.imagen_mime_type,
+            bytes: row.imagen_bytes,
+            original_filename: row.imagen_original_filename,
+          });
+        }
       }
 
       if (row.url_documento_evento) {
@@ -378,6 +488,11 @@ export async function GET(req: Request) {
           eventosMap[row.id_evento].documentos.push({
             id_documento_evento: row.id_documento_evento,
             url_documento_evento: row.url_documento_evento,
+            storage_provider: row.storage_provider,
+            storage_key: row.storage_key,
+            mime_type: row.mime_type,
+            bytes: row.bytes,
+            original_filename: row.original_filename,
           });
         }
       }

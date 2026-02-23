@@ -23,6 +23,11 @@ Si necesitas configurar o entender cómo funciona el reset de contraseña:
    - Resumen técnico de la implementación
    - Archivos creados y modificados
 
+5. **[☁️ R2_STORAGE_GUIDE.md](./R2_STORAGE_GUIDE.md)**
+   - Configuración completa de Cloudflare R2
+   - Flujo de imágenes y PDF del sistema
+   - Pruebas de verificación
+
 ## 📦 Archivos de Ejemplo
 
 - **[.env.local.example](../.env.local.example)** - Template de variables de entorno

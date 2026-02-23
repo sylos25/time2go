@@ -1,12 +1,30 @@
-import { auth } from "@/lib/auth"
+import { getAuth } from "@/lib/auth"
 import { toNextJsHandler } from "better-auth/next-js"
 import type { NextApiRequest, NextApiResponse } from "next"
 
-const handler = toNextJsHandler(auth)
-export const { GET, POST } = handler
+function createHandler() {
+  return toNextJsHandler(getAuth())
+}
+
+export async function GET(req: Request) {
+  const handler = createHandler()
+  if (typeof handler.GET !== "function") {
+    return new Response("Method Not Allowed", { status: 405 })
+  }
+  return handler.GET(req)
+}
+
+export async function POST(req: Request) {
+  const handler = createHandler()
+  if (typeof handler.POST !== "function") {
+    return new Response("Method Not Allowed", { status: 405 })
+  }
+  return handler.POST(req)
+}
 
 // Add a default export for pages/api compatibility: delegate to appropriate method
 export default async function handlerDefault(req: NextApiRequest, res: NextApiResponse) {
+  const handler = createHandler()
   const method = (req.method || "").toUpperCase()
 
   // Build a web Request object to pass to the handler returned by toNextJsHandler

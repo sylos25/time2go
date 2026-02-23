@@ -1,11 +1,19 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 
 export default function ValidateEmailPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50" />}>
+      <ValidateEmailPageContent />
+    </Suspense>
+  )
+}
+
+function ValidateEmailPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const token = searchParams?.get("token")

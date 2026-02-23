@@ -26,10 +26,13 @@ import Valoraciones from "./valoraciones";
 export default function EventLanding() {
   const router = useRouter();
   const params = useParams();
-  const id = params?.id && Array.isArray(params.id) ? params.id[0] : params?.id;
+  const rawId = params?.id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const [event, setEvent] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [checkingReservation, setCheckingReservation] = useState(false);
+  const [alreadyReserved, setAlreadyReserved] = useState(false);
 
   // Helpers
   const formatDate = (d: any) => {
@@ -121,6 +124,42 @@ export default function EventLanding() {
     fetchEvent();
   }, [id]);
 
+  useEffect(() => {
+    const checkReservation = async () => {
+      if (!event?.id_evento) {
+        setAlreadyReserved(false);
+        return;
+      }
+
+      setCheckingReservation(true);
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const res = await fetch("/api/reservas", {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          credentials: "include",
+        });
+
+        if (!res.ok) {
+          setAlreadyReserved(false);
+          return;
+        }
+
+        const json = await res.json().catch(() => ({}));
+        const reservas = Array.isArray(json?.reservas) ? json.reservas : [];
+        const hasReservation = reservas.some(
+          (r: any) => Number(r?.id_evento) === Number(event.id_evento) && r?.estado !== false
+        );
+        setAlreadyReserved(hasReservation);
+      } catch {
+        setAlreadyReserved(false);
+      } finally {
+        setCheckingReservation(false);
+      }
+    };
+
+    checkReservation();
+  }, [event?.id_evento]);
+
   if (loading) {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center">
@@ -208,6 +247,7 @@ export default function EventLanding() {
   const reservePath = `/eventos/reservar/${slugify(event.nombre_evento)}?e=${encodeURIComponent(
     event.id_publico_evento || ""
   )}`;
+  const reserveDisabled = checkingReservation || alreadyReserved;
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-sky-100">
@@ -487,12 +527,15 @@ export default function EventLanding() {
                 </div>
 
                 <Button
-                  onClick={() => router.push(reservePath)}
+                  onClick={() => {
+                    if (!reserveDisabled) router.push(reservePath);
+                  }}
                   className="w-full mb-3 bg-gradient-to-r from-red-500 to-fuchsia-500 text-white hover:from-red-600 hover:to-fuchsia-700"
                   size="lg"
+                  disabled={reserveDisabled}
                 >
                   <Ticket className="h-5 w-5 mr-2" />
-                  Reservar
+                  {checkingReservation ? "Verificando..." : alreadyReserved ? "Ya reservado" : "Reservar"}
                 </Button>
 
                 {event.links && event.links.length > 0 && (
@@ -685,12 +728,15 @@ export default function EventLanding() {
             </p>
           </div>
           <Button
-            onClick={() => router.push(reservePath)}
+            onClick={() => {
+              if (!reserveDisabled) router.push(reservePath);
+            }}
             size="lg"
             className="flex-1 bg-gradient-to-r from-lime-500 to-green-500 text-white hover:from-lime-600 hover:to-green-600"
+            disabled={reserveDisabled}
           >
             <Ticket className="h-5 w-5 mr-2" />
-            Reservar
+            {checkingReservation ? "Verificando..." : alreadyReserved ? "Ya reservado" : "Reservar"}
           </Button>
         </div>
       </div>

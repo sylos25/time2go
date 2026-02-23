@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cloudinary, uploadBuffer } from "@/lib/cloudinary";
+import { uploadImageBuffer } from "@/lib/document-storage";
 import pool from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -50,12 +50,32 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     if (files.length > maxImages) {
       return NextResponse.json({ ok: false, message: "Maximo 8 imagenes" }, { status: 400 });
     }
-    const imageUrls: string[] = [];
+    const uploadedImages: Array<{
+      url: string;
+      provider: string;
+      storageKey: string;
+      mimeType: string;
+      bytes: number;
+      originalFileName: string;
+    }> = [];
     for (const f of files) {
       if (f && (f as any).size > 0) {
         const buffer = Buffer.from(await f.arrayBuffer());
-        const result = await uploadBuffer(buffer, "eventos");
-        imageUrls.push(result.secure_url);
+        const result = await uploadImageBuffer({
+          buffer,
+          contentType: String((f as any).type || "image/jpeg"),
+          originalFileName: String((f as any).name || "imagen.jpg"),
+          eventId,
+        });
+        const imageUrl = result.publicUrl || `/api/events/image?key=${encodeURIComponent(result.storageKey)}`;
+        uploadedImages.push({
+          url: imageUrl,
+          provider: result.provider,
+          storageKey: result.storageKey,
+          mimeType: result.mimeType,
+          bytes: result.sizeBytes,
+          originalFileName: result.originalFileName,
+        });
       }
     }
 
@@ -138,8 +158,27 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     }
 
     // Add new images
-    for (const url of imageUrls) {
-      await client.query("INSERT INTO tabla_imagenes_eventos (url_imagen_evento, id_evento) VALUES ($1, $2)", [url, eventId]);
+    for (const image of uploadedImages) {
+      await client.query(
+        `INSERT INTO tabla_imagenes_eventos (
+          url_imagen_evento,
+          id_evento,
+          storage_provider,
+          storage_key,
+          mime_type,
+          bytes,
+          original_filename
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          image.url,
+          eventId,
+          image.provider,
+          image.storageKey,
+          image.mimeType,
+          image.bytes,
+          image.originalFileName,
+        ]
+      );
     }
 
     // Sync tickets (tabla_boleteria) and links (tabla_links)

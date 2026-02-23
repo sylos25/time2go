@@ -238,6 +238,11 @@ CREATE TABLE IF NOT EXISTS tabla_imagenes_eventos (
     id_imagen_evento                        INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     url_imagen_evento                       VARCHAR                      NOT NULL       UNIQUE,
     id_evento                               INT                          NOT NULL,
+    storage_provider                        VARCHAR                      NOT NULL       DEFAULT 'legacy_url',
+    storage_key                             TEXT,
+    mime_type                               VARCHAR                      NOT NULL       DEFAULT 'image/jpeg',
+    bytes                                   BIGINT,
+    original_filename                       VARCHAR,
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_evento)                 REFERENCES  tabla_eventos(id_evento)
@@ -246,7 +251,12 @@ CREATE TABLE IF NOT EXISTS tabla_imagenes_eventos (
 CREATE TABLE IF NOT EXISTS tabla_documentos_eventos (
     id_documento_evento                     INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     url_documento_evento                    VARCHAR                      NOT NULL       UNIQUE,
-    id_evento                               INT                          NOT NULL,
+    id_evento                               INT                          NOT NULL       UNIQUE,
+    storage_provider                        VARCHAR                      NOT NULL       DEFAULT 'legacy_url',
+    storage_key                             TEXT,
+    mime_type                               VARCHAR                      NOT NULL       DEFAULT 'application/pdf',
+    bytes                                   BIGINT,
+    original_filename                       VARCHAR,
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_evento)                 REFERENCES  tabla_eventos(id_evento)
@@ -255,7 +265,7 @@ CREATE TABLE IF NOT EXISTS tabla_documentos_eventos (
 CREATE TABLE IF NOT EXISTS tabla_documentos_usuarios (
     id_documento_usuario                    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     url_documento_usuario                   VARCHAR                      NOT NULL       UNIQUE,
-    id_usuario                              INT                          NOT NULL,
+    id_usuario                              INT                          NOT NULL       UNIQUE,
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_usuario)                REFERENCES  tabla_usuarios(id_usuario)
@@ -284,6 +294,7 @@ CREATE TABLE IF NOT EXISTS tabla_reserva_eventos (
     fecha_reserva                           TIMESTAMP                    NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     estado                                  BOOLEAN                      NOT NULL        DEFAULT 'TRUE',
     fecha_actualizacion                     TIMESTAMP                    NOT NULL        DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_reserva_usuario_evento    UNIQUE (id_usuario, id_evento),
     FOREIGN KEY (id_usuario)                REFERENCES  tabla_usuarios(id_usuario),
     FOREIGN KEY (id_evento)                 REFERENCES  tabla_eventos(id_evento)
 );

@@ -1,13 +1,85 @@
 import { NextRequest, NextResponse } from "next/server"
+import pool from "@/lib/db"
+import { getDocumentFromStorage } from "@/lib/document-storage"
 
 export const runtime = "nodejs"
 
 export async function GET(req: NextRequest) {
   try {
+    const idParam = req.nextUrl.searchParams.get("id")
     const url = req.nextUrl.searchParams.get("url")
-    if (!url) {
-      return NextResponse.json({ error: "Missing url" }, { status: 400 })
+
+    if (idParam) {
+      const documentId = Number(idParam)
+      if (!Number.isFinite(documentId) || documentId <= 0) {
+        return NextResponse.json({ error: "Invalid id" }, { status: 400 })
+      }
+
+      const docRes = await pool.query(
+        `SELECT id_documento_evento,
+                url_documento_evento,
+                storage_provider,
+                storage_key,
+                mime_type,
+                original_filename
+         FROM tabla_documentos_eventos
+         WHERE id_documento_evento = $1
+         LIMIT 1`,
+        [documentId]
+      )
+
+      if (!docRes.rows || docRes.rows.length === 0) {
+        return NextResponse.json({ error: "Document not found" }, { status: 404 })
+      }
+
+      const doc = docRes.rows[0]
+
+      if ((doc.storage_provider === "s3" || doc.storage_provider === "r2") && doc.storage_key) {
+        const stored = await getDocumentFromStorage(String(doc.storage_key))
+        const filename = String(doc.original_filename || `documento-${documentId}.pdf`).replace(/"/g, "")
+
+        return new NextResponse(new Uint8Array(stored.bytes), {
+          headers: {
+            "Content-Type": String(doc.mime_type || stored.contentType || "application/pdf"),
+            "Content-Disposition": `inline; filename="${filename}"`,
+            "Content-Length": String(stored.contentLength),
+            "Cache-Control": "private, max-age=3600",
+          },
+        })
+      }
+
+      if (doc.url_documento_evento) {
+        const legacyUrl = String(doc.url_documento_evento)
+        const external = await fetch(legacyUrl)
+        if (!external.ok) {
+          return NextResponse.json({ error: "Failed to fetch document" }, { status: 502 })
+        }
+
+        const ct = (external.headers.get("content-type") || "").toLowerCase()
+        const isPdf = ct.includes("pdf") || legacyUrl.toLowerCase().endsWith(".pdf")
+        const contentType = isPdf ? "application/pdf" : external.headers.get("content-type") || "application/octet-stream"
+        const filename = String(doc.original_filename || `documento-${documentId}.pdf`).replace(/"/g, "")
+
+        const arrayBuffer = await external.arrayBuffer()
+        const uint8 = new Uint8Array(arrayBuffer)
+
+        return new NextResponse(uint8, {
+          headers: {
+            "Content-Type": contentType,
+            "Content-Disposition": `inline; filename="${filename}"`,
+            "Content-Length": String(uint8.length),
+            "Cache-Control": "private, max-age=3600",
+          },
+        })
+      }
+
+      return NextResponse.json({ error: "Document source unavailable" }, { status: 404 })
     }
+
+    if (!url) {
+      return NextResponse.json({ error: "Missing id or url" }, { status: 400 })
+    }
+
     const external = await fetch(url)
     if (!external.ok) {
       return NextResponse.json({ error: "Failed to fetch document" }, { status: 502 })

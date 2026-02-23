@@ -153,16 +153,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, message: "El evento no existe" }, { status: 404 });
     }
 
-    const duplicated = await client.query(
-      "SELECT id_reserva_evento FROM tabla_reserva_eventos WHERE id_usuario = $1 AND id_evento = $2 LIMIT 1",
-      [user.id_usuario, id_evento]
-    );
-
-    if (duplicated.rows && duplicated.rows.length > 0) {
-      await client.query("ROLLBACK");
-      return NextResponse.json({ ok: false, message: "Ya tienes una reserva para este evento" }, { status: 409 });
-    }
-
     const insertRes = await client.query(
       `INSERT INTO tabla_reserva_eventos (
         id_usuario,
@@ -172,9 +162,15 @@ export async function POST(req: Request) {
         cuantos_asistiran,
         quienes_asistiran
       ) VALUES ($1,$2,$3,$4,$5,$6)
+      ON CONFLICT (id_usuario, id_evento) DO NOTHING
       RETURNING id_reserva_evento, fecha_reserva`,
       [user.id_usuario, id_evento, tipo_documento, numero_documento, cuantos_asistiran, quienes_asistiran]
     );
+
+    if (!insertRes.rows || insertRes.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return NextResponse.json({ ok: false, message: "Ya tienes una reserva para este evento" }, { status: 409 });
+    }
 
     await client.query("COMMIT");
 

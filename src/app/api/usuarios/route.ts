@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
-import { auth } from "@/lib/auth";
+import { getAuth } from "@/lib/auth";
 import { verifyToken } from "@/lib/jwt";
 
 export async function GET(req: Request) {
@@ -18,7 +18,7 @@ export async function GET(req: Request) {
       }
       requesterId = String(userIdFromToken);
     } else {
-      const session = await auth.api.getSession({ headers: req.headers as any });
+      const session = await getAuth().api.getSession({ headers: req.headers as any });
       const sid = (session && session.user && ((session.user as any).id_usuario || (session.user as any).numero_documento)) || null;
       if (!sid) {
         return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });

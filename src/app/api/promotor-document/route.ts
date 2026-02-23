@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server"
 import pool from "@/lib/db"
-import { auth } from "@/lib/auth"
+import { getAuth } from "@/lib/auth"
 import { parseCookies } from "@/lib/cookies"
 import { verifyToken } from "@/lib/jwt"
-import { uploadBuffer } from "@/lib/cloudinary"
+import { uploadDocumentBuffer } from "@/lib/document-storage"
 
 export const runtime = "nodejs"
 
@@ -34,7 +34,7 @@ async function getAuthenticatedUserId(req: Request): Promise<string | null> {
     }
   }
 
-  const session = await auth.api.getSession({ headers: req.headers as any })
+  const session = await getAuth().api.getSession({ headers: req.headers as any })
   const sid =
     (session &&
       session.user &&
@@ -75,14 +75,14 @@ export async function POST(req: Request) {
     }
 
     const buffer = Buffer.from(await document.arrayBuffer())
-    const uploadResult = await uploadBuffer(buffer, "usuarios/documentos", {
-      resource_type: "raw",
-      use_filename: true,
-      unique_filename: true,
-      overwrite: false,
+    const uploadResult = await uploadDocumentBuffer({
+      buffer,
+      contentType: "application/pdf",
+      originalFileName: document.name || "documento.pdf",
+      eventId: userId,
     })
 
-    const documentUrl = uploadResult?.secure_url
+    const documentUrl = uploadResult?.publicUrl || `bucket://${uploadResult.storageKey}`
     if (!documentUrl) {
       return NextResponse.json({ ok: false, message: "No se pudo obtener la URL del documento" }, { status: 500 })
     }

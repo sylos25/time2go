@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 import {
   BarChart,
@@ -54,10 +55,14 @@ import { InsertDataTab } from "@/components/dashboard/insert-data-tab"
 import ViewDataTab from "@/components/dashboard/view-data-tab"
 import { EditEventModal } from "@/components/dashboard/edit-event-modal"
 import { ToggleEventStatusModal } from "@/components/dashboard/toggle-event-status-modal"
-import { PDFViewer } from "@/components/pdf-viewer"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+
+const PDFViewer = dynamic(
+  () => import("@/components/pdf-viewer").then((module) => module.PDFViewer),
+  { ssr: false }
+)
 
 interface Event {
   id: number
@@ -831,7 +836,7 @@ export default function EventDashboard() {
                                 <button
                                   onClick={() => {
                                     if (event.documentos.length === 1) {
-                                      const proxied = `/api/events/document?url=${encodeURIComponent(event.documentos[0].url_documento_evento)}`
+                                      const proxied = `/api/events/document?id=${encodeURIComponent(String(event.documentos[0].id_documento_evento))}`
                                       setPdfModalUrl(proxied)
                                       setPdfModalOpen(true)
                                     } else {
@@ -844,7 +849,7 @@ export default function EventDashboard() {
                                       if (docNum && !isNaN(parseInt(docNum))) {
                                         const idx = parseInt(docNum) - 1
                                         if (idx >= 0 && idx < event.documentos.length) {
-                                          const proxied = `/api/events/document?url=${encodeURIComponent(event.documentos[idx].url_documento_evento)}`
+                                          const proxied = `/api/events/document?id=${encodeURIComponent(String(event.documentos[idx].id_documento_evento))}`
                                           setPdfModalUrl(proxied)
                                           setPdfModalOpen(true)
                                         }
