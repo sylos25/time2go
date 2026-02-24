@@ -52,42 +52,18 @@ INSERT INTO tabla_sitios_discapacitados (id_sitios_discapacitados, id_sitio, id_
 INSERT INTO tabla_sitios_discapacitados (id_sitios_discapacitados, id_sitio, id_infraestructura_discapacitados, descripcion) VALUES (3, 2, 3, 'Señalización para discapacitados en Neomundo');
 INSERT INTO tabla_sitios_discapacitados (id_sitios_discapacitados, id_sitio, id_infraestructura_discapacitados, descripcion) VALUES (4, 6, 2, 'Rampa de acceso al Parque Temático');
 
-INSERT INTO tabla_eventos (
-    id_publico_evento, pulep_evento, nombre_evento, responsable_evento,
-    id_usuario, id_categoria_evento, id_tipo_evento, id_sitio,
-    descripcion, informacion_adicional,
-    telefono_1, telefono_2,
-    fecha_inicio, fecha_fin, hora_inicio, hora_final,
-    gratis_pago, cupo, reservar_anticipado, estado
-) VALUES (
-    'EVT-001-2026', 'PULEP-001', 'Torneo de Fútbol Amistoso', 'Liga Deportiva La Cumbre',
-    4, 3, 12, 4,
-    'Un torneo de fútbol amistoso para promover la actividad física y la camaradería entre los participantes.',
-    'El torneo se llevará a cabo en la cancha de tierra del barrio La Cumbre. Se esperan equipos de distintos barrios del municipio. Se contará con árbitros certificados, hidratación para los participantes y premiación al finalizar el evento.',
-    3123456789, NULL,
-    '2026-09-15', '2026-09-15', '10:00:00', '16:00:00',
-    FALSE, 60, TRUE, FALSE
-);
 
-INSERT INTO tabla_eventos (
-    id_publico_evento, pulep_evento, nombre_evento, responsable_evento,
-    id_usuario, id_categoria_evento, id_tipo_evento, id_sitio,
-    descripcion, informacion_adicional,
-    telefono_1, telefono_2,
-    fecha_inicio, fecha_fin, hora_inicio, hora_final,
-    gratis_pago, cupo, reservar_anticipado, estado
-) VALUES (
-    'EVT-002-2026', 'PULEP-002', 'Fiesta de La Cumbia', 'Corporación Cultural del Nororiente',
-    4, 2, 11, 5,
-    'Una celebración vibrante con música, baile y gastronomía. Disfruta de la cultura local en un ambiente festivo al ritmo de la cumbia.',
-    'El evento contará con grupos de danza folclórica, gastronomía típica de la región, stands artesanales y presentaciones musicales en vivo. Apto para toda la familia. No se permite el ingreso de bebidas alcohólicas externas.',
-    3109876543, NULL,
-    '2026-10-05', '2026-10-05', '18:00:00', '23:00:00',
-    FALSE, 200, TRUE, FALSE
-);
+-- Cargar en tabla_eventos. (No se pueden cargar las imagenes, toca desde la Dashboard (con el rol Administrador)) Solo se puede .
 
-INSERT INTO tabla_imagenes_eventos (url_imagen_evento, id_evento) VALUES ('https://res.cloudinary.com/dljthy97e/image/upload/v1769572316/Cancha_leopardo_clbqwx.png',  (SELECT id_evento FROM tabla_eventos WHERE id_publico_evento = 'EVT-001-2026'));
-INSERT INTO tabla_imagenes_eventos (url_imagen_evento, id_evento) VALUES ('https://res.cloudinary.com/dljthy97e/image/upload/v1769572322/Microfutbol_ni%C3%B1o2_bea1sl.jpg',    (SELECT id_evento FROM tabla_eventos WHERE id_publico_evento = 'EVT-001-2026'));
-INSERT INTO tabla_imagenes_eventos (url_imagen_evento, id_evento) VALUES ('https://res.cloudinary.com/dljothy97e/image/upload/v1769572317/Microfutbol_ni%C3%B1o1_at3cnl.jpg',    (SELECT id_evento FROM tabla_eventos WHERE id_publico_evento = 'EVT-001-2026'));
-INSERT INTO tabla_imagenes_eventos (url_imagen_evento, id_evento) VALUES ('https://res.cloudinary.com/dljthy97e/image/upload/v1769572316/Microfutbol_joven_kvtx0h.jpg',          (SELECT id_evento FROM tabla_eventos WHERE id_publico_evento = 'EVT-001-2026'));
-INSERT INTO tabla_imagenes_eventos (url_imagen_evento, id_evento) VALUES ('https://res.cloudinary.com/dljthy97e/image/upload/v1769572316/Microfutbol_adulto_uuupv8.jpg',         (SELECT id_evento FROM tabla_eventos WHERE id_publico_evento = 'EVT-001-2026'));
+-- Un evento que se debe validar.
+INSERT INTO tabla_eventos (pulep_evento, nombre_evento, responsable_evento, id_usuario, id_categoria_evento, id_tipo_evento, id_sitio, descripcion, telefono_1, telefono_2, fecha_inicio, fecha_fin, hora_inicio, hora_final, gratis_pago, cupo, reservar_anticipado, estado) VALUES 
+('JO8R78', 'Concierto Municipal de la Carranga', 'Asociación de Músicos Locales', 2, 1, 1, 4, 'Un concierto memorable para los amantes de la carranga.', 3112345678, NULL, '2026-11-20', '2026-11-20', '17:00:00', '22:00:00', FALSE, 250, FALSE, FALSE);
+
+INSERT INTO tabla_evento_informacion_importante (id_evento, detalle) VALUES
+(1,'1. Para toda la familia, sin limite de edad.
+	2. Espacio libre de alcohol.
+	3. Disfruta de la mejor música del departamento.');
+
+-- Un evento que esta validado.
+INSERT INTO tabla_eventos (pulep_evento, nombre_evento, responsable_evento, id_usuario, id_categoria_evento, id_tipo_evento, id_sitio, descripcion, telefono_1, telefono_2, fecha_inicio, fecha_fin, hora_inicio, hora_final, gratis_pago, cupo, reservar_anticipado, estado) VALUES 
+('X9T5K2', 'Festival de Danza Folclórica', 'Compañía de Danza Tradicional', 3, 2, 9, 5, 'Un festival que celebra la riqueza cultural a través de la danza folclórica.', 3123456789, NULL, '2026-12-05', '2026-12-05', '18:00:00', '21:00:00', FALSE, 300, TRUE, TRUE);

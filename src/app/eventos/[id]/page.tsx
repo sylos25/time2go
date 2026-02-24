@@ -373,7 +373,7 @@ export default function EventLanding() {
         {event.imagenes && event.imagenes.length > 0 && (
           <div className="mb-6">
             {/* Main Carousel Image */}
-            <div className="relative w-full aspect-[4/3] max-h-[400px] rounded-2xl overflow-hidden mb-3 bg-gray-100 flex items-center justify-center">
+            <div className="relative w-full aspect-[4/3] max-h-[400px] rounded-2xl overflow-hidden mb-3 flex items-center justify-center">
               <img
                 src={
                   event.imagenes?.[selectedImage]?.url_imagen_evento ||
@@ -383,7 +383,7 @@ export default function EventLanding() {
                 className="max-w-full max-h-full w-auto h-auto object-contain"
               />
               
-              {/* Navigation Arrows */}
+              {/* Flechas de Navegación del Carousel */}
               {event.imagenes.length > 1 && (
                 <>
                   <button
@@ -394,7 +394,7 @@ export default function EventLanding() {
                     }
                     className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white p-2 rounded-full shadow-lg transition-all"
                   >
-                    <ArrowLeft className="h-5 w-5" />
+                    <ArrowLeft className="h-5 w-5 cursor-pointer" />
                   </button>
                   <button
                     onClick={() =>
@@ -404,7 +404,7 @@ export default function EventLanding() {
                     }
                     className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white p-2 rounded-full shadow-lg transition-all"
                   >
-                    <ArrowLeft className="h-5 w-5 rotate-180" />
+                    <ArrowLeft className="h-5 w-5 rotate-180 cursor-pointer" />
                   </button>
                 </>
               )}
@@ -419,15 +419,15 @@ export default function EventLanding() {
 
             {/* Thumbnail Gallery */}
             {event.imagenes.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-2">
+              <div className="flex gap-2 overflow-x pb-2">
                 {event.imagenes.map((img: any, i: number) => (
                   <button
                     key={i}
                     onClick={() => setSelectedImage(i)}
-                    className={`flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
+                    className={`flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
                       selectedImage === i
-                        ? "border-lime-500 ring-2 ring-lime-500/20"
-                        : "border-gray-200 hover:border-gray-300"
+                        ? "border-4 border-lime-600 ring-2 ring-lime-500"
+                        : "border-4 border-gray-200 ring-2 ring-gray-300"
                     }`}
                   >
                     <img
@@ -443,16 +443,15 @@ export default function EventLanding() {
         )}
       </div>
 
-      {/* Main Content */}
+      {/* Contenido principal */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 lg:pb-8">
         <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Left Column - Main Info */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Quick Info Cards */}
+            {/* Tarjetas de información rápida */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <Card className="bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
-                  <TagIcon className="h-5 w-5 mx-auto mb-2 text-green-500" />
+                  <TagIcon className="h-5 w-5 mx-auto mb-2 text-fuchsia-600" />
                   <p className="text-xs text-muted-foreground">Categoria</p>
                   <p className="font-semibold text-sm truncate">
                     {event.categoria?.nombre || "—"}
@@ -461,7 +460,7 @@ export default function EventLanding() {
               </Card>
               <Card className="bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
-                  <Grid3X3 className="h-5 w-5 mx-auto mb-2 text-green-500" />
+                  <Grid3X3 className="h-5 w-5 mx-auto mb-2 text-red-600" />
                   <p className="text-xs text-muted-foreground">Tipo</p>
                   <p className="font-semibold text-sm truncate">
                     {tipoEventoNombre}
@@ -470,7 +469,7 @@ export default function EventLanding() {
               </Card>
               <Card className="bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
-                  <Calendar className="h-5 w-5 mx-auto mb-2 text-green-500" />
+                  <Calendar className="h-5 w-5 mx-auto mb-2 text-fuchsia-600" />
                   <p className="text-xs text-muted-foreground">Fecha</p>
                   <p className="font-semibold text-sm">
                     {formatShortDate(event.fecha_inicio)}
@@ -479,7 +478,7 @@ export default function EventLanding() {
               </Card>
               <Card className="bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
-                  <Clock className="h-5 w-5 mx-auto mb-2 text-green-500" />
+                  <Clock className="h-5 w-5 mx-auto mb-2 text-red-600" />
                   <p className="text-xs text-muted-foreground">Hora</p>
                   <p className="font-semibold text-sm">
                     {formattedHorario}
@@ -488,7 +487,7 @@ export default function EventLanding() {
               </Card>
               <Card className="bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
-                  <Users className="h-5 w-5 mx-auto mb-2 text-green-500" />
+                  <Users className="h-5 w-5 mx-auto mb-2 text-fuchsia-600" />
                   <p className="text-xs text-muted-foreground">Aforo para</p>
                   <p className="font-semibold text-sm">
                     {totalCupo.toLocaleString()}
@@ -497,63 +496,54 @@ export default function EventLanding() {
               </Card>
             </div>
 
-            {/* Location Details */}
-            <Card className="bg-white/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Ubicación
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                    <MapPin className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">
+            {/* Detalles de la locación */}
+              <Card className="bg-white/80 backdrop-blur-sm">
+                <CardHeader className="flex items-start gap-4">
+                  <div className="flex-1 text-left">
+                    <CardTitle className="text-lg">Ubicación</CardTitle>
+                    <p className="mt-2">
                       {event.sitio?.nombre_sitio || "Lugar por confirmar"}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {event.sitio?.direccion}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {event.municipio?.nombre_municipio}
+                      {event.sitio?.direccion} — {event.municipio?.nombre_municipio}
                     </p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardHeader>
+              </Card>
 
-            {/* Description */}
-            <Card className="bg-white/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-lg">Acerca del evento</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="rounded-lg bg-muted/50 p-3">
-                  <p className="text-xs text-muted-foreground">PULEP</p>
-                  <p className="font-medium">{pulepEvento}</p>
-                </div>
-                <div className="rounded-lg bg-muted/50 p-3">
-                  <p className="text-xs text-muted-foreground">Responsable del evento</p>
-                  <p className="font-medium">{event.responsable_evento || "No registrado"}</p>
-                </div>
-                <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
-                  {event.descripcion}
-                </p>
-              </CardContent>
-            </Card>
+            {/* Descripción */}
+              <Card className="bg-white/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg">Acerca del evento</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 -mt-6">
+                  <p className="text-base text-muted-foreground leading-relaxed whitespace-pre-line">
+                    {event.descripcion}
+                  </p>
+                  <div className="flex items-center justify-between rounded-lg bg-stone-50 p-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Responsable del evento</p>
+                      <p className="text-sm">
+                        {event.responsable_evento || "No registrado"}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">PULEP</p>
+                      <p>{pulepEvento}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
 
             {informacionImportante && (
               <Card className="bg-white/80 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
                     Información importante
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="-mt-5">
                   <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
                     {informacionImportante}
                   </p>
@@ -643,15 +633,12 @@ export default function EventLanding() {
               <CardHeader>
                 <CardTitle className="text-lg">Valoraciones</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="-mt-5"> 
                 <Valoraciones eventId={event.id_evento} />
               </CardContent>
             </Card>
           </div>
-
-          {/* Right Column - Sidebar */}
           <div className="space-y-6">
-            {/* CTA Card */}
             <Card className="border-blue-200 bg-white/80 backdrop-blur-sm shadow-lg">
               <CardContent className="p-6">
                 <div className="text-center mb-6">
@@ -706,7 +693,7 @@ export default function EventLanding() {
               </CardContent>
             </Card>
 
-            {/* Date & Time Card */}
+            {/* Fecha y hora */}
             <Card className="bg-white/80 backdrop-blur-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
@@ -743,8 +730,7 @@ export default function EventLanding() {
                     <div className="grid grid-cols-7 gap-1">
                       {(() => {
                         const eventDates = new Set<string>();
-                        
-                        // Add fecha_inicio to fecha_fin range
+
                         if (event.fecha_inicio) {
                           const startDate = new Date(event.fecha_inicio);
                           const endDate = event.fecha_fin ? new Date(event.fecha_fin) : startDate;
@@ -755,25 +741,20 @@ export default function EventLanding() {
                           }
                         }
                         
-                        // Add dias_semana dates
                         diasArr.forEach(d => {
                           try {
                             const date = new Date(d);
                             const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
                             eventDates.add(dateStr);
                           } catch (e) {
-                            // Skip invalid dates
                           }
                         });
-                        
-                        // Determine calendar bounds
                         const allDates = Array.from(eventDates).map(d => new Date(d));
                         if (allDates.length === 0) return [];
                         
                         const minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
                         const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
                         
-                        // Display calendar starting from minDate month
                         const displayMonth = minDate.getMonth();
                         const displayYear = minDate.getFullYear();
                         const firstDay = new Date(displayYear, displayMonth, 1);
@@ -806,7 +787,7 @@ export default function EventLanding() {
                               key={`day-${day}`}
                               className={`text-center py-1.5 text-xs rounded-md ${
                                 isEventDay
-                                  ? 'bg-gradient-to-r from-lime-500 to-green-500 text-white font-bold'
+                                  ? 'bg-gradient-to-tr from-lime-500 to-green-600 text-white font-bold'
                                   : 'text-muted-foreground'
                               }`}
                             >
@@ -814,7 +795,6 @@ export default function EventLanding() {
                             </div>
                           );
                         }
-                        
                         return calendarCells;
                       })()}
                     </div>
@@ -824,37 +804,30 @@ export default function EventLanding() {
             </Card>
 
             {/* Organizer Card */}
-            <Card className="bg-white/80 backdrop-blur-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Organizador
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                {event.creador && (
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                      <User className="h-5 w-5 text-muted-foreground" />
+              <Card className="bg-white/80 backdrop-blur-sm">
+                <CardHeader className="pb-1">
+                  <CardTitle className="text-base">Organizador</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm -mt-6">
+                  {event.creador && (
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <p className="font-medium">
+                          {event.creador.nombres} {event.creador.apellidos}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Organizador</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">
-                        {event.creador.nombres} {event.creador.apellidos}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Organizador
-                      </p>
+                  )}
+                  {organizerPhones !== "—" && (
+                    <div className="flex items-center gap-2 text-muted-foreground mt-2">
+                      <Phone className="h-4 w-4" />
+                      <span>{organizerPhones}</span>
                     </div>
-                  </div>
-                )}
-                {organizerPhones !== "—" && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Phone className="h-4 w-4" />
-                    <span>{organizerPhones}</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  )}
+                </CardContent>
+              </Card>
+
           </div>
         </div>
       </div>

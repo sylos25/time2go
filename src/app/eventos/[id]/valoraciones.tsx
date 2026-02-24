@@ -70,9 +70,9 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
   return (
     <div>
       <div className="space-y-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ">
           <label className="text-sm">Calificación:</label>
-          <select value={rating} onChange={(e) => setRating(Number(e.target.value))} className="border rounded-md p-1">
+          <select value={rating} onChange={(e) => setRating(Number(e.target.value))} className="border rounded-md p-1 cursor-pointer">
             {[1, 2, 3, 4, 5].map((value) => (
               <option key={value} value={value}>{value} ⭐</option>
             ))}
@@ -86,8 +86,8 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
           maxLength={1000}
         />
         <div className="flex gap-2">
-          <button onClick={submit} className="px-3 py-1 bg-blue-600 text-white rounded-md" disabled={loading}>Enviar</button>
-          <button onClick={() => { setComment(''); setRating(5); }} className="px-3 py-1 border rounded-md">Limpiar</button>
+          <button onClick={submit} className="px-3 py-1 bg-gradient-to-tr from-green-600 to-lime-500 text-white rounded-md cursor-pointer" disabled={loading}>Enviar</button>
+          <button onClick={() => { setComment(''); setRating(5); }} className="px-3 py-1 border rounded-md cursor-pointer">Limpiar</button>
         </div>
         {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
         {successMessage ? <p className="text-sm text-green-600">{successMessage}</p> : null}
