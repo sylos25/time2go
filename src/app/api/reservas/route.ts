@@ -55,6 +55,47 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
     }
 
+    const url = new URL(req.url);
+    const eventIdParam = (url.searchParams.get("eventId") || "").trim();
+    const eventId = eventIdParam ? Number(eventIdParam) : 0;
+
+    if (eventIdParam) {
+      if (!Number.isFinite(eventId) || eventId <= 0) {
+        return NextResponse.json({ ok: false, message: "Evento inválido" }, { status: 400 });
+      }
+
+      const ownership = await pool.query(
+        "SELECT id_evento FROM tabla_eventos WHERE id_evento = $1 AND id_usuario = $2 LIMIT 1",
+        [eventId, user.id_usuario]
+      );
+
+      if (!ownership.rows || ownership.rows.length === 0) {
+        return NextResponse.json({ ok: false, message: "No autorizado para ver reservas de este evento" }, { status: 403 });
+      }
+
+      const eventReservations = await pool.query(
+        `SELECT r.id_reserva_evento,
+                r.id_usuario,
+                r.id_evento,
+                r.tipo_documento,
+                r.numero_documento,
+                r.cuantos_asistiran,
+                r.quienes_asistiran,
+                r.fecha_reserva,
+                r.estado,
+                u.nombres,
+                u.apellidos,
+                u.correo
+         FROM tabla_reserva_eventos r
+         INNER JOIN tabla_usuarios u ON r.id_usuario = u.id_usuario
+         WHERE r.id_evento = $1
+         ORDER BY r.fecha_reserva DESC`,
+        [eventId]
+      );
+
+      return NextResponse.json({ ok: true, reservas: eventReservations.rows });
+    }
+
     const result = await pool.query(
       `SELECT r.id_reserva_evento,
               r.id_evento,
@@ -85,6 +126,7 @@ export async function GET(req: Request) {
          LIMIT 1
        ) img ON TRUE
        WHERE r.id_usuario = $1
+         AND e.estado = TRUE
        ORDER BY r.fecha_reserva DESC`,
       [user.id_usuario]
     );
@@ -144,13 +186,13 @@ export async function POST(req: Request) {
     await client.query("BEGIN");
 
     const eventExists = await client.query(
-      "SELECT id_evento FROM tabla_eventos WHERE id_evento = $1 LIMIT 1",
+      "SELECT id_evento FROM tabla_eventos WHERE id_evento = $1 AND estado = TRUE LIMIT 1",
       [id_evento]
     );
 
     if (!eventExists.rows || eventExists.rows.length === 0) {
       await client.query("ROLLBACK");
-      return NextResponse.json({ ok: false, message: "El evento no existe" }, { status: 404 });
+      return NextResponse.json({ ok: false, message: "El evento no existe o no está disponible" }, { status: 404 });
     }
 
     const insertRes = await client.query(

@@ -1,53 +1,156 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { verifyToken } from "@/lib/jwt";
+import { parseCookies } from "@/lib/cookies";
 
-export async function GET(req: Request) {
+async function getAuthenticatedUser(req: Request) {
+  const authHeader = (req.headers.get("authorization") || "").trim();
+  let userId: string | null = null;
+
+  if (authHeader.startsWith("Bearer ")) {
+    try {
+      const token = authHeader.slice(7).trim();
+      const payload = verifyToken(token);
+      const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
+      if (payload && userIdFromToken) {
+        userId = String(userIdFromToken);
+      }
+    } catch {
+      userId = null;
+    }
+  }
+
+  if (!userId) {
+    const cookies = parseCookies(req.headers.get("cookie"));
+    const token = cookies["token"];
+    if (token) {
+      try {
+        const payload = verifyToken(token);
+        const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
+        if (payload && userIdFromToken) {
+          userId = String(userIdFromToken);
+        }
+      } catch {
+        userId = null;
+      }
+    }
+  }
+
+  if (!userId) return null;
+
+  const userQuery = await pool.query(
+    "SELECT id_usuario, nombres, apellidos FROM tabla_usuarios WHERE id_usuario = $1 LIMIT 1",
+    [userId]
+  );
+
+  if (!userQuery.rows || userQuery.rows.length === 0) return null;
+  return userQuery.rows[0];
+}
+
+export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const url = new URL(req.url);
-    const id = Number(url.pathname.split('/').slice(-3)[0]); // /api/events/[id]/valoraciones
-    if (!id) return NextResponse.json({ ok: false, message: 'Invalid id' }, { status: 400 });
+    const { id } = await context.params;
+    const eventId = Number(id);
+    if (!eventId || !Number.isFinite(eventId)) {
+      return NextResponse.json({ ok: false, message: "Invalid id" }, { status: 400 });
+    }
 
-    const res = await pool.query(`SELECT id_valoracion, id_usuario, id_evento, valoracion, comentario, fecha_creacion FROM tabla_valoraciones WHERE id_evento = $1 ORDER BY fecha_creacion DESC`, [id]);
+    const res = await pool.query(
+      `SELECT
+        v.id_valoracion,
+        v.id_usuario,
+        v.id_evento,
+        v.valoracion,
+        v.comentario,
+        v.fecha_creacion,
+        u.nombres,
+        u.apellidos
+      FROM tabla_valoraciones v
+      INNER JOIN tabla_usuarios u ON u.id_usuario = v.id_usuario
+      WHERE v.id_evento = $1
+      ORDER BY v.fecha_creacion DESC`,
+      [eventId]
+    );
     return NextResponse.json({ ok: true, valoraciones: res.rows });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ ok: false, message: 'Error fetching valoraciones' }, { status: 500 });
+    return NextResponse.json({ ok: false, message: "Error fetching valoraciones" }, { status: 500 });
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const url = new URL(req.url);
-    const id = Number(url.pathname.split('/').slice(-3)[0]);
-    if (!id) return NextResponse.json({ ok: false, message: 'Invalid id' }, { status: 400 });
-
-    const body = await req.json();
-    const valoracion = Number(body.valoracion) || 0;
-    const comentario = String(body.comentario || null);
-
-    // Determine user from Bearer token if provided
-    let id_usuario = body.id_usuario || body.numero_documento || null;
-    const authHeader = (req.headers.get('authorization') || '').trim();
-    if (authHeader.startsWith('Bearer ')) {
-      try {
-        const { verifyToken } = await import('@/lib/jwt');
-        const t = authHeader.slice(7).trim();
-        const payload = verifyToken(t);
-        const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
-        if (payload && userIdFromToken) id_usuario = userIdFromToken;
-      } catch (e) {
-        console.error('token verification failed', e);
-      }
+    const { id } = await context.params;
+    const eventId = Number(id);
+    if (!eventId || !Number.isFinite(eventId)) {
+      return NextResponse.json({ ok: false, message: "Invalid id" }, { status: 400 });
     }
 
-    if (!id_usuario) return NextResponse.json({ ok: false, message: 'User required' }, { status: 400 });
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
+      return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
+    }
 
-    const insert = await pool.query(`INSERT INTO tabla_valoraciones (id_usuario, id_evento, valoracion, comentario) VALUES ($1,$2,$3,$4) RETURNING id_valoracion, fecha_creacion`, [id_usuario, id, valoracion, comentario]);
+    const eventCheck = await pool.query(
+      "SELECT id_evento FROM tabla_eventos WHERE id_evento = $1 AND estado = TRUE LIMIT 1",
+      [eventId]
+    );
+    if (!eventCheck.rows || eventCheck.rows.length === 0) {
+      return NextResponse.json({ ok: false, message: "Evento no disponible" }, { status: 404 });
+    }
 
-    const newRow = { id_valoracion: insert.rows[0].id_valoracion, id_usuario, valoracion, comentario, fecha_creacion: insert.rows[0].fecha_creacion };
-    return NextResponse.json({ ok: true, valoracion: newRow });
+    const body = await req.json();
+    const valoracion = Number(body?.valoracion);
+    if (!Number.isInteger(valoracion) || valoracion < 1 || valoracion > 5) {
+      return NextResponse.json(
+        { ok: false, message: "La calificación debe estar entre 1 y 5" },
+        { status: 400 }
+      );
+    }
+
+    const comentarioRaw = typeof body?.comentario === "string" ? body.comentario.trim() : "";
+    const comentario = comentarioRaw.length > 0 ? comentarioRaw : null;
+
+    if (comentario && comentario.length > 1000) {
+      return NextResponse.json(
+        { ok: false, message: "El comentario no puede superar 1000 caracteres" },
+        { status: 400 }
+      );
+    }
+
+    const existing = await pool.query(
+      `SELECT id_valoracion
+       FROM tabla_valoraciones
+       WHERE id_usuario = $1 AND id_evento = $2
+       ORDER BY fecha_creacion DESC
+       LIMIT 1`,
+      [user.id_usuario, eventId]
+    );
+
+    if (existing.rows && existing.rows.length > 0) {
+      const update = await pool.query(
+        `UPDATE tabla_valoraciones
+         SET valoracion = $1,
+             comentario = $2,
+             fecha_actualizacion = CURRENT_TIMESTAMP
+         WHERE id_valoracion = $3
+         RETURNING id_valoracion, id_usuario, id_evento, valoracion, comentario, fecha_creacion, fecha_actualizacion`,
+        [valoracion, comentario, existing.rows[0].id_valoracion]
+      );
+
+      return NextResponse.json({ ok: true, valoracion: update.rows[0], updated: true });
+    }
+
+    const insert = await pool.query(
+      `INSERT INTO tabla_valoraciones (id_usuario, id_evento, valoracion, comentario)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id_valoracion, id_usuario, id_evento, valoracion, comentario, fecha_creacion`,
+      [user.id_usuario, eventId, valoracion, comentario]
+    );
+
+    return NextResponse.json({ ok: true, valoracion: insert.rows[0], updated: false });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ ok: false, message: 'Error creating valoracion' }, { status: 500 });
+    return NextResponse.json({ ok: false, message: "Error creating valoracion" }, { status: 500 });
   }
 }

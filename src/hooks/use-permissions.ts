@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 /**
  * Hook para verificar permisos de acceso basados en la tabla de accesibilidad
- * @param idAccesibilidad - ID de la accesibilidad a verificar (ej: 1 para crear eventos, 6 para dashboard)
+ * @param idAccesibilidad - ID de la accesibilidad a verificar (ej: 1 crear evento, 4 dashboard)
  * @param idRol - (opcional) ID del rol. Si no se proporciona, se usa el del usuario autenticado
  * @returns objeto con hasAccess (boolean) e isLoading (boolean)
  */
@@ -112,5 +112,6 @@ export async function checkPermission(
  */
 export const PERMISSIONS = {
   CREAR_EVENTOS: 1,
-  VER_DASHBOARD: 6,
+  VER_DASHBOARD: 4,
+  GESTIONAR_EVENTOS: 3,
 } as const;

@@ -16,24 +16,29 @@ interface EditEventModalProps {
   onSave: (updatedEvent: any) => Promise<void>
 }
 
+interface EventoInfoItem {
+  detalle: string
+  obligatorio: boolean
+}
+
 export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModalProps) {
   const [formData, setFormData] = useState({
     nombre_evento: "",
+    pulep_evento: "",
+    responsable_evento: "",
     descripcion: "",
     fecha_inicio: "",
     fecha_fin: "",
     hora_inicio: "",
     hora_final: "",
     cupo: "",
-    dias_semana: "",
-    fecha_desactivacion: "",
     id_categoria_evento: "",
     id_tipo_evento: "",
     id_sitio: "",
-    id_municipio: "",
     telefono_1: "",
     telefono_2: "",
     gratis_pago: false,
+    reservar_anticipado: false,
   })
 
   const [images, setImages] = useState<File[]>([])
@@ -45,11 +50,12 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
   const [busquedaSitio, setBusquedaSitio] = useState<string>("")
   const [busquedaMunicipio, setBusquedaMunicipio] = useState<string>("")
   const [municipalities, setMunicipalities] = useState<any[]>([])
-  const [categoriasBoleto, setCategoriasBoleto] = useState<any[]>([])
-  const [costos, setCostos] = useState<string[]>([""])
-  const [tiposBoleteria, setTiposBoleteria] = useState<string[]>([""])
-  const [linksBoleteria, setLinksBoleteria] = useState<string[]>([""])
-  const [diasSeleccionados, setDiasSeleccionados] = useState<Date[]>([])
+  const [boletas, setBoletas] = useState<Array<{ nombre_boleto: string; precio_boleto: string; servicio: string }>>([
+    { nombre_boleto: "", precio_boleto: "", servicio: "" },
+  ])
+  const [informacionAdicionalItems, setInformacionAdicionalItems] = useState<EventoInfoItem[]>([
+    { detalle: "", obligatorio: true },
+  ])
   const [loading, setLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -88,11 +94,9 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
         const data = await res.json()
         if (Array.isArray(data) && data.length > 0) {
           setBusquedaMunicipio(data[0].nombre_municipio || "")
-          setFormData((prev) => ({ ...prev, id_municipio: String(data[0].id_municipio) }))
           setMunicipalities(data)
         } else {
           setBusquedaMunicipio("")
-          setFormData((prev) => ({ ...prev, id_municipio: "" }))
           setMunicipalities([])
         }
       } catch (e) {
@@ -112,82 +116,110 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
       if (token) headers["Authorization"] = `Bearer ${token}`
 
       // Fetch the full event data from API
-      const response = await fetch(`/api/events?id=${event.id}`, { headers })
+      const response = await fetch(`/api/events?id=${event.id}&includeAll=true`, {
+        headers,
+        credentials: "include",
+      })
       if (response.ok) {
         const data = await response.json()
         const fullEvent = data.event || event
 
         setFormData({
           nombre_evento: fullEvent.nombre_evento || event.name || "",
+          pulep_evento: fullEvent.pulep_evento || "",
+          responsable_evento: fullEvent.responsable_evento || "",
           descripcion: fullEvent.descripcion || "",
-          fecha_inicio: fullEvent.fecha_inicio || event.date || "",
-          fecha_fin: fullEvent.fecha_fin || "",
+          fecha_inicio: fullEvent.fecha_inicio ? String(fullEvent.fecha_inicio).slice(0, 10) : (event.date || ""),
+          fecha_fin: fullEvent.fecha_fin ? String(fullEvent.fecha_fin).slice(0, 10) : "",
           hora_inicio: fullEvent.hora_inicio || event.time || "",
           hora_final: fullEvent.hora_final || "",
           cupo: fullEvent.cupo?.toString() || event.capacity?.toString() || "",
-          dias_semana: fullEvent.dias_semana ? (typeof fullEvent.dias_semana === 'string' ? fullEvent.dias_semana : JSON.stringify(fullEvent.dias_semana)) : "",
-          fecha_desactivacion: fullEvent.fecha_desactivacion ? String(fullEvent.fecha_desactivacion).slice(0, 10) : "",
-          id_categoria_evento: String(fullEvent.evento_categoria_id) || "",
-          id_tipo_evento: String(fullEvent.evento_tipo_id) || "",
+          id_categoria_evento: String(fullEvent.id_categoria_evento || fullEvent.evento_categoria_id || "") || "",
+          id_tipo_evento: String(fullEvent.id_tipo_evento || fullEvent.evento_tipo_id || "") || "",
           id_sitio: String(fullEvent.id_sitio) || "",
-          id_municipio: String(fullEvent.id_municipio) || "",
-          telefono_1: fullEvent.event_telefono_1 || "",
-          telefono_2: fullEvent.event_telefono_2 || "",
+          telefono_1: fullEvent.telefono_1 || "",
+          telefono_2: fullEvent.telefono_2 || "",
           gratis_pago: fullEvent.gratis_pago || false,
+          reservar_anticipado: fullEvent.reservar_anticipado || false,
         })
 
         setExistingImages(fullEvent.imagenes || [])
         // set search strings for sitio/municipio to show in inputs
         setBusquedaSitio(fullEvent.nombre_sitio || fullEvent.nombre || "")
         setBusquedaMunicipio(fullEvent.nombre_municipio || "")
-        // load ticket data if present
         if (fullEvent.valores && Array.isArray(fullEvent.valores) && fullEvent.valores.length > 0) {
-          setCostos(fullEvent.valores.map((v: any) => String(v.valor || "")))
-          setTiposBoleteria(fullEvent.valores.map((v: any) => v.nombre_categoria_boleto || ""))
+          setBoletas(
+            fullEvent.valores.map((v: any) => ({
+              nombre_boleto: v.nombre_boleto || v.nombre_categoria_boleto || "",
+              precio_boleto: String(v.precio_boleto ?? v.valor ?? ""),
+              servicio: String(v.servicio ?? ""),
+            }))
+          )
+        } else {
+          setBoletas([{ nombre_boleto: "", precio_boleto: "", servicio: "" }])
         }
-        if (fullEvent.links && Array.isArray(fullEvent.links)) {
-          setLinksBoleteria(fullEvent.links.map((l: any) => l.link || ""))
-        }
-        // load diasSeleccionados from dias_semana
-        try {
-          const ds = fullEvent.dias_semana ? (typeof fullEvent.dias_semana === 'string' ? JSON.parse(fullEvent.dias_semana) : fullEvent.dias_semana) : []
-          setDiasSeleccionados(Array.isArray(ds) ? ds.map((d: any) => new Date(d)) : [])
-        } catch (e) {
-          setDiasSeleccionados([])
+
+        if (fullEvent.informacion_importante?.detalle) {
+          const detalleBruto = String(fullEvent.informacion_importante.detalle)
+          const parsedItems = detalleBruto
+            .split("\n")
+            .map((line: string) => line.replace(/^\s*\d+\.\s*/, "").trim())
+            .filter(Boolean)
+            .map((detalle: string) => ({
+              detalle,
+              obligatorio: Boolean(fullEvent.informacion_importante?.obligatorio),
+            }))
+          setInformacionAdicionalItems(parsedItems.length > 0 ? parsedItems : [{ detalle: "", obligatorio: true }])
+        } else {
+          setInformacionAdicionalItems([{ detalle: "", obligatorio: true }])
         }
       } else {
         // Use the event data passed as prop if API call fails
         setFormData({
           nombre_evento: event.name || "",
+          pulep_evento: event.pulep_evento || "",
+          responsable_evento: event.responsable_evento || "",
           descripcion: event.descripcion || "",
-          fecha_inicio: event.date || "",
-          fecha_fin: event.fecha_fin || "",
+          fecha_inicio: event.date ? String(event.date).slice(0, 10) : "",
+          fecha_fin: event.fecha_fin ? String(event.fecha_fin).slice(0, 10) : "",
           hora_inicio: event.time || "",
           hora_final: event.hora_final || "",
           cupo: event.capacity?.toString() || "",
-          dias_semana: event.dias_semana ? (typeof event.dias_semana === 'string' ? event.dias_semana : JSON.stringify(event.dias_semana)) : "",
-          fecha_desactivacion: event.fecha_desactivacion ? String(event.fecha_desactivacion).slice(0, 10) : "",
-          id_categoria_evento: String(event.id_categoria_evento) || "",
-          id_tipo_evento: String(event.id_tipo_evento) || "",
+          id_categoria_evento: String(event.id_categoria_evento || event.evento_categoria_id || "") || "",
+          id_tipo_evento: String(event.id_tipo_evento || event.evento_tipo_id || "") || "",
           id_sitio: String(event.id_sitio) || "",
-          id_municipio: String(event.id_municipio) || "",
           telefono_1: event.telefono_1 || "",
           telefono_2: event.telefono_2 || "",
           gratis_pago: event.gratis_pago || false,
+          reservar_anticipado: event.reservar_anticipado || false,
         })
 
         setExistingImages(event.imagenes || [])
         setBusquedaSitio(event.nombre_sitio || event.nombre || "")
         setBusquedaMunicipio(event.nombre_municipio || "")
-        // fallback ticket/day data
-        setCostos(event.valores ? event.valores.map((v: any) => String(v.valor || "")) : [""])
-        setTiposBoleteria(event.valores ? event.valores.map((v: any) => v.nombre_categoria_boleto || "") : [""])
-        setLinksBoleteria(event.links ? event.links.map((l: any) => l.link || "") : [""])
-        try {
-          const ds = event.dias_semana ? (typeof event.dias_semana === 'string' ? JSON.parse(event.dias_semana) : event.dias_semana) : []
-          setDiasSeleccionados(Array.isArray(ds) ? ds.map((d: any) => new Date(d)) : [])
-        } catch (e) {
-          setDiasSeleccionados([])
+        setBoletas(
+          event.valores && Array.isArray(event.valores) && event.valores.length > 0
+            ? event.valores.map((v: any) => ({
+                nombre_boleto: v.nombre_boleto || v.nombre_categoria_boleto || "",
+                precio_boleto: String(v.precio_boleto ?? v.valor ?? ""),
+                servicio: String(v.servicio ?? ""),
+              }))
+            : [{ nombre_boleto: "", precio_boleto: "", servicio: "" }]
+        )
+
+        if (event.informacion_importante?.detalle) {
+          const detalleBruto = String(event.informacion_importante.detalle)
+          const parsedItems = detalleBruto
+            .split("\n")
+            .map((line: string) => line.replace(/^\s*\d+\.\s*/, "").trim())
+            .filter(Boolean)
+            .map((detalle: string) => ({
+              detalle,
+              obligatorio: Boolean(event.informacion_importante?.obligatorio),
+            }))
+          setInformacionAdicionalItems(parsedItems.length > 0 ? parsedItems : [{ detalle: "", obligatorio: true }])
+        } else {
+          setInformacionAdicionalItems([{ detalle: "", obligatorio: true }])
         }
       }
 
@@ -212,13 +244,6 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
       if (catRes.ok) {
         const data = await catRes.json()
         setCategories(data || [])
-      }
-
-      // Load boleto categories
-      const catBRes = await fetch("/api/categoria_boleto", { headers })
-      if (catBRes.ok) {
-        const data = await catBRes.json()
-        setCategoriasBoleto(data || [])
       }
 
       // Load sites
@@ -272,37 +297,6 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
     }
   }
 
-  // Days helpers (same as creation)
-  const generarRangoDias = (inicioStr: string | null, finStr: string | null): Date[] => {
-    if (!inicioStr || !finStr) return []
-    const inicio = new Date(inicioStr)
-    const fin = new Date(finStr)
-    const diasArray: Date[] = []
-    const current = new Date(inicio)
-    current.setHours(0,0,0,0)
-    const end = new Date(fin)
-    end.setHours(0,0,0,0)
-    while (current <= end) {
-      diasArray.push(new Date(current))
-      current.setDate(current.getDate() + 1)
-    }
-    return diasArray
-  }
-
-  const toggleDiaSeleccionado = (fecha: Date) => {
-    const fechaTime = new Date(fecha).setHours(0,0,0,0)
-    setDiasSeleccionados((prev) => {
-      const found = prev.find(d => new Date(d).setHours(0,0,0,0) === fechaTime)
-      if (found) return prev.filter(d => new Date(d).setHours(0,0,0,0) !== fechaTime)
-      return [...prev, new Date(fecha)]
-    })
-  }
-
-  const formatDia = (date: Date) => {
-    const opciones: Intl.DateTimeFormatOptions = { weekday: "short", day: "numeric", month: "numeric" }
-    return date.toLocaleDateString("es-ES", opciones)
-  }
-
   const removeNewImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index))
   }
@@ -312,41 +306,45 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
     setExistingImages((prev) => prev.filter((img) => img.id_imagen_evento !== imageId))
   }
 
-  // Ticket helpers
-  const updateCosto = (index: number, value: string) => {
-    setCostos((prev) => {
+  const updateBoleta = (index: number, field: "nombre_boleto" | "precio_boleto" | "servicio", value: string) => {
+    setBoletas((prev) => {
       const copy = [...prev]
-      copy[index] = value
+      copy[index] = { ...copy[index], [field]: value }
       return copy
     })
   }
 
-  const updateTipo = (index: number, value: string) => {
-    setTiposBoleteria((prev) => {
-      const copy = [...prev]
-      copy[index] = value
-      return copy
+  const addBoletaField = () => {
+    if (boletas.length >= 12) return
+    setBoletas((prev) => [...prev, { nombre_boleto: "", precio_boleto: "", servicio: "" }])
+  }
+
+  const removeBoletaField = (index: number) => {
+    setBoletas((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const removeAllBoletas = () => {
+    setBoletas([{ nombre_boleto: "", precio_boleto: "", servicio: "" }])
+  }
+
+  const addInfoItem = () => {
+    if (informacionAdicionalItems.length >= 20) return
+    setInformacionAdicionalItems((prev) => [...prev, { detalle: "", obligatorio: false }])
+  }
+
+  const updateInfoItem = (index: number, field: keyof EventoInfoItem, value: string | boolean) => {
+    setInformacionAdicionalItems((prev) => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      return updated
     })
   }
 
-  const updateLink = (index: number, value: string) => {
-    setLinksBoleteria((prev) => {
-      const copy = [...prev]
-      copy[index] = value
-      return copy
+  const removeInfoItem = (index: number) => {
+    setInformacionAdicionalItems((prev) => {
+      const updated = prev.filter((_, i) => i !== index)
+      return updated.length > 0 ? updated : [{ detalle: "", obligatorio: true }]
     })
-  }
-
-  const addTicket = () => {
-    setCostos((prev) => [...prev, ""])
-    setTiposBoleteria((prev) => [...prev, ""])
-    setLinksBoleteria((prev) => [...prev, ""])
-  }
-
-  const removeTicket = (index: number) => {
-    setCostos((prev) => prev.filter((_, i) => i !== index))
-    setTiposBoleteria((prev) => prev.filter((_, i) => i !== index))
-    setLinksBoleteria((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleSave = async () => {
@@ -354,24 +352,38 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
     try {
       const submitFormData = new FormData()
 
-      // Add form fields
-      Object.keys(formData).forEach((key) => {
-        submitFormData.append(key, String((formData as any)[key]))
-      })
+      submitFormData.append("nombre_evento", formData.nombre_evento || "")
+      submitFormData.append("pulep_evento", formData.pulep_evento || "")
+      submitFormData.append("responsable_evento", formData.responsable_evento || "")
+      submitFormData.append("descripcion", formData.descripcion || "")
+      submitFormData.append("fecha_inicio", formData.fecha_inicio || "")
+      submitFormData.append("fecha_fin", formData.fecha_fin || "")
+      submitFormData.append("hora_inicio", formData.hora_inicio || "")
+      submitFormData.append("hora_final", formData.hora_final || "")
+      submitFormData.append("cupo", String(formData.cupo || 0))
+      submitFormData.append("id_categoria_evento", String(formData.id_categoria_evento || 0))
+      submitFormData.append("id_tipo_evento", String(formData.id_tipo_evento || 0))
+      submitFormData.append("id_sitio", String(formData.id_sitio || 0))
+      submitFormData.append("telefono_1", formData.telefono_1 || "")
+      submitFormData.append("telefono_2", formData.telefono_2 || "")
+      submitFormData.append("gratis_pago", String(Boolean(formData.gratis_pago)))
+      submitFormData.append("reservar_anticipado", String(Boolean(formData.reservar_anticipado)))
+
+      submitFormData.append(
+        "informacion_adicional_items",
+        JSON.stringify(
+          (informacionAdicionalItems || [])
+            .filter((item) => item.detalle?.trim())
+            .map((item) => ({ detalle: item.detalle.trim(), obligatorio: Boolean(item.obligatorio) }))
+        )
+      )
 
       // Add new images
       images.forEach((img) => {
         submitFormData.append("additionalImages", img)
       })
 
-      // ticket fields
-      submitFormData.append("costos", JSON.stringify(costos || []))
-      submitFormData.append("tiposBoleteria", JSON.stringify(tiposBoleteria || []))
-      submitFormData.append("linksBoleteria", JSON.stringify(linksBoleteria || []))
-
-      // dias_semana as JSON of dates
-      const diasStrings = (diasSeleccionados || []).map(d => (d instanceof Date) ? d.toISOString().split('T')[0] : String(d))
-      submitFormData.append("dias_semana", JSON.stringify(diasStrings))
+      submitFormData.append("boletas", JSON.stringify(boletas || []))
 
       // Add images to delete
       submitFormData.append("imagesToDelete", JSON.stringify(imagesToDelete))
@@ -422,65 +434,31 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
             />
           </div>
 
-          {/* (Descripción moved below to respect crear layout) */}
-
-          {/* Fechas y horas */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="fecha_inicio">Fecha de Inicio</Label>
+              <Label htmlFor="pulep_evento">PULEP del evento</Label>
               <Input
-                id="fecha_inicio"
-                name="fecha_inicio"
-                type="date"
-                value={formData.fecha_inicio}
+                id="pulep_evento"
+                name="pulep_evento"
+                value={formData.pulep_evento}
                 onChange={handleInputChange}
+                placeholder="Código PULEP"
               />
             </div>
             <div>
-              <Label htmlFor="fecha_fin">Fecha de Fin</Label>
+              <Label htmlFor="responsable_evento">Entidad responsable</Label>
               <Input
-                id="fecha_fin"
-                name="fecha_fin"
-                type="date"
-                value={formData.fecha_fin}
+                id="responsable_evento"
+                name="responsable_evento"
+                value={formData.responsable_evento}
                 onChange={handleInputChange}
-              />
-            </div>
-            <div>
-              <Label htmlFor="hora_inicio">Hora de Inicio</Label>
-              <Input
-                id="hora_inicio"
-                name="hora_inicio"
-                type="time"
-                value={formData.hora_inicio}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div>
-              <Label htmlFor="hora_final">Hora de Fin</Label>
-              <Input
-                id="hora_final"
-                name="hora_final"
-                type="time"
-                value={formData.hora_final}
-                onChange={handleInputChange}
+                placeholder="Nombre de la entidad responsable"
               />
             </div>
           </div>
 
-          {/* Cupo y tipo de evento */}
+          {/* Categoría y tipo de evento */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="cupo">Cupo</Label>
-              <Input
-                id="cupo"
-                name="cupo"
-                type="number"
-                value={formData.cupo}
-                onChange={handleInputChange}
-                placeholder="0"
-              />
-            </div>
             <div>
               <Label htmlFor="id_categoria_evento">Categoría</Label>
               <select
@@ -492,16 +470,12 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
               >
                 <option value="">Selecciona una categoría</option>
                 {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
+                  <option key={cat.id_categoria_evento || cat.id} value={cat.id_categoria_evento || cat.id}>
                     {cat.nombre}
                   </option>
                 ))}
               </select>
             </div>
-          </div>
-
-          {/* Tipo Evento / Sitio / Municipio / Fecha desactivación / Dias */}
-          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="id_tipo_evento">Tipo de Evento</Label>
               <select
@@ -513,10 +487,14 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
               >
                 <option value="">Selecciona un tipo</option>
                 {eventTypes.map((t) => (
-                  <option key={t.id} value={t.id}>{t.nombre}</option>
+                  <option key={t.id_tipo_evento || t.id} value={t.id_tipo_evento || t.id}>{t.nombre}</option>
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Sitio / Municipio */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2 relative">
               <Label htmlFor="sitio">Sitio</Label>
               <Input
@@ -558,21 +536,11 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                 className="rounded-lg cursor-default"
               />
             </div>
-            <div>
-              <Label htmlFor="fecha_desactivacion">Fecha Desactivación</Label>
-              <Input
-                id="fecha_desactivacion"
-                name="fecha_desactivacion"
-                type="date"
-                value={formData.fecha_desactivacion}
-                onChange={handleInputChange}
-              />
-            </div>
           </div>
 
           {/* Descripción */}
           <div className="space-y-2">
-            <Label htmlFor="fullDescription">Descripción</Label>
+            <Label htmlFor="fullDescription">Descripción del evento</Label>
             <Textarea
               id="fullDescription"
               value={formData.descripcion}
@@ -580,6 +548,65 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
               placeholder="Descripción detallada del evento"
               className="rounded-xl min-h-[100px]"
             />
+          </div>
+
+          <div className="space-y-4 p-4 border rounded-lg shadow-md">
+            <div>
+              <Label>Información adicional del evento</Label>
+              <p className="text-xs text-gray-500 mt-1">
+                Registra los datos clave del evento por ítems para mantener una descripción detallada.
+              </p>
+            </div>
+
+            {informacionAdicionalItems.map((item, index) => (
+              <div key={index} className="space-y-3 p-3 bg-gray-50 rounded-lg border">
+                <div className="space-y-2">
+                  <Label className="text-xs">Detalle importante</Label>
+                  <Textarea
+                    value={item.detalle}
+                    onChange={(e) => updateInfoItem(index, "detalle", e.target.value)}
+                    placeholder="Ej: Ingreso desde las 7:00 PM, no se permite reingreso"
+                    className="rounded-xl min-h-[90px]"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={item.obligatorio}
+                      onChange={(e) => updateInfoItem(index, "obligatorio", e.target.checked)}
+                      className="w-4 h-4"
+                    />
+                    Marcado como obligatorio para asistentes
+                  </label>
+
+                  {informacionAdicionalItems.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeInfoItem(index)}
+                      className="px-3 py-1 bg-red-500 text-white rounded-md text-sm hover:bg-red-600"
+                    >
+                      Quitar
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            <div className="flex justify-between items-center gap-3">
+              <button
+                type="button"
+                onClick={addInfoItem}
+                disabled={informacionAdicionalItems.length >= 20}
+                className={`px-3 py-1.5 rounded-md text-white text-sm ${
+                  informacionAdicionalItems.length >= 20 ? "bg-gray-300 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
+                }`}
+              >
+                + Añadir ítem
+              </button>
+              <span className="text-sm text-gray-600">{informacionAdicionalItems.length}/20 ítems</span>
+            </div>
           </div>
 
           {/* Telefonos */}
@@ -614,7 +641,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
             </div>
           </div>
 
-          {/* Dates and Day Selection (like crear page) */}
+          {/* Fechas */}
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="fecha_inicio">Fecha de inicio del evento</Label>
@@ -634,48 +661,35 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                 name="fecha_fin"
                 type="date"
                 value={formData.fecha_fin}
-                onChange={(e) => {
-                  handleInputChange(e as any)
-                  // reset diasSeleccionados when range changes
-                  setDiasSeleccionados([])
-                }}
+                onChange={handleInputChange}
                 className="cursor-pointer w-full rounded-xl border-gray-300 shadow-sm p-2"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Días en los que se puede asistir al evento *</Label>
-            <div className="p-4 border rounded-xl bg-gray-50">
-              {generarRangoDias(formData.fecha_inicio, formData.fecha_fin).length > 0 ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {generarRangoDias(formData.fecha_inicio, formData.fecha_fin).map((fecha) => {
-                      const fechaTime = new Date(fecha).setHours(0, 0, 0, 0)
-                      const isSelected = diasSeleccionados.some((d: Date) => new Date(d).setHours(0, 0, 0, 0) === fechaTime)
-                      return (
-                        <label
-                          key={fecha.toISOString().split('T')[0]}
-                          className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                            isSelected ? 'bg-blue-100 border-blue-500' : 'bg-white border-gray-300 hover:border-blue-300'
-                          }`}
-                        >
-                          <span className="text-xs font-semibold text-gray-700">{formatDia(fecha)}</span>
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => toggleDiaSeleccionado(fecha)}
-                            className="w-5 h-5 cursor-pointer"
-                          />
-                        </label>
-                      )
-                    })}
-                  </div>
-                  <p className="text-xs text-gray-600 text-center">Seleccionados: {diasSeleccionados.length} día(s)</p>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">Selecciona primero las fechas de inicio y fin</p>
-              )}
+          {/* Horas */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="hora_inicio">Hora de inicio</Label>
+              <Input
+                id="hora_inicio"
+                name="hora_inicio"
+                type="time"
+                value={formData.hora_inicio}
+                onChange={handleInputChange}
+                className="w-full rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="hora_final">Hora final</Label>
+              <Input
+                id="hora_final"
+                name="hora_final"
+                type="time"
+                value={formData.hora_final}
+                onChange={handleInputChange}
+                className="w-full rounded-xl"
+              />
             </div>
           </div>
 
@@ -693,72 +707,123 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
             </label>
           </div>
 
-          {/* Boletos (solo si es evento de pago) */}
-          {formData.gratis_pago && (
-            <div>
-              <Label>Boletos</Label>
-              <div className="space-y-3 mt-2">
-                {costos.map((c, i) => (
-                  <div key={i} className="grid grid-cols-3 gap-3 items-end">
-                    <div>
-                      <Label>Categoría</Label>
-                      <select
-                        value={tiposBoleteria[i] || ""}
-                        onChange={(e) => updateTipo(i, e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      >
-                        <option value="">Selecciona categoría</option>
-                        {categoriasBoleto.map((cat) => (
-                          <option key={cat.id} value={cat.nombre}>
-                            {cat.nombre}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+          {!formData.gratis_pago && (
+            <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-500">
+              <input
+                id="reservar_anticipado"
+                name="reservar_anticipado"
+                type="checkbox"
+                checked={formData.reservar_anticipado}
+                onChange={handleInputChange}
+                className="w-4 h-4 cursor-pointer"
+              />
+              <label htmlFor="reservar_anticipado" className="cursor-pointer text-sm font-medium">
+                ¿Asistencia únicamente con reserva anticipada?
+              </label>
+            </div>
+          )}
 
-                    <div>
-                      <Label>Precio</Label>
+          {/* Boletas (modelo actual del crear) */}
+          {formData.gratis_pago && (
+            <div className="space-y-4 p-4 border rounded-lg shadow-md">
+              <h2 className="text-lg font-semibold">Tipos de Boletas y Precios</h2>
+              <p className="text-xs text-gray-600 italic -translate-y-2">
+                Define los diferentes tipos de boletas disponibles para tu evento con sus precios.
+              </p>
+
+              {boletas.map((boleta, index) => (
+                <div key={index} className="space-y-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Nombre de la boleta</Label>
+                    <Input
+                      type="text"
+                      value={boleta.nombre_boleto}
+                      onChange={(e) => updateBoleta(index, "nombre_boleto", e.target.value)}
+                      placeholder="Ej: General, VIP, Early Bird, etc."
+                      className="rounded-xl text-sm"
+                    />
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Precio</Label>
                       <Input
                         type="number"
-                        value={costos[i] || ""}
-                        onChange={(e) => updateCosto(i, e.target.value)}
+                        value={boleta.precio_boleto}
+                        onChange={(e) => updateBoleta(index, "precio_boleto", e.target.value)}
                         placeholder="0"
+                        className="rounded-xl text-sm"
                       />
                     </div>
-
-                    <div>
-                      <Label>Link de venta</Label>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Cargo por servicio (opcional)</Label>
                       <Input
-                        value={linksBoleteria[i] || ""}
-                        onChange={(e) => updateLink(i, e.target.value)}
-                        placeholder="https://..."
+                        type="number"
+                        value={boleta.servicio}
+                        onChange={(e) => updateBoleta(index, "servicio", e.target.value)}
+                        placeholder="0"
+                        className="rounded-xl text-sm"
                       />
-                    </div>
-
-                    <div className="col-span-3 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => removeTicket(i)}
-                        className="px-3 py-1 bg-red-500 text-white rounded-md text-sm hover:bg-red-600"
-                      >
-                        Eliminar boleto
-                      </button>
                     </div>
                   </div>
-                ))}
 
-                <div>
+                  {boletas.length > 1 && (
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => removeBoletaField(index)}
+                        className="px-3 py-1 bg-red-500 text-white rounded-md text-sm hover:bg-red-600"
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <div className="flex justify-between items-center gap-3">
+                <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={addTicket}
-                    className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                    onClick={addBoletaField}
+                    disabled={boletas.length >= 12}
+                    className={`px-3 py-1.5 rounded-md text-white text-sm ${
+                      boletas.length >= 12 ? "bg-gray-300 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
+                    }`}
                   >
-                    Agregar boleto
+                    + Añadir tipo de boleta
                   </button>
+                  {boletas.length >= 2 && (
+                    <button
+                      type="button"
+                      onClick={removeAllBoletas}
+                      className="px-3 py-1.5 bg-red-500 text-white rounded-md text-sm hover:bg-red-600"
+                    >
+                      Eliminar todas
+                    </button>
+                  )}
                 </div>
+                <span className="text-sm text-gray-600">{boletas.length}/12 tipos de boletas</span>
               </div>
             </div>
           )}
+
+          {/* Aforo */}
+          <div className="space-y-2">
+            <Label htmlFor="cupo">Aforo del evento</Label>
+            <Input
+              id="cupo"
+              name="cupo"
+              type="number"
+              min={1}
+              max={5000}
+              value={formData.cupo}
+              onChange={handleInputChange}
+              placeholder="100"
+              className="rounded-xl"
+            />
+            <p className="text-sm text-gray-500">Ingresa un número entre 1 y 5000</p>
+          </div>
 
           {/* Imágenes existentes */}
           {existingImages.length > 0 && (

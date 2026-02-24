@@ -34,13 +34,12 @@ import {
   Settings,
   Bell,
   Search,
-  Plus,
   Menu,
   X,
+  CheckCircle,
   Edit,
   Trash2,
   EyeOff,
-  CheckCircle,
   MapPin,
   Clock,
   Download,
@@ -50,11 +49,11 @@ import {
   Activity,
   MoreVertical,
   Target,
+  Loader2,
 } from "lucide-react"
 import { InsertDataTab } from "@/components/dashboard/insert-data-tab"
 import ViewDataTab from "@/components/dashboard/view-data-tab"
 import { EditEventModal } from "@/components/dashboard/edit-event-modal"
-import { ToggleEventStatusModal } from "@/components/dashboard/toggle-event-status-modal"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -99,16 +98,14 @@ export default function EventDashboard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterCategory, setFilterCategory] = useState("all")
   const [selectedEvents, setSelectedEvents] = useState<number[]>([])
-  const [eventsScope, setEventsScope] = useState<'all' | 'mine'>('all')
   const [loading, setLoading] = useState(true)
   const [meUser, setMeUser] = useState<any>(null)
+  const [canManageEvents, setCanManageEvents] = useState(false)
   const [users, setUsers] = useState<any[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [searchUsers, setSearchUsers] = useState('')
   const [editingEvent, setEditingEvent] = useState<any>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
-  const [statusModalOpen, setStatusModalOpen] = useState(false)
-  const [statusModalEvent, setStatusModalEvent] = useState<any>(null)
   const [pdfModalOpen, setPdfModalOpen] = useState(false)
   const [pdfModalUrl, setPdfModalUrl] = useState<string | null>(null)
   const router = useRouter()
@@ -126,71 +123,15 @@ export default function EventDashboard() {
     { title: "Vistas del Mes", value: 0, icon: Eye, color: "from-purple-500 to-purple-600" },
     { title: "Usuarios Activos", value: 0, icon: Users, color: "from-orange-500 to-red-500" },
   ])
-  const [events, setEvents] = useState<Event[]>([
-    {
-      id: 1,
-      name: "La Madriguera",
-      date: "2024-12-15",
-      time: "20:00",
-      location: "Teatro Municipal",
-      category: "Teatro",
-      capacity: 450,
-      ticketsSold: 380,
-      status: "published",
-      visibility: true,
-      image: "/images/teatro.jpg",
-      promoter: "Eventos Colombia",
-    },
-    {
-      id: 2,
-      name: "Festival de la Carranga",
-      date: "2024-12-20",
-      time: "14:00",
-      location: "Plaza Central",
-      category: "Música",
-      capacity: 2000,
-      ticketsSold: 1850,
-      status: "published",
-      visibility: true,
-      image: "/images/carranga.jpg",
-      promoter: "MusicFest Pro",
-    },
-    {
-      id: 3,
-      name: "Concierto de Rock",
-      date: "2024-11-28",
-      time: "21:00",
-      location: "Auditorio Nacional",
-      category: "Música",
-      capacity: 800,
-      ticketsSold: 800,
-      status: "completed",
-      visibility: false,
-      image: "/images/rock.jpg",
-      promoter: "Rock Nation",
-    },
-    {
-      id: 4,
-      name: "Festival de Jazz",
-      date: "2024-12-10",
-      time: "19:00",
-      location: "Centro Cultural",
-      category: "Música",
-      capacity: 300,
-      ticketsSold: 245,
-      status: "published",
-      visibility: true,
-      image: "/images/jazz.jpg",
-      promoter: "Jazz Internacional",
-    },
-  ])
+  const [events, setEvents] = useState<Event[]>([])
 
   const refreshEvents = async () => {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
       const headers: any = {}
       if (token) headers['Authorization'] = `Bearer ${token}`
-      const eventsRes = await fetch('/api/events', { headers })
+      const eventsUrl = canManageEvents ? '/api/events?includeAll=true' : '/api/events'
+      const eventsRes = await fetch(eventsUrl, { headers, credentials: 'include' })
       if (eventsRes.ok) {
         const eventsData = await eventsRes.json()
         const serverEvents = eventsData.eventos || []
@@ -202,7 +143,7 @@ export default function EventDashboard() {
           location: ev.sitio?.nombre_sitio || ev.municipio?.nombre_municipio || '',
           category: ev.categoria_nombre || '',
           capacity: ev.cupo || 0,
-          ticketsSold: (ev.valores && ev.valores.reduce((acc: number, v: any) => acc + (v.valor || 0), 0)) || 0,
+          ticketsSold: Number(ev.reservas_asistentes || 0),
           status: ev.estado ? 'published' : 'hidden',
           visibility: !!ev.estado,
           image: (ev.imagenes && ev.imagenes[0] && ev.imagenes[0].url_imagen_evento) || '/images/placeholder.jpg',
@@ -240,7 +181,7 @@ export default function EventDashboard() {
           return
         }
 
-        const permissionRes = await fetch(`/api/permissions/check?id_accesibilidad=6&id_rol=${roleNum}`, {
+        const permissionRes = await fetch(`/api/permissions/check?id_accesibilidad=4&id_rol=${roleNum}`, {
           headers,
           credentials: 'include',
         })
@@ -258,8 +199,21 @@ export default function EventDashboard() {
           return
         }
 
-        // Fetch events (server returns all events)
-        const eventsRes = await fetch('/api/events')
+        const manageEventsPermissionRes = await fetch(`/api/permissions/check?id_accesibilidad=3&id_rol=${roleNum}`, {
+          headers,
+          credentials: 'include',
+        })
+
+        let hasManageEventsPermission = false
+        if (manageEventsPermissionRes.ok) {
+          const manageEventsPermissionData = await manageEventsPermissionRes.json()
+          hasManageEventsPermission = Boolean(manageEventsPermissionData?.hasAccess)
+        }
+        if (!canceled) setCanManageEvents(hasManageEventsPermission)
+
+        // Fetch events (all only for users with gestión de eventos access)
+        const eventsUrl = hasManageEventsPermission ? '/api/events?includeAll=true' : '/api/events'
+        const eventsRes = await fetch(eventsUrl, { headers, credentials: 'include' })
         if (eventsRes.ok) {
           const eventsData = await eventsRes.json()
           const serverEvents = eventsData.eventos || []
@@ -272,7 +226,7 @@ export default function EventDashboard() {
             location: ev.sitio?.nombre_sitio || ev.municipio?.nombre_municipio || '',
             category: ev.categoria_nombre || '',
             capacity: ev.cupo || 0,
-            ticketsSold: (ev.valores && ev.valores.reduce((acc: number, v: any) => acc + (v.valor || 0), 0)) || 0,
+            ticketsSold: Number(ev.reservas_asistentes || 0),
             status: ev.estado ? 'published' : 'hidden',
             visibility: !!ev.estado,
             image: (ev.imagenes && ev.imagenes[0] && ev.imagenes[0].url_imagen_evento) || '/images/placeholder.jpg',
@@ -387,7 +341,7 @@ export default function EventDashboard() {
 
   const menuItems = [
     { id: "overview", name: "Resumen General", icon: Home },
-    { id: "events", name: "Gestión de Eventos", icon: Calendar },
+    ...(canManageEvents ? [{ id: "events", name: "Gestión de Eventos", icon: Calendar }] : []),
     { id: "ingresar-datos", name: "Ingresar Datos", icon: MapPin },
     { id: "ver-datos", name: "Ver Datos", icon: Search },
     { id: "analytics", name: "Analíticas", icon: TrendingUp },
@@ -399,9 +353,53 @@ export default function EventDashboard() {
     setEvents(events.map((event) => (event.id === id ? { ...event, visibility: !event.visibility } : event)))
   }
 
-  const deleteEvent = (id: number) => {
-    if (confirm("¿Estás seguro de eliminar este evento?")) {
-      setEvents(events.filter((event) => event.id !== id))
+  const deleteEvent = async (id: number) => {
+    if (!confirm("¿Estás seguro de eliminar este evento?")) return
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+      const headers: any = {}
+      if (token) headers['Authorization'] = `Bearer ${token}`
+
+      const res = await fetch(`/api/events/${id}`, {
+        method: 'DELETE',
+        headers,
+        credentials: 'include',
+      })
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body?.message || 'No se pudo eliminar el evento')
+      }
+
+      setEvents((prev) => prev.filter((event) => event.id !== id))
+    } catch (error) {
+      console.error('Error eliminando evento', error)
+      alert(error instanceof Error ? error.message : 'Error eliminando evento')
+    }
+  }
+
+  const approveEvent = async (id: number) => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+      const headers: any = { 'Content-Type': 'application/json' }
+      if (token) headers['Authorization'] = `Bearer ${token}`
+
+      const res = await fetch(`/api/events/${id}/toggle-status`, {
+        method: 'PUT',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ estado: true }),
+      })
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body?.message || 'No se pudo validar el evento')
+      }
+
+      await refreshEvents()
+    } catch (error) {
+      console.error('Error validando evento', error)
+      alert(error instanceof Error ? error.message : 'Error validando evento')
     }
   }
 
@@ -419,9 +417,7 @@ export default function EventDashboard() {
     setChecklistItems(checklistItems.map((item) => (item.id === id ? { ...item, completed: !item.completed } : item)))
   }
 
-  const eventsScoped = eventsScope === 'all' ? events : (events as any[]).filter((ev) => String(ev.creatorId) === String(meUser?.id_usuario))
-
-  const filteredEvents = eventsScoped.filter((event) => {
+  const filteredEvents = events.filter((event) => {
     const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = filterCategory === "all" || event.category === filterCategory
     return matchesSearch && matchesCategory
@@ -457,8 +453,37 @@ export default function EventDashboard() {
     }
   }
 
+  const formatEventDate = (value: string) => {
+    if (!value) return "-"
+    const raw = String(value).trim()
+    if (raw.includes("T")) return raw.split("T")[0]
+    if (raw.includes(" ")) return raw.split(" ")[0]
+    return raw
+  }
+
+  const formatEventTime = (value: string) => {
+    if (!value) return "-"
+    const raw = String(value).trim()
+    const timePart = raw.includes("T")
+      ? (raw.split("T")[1] || "")
+      : raw.includes(" ")
+        ? (raw.split(" ")[1] || raw)
+        : raw
+
+    const clean = timePart.replace(/Z$/i, "").replace(/\.\d+$/, "")
+    if (/^\d{2}:\d{2}$/.test(clean)) return `${clean}:00`
+    return clean || "-"
+  }
+
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Cargando tu panel...</div>
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center px-4">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 text-green-800 animate-spin mx-auto mb-4" />
+          <p className="text-gray-700 text-lg">Cargando datos del panel...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -654,7 +679,7 @@ export default function EventDashboard() {
             </div>
           )}
 
-          {activeTab === "events" && (
+          {activeTab === "events" && canManageEvents && (
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="relative flex-1 max-w-md">
@@ -669,21 +694,6 @@ export default function EventDashboard() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setEventsScope('all')}
-                      className={`px-3 py-1 rounded ${eventsScope === 'all' ? 'bg-lime-500 text-white' : 'bg-white text-gray-700 border border-gray-200'}`}
-                    >
-                      Todos
-                    </button>
-                    <button
-                      onClick={() => setEventsScope('mine')}
-                      className={`px-3 py-1 rounded ${eventsScope === 'mine' ? 'bg-lime-500 text-white' : 'bg-white text-gray-700 border border-gray-200'}`}
-                    >
-                      Míos
-                    </button>
-                  </div>
-
                   <select
                     value={filterCategory}
                     onChange={(e) => setFilterCategory(e.target.value)}
@@ -696,10 +706,6 @@ export default function EventDashboard() {
                     <option value="Arte">Arte</option>
                   </select>
 
-                  <button className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-lime-600 to-green-600 text-white rounded-lg hover:shadow-lg transition-all">
-                    <Plus className="w-4 h-4" />
-                    Nuevo Evento
-                  </button>
                 </div>
               </div>
 
@@ -765,7 +771,11 @@ export default function EventDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {filteredEvents.map((event) => (
+                      {filteredEvents.map((event) => {
+                        const documents = event.documentos ?? []
+                        const hasDocuments = documents.length > 0
+
+                        return (
                         <tr key={event.id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4">
                             <input
@@ -796,11 +806,11 @@ export default function EventDashboard() {
                             <div className="flex flex-col gap-1">
                               <div className="flex items-center gap-1.5 text-sm text-gray-700">
                                 <Calendar className="w-4 h-4 text-gray-400" />
-                                {event.date}
+                                {formatEventDate(event.date)}
                               </div>
                               <div className="flex items-center gap-1.5 text-sm text-gray-500">
                                 <Clock className="w-4 h-4 text-gray-400" />
-                                {event.time}
+                                {formatEventTime(event.time)}
                               </div>
                             </div>
                           </td>
@@ -818,7 +828,7 @@ export default function EventDashboard() {
                               <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                                 <div
                                   className="h-full bg-blue-600 rounded-full"
-                                  style={{ width: `${(event.ticketsSold / event.capacity) * 100}%` }}
+                                  style={{ width: `${event.capacity > 0 ? Math.min(100, (event.ticketsSold / event.capacity) * 100) : 0}%` }}
                                 />
                               </div>
                             </div>
@@ -832,49 +842,42 @@ export default function EventDashboard() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
-                              {event.documentos && event.documentos.length > 0 && (
-                                <button
-                                  onClick={() => {
-                                    if (event.documentos.length === 1) {
-                                      const proxied = `/api/events/document?id=${encodeURIComponent(String(event.documentos[0].id_documento_evento))}`
-                                      setPdfModalUrl(proxied)
-                                      setPdfModalOpen(true)
-                                    } else {
-                                      // Si hay múltiples documentos, mostrar un menú simple
-                                      const listText = event.documentos.map((d: any, i: number) => `${i + 1}. Documento ${i + 1}`).join('\n')
-                                      const docNum = prompt(
-                                        `Hay ${event.documentos.length} documentos. Ingresa el número (1-${event.documentos.length}) del documento que deseas ver:\n\n${listText}`,
-                                        '1'
-                                      )
-                                      if (docNum && !isNaN(parseInt(docNum))) {
-                                        const idx = parseInt(docNum) - 1
-                                        if (idx >= 0 && idx < event.documentos.length) {
-                                          const proxied = `/api/events/document?id=${encodeURIComponent(String(event.documentos[idx].id_documento_evento))}`
-                                          setPdfModalUrl(proxied)
-                                          setPdfModalOpen(true)
-                                        }
-                                      }
-                                    }
-                                  }}
-                                  className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                                  title="Ver documento/PDF del evento"
-                                >
-                                  <Download className="w-4 h-4" />
-                                </button>
-                              )}
+                              <button
+                                onClick={() => approveEvent(event.id)}
+                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                title={event.visibility ? 'Evento validado' : 'Validar evento'}
+                                disabled={Boolean(event.visibility)}
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </button>
                               <button
                                 onClick={() => {
-                                  setStatusModalEvent(event)
-                                  setStatusModalOpen(true)
+                                  if (!hasDocuments) return
+                                  if (documents.length === 1) {
+                                    const proxied = `/api/events/document?id=${encodeURIComponent(String(documents[0].id_documento_evento))}`
+                                    setPdfModalUrl(proxied)
+                                    setPdfModalOpen(true)
+                                  } else {
+                                    const listText = documents.map((d: any, i: number) => `${i + 1}. Documento ${i + 1}`).join('\n')
+                                    const docNum = prompt(
+                                      `Hay ${documents.length} documentos. Ingresa el número (1-${documents.length}) del documento que deseas ver:\n\n${listText}`,
+                                      '1'
+                                    )
+                                    if (docNum && !isNaN(parseInt(docNum))) {
+                                      const idx = parseInt(docNum) - 1
+                                      if (idx >= 0 && idx < documents.length) {
+                                        const proxied = `/api/events/document?id=${encodeURIComponent(String(documents[idx].id_documento_evento))}`
+                                        setPdfModalUrl(proxied)
+                                        setPdfModalOpen(true)
+                                      }
+                                    }
+                                  }
                                 }}
-                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                title="Validar/Inhabilitar evento"
+                                className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                title={hasDocuments ? "Ver documento/PDF del evento" : "Sin documento"}
+                                disabled={!hasDocuments}
                               >
-                                {event.visibility ? (
-                                  <CheckCircle className="w-4 h-4" />
-                                ) : (
-                                  <EyeOff className="w-4 h-4 text-gray-400" />
-                                )}
+                                <Download className="w-4 h-4" />
                               </button>
                               <button 
                                 onClick={() => {
@@ -895,7 +898,7 @@ export default function EventDashboard() {
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      )})}
                     </tbody>
                   </table>
                 </div>
@@ -1062,20 +1065,6 @@ export default function EventDashboard() {
               setEditingEvent(null)
             }}
             event={editingEvent}
-            onSave={async (updatedEvent) => {
-              await refreshEvents()
-            }}
-          />
-        )}
-
-        {statusModalEvent && (
-          <ToggleEventStatusModal
-            isOpen={statusModalOpen}
-            onClose={() => {
-              setStatusModalOpen(false)
-              setStatusModalEvent(null)
-            }}
-            event={statusModalEvent}
             onSave={async (updatedEvent) => {
               await refreshEvents()
             }}

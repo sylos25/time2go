@@ -436,26 +436,17 @@ INSERT INTO tabla_roles VALUES  (4,'Administrador');
 
 -- Cargar en tabla_accesibilidad_menu.
 INSERT INTO tabla_accesibilidad_menu VALUES (1, 'Crear Evento', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (2, 'Reservas', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (3, 'Editar Evento', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (4, 'Aprobar Evento', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (5, 'Eliminar Evento', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (6, 'Ver Dashboard', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (7, 'Gestionar Paises', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (8, 'Gestionar Departamentos', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (9, 'Gestionar Municipios', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (10, 'Gestionar Usuarios', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (11, 'Gestionar Roles', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (12, 'Gestionar Accesibilidad al Sistema', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (13, 'Gestionar Accesibilidad de los Roles', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (14, 'Gestionar Baneados', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (15, 'Gestionar Tipo Sitio', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (16, 'Gestionar Sitios', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (17, 'Gestionar Tipo de Infraestructura para Discapacitados', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (18, 'Gestionar Infraestructura con Sitios para Discapacitados', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (19, 'Gestionar Categorías Eventos', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (20, 'Gestionar Tipos de Eventos', NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu VALUES (21, 'Gestionar Valoraciones', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (2, 'Gestionar Reservas', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (3, 'Gestionar Eventos', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (4, 'Ver Dashboard', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (5, 'Agregar Data', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (6, 'Editar Data', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (7, 'Eliminar Data', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (8, 'Gestionar Usuarios', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (9, 'Gestionar Roles', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (10, 'Gestionar Accesibilidad al Sistema', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu VALUES (11, 'Gestionar Baneados', NOW(), NOW());
+
 
 -- Cargar en tabla_accesibilidad_menu_x_rol.
 INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (1, 1, 2, NOW(), NOW());
@@ -464,38 +455,19 @@ INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (3, 1, 4, NOW(), NOW());
 INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (4, 2, 2, NOW(), NOW());
 INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (5, 2, 3, NOW(), NOW());
 INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (6, 2, 4, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (7, 3, 3, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (8, 3, 4, NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (7, 3, 4, NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (8, 4, 3, NOW(), NOW());
 INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (9, 4, 4, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (10, 5, 4, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (11, 6, 3, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (12, 6, 4, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (13, 7, 3, NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (10, 5, 3, NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (11, 5, 4, NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (12, 6, 3, NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (13, 6, 4, NOW(), NOW());
 INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (14, 7, 4, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (15, 8, 3, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (16, 8, 4, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (17, 9, 3, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (18, 9, 4, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (19, 10, 3, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (20, 10, 4, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (21, 11, 4, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (22, 12, 4, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (23, 13, 4, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (24, 14, 4, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (25, 15, 3, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (26, 15, 4, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (27, 16, 3, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (28, 16, 4, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (29, 17, 3, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (30, 17, 4, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (31, 18, 3, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (32, 18, 4, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (33, 19, 3, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (34, 19, 4, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (35, 20, 3, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (36, 20, 4, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (37, 21, 3, NOW(), NOW());
-INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (38, 21, 4, NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (15, 8, 4, NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (16, 9, 4, NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (17, 10, 4, NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (18, 11, 4, NOW(), NOW());
+
 
 -- Cargar en tabla_usuarios.
 INSERT INTO tabla_usuarios (id_rol, ig_google, nombres, apellidos, id_pais, telefono, validacion_telefono, correo, validacion_correo, contrasena_hash, confirmacion_contrasena_hash, terminos_condiciones, estado, fecha_registro, fecha_actualizacion, fecha_desactivacion) 

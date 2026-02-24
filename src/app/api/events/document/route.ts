@@ -1,11 +1,49 @@
 import { NextRequest, NextResponse } from "next/server"
 import pool from "@/lib/db"
 import { getDocumentFromStorage } from "@/lib/document-storage"
+import { verifyToken } from "@/lib/jwt"
+import { parseCookies } from "@/lib/cookies"
 
 export const runtime = "nodejs"
 
+async function ensureAdminRole(req: NextRequest) {
+  const authHeader = (req.headers.get("authorization") || "").trim()
+  let userId: string | null = null
+
+  if (authHeader.startsWith("Bearer ")) {
+    const token = authHeader.slice(7).trim()
+    const payload = verifyToken(token)
+    const userIdFromToken = payload?.id_usuario || payload?.numero_documento
+    if (payload && userIdFromToken) userId = String(userIdFromToken)
+  }
+
+  if (!userId) {
+    const cookies = parseCookies(req.headers.get("cookie"))
+    const token = cookies["token"]
+    if (token) {
+      const payload = verifyToken(token)
+      const userIdFromToken = payload?.id_usuario || payload?.numero_documento
+      if (payload && userIdFromToken) userId = String(userIdFromToken)
+    }
+  }
+
+  if (!userId) return false
+
+  const roleRes = await pool.query(
+    "SELECT id_rol FROM tabla_usuarios WHERE id_usuario = $1 LIMIT 1",
+    [userId]
+  )
+  const role = roleRes.rows && roleRes.rows[0] ? Number(roleRes.rows[0].id_rol) : null
+  return role === 4
+}
+
 export async function GET(req: NextRequest) {
   try {
+    const isAdmin = await ensureAdminRole(req)
+    if (!isAdmin) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
     const idParam = req.nextUrl.searchParams.get("id")
     const url = req.nextUrl.searchParams.get("url")
 

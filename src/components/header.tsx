@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Menu, X, User, LogOut, Settings, LayoutDashboard, Calendar } from "lucide-react"
+import { Menu, X, User, LogOut, Settings, LayoutDashboard, Calendar, Ticket } from "lucide-react"
 import { usePermission, PERMISSIONS } from "@/hooks/use-permissions"
 import type { JSX } from "react"
 
@@ -230,6 +230,7 @@ export function Header({
 
   // determine role (1 = usuario regular per DB) — prefer in-memory user, fallback to localStorage
   const userRole = user?.role !== undefined ? Number(user.role) : Number(typeof window !== 'undefined' ? localStorage.getItem('userRole') || 0 : 0);
+  const isRegularUser = userRole === 1;
   
   // Verificar permisos usando el sistema de accesibilidad
   const { hasAccess: canCreate } = usePermission(loggedIn ? PERMISSIONS.CREAR_EVENTOS : null, userRole);
@@ -384,7 +385,7 @@ export function Header({
                     </button>
                   )}
 
-                  <DropdownMenu>
+                  <DropdownMenu modal={false}>
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
@@ -404,10 +405,17 @@ export function Header({
                           <User className="h-4 w-4 mr-2" />
                           <p>Mi Perfil</p>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigateTo("/mis-eventos")} className="cursor-pointer">
-                          <Calendar className="h-4 w-4 mr-2" />
-                          Mis Eventos
-                        </DropdownMenuItem>
+                        {isRegularUser ? (
+                          <DropdownMenuItem onClick={() => navigateTo("/mis-reservas")} className="cursor-pointer">
+                            <Ticket className="h-4 w-4 mr-2" />
+                            Mis Reservas
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem onClick={() => navigateTo("/mis-eventos")} className="cursor-pointer">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            Mis Eventos
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onClick={() => navigateTo("/configuracion")} className="cursor-pointer">
                           <Settings className="h-4 w-4 mr-2" />
                           Configuración
@@ -492,13 +500,23 @@ export function Header({
                   <User className="h-5 w-5 text-lime-600" />
                   <span>Mi Perfil</span>
                 </button>
-                <button
-                  onClick={() => navigateTo("/mis-eventos")}
-                  className="flex items-center space-x-3 text-gray-800 hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-amber-50 transition-all w-full text-left group"
-                >
-                  <Calendar className="h-5 w-5 text-lime-600" />
-                  <span>Mis Eventos</span>
-                </button>
+                {isRegularUser ? (
+                  <button
+                    onClick={() => navigateTo("/mis-reservas")}
+                    className="flex items-center space-x-3 text-gray-800 hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-amber-50 transition-all w-full text-left group"
+                  >
+                    <Ticket className="h-5 w-5 text-lime-600" />
+                    <span>Mis Reservas</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => navigateTo("/mis-eventos")}
+                    className="flex items-center space-x-3 text-gray-800 hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-amber-50 transition-all w-full text-left group"
+                  >
+                    <Calendar className="h-5 w-5 text-lime-600" />
+                    <span>Mis Eventos</span>
+                  </button>
+                )}
                 <button
                   onClick={() => navigateTo("/configuracion")}
                   className="flex items-center space-x-3 text-gray-800 hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-amber-50 transition-all w-full text-left group"

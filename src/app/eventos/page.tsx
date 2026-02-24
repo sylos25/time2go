@@ -47,11 +47,17 @@ interface Event {
   }[];
 }
 
+interface CategoriaEvento {
+  id_categoria_evento: number;
+  nombre: string;
+}
+
 // Esto es para mostrar los eventos debajo del buscador --- En proceso
   const initialEvents: Event[] = []
 
 export default function EventosPage() {
   const [events, setEvents] = useState<any[]>(initialEvents)
+  const [categories, setCategories] = useState<CategoriaEvento[]>([])
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [isLogin, setIsLogin] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -101,8 +107,9 @@ const formatDia = (date: Date): string => {
       const res = await fetch("/api/events");
       const data = await res.json();
       const rawEvents = (data && data.ok && Array.isArray(data.eventos)) ? data.eventos : Array.isArray(data) ? data : [];
+      const visibleEvents = rawEvents.filter((e: any) => e?.estado === true);
 
-      const normalized = rawEvents.map((e: any) => {
+      const normalized = visibleEvents.map((e: any) => {
         // determine first image
         const firstImage = e.imagenes && e.imagenes.length ? e.imagenes[0].url_imagen_evento : null;
 
@@ -124,12 +131,14 @@ const formatDia = (date: Date): string => {
         return {
           id_evento: e.id_evento,
           title: e.nombre_evento,
+          category: e.categoria?.nombre || e.categoria_nombre || "Sin categoría",
           description: e.descripcion,
           image: firstImage || "/placeholder.svg",
           date,
           time,
           location: e.nombre_sitio || e.nombre_municipio || "",
           attendees: e.cupo ?? 0,
+          id_categoria_evento: Number(e.id_categoria_evento || e.evento_categoria_id || e.categoria?.id_categoria_evento || 0),
           price,
           raw: e, // keep original for details
         };
@@ -144,6 +153,29 @@ const formatDia = (date: Date): string => {
 
   useEffect(() => {
     fetchEventos();
+  }, []);
+
+  const fetchCategorias = async () => {
+    try {
+      const res = await fetch("/api/categoria_evento");
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : [];
+      const normalized = list
+        .map((c: any) => ({
+          id_categoria_evento: Number(c?.id_categoria_evento || 0),
+          nombre: String(c?.nombre || "").trim(),
+        }))
+        .filter((c: CategoriaEvento) => c.id_categoria_evento > 0 && c.nombre.length > 0);
+
+      setCategories(normalized);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      setCategories([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategorias();
   }, []);
 
 
@@ -192,17 +224,6 @@ const handleAddEvent = async () => {
 };
   
   // Funciones de mapeo
-  function mapCategoryToTipoId(category: string): number {
-    const categorias: Record<string, number> = {
-      Música: 1,
-      Arte: 2,
-      Teatro: 3,
-      Gastronomía: 4,
-      Tecnología: 5,
-    };
-    return categorias[category] || 0;
-  }
-  
   function mapLocationToMunicipioId(location: string): number {
     const municipios: Record<string, number> = {
       Bogotá: 1,
@@ -220,9 +241,6 @@ const handleAddEvent = async () => {
   // Fix implicit any in maps elsewhere
   // examples in render: ensure callbacks have typed params
   
-  // Categorías visuales para filtros
-  const categories = ["all", "Música", "Arte", "Teatro", "Gastronomía", "Tecnología"];
-  
   // Filtro visual (puedes mantenerlo si usas tarjetas de eventos)
   const filteredEvents = events
     .filter((event) => {
@@ -230,8 +248,14 @@ const handleAddEvent = async () => {
       const descr = String(event.descripcion ?? event.description ?? event.raw?.descripcion ?? "").toLowerCase();
       const matchesSearch = name.includes(searchTerm.toLowerCase()) || descr.includes(searchTerm.toLowerCase());
 
-      const eventTipo = event.id_tipo_evento ?? event.raw?.id_tipo_evento ?? 0;
-      const matchesCategory = selectedCategory === "all" || mapCategoryToTipoId(selectedCategory) === eventTipo;
+      const eventCategoryId = Number(
+        event.id_categoria_evento ??
+        event.raw?.id_categoria_evento ??
+        event.raw?.evento_categoria_id ??
+        event.raw?.categoria?.id_categoria_evento ??
+        0
+      );
+      const matchesCategory = selectedCategory === "all" || String(eventCategoryId) === selectedCategory;
       return matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
@@ -335,9 +359,13 @@ const handleAddEvent = async () => {
                   <SelectValue placeholder="Categoría" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">Todas las categorías</SelectItem>
                   {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category === "all" ? "Todas las categorías" : category}
+                    <SelectItem
+                      key={category.id_categoria_evento}
+                      value={String(category.id_categoria_evento)}
+                    >
+                      {category.nombre}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -47,7 +47,7 @@ export default function ReservarEventoPage() {
         const meJson = await meRes.json().catch(() => ({}));
         const role = Number(meJson?.user?.id_rol || 0);
         if (!meRes.ok || role !== 1) {
-          setError("Solo los usuarios con rol Usuario pueden realizar reservas.");
+          router.replace(eventId ? `/eventos/${eventId}` : "/eventos");
           return;
         }
 
@@ -119,7 +119,7 @@ export default function ReservarEventoPage() {
         return;
       }
 
-      router.push("/mis-eventos");
+      router.push("/mis-reservas");
     } catch (e) {
       setError("Error creando la reserva.");
     } finally {

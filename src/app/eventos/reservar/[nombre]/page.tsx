@@ -47,7 +47,7 @@ export default function ReservarEventoPorNombrePage() {
         const meJson = await meRes.json().catch(() => ({}));
         const role = Number(meJson?.user?.id_rol || 0);
         if (!meRes.ok || role !== 1) {
-          setError("Solo los usuarios con rol Usuario pueden realizar reservas.");
+          router.replace("/eventos");
           return;
         }
 
@@ -124,7 +124,7 @@ export default function ReservarEventoPorNombrePage() {
         return;
       }
 
-      router.push("/mis-eventos");
+      router.push("/mis-reservas");
     } catch {
       setError("Error creando la reserva.");
     } finally {
@@ -204,7 +204,7 @@ export default function ReservarEventoPorNombrePage() {
             <Button onClick={submit} disabled={saving || loading}>
               {saving ? "Reservando..." : "Confirmar reserva"}
             </Button>
-            <Button variant="outline" onClick={() => router.push("/mis-eventos")}>
+            <Button variant="outline" onClick={() => router.push("/mis-reservas")}>
               Cancelar
             </Button>
           </div>

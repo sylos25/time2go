@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
@@ -26,13 +26,19 @@ import Valoraciones from "./valoraciones";
 export default function EventLanding() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const rawId = params?.id;
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
+  const mineView = (searchParams?.get("mine") || "").toLowerCase() === "true";
   const [event, setEvent] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [creatorMode, setCreatorMode] = useState(false);
+  const [userRole, setUserRole] = useState<number | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [checkingReservation, setCheckingReservation] = useState(false);
   const [alreadyReserved, setAlreadyReserved] = useState(false);
+  const [eventReservations, setEventReservations] = useState<any[]>([]);
+  const [loadingEventReservations, setLoadingEventReservations] = useState(false);
 
   // Helpers
   const formatDate = (d: any) => {
@@ -110,10 +116,27 @@ export default function EventLanding() {
           return;
         }
 
-        const res = await fetch(`/api/events?id=${encodeURIComponent(id)}`);
+        const creatorFlagFromSession =
+          typeof window !== "undefined" &&
+          sessionStorage.getItem("creator-event-view") === String(id);
+        const shouldUseCreatorMode = mineView || creatorFlagFromSession;
+        setCreatorMode(shouldUseCreatorMode);
+
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const query = shouldUseCreatorMode
+          ? `/api/events?id=${encodeURIComponent(id)}&mine=true`
+          : `/api/events?id=${encodeURIComponent(id)}`;
+        const res = await fetch(query, {
+          headers: shouldUseCreatorMode && token ? { Authorization: `Bearer ${token}` } : undefined,
+          credentials: shouldUseCreatorMode ? "include" : undefined,
+        });
         const json = await res.json();
         if (json.ok && json.event) setEvent(json.event);
         else setEvent(null);
+
+        if (creatorFlagFromSession && typeof window !== "undefined") {
+          sessionStorage.removeItem("creator-event-view");
+        }
       } catch (err) {
         console.error("Error fetching event:", err);
         setEvent(null);
@@ -122,12 +145,70 @@ export default function EventLanding() {
       }
     };
     fetchEvent();
-  }, [id]);
+  }, [id, mineView]);
+
+  useEffect(() => {
+    const loadEventReservations = async () => {
+      if (!creatorMode || !event?.id_evento) {
+        setEventReservations([]);
+        return;
+      }
+
+      setLoadingEventReservations(true);
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const res = await fetch(`/api/reservas?eventId=${encodeURIComponent(String(event.id_evento))}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          credentials: "include",
+        });
+
+        if (!res.ok) {
+          setEventReservations([]);
+          return;
+        }
+
+        const json = await res.json().catch(() => ({}));
+        setEventReservations(Array.isArray(json?.reservas) ? json.reservas : []);
+      } catch {
+        setEventReservations([]);
+      } finally {
+        setLoadingEventReservations(false);
+      }
+    };
+
+    loadEventReservations();
+  }, [creatorMode, event?.id_evento]);
+
+  useEffect(() => {
+    const fetchCurrentUserRole = async () => {
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const meRes = await fetch("/api/me", {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          credentials: "include",
+        });
+
+        if (!meRes.ok) {
+          setUserRole(null);
+          return;
+        }
+
+        const meJson = await meRes.json().catch(() => ({}));
+        const role = Number(meJson?.user?.id_rol || 0);
+        setUserRole(Number.isFinite(role) && role > 0 ? role : null);
+      } catch {
+        setUserRole(null);
+      }
+    };
+
+    fetchCurrentUserRole();
+  }, []);
 
   useEffect(() => {
     const checkReservation = async () => {
-      if (!event?.id_evento) {
+      if (!event?.id_evento || Number(userRole) !== 1) {
         setAlreadyReserved(false);
+        setCheckingReservation(false);
         return;
       }
 
@@ -158,7 +239,7 @@ export default function EventLanding() {
     };
 
     checkReservation();
-  }, [event?.id_evento]);
+  }, [event?.id_evento, userRole]);
 
   if (loading) {
     return (
@@ -236,6 +317,10 @@ export default function EventLanding() {
     ? `Desde ${formatCurrency(minPrice)}`
     : "Gratis";
 
+  const totalCupo = Number(event.cupo ?? 0);
+  const asistentesReservados = Number(event.reservas_asistentes ?? 0);
+  const cuposDisponibles = Math.max(0, totalCupo - asistentesReservados);
+
   const slugify = (value: string) =>
     String(value || "evento")
       .normalize("NFD")
@@ -247,7 +332,16 @@ export default function EventLanding() {
   const reservePath = `/eventos/reservar/${slugify(event.nombre_evento)}?e=${encodeURIComponent(
     event.id_publico_evento || ""
   )}`;
-  const reserveDisabled = checkingReservation || alreadyReserved;
+  const canReserveByRole = Number(userRole) === 1 && !creatorMode;
+  const reserveDisabled = !canReserveByRole || checkingReservation || alreadyReserved || cuposDisponibles <= 0;
+  const reserveButtonText = cuposDisponibles <= 0
+    ? "Sin cupos"
+    : checkingReservation
+      ? "Verificando..."
+      : alreadyReserved
+        ? "Ya reservado"
+        : "Reservar";
+  const backPath = creatorMode ? "/mis-eventos" : "/eventos";
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-sky-100">
@@ -260,7 +354,7 @@ export default function EventLanding() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => router.push("/eventos")}
+            onClick={() => router.push(backPath)}
             className="bg-white/80 backdrop-blur-sm hover:bg-white shadow-md"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -397,7 +491,7 @@ export default function EventLanding() {
                   <Users className="h-5 w-5 mx-auto mb-2 text-green-500" />
                   <p className="text-xs text-muted-foreground">Aforo para</p>
                   <p className="font-semibold text-sm">
-                    {Number(event.cupo ?? 0).toLocaleString()}
+                    {totalCupo.toLocaleString()}
                   </p>
                 </CardContent>
               </Card>
@@ -497,6 +591,49 @@ export default function EventLanding() {
                       </div>
                     ))}
                   </div>
+                  
+                </CardContent>
+              </Card>
+            )}
+
+            {creatorMode && (
+              <Card className="bg-white/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Reservas del evento ({eventReservations.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loadingEventReservations ? (
+                    <p className="text-sm text-muted-foreground">Cargando reservas...</p>
+                  ) : eventReservations.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Aún no hay reservas para este evento.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {eventReservations.map((reservation) => (
+                        <div
+                          key={reservation.id_reserva_evento}
+                          className="p-3 rounded-lg bg-muted/50 border border-border"
+                        >
+                          <p className="font-medium">
+                            {reservation.nombres} {reservation.apellidos}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Documento: {reservation.tipo_documento} · {reservation.numero_documento}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Asistentes: {reservation.cuantos_asistiran} · Reserva: {reservation.fecha_reserva ? new Date(reservation.fecha_reserva).toLocaleString("es-ES") : "—"}
+                          </p>
+                          {reservation.quienes_asistiran ? (
+                            <p className="text-sm text-muted-foreground whitespace-pre-line">
+                              {reservation.quienes_asistiran}
+                            </p>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -526,17 +663,23 @@ export default function EventLanding() {
                   </p>
                 </div>
 
-                <Button
-                  onClick={() => {
-                    if (!reserveDisabled) router.push(reservePath);
-                  }}
-                  className="w-full mb-3 bg-gradient-to-r from-red-500 to-fuchsia-500 text-white hover:from-red-600 hover:to-fuchsia-700"
-                  size="lg"
-                  disabled={reserveDisabled}
-                >
-                  <Ticket className="h-5 w-5 mr-2" />
-                  {checkingReservation ? "Verificando..." : alreadyReserved ? "Ya reservado" : "Reservar"}
-                </Button>
+                {canReserveByRole && (
+                  <Button
+                    onClick={() => {
+                      if (!reserveDisabled) router.push(reservePath);
+                    }}
+                    className="w-full mb-3 bg-gradient-to-r from-red-500 to-fuchsia-500 text-white hover:from-red-600 hover:to-fuchsia-700"
+                    size="lg"
+                    disabled={reserveDisabled}
+                  >
+                    <Ticket className="h-5 w-5 mr-2" />
+                    {reserveButtonText}
+                  </Button>
+                )}
+
+                <p className="text-sm text-center text-muted-foreground mt-2">
+                  Cupos disponibles: <span className="font-semibold text-foreground">{cuposDisponibles.toLocaleString()}</span>
+                </p>
 
                 {event.links && event.links.length > 0 && (
                   <div className="space-y-2">
@@ -727,17 +870,19 @@ export default function EventLanding() {
               {priceLabel}
             </p>
           </div>
-          <Button
-            onClick={() => {
-              if (!reserveDisabled) router.push(reservePath);
-            }}
-            size="lg"
-            className="flex-1 bg-gradient-to-r from-lime-500 to-green-500 text-white hover:from-lime-600 hover:to-green-600"
-            disabled={reserveDisabled}
-          >
-            <Ticket className="h-5 w-5 mr-2" />
-            {checkingReservation ? "Verificando..." : alreadyReserved ? "Ya reservado" : "Reservar"}
-          </Button>
+          {canReserveByRole && (
+            <Button
+              onClick={() => {
+                if (!reserveDisabled) router.push(reservePath);
+              }}
+              size="lg"
+              className="flex-1 bg-gradient-to-r from-lime-500 to-green-500 text-white hover:from-lime-600 hover:to-green-600"
+              disabled={reserveDisabled}
+            >
+              <Ticket className="h-5 w-5 mr-2" />
+              {reserveButtonText}
+            </Button>
+          )}
         </div>
       </div>
 

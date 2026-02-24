@@ -322,6 +322,10 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const idParam = url.searchParams.get('id');
     const idPublicoParam = (url.searchParams.get('idPublico') || '').trim();
+    const mineParam = (url.searchParams.get('mine') || '').trim().toLowerCase();
+    const onlyMine = mineParam === 'true' || mineParam === '1';
+    const includeAllParam = (url.searchParams.get('includeAll') || '').trim().toLowerCase();
+    const includeAll = includeAllParam === 'true' || includeAllParam === '1';
 
     // Validate id parameter to avoid passing NaN to the DB query
     const idNum = idParam !== null ? Number(idParam) : null;
@@ -332,6 +336,81 @@ export async function GET(req: Request) {
     if (idPublicoParam && idPublicoParam.length < 6) {
       return NextResponse.json({ ok: false, message: 'Invalid idPublico parameter' }, { status: 400 });
     }
+
+    if (onlyMine && includeAll) {
+      return NextResponse.json({ ok: false, message: 'Invalid query combination' }, { status: 400 });
+    }
+
+    let requesterId: string | null = null;
+    if (onlyMine || includeAll) {
+      const authHeader = (req.headers.get("authorization") || "").trim();
+      if (authHeader.startsWith("Bearer ")) {
+        const token = authHeader.slice(7).trim();
+        const payload = verifyToken(token);
+        const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
+        if (payload && userIdFromToken) {
+          requesterId = String(userIdFromToken);
+        }
+      }
+
+      if (!requesterId) {
+        try {
+          const { getAuth } = await import("@/lib/auth");
+          const session = await getAuth().api.getSession({ headers: req.headers as any });
+          const sid = (session && session.user && ((session.user as any).id_usuario || (session.user as any).numero_documento)) || null;
+          if (sid) requesterId = String(sid);
+        } catch (error) {
+          console.error("BetterAuth session error", error);
+        }
+      }
+
+      if (!requesterId) {
+        return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
+      }
+
+      if (includeAll) {
+        const roleRes = await pool.query(
+          "SELECT id_rol FROM tabla_usuarios WHERE id_usuario = $1 LIMIT 1",
+          [requesterId]
+        );
+        const role = roleRes.rows && roleRes.rows[0] ? Number(roleRes.rows[0].id_rol) : null;
+        if (!role) {
+          return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
+        }
+
+        const permissionRes = await pool.query(
+          `SELECT id_accesibilidad_menu_x_rol
+           FROM tabla_accesibilidad_menu_x_rol
+           WHERE id_accesibilidad = $1 AND id_rol = $2
+           LIMIT 1`,
+          [PERMISSION_IDS.GESTIONAR_EVENTOS, role]
+        );
+
+        if (!permissionRes.rows || permissionRes.rows.length === 0) {
+          return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
+        }
+      }
+    }
+
+    const queryParams: Array<number | string> = [];
+    const filters: string[] = [];
+
+    if (onlyMine && requesterId) {
+      queryParams.push(requesterId);
+      filters.push(`e.id_usuario = $${queryParams.length}`);
+    } else if (!includeAll) {
+      filters.push("e.estado = TRUE");
+    }
+
+    if (idNum !== null) {
+      queryParams.push(idNum);
+      filters.push(`e.id_evento = $${queryParams.length}`);
+    } else if (idPublicoParam) {
+      queryParams.push(idPublicoParam);
+      filters.push(`e.id_publico_evento = $${queryParams.length}`);
+    }
+
+    const whereClause = filters.length > 0 ? `WHERE ${filters.join(" AND ")}` : "";
 
     const result = await pool.query(`
       SELECT e.id_evento,
@@ -396,7 +475,9 @@ export async function GET(req: Request) {
              vr.id_usuario AS valoracion_usuario,
              vr.valoracion AS valoracion_valor,
              vr.comentario AS valoracion_comentario,
-             vr.fecha_creacion AS valoracion_fecha
+                  vr.fecha_creacion AS valoracion_fecha,
+                  COALESCE(rv.reservas_count, 0) AS reservas_count,
+                  COALESCE(rv.reservas_asistentes, 0) AS reservas_asistentes
       FROM tabla_eventos e
       LEFT JOIN tabla_usuarios u ON e.id_usuario = u.id_usuario
       LEFT JOIN tabla_sitios s ON e.id_sitio = s.id_sitio
@@ -409,9 +490,18 @@ export async function GET(req: Request) {
       LEFT JOIN tabla_links l ON e.id_evento = l.id_evento
       LEFT JOIN tabla_evento_informacion_importante iinfo ON e.id_evento = iinfo.id_evento
       LEFT JOIN tabla_valoraciones vr ON e.id_evento = vr.id_evento
-      ${idNum !== null ? 'WHERE e.id_evento = $1' : idPublicoParam ? 'WHERE e.id_publico_evento = $1' : ''}
+      LEFT JOIN (
+        SELECT
+          id_evento,
+          COUNT(*)::INT AS reservas_count,
+          COALESCE(SUM(cuantos_asistiran), 0)::INT AS reservas_asistentes
+        FROM tabla_reserva_eventos
+        WHERE estado = TRUE
+        GROUP BY id_evento
+      ) rv ON e.id_evento = rv.id_evento
+      ${whereClause}
       ORDER BY e.id_evento DESC;
-    `, idNum !== null ? [idNum] : idPublicoParam ? [idPublicoParam] : []);
+    `, queryParams);
 
     const eventosMap: Record<string, any> = {};
     result.rows.forEach((row) => {
@@ -452,6 +542,8 @@ export async function GET(req: Request) {
           categoria_nombre: row.categoria_nombre,
           evento_tipo_id: row.evento_tipo_id,
           tipo_nombre: row.tipo_nombre,
+          reservas_count: Number(row.reservas_count || 0),
+          reservas_asistentes: Number(row.reservas_asistentes || 0),
           informacion_importante: row.id_evento_info_item
             ? {
                 id_evento_info_item: row.id_evento_info_item,
@@ -526,6 +618,9 @@ export async function GET(req: Request) {
 
     if (idParam || idPublicoParam) {
       const single = mapped.length ? mapped[0] : null;
+      if (!single) {
+        return NextResponse.json({ ok: false, message: "Evento no encontrado" }, { status: 404 });
+      }
       return NextResponse.json({ ok: true, event: single });
     }
 

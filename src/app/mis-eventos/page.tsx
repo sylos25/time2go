@@ -6,13 +6,13 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, MapPin, Ticket } from "lucide-react";
+import { Calendar, MapPin, Ticket, Loader2 } from "lucide-react";
 
 export default function MisEventosPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [reservas, setReservas] = useState<any[]>([]);
+  const [eventos, setEventos] = useState<any[]>([]);
 
   useEffect(() => {
     const load = async () => {
@@ -21,20 +21,20 @@ export default function MisEventosPage() {
         setError(null);
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-        const res = await fetch("/api/reservas", {
+        const res = await fetch("/api/events?mine=true", {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
           credentials: "include",
         });
 
         const json = await res.json().catch(() => ({}));
         if (!res.ok || !json?.ok) {
-          setError(String(json?.message || "No se pudieron cargar tus reservas"));
+          setError(String(json?.message || "No se pudieron cargar tus eventos"));
           return;
         }
 
-        setReservas(Array.isArray(json.reservas) ? json.reservas : []);
+        setEventos(Array.isArray(json.eventos) ? json.eventos : []);
       } catch (e) {
-        setError("Error al cargar tus reservas");
+        setError("Error al cargar tus eventos");
       } finally {
         setLoading(false);
       }
@@ -42,6 +42,21 @@ export default function MisEventosPage() {
 
     load();
   }, []);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-white flex flex-col">
+        <Header onAuthClick={() => {}} />
+        <div className="flex-1 pt-32 pb-12 px-4 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 text-green-800 animate-spin mx-auto mb-4" />
+            <p className="text-gray-700 text-lg">Cargando tus eventos...</p>
+          </div>
+        </div>
+        <Footer />
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-sky-100 flex flex-col">
@@ -53,28 +68,27 @@ export default function MisEventosPage() {
           <Button variant="outline" onClick={() => router.push("/eventos")}>Explorar eventos</Button>
         </div>
 
-        {loading && <p className="text-muted-foreground">Cargando reservas...</p>}
         {error && <p className="text-red-600 text-sm">{error}</p>}
 
-        {!loading && !error && reservas.length === 0 && (
+        {!loading && !error && eventos.length === 0 && (
           <Card className="bg-white/90">
             <CardContent className="pt-6 text-center text-muted-foreground">
-              Aún no tienes reservas registradas.
+              Aún no has creado eventos.
             </CardContent>
           </Card>
         )}
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {reservas.map((r) => (
-            <Card key={r.id_reserva_evento} className="bg-white/90 backdrop-blur-sm">
+          {eventos.map((evento) => (
+            <Card key={evento.id_evento} className="bg-white/90 backdrop-blur-sm">
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg line-clamp-2">{r.nombre_evento}</CardTitle>
+                <CardTitle className="text-lg line-clamp-2">{evento.nombre_evento}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {r.url_imagen_evento && (
+                {evento.imagenes?.[0]?.url_imagen_evento && (
                   <img
-                    src={r.url_imagen_evento}
-                    alt={r.nombre_evento}
+                    src={evento.imagenes[0].url_imagen_evento}
+                    alt={evento.nombre_evento}
                     className="w-full h-36 object-cover rounded-lg"
                   />
                 )}
@@ -83,23 +97,31 @@ export default function MisEventosPage() {
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
                     <span>
-                      {r.fecha_inicio ? new Date(r.fecha_inicio).toLocaleDateString("es-ES") : "—"}
-                      {r.hora_inicio ? ` · ${String(r.hora_inicio).slice(0, 5)}` : ""}
+                      {evento.fecha_inicio ? new Date(evento.fecha_inicio).toLocaleDateString("es-ES") : "—"}
+                      {evento.hora_inicio ? ` · ${String(evento.hora_inicio).slice(0, 5)}` : ""}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
-                    <span>{r.nombre_sitio || r.nombre_municipio || "—"}</span>
+                    <span>{evento.sitio?.nombre_sitio || evento.municipio?.nombre_municipio || evento.nombre_municipio || "—"}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Ticket className="h-4 w-4" />
-                    <span>Asistentes: {r.cuantos_asistiran}</span>
+                    <span>Cupo: {Number(evento.cupo || 0).toLocaleString()}</span>
                   </div>
                 </div>
 
                 <div className="pt-2 flex gap-2">
-                  <Button className="w-full" onClick={() => router.push(`/mis-eventos/${r.id_reserva_evento}`)}>
-                    Ver reserva
+                  <Button
+                    className="w-full"
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        sessionStorage.setItem("creator-event-view", String(evento.id_evento));
+                      }
+                      router.push(`/eventos/${evento.id_evento}`);
+                    }}
+                  >
+                    Ver evento
                   </Button>
                 </div>
               </CardContent>

@@ -121,6 +121,37 @@
   }
   html {
     overflow-y: scroll;
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    margin: 0;
+  }
+
+  html[data-scroll-locked],
+  body[data-scroll-locked] {
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+    overflow-y: scroll !important;
+  }
+
+  html.with-scroll-bars-hidden,
+  body.with-scroll-bars-hidden {
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+    overflow-y: scroll !important;
+  }
+
+  html.react-remove-scroll-bar,
+  body.react-remove-scroll-bar,
+  .react-remove-scroll-bar {
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+    --removed-body-scroll-bar-size: 0px !important;
+  }
+
+  body.right-scroll-bar-position {
+    right: 0 !important;
   }
 }
 

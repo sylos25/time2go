@@ -18,7 +18,12 @@ export function ToggleEventStatusModal({ isOpen, onClose, event, onSave }: Toggl
 
   const isCurrentlyEnabled = event?.visibility || event?.estado
 
-  const handleToggle = async () => {
+  const handleApprove = async () => {
+    if (isCurrentlyEnabled) {
+      onClose()
+      return
+    }
+
     setIsSaving(true)
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
@@ -32,7 +37,7 @@ export function ToggleEventStatusModal({ isOpen, onClose, event, onSave }: Toggl
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          estado: !isCurrentlyEnabled,
+          estado: true,
         }),
       })
 
@@ -55,7 +60,7 @@ export function ToggleEventStatusModal({ isOpen, onClose, event, onSave }: Toggl
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Cambiar Estado del Evento</DialogTitle>
+          <DialogTitle>Aprobar Evento</DialogTitle>
         </DialogHeader>
 
         <div className="py-6">
@@ -85,8 +90,8 @@ export function ToggleEventStatusModal({ isOpen, onClose, event, onSave }: Toggl
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
                 {isCurrentlyEnabled
-                  ? "¿Deseas inhabilitar este evento? Los usuarios no podrán verlo ni comprar entradas."
-                  : "¿Deseas validar/habilitar este evento? Los usuarios podrán verlo y comprar entradas."}
+                  ? "Este evento ya está aprobado."
+                  : "¿Deseas aprobar este evento? El estado pasará de pendiente (FALSE) a aprobado (TRUE)."}
               </p>
             </div>
           </div>
@@ -97,19 +102,17 @@ export function ToggleEventStatusModal({ isOpen, onClose, event, onSave }: Toggl
             Cancelar
           </Button>
           <Button
-            onClick={handleToggle}
-            disabled={isSaving}
-            className={isCurrentlyEnabled ? "bg-red-600 hover:bg-red-700 text-white" : "bg-green-600 hover:bg-green-700 text-white"}
+            onClick={handleApprove}
+            disabled={isSaving || isCurrentlyEnabled}
+            className="bg-green-600 hover:bg-green-700 text-white"
           >
             {isSaving ? (
               <>
                 <Loader className="w-4 h-4 mr-2 animate-spin" />
-                {isCurrentlyEnabled ? "Inhabilitando..." : "Habilitando..."}
+                Aprobando...
               </>
-            ) : isCurrentlyEnabled ? (
-              "Inhabilitar Evento"
             ) : (
-              "Validar/Habilitar"
+              "Aprobar Evento"
             )}
           </Button>
         </DialogFooter>

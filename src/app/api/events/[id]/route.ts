@@ -1,8 +1,53 @@
 import { NextResponse } from "next/server";
 import { uploadImageBuffer } from "@/lib/document-storage";
 import pool from "@/lib/db";
+import { verifyToken } from "@/lib/jwt";
+import { parseCookies } from "@/lib/cookies";
 
 export const runtime = "nodejs";
+
+async function getAuthenticatedUser(req: Request, client: any) {
+  const authHeader = (req.headers.get("authorization") || "").trim();
+  let userId: string | null = null;
+
+  if (authHeader.startsWith("Bearer ")) {
+    try {
+      const t = authHeader.slice(7).trim();
+      const payload = verifyToken(t);
+      const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
+      if (payload && userIdFromToken) userId = String(userIdFromToken);
+    } catch (e) {
+      console.error("token verification failed", e);
+    }
+  }
+
+  if (!userId) {
+    const cookies = parseCookies(req.headers.get("cookie"));
+    const token = cookies["token"];
+    if (token) {
+      try {
+        const payload = verifyToken(token);
+        const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
+        if (payload && userIdFromToken) userId = String(userIdFromToken);
+      } catch (e) {
+        console.error("cookie token verification failed", e);
+      }
+    }
+  }
+
+  if (!userId) return null;
+
+  const roleRes = await client.query(
+    "SELECT id_usuario, id_rol FROM tabla_usuarios WHERE id_usuario = $1 LIMIT 1",
+    [userId]
+  );
+  if (!roleRes.rows || roleRes.rows.length === 0) return null;
+
+  return {
+    id_usuario: String(roleRes.rows[0].id_usuario),
+    id_rol: Number(roleRes.rows[0].id_rol),
+  };
+}
 
 export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
@@ -13,33 +58,19 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       return NextResponse.json({ ok: false, message: "Invalid event ID" }, { status: 400 });
     }
 
-    // Verify user owns the event or is admin
-    const authHeader = (req.headers.get("authorization") || "").trim();
-    let userId = "";
-    if (authHeader.startsWith("Bearer ")) {
-      try {
-        const { verifyToken } = await import("@/lib/jwt");
-        const t = authHeader.slice(7).trim();
-        const payload = verifyToken(t);
-        const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
-        if (payload && userIdFromToken) userId = String(userIdFromToken);
-      } catch (e) {
-        console.error("token verification failed", e);
-      }
-    }
-
-    if (!userId) {
+    const user = await getAuthenticatedUser(req, client);
+    if (!user) {
       return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
     }
 
-    // Check event exists and user owns it
-    const eventCheck = await client.query("SELECT id_usuario FROM tabla_eventos WHERE id_evento = $1", [eventId]);
-    if (!eventCheck.rows || eventCheck.rows.length === 0) {
-      return NextResponse.json({ ok: false, message: "Event not found" }, { status: 404 });
+    if (user.id_rol !== 4) {
+      return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
     }
 
-    if (String(eventCheck.rows[0].id_usuario) !== userId) {
-      return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
+    // Check event exists
+    const eventCheck = await client.query("SELECT id_evento FROM tabla_eventos WHERE id_evento = $1", [eventId]);
+    if (!eventCheck.rows || eventCheck.rows.length === 0) {
+      return NextResponse.json({ ok: false, message: "Event not found" }, { status: 404 });
     }
 
     const formData = await req.formData();
@@ -85,14 +116,16 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 
     // Get form fields
     const nombre_evento = (formData.get("nombre_evento") as string) || "";
+    const pulep_evento = ((formData.get("pulep_evento") as string) || "").trim() || null;
+    const responsable_evento = ((formData.get("responsable_evento") as string) || "").trim();
     const descripcion = (formData.get("descripcion") as string) || "";
+    const infoItemsRaw = (formData.get("informacion_adicional_items") as string) || "[]";
     const fecha_inicio = (formData.get("fecha_inicio") as string) || null;
     const fecha_fin = (formData.get("fecha_fin") as string) || null;
     const hora_inicio = (formData.get("hora_inicio") as string) || null;
     const hora_final = (formData.get("hora_final") as string) || null;
     const id_categoria_evento = Number(formData.get("id_categoria_evento") || 0);
     const id_tipo_evento = Number(formData.get("id_tipo_evento") || 0);
-    const id_municipio = Number(formData.get("id_municipio") || 0);
     const id_sitio = Number(formData.get("id_sitio") || 0);
     const telefono_1 = (formData.get("telefono_1") as string) || null;
     const telefono_2 = (formData.get("telefono_2") as string) || null;
@@ -101,12 +134,29 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     const costosRaw = formData.get("costos") as string | null;
     const tiposRaw = formData.get("tiposBoleteria") as string | null;
     const linksRaw = formData.get("linksBoleteria") as string | null;
+    const boletasRaw = formData.get("boletas") as string | null;
     const costos: string[] = costosRaw ? JSON.parse(costosRaw) : [];
     const tiposBoleteria: string[] = tiposRaw ? JSON.parse(tiposRaw) : [];
     const linksBoleteria: string[] = linksRaw ? JSON.parse(linksRaw) : [];
-    const fecha_desactivacion_raw = (formData.get("fecha_desactivacion") as string) || null;
-    const fecha_desactivacion = fecha_desactivacion_raw ? fecha_desactivacion_raw : null;
+    const boletas: Array<{ nombre_boleto?: string; precio_boleto?: string | number; servicio?: string | number }> = boletasRaw
+      ? JSON.parse(boletasRaw)
+      : [];
     const gratis_pago = String(formData.get("gratis_pago") || "false") === "true";
+    const reservar_anticipado = String(formData.get("reservar_anticipado") || "false") === "true";
+
+    const infoItemsParsed: Array<{ detalle: string; obligatorio?: boolean }> =
+      infoItemsRaw ? JSON.parse(infoItemsRaw) : [];
+    const infoItems = (Array.isArray(infoItemsParsed) ? infoItemsParsed : [])
+      .map((item) => ({
+        detalle: String(item?.detalle || "").trim(),
+        obligatorio: Boolean(item?.obligatorio),
+      }))
+      .filter((item) => item.detalle.length >= 5)
+      .slice(0, 20);
+
+    if (!responsable_evento || responsable_evento.length < 6) {
+      return NextResponse.json({ ok: false, message: "El responsable del evento es obligatorio y debe tener al menos 6 caracteres" }, { status: 400 });
+    }
 
     await client.query("BEGIN");
 
@@ -114,25 +164,27 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     await client.query(
       `UPDATE tabla_eventos SET 
         nombre_evento = $1,
-        descripcion = $2,
-        fecha_inicio = $3,
-        fecha_fin = $4,
-        hora_inicio = $5,
-        hora_final = $6,
-        id_categoria_evento = $7,
-        id_tipo_evento = $8,
-        id_municipio = $9,
-        id_sitio = $10,
-        telefono_1 = $11,
-        telefono_2 = $12,
-        cupo = $13,
-        dias_semana = $14,
-        fecha_desactivacion = $15,
+        pulep_evento = $2,
+        responsable_evento = $3,
+        descripcion = $4,
+        fecha_inicio = $5,
+        fecha_fin = $6,
+        hora_inicio = $7,
+        hora_final = $8,
+        id_categoria_evento = $9,
+        id_tipo_evento = $10,
+        id_sitio = $11,
+        telefono_1 = $12,
+        telefono_2 = $13,
+        cupo = $14,
+        reservar_anticipado = $15,
         gratis_pago = $16,
         fecha_actualizacion = CURRENT_TIMESTAMP
       WHERE id_evento = $17`,
       [
         nombre_evento,
+        pulep_evento,
+        responsable_evento,
         descripcion,
         fecha_inicio,
         fecha_fin,
@@ -140,17 +192,29 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
         hora_final,
         id_categoria_evento,
         id_tipo_evento,
-        id_municipio,
         id_sitio,
         telefono_1,
         telefono_2,
         cupo,
-        dias_semana,
-        fecha_desactivacion,
+        reservar_anticipado,
         gratis_pago,
         eventId,
       ]
     );
+
+    const detalleInformacionImportante = infoItems
+      .map((item, index) => `${index + 1}. ${item.detalle}`)
+      .join("\n");
+    const obligatorioInformacionImportante = infoItems.some((item) => item.obligatorio);
+
+    await client.query("DELETE FROM tabla_evento_informacion_importante WHERE id_evento = $1", [eventId]);
+    if (detalleInformacionImportante.length >= 5) {
+      await client.query(
+        `INSERT INTO tabla_evento_informacion_importante (id_evento, detalle, obligatorio)
+         VALUES ($1,$2,$3)`,
+        [eventId, detalleInformacionImportante, obligatorioInformacionImportante]
+      );
+    }
 
     // Delete images
     for (const imageId of imagesToDelete) {
@@ -193,13 +257,30 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 
     // Insert ticket values if paid
     if (gratis_pago) {
-      for (let i = 0; i < tiposBoleteria.length; i++) {
-        const nombreBoleto = tiposBoleteria[i];
-        const costoRaw = costos[i] || '';
+      if (Array.isArray(boletas) && boletas.length > 0) {
+        for (const boleta of boletas) {
+          const nombreBoleto = String(boleta?.nombre_boleto || "").trim();
+          if (!nombreBoleto) continue;
 
-        const precioBoleto = parseFloat(costoRaw.replace(/[^0-9.,-]/g, '').replace(',', '.')) || 0;
+          const precioRaw = String(boleta?.precio_boleto ?? "");
+          const servicioRaw = String(boleta?.servicio ?? "");
+          const precioBoleto = parseFloat(precioRaw.replace(/[^0-9.,-]/g, "").replace(",", ".")) || 0;
+          const servicioBoleto = parseFloat(servicioRaw.replace(/[^0-9.,-]/g, "").replace(",", ".")) || 0;
 
-        await client.query(`INSERT INTO tabla_boleteria (id_evento, nombre_boleto, precio_boleto) VALUES ($1,$2,$3)`, [eventId, nombreBoleto, precioBoleto]);
+          await client.query(
+            `INSERT INTO tabla_boleteria (id_evento, nombre_boleto, precio_boleto, servicio) VALUES ($1,$2,$3,$4)`,
+            [eventId, nombreBoleto, precioBoleto, servicioBoleto]
+          );
+        }
+      } else {
+        for (let i = 0; i < tiposBoleteria.length; i++) {
+          const nombreBoleto = tiposBoleteria[i];
+          const costoRaw = costos[i] || '';
+
+          const precioBoleto = parseFloat(costoRaw.replace(/[^0-9.,-]/g, '').replace(',', '.')) || 0;
+
+          await client.query(`INSERT INTO tabla_boleteria (id_evento, nombre_boleto, precio_boleto, servicio) VALUES ($1,$2,$3,$4)`, [eventId, nombreBoleto, precioBoleto, 0]);
+        }
       }
     }
 
@@ -231,6 +312,52 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     await client.query("ROLLBACK");
     console.error(err);
     return NextResponse.json({ ok: false, message: "Error updating event" }, { status: 500 });
+  } finally {
+    client.release();
+  }
+}
+
+export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
+  const eventId = Number(id);
+  const client = await pool.connect();
+  try {
+    if (!eventId) {
+      return NextResponse.json({ ok: false, message: "Invalid event ID" }, { status: 400 });
+    }
+
+    const user = await getAuthenticatedUser(req, client);
+    if (!user) {
+      return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
+    }
+
+    if (user.id_rol !== 4) {
+      return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
+    }
+
+    await client.query("BEGIN");
+
+    const exists = await client.query("SELECT id_evento FROM tabla_eventos WHERE id_evento = $1 LIMIT 1", [eventId]);
+    if (!exists.rows || exists.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return NextResponse.json({ ok: false, message: "Event not found" }, { status: 404 });
+    }
+
+    await client.query("DELETE FROM tabla_reserva_eventos WHERE id_evento = $1", [eventId]);
+    await client.query("DELETE FROM tabla_valoraciones WHERE id_evento = $1", [eventId]);
+    await client.query("DELETE FROM tabla_links WHERE id_evento = $1", [eventId]);
+    await client.query("DELETE FROM tabla_boleteria WHERE id_evento = $1", [eventId]);
+    await client.query("DELETE FROM tabla_documentos_eventos WHERE id_evento = $1", [eventId]);
+    await client.query("DELETE FROM tabla_imagenes_eventos WHERE id_evento = $1", [eventId]);
+    await client.query("DELETE FROM tabla_evento_informacion_importante WHERE id_evento = $1", [eventId]);
+    await client.query("DELETE FROM tabla_eventos WHERE id_evento = $1", [eventId]);
+
+    await client.query("COMMIT");
+    return NextResponse.json({ ok: true, message: "Evento eliminado correctamente" });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error(err);
+    return NextResponse.json({ ok: false, message: "Error deleting event" }, { status: 500 });
   } finally {
     client.release();
   }
