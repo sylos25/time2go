@@ -89,6 +89,7 @@ export async function GET(req: Request) {
          FROM tabla_reserva_eventos r
          INNER JOIN tabla_usuarios u ON r.id_usuario = u.id_usuario
          WHERE r.id_evento = $1
+           AND r.estado = TRUE
          ORDER BY r.fecha_reserva DESC`,
         [eventId]
       );
@@ -126,6 +127,7 @@ export async function GET(req: Request) {
          LIMIT 1
        ) img ON TRUE
        WHERE r.id_usuario = $1
+         AND r.estado = TRUE
          AND e.estado = TRUE
        ORDER BY r.fecha_reserva DESC`,
       [user.id_usuario]

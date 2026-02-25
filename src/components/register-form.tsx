@@ -166,7 +166,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
 
 // Función para manejar el control en el campo de email con validación de caracteres permitidos  
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
+    const value = e.target.value.toLowerCase()
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     handleInputChange("email", value)
     if (!emailRegex.test(value)) {
@@ -411,6 +411,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             value={formData.email}
             onChange={handleEmailChange}
             onBlur={() => handleBlur("email")}
+            autoCapitalize="none"
             className={`w-full border rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               (touchedFields.email && !formData.email) || emailError ? "border-red-500 ring-red-500" : "border-gray-300"
             }`}

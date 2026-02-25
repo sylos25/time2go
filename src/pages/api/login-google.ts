@@ -52,7 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const client = await pool.connect()
     try {
       const findQuery = `
-        SELECT id_usuario, id_publico, correo, nombres, validacion_correo, ig_google
+        SELECT id_usuario, id_publico, correo, nombres, validacion_correo, ig_google, estado
         FROM tabla_usuarios
         WHERE ig_google = $1 OR correo = $2
         LIMIT 1
@@ -62,6 +62,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       let user = existing.rows[0]
 
       if (user) {
+        if (user.estado === false) {
+          return res.status(403).json({
+            error: "Usuario baneado",
+            message: "Tu cuenta está baneada temporalmente. Contacta al administrador.",
+            banned: true,
+          })
+        }
+
         const updateQuery = `
           UPDATE tabla_usuarios
           SET ig_google = COALESCE(ig_google, $1),

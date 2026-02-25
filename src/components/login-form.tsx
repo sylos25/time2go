@@ -31,7 +31,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   useEffect(() => {
     const savedEmail = localStorage.getItem("rememberedEmail")
     if (savedEmail) {
-      setEmail(savedEmail)
+      setEmail(savedEmail.toLowerCase())
       setRememberMe(true)
     }
   }, [])
@@ -43,7 +43,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
 // Manejo de cambios en el campo de email
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
+    const value = e.target.value.toLowerCase()
     setEmail(value)
   }
 
@@ -158,6 +158,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           value={email}
           onChange={handleEmailChange}
           onBlur={() => handleBlur("email")}
+          autoCapitalize="none"
           className={`w-full border rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             touchedFields.email && !email ? "border-red-500 ring-red-500" : "border-gray-300"
           }`}

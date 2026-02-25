@@ -45,7 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const client = await pool.connect();
     try {
       const q = `
-        SELECT id_usuario, correo, nombres, contrasena_hash, validacion_correo
+        SELECT id_usuario, correo, nombres, contrasena_hash, validacion_correo, estado
         FROM tabla_usuarios
         WHERE correo = $1
         LIMIT 1
@@ -54,6 +54,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (result.rowCount === 0) return res.status(401).json({ message: "Credenciales inválidas" });
 
       const user = result.rows[0];
+
+      if (user.estado === false) {
+        return res.status(403).json({
+          error: "Usuario baneado",
+          message: "Tu cuenta está baneada temporalmente. Contacta al administrador.",
+          banned: true,
+        });
+      }
       
       // Verificar que el email ha sido validado
       if (!user.validacion_correo) {

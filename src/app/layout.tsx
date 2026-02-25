@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import CookieConsent from "@/components/cookie-consent"
 import { SessionMonitor } from "@/components/session-monitor"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,12 +32,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SessionMonitor />
         {children}
+        <ThemeToggle />
         <CookieConsent />
       </body>
     </html>

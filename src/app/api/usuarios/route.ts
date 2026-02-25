@@ -58,29 +58,28 @@ export async function GET(req: Request) {
       idx++;
     }
 
+    // En gestión de usuarios del dashboard solo se visualizan usuarios y promotores
+    whereClauses.push(`u.id_rol IN (1, 2)`)
+
     const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
     const res = await pool.query(`
       SELECT
         u.id_usuario,
+        r.nombre_rol AS id_rol,
+        u.ig_google,
         u.nombres,
         u.apellidos,
-        p.nombre_pais AS pais,
         u.telefono,
         u.validacion_telefono,
         u.correo,
         u.validacion_correo,
-        u.estado,
-        u.id_rol,
-        r.nombre_rol,
-        u.fecha_registro,
-        u.fecha_desactivacion,
-        u.fecha_actualizacion
+        u.terminos_condiciones,
+        u.estado
       FROM tabla_usuarios u
-      LEFT JOIN tabla_paises p ON u.id_pais = p.id_pais
       LEFT JOIN tabla_roles r ON u.id_rol = r.id_rol
       ${whereSql}
-      ORDER BY u.nombres
+      ORDER BY u.id_usuario DESC
       LIMIT 500
     `, params);
 

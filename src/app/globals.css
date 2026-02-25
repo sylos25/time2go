@@ -79,24 +79,24 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --background: oklch(0.23 0.05 150);
+  --foreground: oklch(0.96 0.01 140);
+  --card: oklch(0.28 0.05 150);
+  --card-foreground: oklch(0.96 0.01 140);
+  --popover: oklch(0.28 0.05 150);
+  --popover-foreground: oklch(0.96 0.01 140);
+  --primary: oklch(0.59 0.23 350);
+  --primary-foreground: oklch(0.98 0.01 20);
+  --secondary: oklch(0.33 0.05 150);
+  --secondary-foreground: oklch(0.95 0.01 140);
+  --muted: oklch(0.31 0.04 150);
+  --muted-foreground: oklch(0.82 0.02 145);
+  --accent: oklch(0.35 0.05 150);
+  --accent-foreground: oklch(0.97 0.01 140);
+  --destructive: oklch(0.66 0.24 25);
+  --border: oklch(0.46 0.06 150 / 35%);
+  --input: oklch(0.42 0.06 150 / 45%);
+  --ring: oklch(0.61 0.22 350);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -120,8 +120,7 @@
     @apply bg-background text-foreground;
   }
   html {
-    overflow-y: scroll;
-    scrollbar-gutter: stable;
+    overflow-y: auto;
   }
 
   body {
@@ -132,14 +131,12 @@
   body[data-scroll-locked] {
     margin-right: 0 !important;
     padding-right: 0 !important;
-    overflow-y: scroll !important;
   }
 
   html.with-scroll-bars-hidden,
   body.with-scroll-bars-hidden {
     margin-right: 0 !important;
     padding-right: 0 !important;
-    overflow-y: scroll !important;
   }
 
   html.react-remove-scroll-bar,
@@ -152,6 +149,64 @@
 
   body.right-scroll-bar-position {
     right: 0 !important;
+  }
+}
+
+@layer utilities {
+  .dark .bg-green-800,
+  .dark .bg-green-700,
+  .dark .bg-green-600,
+  .dark .bg-lime-600,
+  .dark .bg-lime-500 {
+    background-color: #be185d !important;
+  }
+
+  .dark .hover\:bg-green-800:hover,
+  .dark .hover\:bg-green-700:hover,
+  .dark .hover\:bg-green-600:hover,
+  .dark .hover\:bg-lime-600:hover,
+  .dark .hover\:bg-lime-500:hover {
+    background-color: #9f1239 !important;
+  }
+
+  .dark .border-green-700,
+  .dark .border-green-600,
+  .dark .border-lime-600,
+  .dark .border-lime-500 {
+    border-color: #be185d !important;
+  }
+
+  .dark .text-green-700,
+  .dark .text-green-600,
+  .dark .text-lime-600,
+  .dark .text-lime-500 {
+    color: #f0abfc !important;
+  }
+
+  .dark .from-green-800,
+  .dark .from-green-700,
+  .dark .from-green-600,
+  .dark .from-lime-600,
+  .dark .from-lime-500 {
+    --tw-gradient-from: #c026d3 var(--tw-gradient-from-position) !important;
+    --tw-gradient-to: rgb(192 38 211 / 0) var(--tw-gradient-to-position) !important;
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+  }
+
+  .dark .to-green-800,
+  .dark .to-green-700,
+  .dark .to-green-600,
+  .dark .to-lime-600,
+  .dark .to-lime-500 {
+    --tw-gradient-to: #dc2626 var(--tw-gradient-to-position) !important;
+  }
+
+  .dark .via-green-700,
+  .dark .via-green-600,
+  .dark .via-lime-600,
+  .dark .via-lime-500 {
+    --tw-gradient-via: #e11d48 var(--tw-gradient-via-position) !important;
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to) !important;
   }
 }
 

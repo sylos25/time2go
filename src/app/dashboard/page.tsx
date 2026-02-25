@@ -10,7 +10,6 @@ import {
   Bar,
   LineChart,
   Line,
-  
   PieChart,
   Pie,
   Cell,
@@ -79,6 +78,11 @@ interface Event {
   documentos?: any[]
 }
 
+interface EventCategory {
+  id_categoria_evento: number
+  nombre: string
+}
+
 interface StatCard {
   title: string
   value: number | string
@@ -103,6 +107,16 @@ export default function EventDashboard() {
   const [canManageEvents, setCanManageEvents] = useState(false)
   const [users, setUsers] = useState<any[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
+  const [updatingUserId, setUpdatingUserId] = useState<number | null>(null)
+  const [banModalOpen, setBanModalOpen] = useState(false)
+  const [banSubmitting, setBanSubmitting] = useState(false)
+  const [banForm, setBanForm] = useState({
+    id_usuario: "",
+    motivo_ban: "",
+    inicio_ban: "",
+    fin_ban: "",
+    responsable: "",
+  })
   const [searchUsers, setSearchUsers] = useState('')
   const [editingEvent, setEditingEvent] = useState<any>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
@@ -118,12 +132,13 @@ export default function EventDashboard() {
     { id: 5, text: "Planificar próximo festival", completed: false },
   ])
   const [stats, setStats] = useState<StatCard[]>([
-    { title: "Eventos Activos", value: 0, icon: Calendar, color: "from-blue-500 to-blue-600" },
-    { title: "Total Asistentes", value: 0, icon: Users, color: "from-green-500 to-emerald-600" },
-    { title: "Vistas del Mes", value: 0, icon: Eye, color: "from-purple-500 to-purple-600" },
-    { title: "Usuarios Activos", value: 0, icon: Users, color: "from-orange-500 to-red-500" },
+    { title: "Eventos Activos", value: 0, icon: Calendar, color: "from-fuchsia-500 to-red-700" },
+    { title: "Eventos Inactivos", value: 0, icon: EyeOff, color: "from-gray-500 to-gray-600" },
+    { title: "Usuarios Activos (Rol 1)", value: 0, icon: Users, color: "from-lime-500 to-green-700" },
+    { title: "Usuarios Baneados", value: 0, icon: Users, color: "from-gray-500 to-gray-600" },
   ])
   const [events, setEvents] = useState<Event[]>([])
+  const [eventCategories, setEventCategories] = useState<EventCategory[]>([])
 
   const refreshEvents = async () => {
     try {
@@ -211,6 +226,19 @@ export default function EventDashboard() {
         }
         if (!canceled) setCanManageEvents(hasManageEventsPermission)
 
+        // Fetch categorías de eventos desde base de datos
+        try {
+          const categoriesRes = await fetch('/api/categoria_evento', { headers, credentials: 'include' })
+          if (categoriesRes.ok) {
+            const categoriesData = await categoriesRes.json()
+            if (!canceled && Array.isArray(categoriesData)) {
+              setEventCategories(categoriesData)
+            }
+          }
+        } catch (error) {
+          console.error('Error cargando categorías de eventos', error)
+        }
+
         // Fetch events (all only for users with gestión de eventos access)
         const eventsUrl = hasManageEventsPermission ? '/api/events?includeAll=true' : '/api/events'
         const eventsRes = await fetch(eventsUrl, { headers, credentials: 'include' })
@@ -234,9 +262,11 @@ export default function EventDashboard() {
             creatorId: ev.creador?.id_usuario || null,
             documentos: ev.documentos || [],
           }))
-          if (!canceled) setEvents(mapped)
+          if (!canceled) {
+            setEvents(mapped)
+          }
 
-          // Update the Eventos Activos stat based on current server data
+          // Update dashboard stats based on current server data
           try {
             const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
             const headers: any = {}
@@ -247,7 +277,9 @@ export default function EventDashboard() {
               if (!canceled && statsData.ok) {
                 setStats((prev) => prev.map((s) => {
                   if (s.title === 'Eventos Activos') return { ...s, value: statsData.eventsActive }
-                  if (s.title === 'Usuarios Activos') return { ...s, value: statsData.usersActive }
+                  if (s.title === 'Eventos Inactivos') return { ...s, value: statsData.eventsInactive }
+                  if (s.title === 'Usuarios Activos (Rol 1)') return { ...s, value: statsData.usersRole1Active }
+                  if (s.title === 'Usuarios Baneados') return { ...s, value: statsData.usersBanned }
                   return s
                 }))
               }
@@ -276,7 +308,7 @@ export default function EventDashboard() {
         const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
         const headers: any = {}
         if (token) headers['Authorization'] = `Bearer ${token}`
-        const res = await fetch('/api/usuarios', { headers })
+        const res = await fetch('/api/usuarios?roles=1,2', { headers })
         if (res.ok) {
           const data = await res.json()
           if (!cancelled) setUsers(data.usuarios || [])
@@ -290,6 +322,128 @@ export default function EventDashboard() {
     loadUsers()
     return () => { cancelled = true }
   }, [activeTab])
+
+  const refreshUsers = async () => {
+    setLoadingUsers(true)
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+      const headers: any = {}
+      if (token) headers['Authorization'] = `Bearer ${token}`
+      const res = await fetch('/api/usuarios?roles=1,2', { headers })
+      if (res.ok) {
+        const data = await res.json()
+        setUsers(data.usuarios || [])
+      }
+    } catch (err) {
+      console.error('Error fetching users', err)
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
+
+  const formatDateTimeLocal = (date: Date) => {
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+    return local.toISOString().slice(0, 16)
+  }
+
+  const openBanModal = (idUsuario: number) => {
+    const inicio = new Date()
+    const fin = new Date(inicio.getTime() + 7 * 24 * 60 * 60 * 1000)
+    setBanForm({
+      id_usuario: String(idUsuario),
+      motivo_ban: "",
+      inicio_ban: formatDateTimeLocal(inicio),
+      fin_ban: formatDateTimeLocal(fin),
+      responsable: String(meUser?.id_usuario || ""),
+    })
+    setBanModalOpen(true)
+  }
+
+  const submitBan = async () => {
+    const idUsuario = Number(banForm.id_usuario)
+    const responsable = Number(banForm.responsable)
+
+    if (!Number.isFinite(idUsuario) || idUsuario <= 0) {
+      alert('ID de usuario inválido')
+      return
+    }
+    if (!banForm.motivo_ban || banForm.motivo_ban.trim().length < 10) {
+      alert('El motivo debe tener mínimo 10 caracteres')
+      return
+    }
+    if (!banForm.inicio_ban || !banForm.fin_ban) {
+      alert('Debes diligenciar fecha de inicio y fecha final')
+      return
+    }
+    if (!Number.isFinite(responsable) || responsable <= 0) {
+      alert('Responsable inválido')
+      return
+    }
+
+    setBanSubmitting(true)
+    setUpdatingUserId(idUsuario)
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+      const headers: any = { 'Content-Type': 'application/json' }
+      if (token) headers['Authorization'] = `Bearer ${token}`
+
+      const res = await fetch(`/api/usuarios/${encodeURIComponent(String(idUsuario))}/ban`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({
+          action: 'ban',
+          id_usuario: idUsuario,
+          motivo_ban: banForm.motivo_ban.trim(),
+          inicio_ban: banForm.inicio_ban,
+          fin_ban: banForm.fin_ban,
+          responsable,
+        }),
+      })
+
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data?.ok) {
+        alert(data?.message || 'No se pudo bannear el usuario')
+        return
+      }
+
+      setUsers((prev) => prev.map((item) => (item.id_usuario === idUsuario ? { ...item, estado: false } : item)))
+      setBanModalOpen(false)
+    } catch (error) {
+      console.error('Error banneando usuario', error)
+      alert('No se pudo bannear el usuario')
+    } finally {
+      setBanSubmitting(false)
+      setUpdatingUserId(null)
+    }
+  }
+
+  const unbanUser = async (idUsuario: number) => {
+    setUpdatingUserId(idUsuario)
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+      const headers: any = { 'Content-Type': 'application/json' }
+      if (token) headers['Authorization'] = `Bearer ${token}`
+
+      const res = await fetch(`/api/usuarios/${encodeURIComponent(String(idUsuario))}/ban`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ action: 'unban' }),
+      })
+
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data?.ok) {
+        alert(data?.message || 'No se pudo desbannear el usuario')
+        return
+      }
+
+      setUsers((prev) => prev.map((item) => (item.id_usuario === idUsuario ? { ...item, estado: true } : item)))
+    } catch (error) {
+      console.error('Error desbanneando usuario', error)
+      alert('No se pudo desbannear el usuario')
+    } finally {
+      setUpdatingUserId(null)
+    }
+  }
 
   if (authorized === null) {
     return (
@@ -700,10 +854,11 @@ export default function EventDashboard() {
                     className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   >
                     <option value="all">Todas las categorías</option>
-                    <option value="Música">Música</option>
-                    <option value="Teatro">Teatro</option>
-                    <option value="Deportes">Deportes</option>
-                    <option value="Arte">Arte</option>
+                    {eventCategories.map((category) => (
+                      <option key={category.id_categoria_evento} value={category.nombre}>
+                        {category.nombre}
+                      </option>
+                    ))}
                   </select>
 
                 </div>
@@ -793,9 +948,6 @@ export default function EventDashboard() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-500 rounded-lg flex items-center justify-center">
-                                <Calendar className="w-6 h-6 text-white" />
-                              </div>
                               <div>
                                 <p className="font-semibold text-gray-900">{event.name}</p>
                                 <p className="text-sm text-gray-500">{event.category}</p>
@@ -805,18 +957,15 @@ export default function EventDashboard() {
                           <td className="px-6 py-4">
                             <div className="flex flex-col gap-1">
                               <div className="flex items-center gap-1.5 text-sm text-gray-700">
-                                <Calendar className="w-4 h-4 text-gray-400" />
                                 {formatEventDate(event.date)}
                               </div>
                               <div className="flex items-center gap-1.5 text-sm text-gray-500">
-                                <Clock className="w-4 h-4 text-gray-400" />
                                 {formatEventTime(event.time)}
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-1.5 text-sm text-gray-700">
-                              <MapPin className="w-4 h-4 text-gray-400" />
                               {event.location}
                             </div>
                           </td>
@@ -952,23 +1101,7 @@ export default function EventDashboard() {
                 <CardContent className="w-full pl-1 pr-30 py-1.5">
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={async () => {
-                      setLoadingUsers(true)
-                      try {
-                        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-                        const headers: any = {}
-                        if (token) headers['Authorization'] = `Bearer ${token}`
-                        const res = await fetch('/api/usuarios?estado=true', { headers })
-                        if (res.ok) {
-                          const data = await res.json()
-                          setUsers(data.usuarios || [])
-                        }
-                      } catch (err) {
-                        console.error('Error fetching users', err)
-                      } finally {
-                        setLoadingUsers(false)
-                      }
-                    }}
+                    onClick={refreshUsers}
                     className="px-4 py-1.5 bg-green-800 border rounded-lg shadow-sm hover:bg-lime-600 text-white cursor-pointer transition-colors"
                   >
                     Actualizar
@@ -982,49 +1115,56 @@ export default function EventDashboard() {
                   <table className="table-fixed w-full border-collapse border border-green-600">
                     <thead className="bg-lime-100 border-b border-green-600">
                       <tr>
-                        <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Documento</th>
-                        <th className="w-42 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Tipo Documento</th>
+                        <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">ID Usuario</th>
+                        <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">ID Rol</th>
+                        <th className="w-36 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">IG Google</th>
                         <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Nombres</th>
                         <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Apellidos</th>
-                        <th className="w-30 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">País</th>
                         <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Teléfono</th>
                         <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Tel. Validado</th>
                         <th className="w-80 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Correo</th>
                         <th className="w-45 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Correo Validado</th>
+                        <th className="w-56 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Términos y Condiciones</th>
                         <th className="w-26 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Estado</th>
-                        <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Rol</th>
-                        <th className="w-50 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Fecha Registro</th>
-                        <th className="w-50 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Fecha Desactivación</th>
-                        <th className="w-50 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Fecha Actualización</th>
-                        <th className="w-28 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
+                        <th className="w-56 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {users
                         .filter(u => {
                           if (!searchUsers) return true
-                          const hay = `${u.id_usuario} ${u.nombres} ${u.apellidos} ${u.correo} ${u.pais} ${u.rol}`.toLowerCase()
+                          const hay = `${u.id_usuario} ${u.id_rol} ${u.ig_google} ${u.nombres} ${u.apellidos} ${u.telefono} ${u.correo}`.toLowerCase()
                           return hay.includes(searchUsers.toLowerCase())
                         })
                         .map((u) => (
                           <tr key={u.id_usuario} className="hover:bg-gray-50 transition-colors">
                             <td className="px-6 py-4 text-center text-sm text-gray-700">{u.id_usuario}</td>
-                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.tipo_documento}</td>
+                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.id_rol || '-'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.ig_google ? 'Sí' : 'No'}</td>
                             <td className="px-6 py-4 text-center text-sm text-gray-900">{u.nombres}</td>
                             <td className="px-6 py-4 text-center text-sm text-gray-900">{u.apellidos}</td>
-                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.pais || '-'}</td>
                             <td className="px-6 py-4 text-center text-sm text-gray-700">{u.telefono || '-'}</td>
                             <td className="px-6 py-4 text-center text-sm text-gray-700">{u.validacion_telefono ? 'Sí' : 'No'}</td>
                             <td className="px-6 py-4 text-center text-sm text-gray-700">{u.correo}</td>
                             <td className="px-6 py-4 text-center text-sm text-gray-700">{u.validacion_correo ? 'Sí' : 'No'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.terminos_condiciones ? 'Sí' : 'No'}</td>
                             <td className="px-6 py-4 text-center text-sm text-gray-700">{u.estado ? 'Activo' : 'Inactivo'}</td>
-                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.rol || '-'}</td>
-                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.fecha_registro ? new Date(u.fecha_registro).toLocaleString() : '-'}</td>
-                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.fecha_desactivacion ? new Date(u.fecha_desactivacion).toLocaleString() : '-'}</td>
-                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.fecha_actualizacion ? new Date(u.fecha_actualizacion).toLocaleString() : '-'}</td>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-2">
-                                <button className="px-3 py-1 bg-white border border-gray-200 rounded-lg">Ver</button>
+                                <button
+                                  onClick={() => openBanModal(u.id_usuario)}
+                                  disabled={updatingUserId === u.id_usuario || !u.estado}
+                                  className="px-3 py-1 rounded-lg text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {updatingUserId === u.id_usuario ? 'Procesando...' : 'Bannear'}
+                                </button>
+                                <button
+                                  onClick={() => unbanUser(u.id_usuario)}
+                                  disabled={updatingUserId === u.id_usuario || u.estado}
+                                  className="px-3 py-1 rounded-lg text-white bg-green-700 hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {updatingUserId === u.id_usuario ? 'Procesando...' : 'Desbannear'}
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -1055,6 +1195,88 @@ export default function EventDashboard() {
             </div>
           )}
         </main>
+
+        <Dialog open={banModalOpen} onOpenChange={setBanModalOpen}>
+          <DialogContent className="max-w-lg w-full">
+            <DialogHeader>
+              <DialogTitle>Registrar Ban de Usuario</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">ID Usuario</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={banForm.id_usuario}
+                  onChange={(e) => setBanForm((prev) => ({ ...prev, id_usuario: e.target.value.replace(/\D/g, '') }))}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  placeholder="ID del usuario a bannear"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Motivo del ban</label>
+                <textarea
+                  value={banForm.motivo_ban}
+                  onChange={(e) => setBanForm((prev) => ({ ...prev, motivo_ban: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 min-h-24"
+                  placeholder="Describe el motivo (mínimo 10 caracteres)"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de inicio</label>
+                  <input
+                    type="datetime-local"
+                    value={banForm.inicio_ban}
+                    onChange={(e) => setBanForm((prev) => ({ ...prev, inicio_ban: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha final</label>
+                  <input
+                    type="datetime-local"
+                    value={banForm.fin_ban}
+                    onChange={(e) => setBanForm((prev) => ({ ...prev, fin_ban: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Responsable</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={banForm.responsable}
+                  onChange={(e) => setBanForm((prev) => ({ ...prev, responsable: e.target.value.replace(/\D/g, '') }))}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  placeholder="ID del usuario responsable"
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setBanModalOpen(false)}
+                disabled={banSubmitting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700 text-white"
+                onClick={submitBan}
+                disabled={banSubmitting}
+              >
+                {banSubmitting ? 'Guardando...' : 'Confirmar Ban'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Modales */}
         {editingEvent && (

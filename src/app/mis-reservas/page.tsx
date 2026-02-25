@@ -13,6 +13,59 @@ export default function MisReservasPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reservas, setReservas] = useState<any[]>([]);
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
+
+  const getEventStartDate = (reserva: any) => {
+    if (!reserva?.fecha_inicio || !reserva?.hora_inicio) return null;
+    const datePart = String(reserva.fecha_inicio).slice(0, 10);
+    const timePart = String(reserva.hora_inicio).slice(0, 8);
+    const dt = new Date(`${datePart}T${timePart}`);
+    return Number.isNaN(dt.getTime()) ? null : dt;
+  };
+
+  const canCancelReservation = (reserva: any) => {
+    const start = getEventStartDate(reserva);
+    if (!start) return false;
+    const diffMs = start.getTime() - Date.now();
+    return diffMs >= 12 * 60 * 60 * 1000;
+  };
+
+  const handleCancelReservation = async (reserva: any) => {
+    const reservaId = Number(reserva?.id_reserva_evento || 0);
+    if (!reservaId) return;
+
+    if (!canCancelReservation(reserva)) {
+      setError("Solo puedes cancelar la reserva hasta 12 horas antes del inicio del evento");
+      return;
+    }
+
+    const confirmed = window.confirm("¿Seguro que deseas cancelar esta reserva?");
+    if (!confirmed) return;
+
+    try {
+      setCancellingId(reservaId);
+      setError(null);
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+      const res = await fetch(`/api/reservas/${encodeURIComponent(String(reservaId))}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      });
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json?.ok) {
+        setError(String(json?.message || "No se pudo cancelar la reserva"));
+        return;
+      }
+
+      setReservas((prev) => prev.filter((item) => Number(item.id_reserva_evento) !== reservaId));
+    } catch {
+      setError("Error al cancelar la reserva");
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -124,14 +177,34 @@ export default function MisReservasPage() {
                     </div>
                   </div>
 
-                  <div className="pt-2 flex gap-2">
+                  <div className="pt-2 grid grid-cols-2 gap-2">
                     <Button
+                      size="sm"
                       className="w-full"
-                      onClick={() => router.push(`/eventos/${reserva.id_evento}`)}
+                      onClick={() => router.push(`/mis-reservas/${reserva.id_reserva_evento}`)}
                     >
-                      Ver evento
+                      Ver reserva
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="w-full"
+                      disabled={cancellingId === reserva.id_reserva_evento || !canCancelReservation(reserva)}
+                      onClick={() => handleCancelReservation(reserva)}
+                      title={
+                        canCancelReservation(reserva)
+                          ? "Cancelar reserva"
+                          : "Solo puedes cancelar hasta 12 horas antes del evento"
+                      }
+                    >
+                      {cancellingId === reserva.id_reserva_evento ? "Cancelando..." : "Cancelar reserva"}
                     </Button>
                   </div>
+                  {!canCancelReservation(reserva) && (
+                    <p className="text-xs text-amber-700">
+                      La cancelación se permite únicamente hasta 12 horas antes del inicio.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             ))}
