@@ -15,26 +15,26 @@ import "swiper/css/pagination"
 
 const featuredEvents = [
   // Carrusel 1 - Música (6 eventos)
-  { id: 1, title: "Festival de Jazz Internacional", description: "Una noche mágica con los mejores artistas de jazz", date: "15 Abril", location: "Teatro Nacional", attendees: 1250, price: 45, image: "/images/img9.jpg?height=200&width=300", category: "Música", rating: 4.8 },
-  { id: 2, title: "Concierto de Rock Alternativo", description: "Las mejores bandas emergentes en un solo escenario", date: "18 Abril", location: "Auditorio Central", attendees: 2500, price: 35, image: "/images/img9.jpg?height=200&width=300", category: "Música", rating: 4.7 },
-  { id: 3, title: "Festival Electrónica", description: "Los mejores DJs internacionales", date: "22 Abril", location: "Plaza de Eventos", attendees: 3000, price: 50, image: "/images/img9.jpg?height=200&width=300.jpg", category: "Música", rating: 4.9 },
-  { id: 4, title: "Noche de Salsa", description: "Baile y música latina toda la noche", date: "25 Abril", location: "Club Latino", attendees: 800, price: 20, image: "/images/img9.jpg?height=200&width=300", category: "Música", rating: 4.6 },
-  { id: 13, title: "Concierto Sinfónico", description: "La orquesta filarmónica presenta clásicos inmortales", date: "28 Abril", location: "Palacio de la Música", attendees: 1800, price: 55, image: "/images/img9.jpg?height=200&width=300", category: "Música", rating: 4.9 },
-  { id: 14, title: "Festival de Reggaeton", description: "Los artistas más populares del género urbano", date: "1 Mayo", location: "Estadio Nacional", attendees: 5000, price: 65, image: "/images/img9.jpg?height=200&width=300", category: "Música", rating: 4.7 },
+  { id: 1,  title: "Festival de Jazz Internacional",  description: "Una noche mágica con los mejores artistas de jazz",          date: "15 Abril", location: "Teatro Nacional",      attendees: 1250, price: 45, image: "/images/img9.jpg",  category: "Música",      rating: 4.8 },
+  { id: 2,  title: "Concierto de Rock Alternativo",   description: "Las mejores bandas emergentes en un solo escenario",        date: "18 Abril", location: "Auditorio Central",    attendees: 2500, price: 35, image: "/images/img9.jpg",  category: "Música",      rating: 4.7 },
+  { id: 3,  title: "Festival Electrónica",            description: "Los mejores DJs internacionales",                           date: "22 Abril", location: "Plaza de Eventos",     attendees: 3000, price: 50, image: "/images/img9.jpg",  category: "Música",      rating: 4.9 },
+  { id: 4,  title: "Noche de Salsa",                  description: "Baile y música latina toda la noche",                       date: "25 Abril", location: "Club Latino",          attendees: 800,  price: 20, image: "/images/img9.jpg",  category: "Música",      rating: 4.6 },
+  { id: 13, title: "Concierto Sinfónico",             description: "La orquesta filarmónica presenta clásicos inmortales",      date: "28 Abril", location: "Palacio de la Música", attendees: 1800, price: 55, image: "/images/img9.jpg",  category: "Música",      rating: 4.9 },
+  { id: 14, title: "Festival de Reggaeton",           description: "Los artistas más populares del género urbano",              date: "1 Mayo",   location: "Estadio Nacional",     attendees: 5000, price: 65, image: "/images/img9.jpg",  category: "Música",      rating: 4.7 },
   // Carrusel 2 - Arte y Cultura (6 eventos)
-  { id: 5, title: "Exposición de Arte Moderno", description: "Obras contemporáneas de artistas reconocidos", date: "20 Abril", location: "Museo de Arte", attendees: 800, price: 15, image: "/images/img10.jpg?height=200&width=300", category: "Arte", rating: 4.6 },
-  { id: 6, title: "Festival de Cine Independiente", description: "Cortometrajes y documentales exclusivos", date: "23 Abril", location: "Cinemateca Nacional", attendees: 600, price: 18, image: "/images/img10.jpg?height=200&width=300", category: "Cultura", rating: 4.7 },
-  { id: 7, title: "Arte y Cultura Urbana", description: "Expresiones artísticas callejeras", date: "27 Abril", location: "Distrito Creativo", attendees: 1500, price: 10, image: "/images/img10.jpg?height=200&width=300", category: "Arte", rating: 4.8 },
-  { id: 8, title: "Feria de Artesanías", description: "Lo mejor del arte tradicional local", date: "29 Abril", location: "Plaza Central", attendees: 2000, price: 5, image: "/images/img10.jpg?height=200&width=300", category: "Cultura", rating: 4.5 },
-  { id: 15, title: "Teatro Contemporáneo", description: "Obras vanguardistas de dramaturgos locales", date: "3 Mayo", location: "Teatro Municipal", attendees: 450, price: 30, image: "/images/img10.jpg?height=200&width=300", category: "Cultura", rating: 4.8 },
-  { id: 16, title: "Noche de Poesía", description: "Recitales y spoken word de poetas emergentes", date: "5 Mayo", location: "Café Literario", attendees: 200, price: 12, image: "/images/img10.jpg?height=200&width=300", category: "Cultura", rating: 4.6 },
+  { id: 5,  title: "Exposición de Arte Moderno",      description: "Obras contemporáneas de artistas reconocidos",             date: "20 Abril", location: "Museo de Arte",        attendees: 800,  price: 15, image: "/images/img10.jpg", category: "Arte",        rating: 4.6 },
+  { id: 6,  title: "Festival de Cine Independiente",  description: "Cortometrajes y documentales exclusivos",                  date: "23 Abril", location: "Cinemateca Nacional",  attendees: 600,  price: 18, image: "/images/img10.jpg", category: "Cultura",     rating: 4.7 },
+  { id: 7,  title: "Arte y Cultura Urbana",           description: "Expresiones artísticas callejeras",                        date: "27 Abril", location: "Distrito Creativo",    attendees: 1500, price: 10, image: "/images/img10.jpg", category: "Arte",        rating: 4.8 },
+  { id: 8,  title: "Feria de Artesanías",             description: "Lo mejor del arte tradicional local",                      date: "29 Abril", location: "Plaza Central",        attendees: 2000, price: 5,  image: "/images/img10.jpg", category: "Cultura",     rating: 4.5 },
+  { id: 15, title: "Teatro Contemporáneo",            description: "Obras vanguardistas de dramaturgos locales",               date: "3 Mayo",   location: "Teatro Municipal",     attendees: 450,  price: 30, image: "/images/img10.jpg", category: "Cultura",     rating: 4.8 },
+  { id: 16, title: "Noche de Poesía",                 description: "Recitales y spoken word de poetas emergentes",             date: "5 Mayo",   location: "Café Literario",       attendees: 200,  price: 12, image: "/images/img10.jpg", category: "Cultura",     rating: 4.6 },
   // Carrusel 3 - Gastronomía (6 eventos)
-  { id: 9, title: "Festival Gastronómico", description: "Sabores del mundo en un solo lugar", date: "25 Abril", location: "Plaza Central", attendees: 2000, price: 25, image: "/images/img8.jpg?height=200&width=300", category: "Gastronomía", rating: 4.9 },
-  { id: 10, title: "Noche de Vinos", description: "Cata de vinos premium con sommelier", date: "28 Abril", location: "Bodega del Centro", attendees: 150, price: 60, image: "/images/img8.jpg?height=200&width=300", category: "Gastronomía", rating: 4.8 },
-  { id: 11, title: "Mercado Gourmet", description: "Productos artesanales y especialidades", date: "30 Abril", location: "Mercado Municipal", attendees: 1800, price: 12, image: "/images/img8.jpg?height=200&width=300", category: "Gastronomía", rating: 4.7 },
-  { id: 12, title: "Festival de Street Food", description: "Los mejores food trucks de la ciudad", date: "2 Mayo", location: "Parque Central", attendees: 2500, price: 15, image: "/images/img8.jpg?height=200&width=300", category: "Gastronomía", rating: 4.8 },
-  { id: 17, title: "Masterclass de Cocina", description: "Aprende técnicas de chefs internacionales", date: "7 Mayo", location: "Escuela Culinaria", attendees: 100, price: 80, image: "/images/img8.jpg?height=200&width=300", category: "Gastronomía", rating: 4.9 },
-  { id: 18, title: "Festival de Cerveza Artesanal", description: "Las mejores cervecerías locales en un evento", date: "10 Mayo", location: "Jardín Cervecero", attendees: 3000, price: 35, image: "/images/img8.jpg?height=200&width=300.jpg", category:"Gastronomía" , rating :4.7 },
+  { id: 9,  title: "Festival Gastronómico",           description: "Sabores del mundo en un solo lugar",                       date: "25 Abril", location: "Plaza Central",        attendees: 2000, price: 25, image: "/images/img8.jpg",  category: "Gastronomía", rating: 4.9 },
+  { id: 10, title: "Noche de Vinos",                  description: "Cata de vinos premium con sommelier",                      date: "28 Abril", location: "Bodega del Centro",    attendees: 150,  price: 60, image: "/images/img8.jpg",  category: "Gastronomía", rating: 4.8 },
+  { id: 11, title: "Mercado Gourmet",                 description: "Productos artesanales y especialidades",                   date: "30 Abril", location: "Mercado Municipal",    attendees: 1800, price: 12, image: "/images/img8.jpg",  category: "Gastronomía", rating: 4.7 },
+  { id: 12, title: "Festival de Street Food",         description: "Los mejores food trucks de la ciudad",                     date: "2 Mayo",   location: "Parque Central",       attendees: 2500, price: 15, image: "/images/img8.jpg",  category: "Gastronomía", rating: 4.8 },
+  { id: 17, title: "Masterclass de Cocina",           description: "Aprende técnicas de chefs internacionales",               date: "7 Mayo",   location: "Escuela Culinaria",    attendees: 100,  price: 80, image: "/images/img8.jpg",  category: "Gastronomía", rating: 4.9 },
+  { id: 18, title: "Festival de Cerveza Artesanal",   description: "Las mejores cervecerías locales en un evento",            date: "10 Mayo",  location: "Jardín Cervecero",     attendees: 3000, price: 35, image: "/images/img8.jpg",  category: "Gastronomía", rating: 4.7 },
 ]
 
 const carousel1 = featuredEvents.slice(0, 6)
@@ -57,9 +57,11 @@ export function EventsPreview() {
   const EventCard = ({ event }: { event: (typeof featuredEvents)[0] }) => (
     <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-white/80 backdrop-blur-sm border-white/50 overflow-hidden h-full rounded-sm">
       <div className="relative">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={event.image || "/placeholder.svg"}
+          src={event.image}
           alt={event.title}
+          loading="lazy"
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <Badge className="absolute top-3 left-3 bg-gradient-to-r from-green-500 to-lime-400 text-white rounded-sm">
@@ -117,14 +119,23 @@ export function EventsPreview() {
     delay: number
   }) => (
     <>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
-        <h3 className="text-2xl font-bold">
-          <span className="bg-gradient-to-r from-green-600 to-lime-500 bg-clip-text text-transparent">{title}</span>
-        </h3>
+      {/* Título de sección más grande y estilizado */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+        <div className="flex items-center gap-4">
+          {/* Línea decorativa izquierda */}
+          <div className="h-8 w-1.5 rounded-full bg-gradient-to-b from-green-500 to-lime-400 flex-shrink-0" />
+          <div>
+            <h3 className="text-3xl lg:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-green-600 to-lime-500 bg-clip-text text-transparent">
+              {title}
+            </h3>
+            <p className="text-sm text-gray-400 mt-0.5 font-medium tracking-wide uppercase">
+              Eventos destacados
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Carrusel full-width con padding simétrico */}
-      <div className="mb-12 px-4 sm:px-6 lg:px-8">
+      <div className="mb-14 px-4 sm:px-6 lg:px-8">
         <Swiper
           modules={[Navigation, Pagination, Autoplay]}
           spaceBetween={20}
@@ -173,7 +184,6 @@ export function EventsPreview() {
           padding-right: 32px !important;
         }
 
-        /* Flechas semitransparentes */
         .events-swiper .swiper-button-next,
         .events-swiper .swiper-button-prev {
           width: 44px !important;
