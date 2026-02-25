@@ -27,10 +27,10 @@ export function Footer() {
           <a href="/legal" className="text-gray-400 hover:text-white transition-colors">
             Legal
           </a>
-          <a href="/pqr" className="text-gray-400 hover:text-white transition-colors">
+          <a href="/contacto" className="text-gray-400 hover:text-white transition-colors">
             PQR
           </a>
-          <a href="/sobre-nosotros" className="text-gray-400 hover:text-white transition-colors">
+          <a href="/contacto" className="text-gray-400 hover:text-white transition-colors">
             Sobre nosotros
           </a>
         </div>

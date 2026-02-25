@@ -15,12 +15,12 @@ import "swiper/css/pagination"
 
 const featuredEvents = [
   // Carrusel 1 - Música (6 eventos)
-  { id: 1, title: "Festival de Jazz Internacional", description: "Una noche mágica con los mejores artistas de jazz", date: "15 Abril", location: "Teatro Nacional", attendees: 1250, price: 45, image: "/images/jazz-festival.jpg?height=200&width=300", category: "Música", rating: 4.8 },
-  { id: 2, title: "Concierto de Rock Alternativo", description: "Las mejores bandas emergentes en un solo escenario", date: "18 Abril", location: "Auditorio Central", attendees: 2500, price: 35, image: "/rock-concert.png", category: "Música", rating: 4.7 },
-  { id: 3, title: "Festival Electrónica", description: "Los mejores DJs internacionales", date: "22 Abril", location: "Plaza de Eventos", attendees: 3000, price: 50, image: "/electronic-music-festival.jpg", category: "Música", rating: 4.9 },
-  { id: 4, title: "Noche de Salsa", description: "Baile y música latina toda la noche", date: "25 Abril", location: "Club Latino", attendees: 800, price: 20, image: "/salsa-dancing.png", category: "Música", rating: 4.6 },
-  { id: 13, title: "Concierto Sinfónico", description: "La orquesta filarmónica presenta clásicos inmortales", date: "28 Abril", location: "Palacio de la Música", attendees: 1800, price: 55, image: "/symphony-orchestra-concert-classical-music.jpg", category: "Música", rating: 4.9 },
-  { id: 14, title: "Festival de Reggaeton", description: "Los artistas más populares del género urbano", date: "1 Mayo", location: "Estadio Nacional", attendees: 5000, price: 65, image: "/reggaeton-urban-music-festival-concert.jpg", category: "Música", rating: 4.7 },
+  { id: 1, title: "Festival de Jazz Internacional", description: "Una noche mágica con los mejores artistas de jazz", date: "15 Abril", location: "Teatro Nacional", attendees: 1250, price: 45, image: "/images/img9.jpg?height=200&width=300", category: "Música", rating: 4.8 },
+  { id: 2, title: "Concierto de Rock Alternativo", description: "Las mejores bandas emergentes en un solo escenario", date: "18 Abril", location: "Auditorio Central", attendees: 2500, price: 35, image: "/images/img9.jpg?height=200&width=300", category: "Música", rating: 4.7 },
+  { id: 3, title: "Festival Electrónica", description: "Los mejores DJs internacionales", date: "22 Abril", location: "Plaza de Eventos", attendees: 3000, price: 50, image: "/images/img9.jpg?height=200&width=300.jpg", category: "Música", rating: 4.9 },
+  { id: 4, title: "Noche de Salsa", description: "Baile y música latina toda la noche", date: "25 Abril", location: "Club Latino", attendees: 800, price: 20, image: "/images/img9.jpg?height=200&width=300", category: "Música", rating: 4.6 },
+  { id: 13, title: "Concierto Sinfónico", description: "La orquesta filarmónica presenta clásicos inmortales", date: "28 Abril", location: "Palacio de la Música", attendees: 1800, price: 55, image: "/images/img9.jpg?height=200&width=300", category: "Música", rating: 4.9 },
+  { id: 14, title: "Festival de Reggaeton", description: "Los artistas más populares del género urbano", date: "1 Mayo", location: "Estadio Nacional", attendees: 5000, price: 65, image: "/images/img9.jpg?height=200&width=300", category: "Música", rating: 4.7 },
   // Carrusel 2 - Arte y Cultura (6 eventos)
   { id: 5, title: "Exposición de Arte Moderno", description: "Obras contemporáneas de artistas reconocidos", date: "20 Abril", location: "Museo de Arte", attendees: 800, price: 15, image: "/images/img10.jpg?height=200&width=300", category: "Arte", rating: 4.6 },
   { id: 6, title: "Festival de Cine Independiente", description: "Cortometrajes y documentales exclusivos", date: "23 Abril", location: "Cinemateca Nacional", attendees: 600, price: 18, image: "/images/img10.jpg?height=200&width=300", category: "Cultura", rating: 4.7 },
@@ -30,11 +30,11 @@ const featuredEvents = [
   { id: 16, title: "Noche de Poesía", description: "Recitales y spoken word de poetas emergentes", date: "5 Mayo", location: "Café Literario", attendees: 200, price: 12, image: "/images/img10.jpg?height=200&width=300", category: "Cultura", rating: 4.6 },
   // Carrusel 3 - Gastronomía (6 eventos)
   { id: 9, title: "Festival Gastronómico", description: "Sabores del mundo en un solo lugar", date: "25 Abril", location: "Plaza Central", attendees: 2000, price: 25, image: "/images/img8.jpg?height=200&width=300", category: "Gastronomía", rating: 4.9 },
-  { id: 10, title: "Noche de Vinos", description: "Cata de vinos premium con sommelier", date: "28 Abril", location: "Bodega del Centro", attendees: 150, price: 60, image: "/wine-tasting.png", category: "Gastronomía", rating: 4.8 },
-  { id: 11, title: "Mercado Gourmet", description: "Productos artesanales y especialidades", date: "30 Abril", location: "Mercado Municipal", attendees: 1800, price: 12, image: "/gourmet-market.jpg", category: "Gastronomía", rating: 4.7 },
-  { id: 12, title: "Festival de Street Food", description: "Los mejores food trucks de la ciudad", date: "2 Mayo", location: "Parque Central", attendees: 2500, price: 15, image: "/street-food-festival.jpg", category: "Gastronomía", rating: 4.8 },
-  { id: 17, title: "Masterclass de Cocina", description: "Aprende técnicas de chefs internacionales", date: "7 Mayo", location: "Escuela Culinaria", attendees: 100, price: 80, image: "/cooking-masterclass-chef-kitchen-culinary.jpg", category: "Gastronomía", rating: 4.9 },
-  { id: 18, title: "Festival de Cerveza Artesanal", description: "Las mejores cervecerías locales en un evento", date: "10 Mayo", location: "Jardín Cervecero", attendees: 3000, price: 35, image: "/craft-beer-festival-brewery-tasting-event.jpg", category: "Gastronomía", rating: 4.7 },
+  { id: 10, title: "Noche de Vinos", description: "Cata de vinos premium con sommelier", date: "28 Abril", location: "Bodega del Centro", attendees: 150, price: 60, image: "/images/img8.jpg?height=200&width=300", category: "Gastronomía", rating: 4.8 },
+  { id: 11, title: "Mercado Gourmet", description: "Productos artesanales y especialidades", date: "30 Abril", location: "Mercado Municipal", attendees: 1800, price: 12, image: "/images/img8.jpg?height=200&width=300", category: "Gastronomía", rating: 4.7 },
+  { id: 12, title: "Festival de Street Food", description: "Los mejores food trucks de la ciudad", date: "2 Mayo", location: "Parque Central", attendees: 2500, price: 15, image: "/images/img8.jpg?height=200&width=300", category: "Gastronomía", rating: 4.8 },
+  { id: 17, title: "Masterclass de Cocina", description: "Aprende técnicas de chefs internacionales", date: "7 Mayo", location: "Escuela Culinaria", attendees: 100, price: 80, image: "/images/img8.jpg?height=200&width=300", category: "Gastronomía", rating: 4.9 },
+  { id: 18, title: "Festival de Cerveza Artesanal", description: "Las mejores cervecerías locales en un evento", date: "10 Mayo", location: "Jardín Cervecero", attendees: 3000, price: 35, image: "/images/img8.jpg?height=200&width=300.jpg", category:"Gastronomía" , rating :4.7 },
 ]
 
 const carousel1 = featuredEvents.slice(0, 6)

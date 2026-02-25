@@ -6,17 +6,12 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 
-import "swiper/css"
-import "swiper/css/navigation"
-import "swiper/css/pagination"
-import "swiper/css/effect-fade"
-
 const heroSlides = [
   {
     id: 1,
-    title: "Festival de Jazz Internacional",
+    title: "Festival de la carranga",
     description: "Una experiencia única llena de ritmo, melodía y tradición musical",
-    image: "/images/jazz-festival.jpg?height=600&width=800",
+    image: "/images/carranga2.jpg?height=600&width=800",
     category: "Música",
   },
   {
@@ -139,7 +134,7 @@ export function HeroSection() {
           color: white !important;
           transform: scale(1.1) !important;
         }
-        
+         
         .hero-swiper .swiper-button-next:after,
         .hero-swiper .swiper-button-prev:after {
           font-size: 18px !important;
