@@ -341,7 +341,7 @@ export default function EventLanding() {
       : alreadyReserved
         ? "Ya reservado"
         : "Reservar";
-  const backPath = creatorMode ? "/mis-eventos" : "/eventos";
+  const backPath = "/eventos";
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-sky-100">

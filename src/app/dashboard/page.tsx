@@ -196,10 +196,16 @@ export default function EventDashboard() {
           return
         }
 
-        const permissionRes = await fetch(`/api/permissions/check?id_accesibilidad=4&id_rol=${roleNum}`, {
-          headers,
-          credentials: 'include',
-        })
+        const [permissionRes, manageEventsPermissionRes] = await Promise.all([
+          fetch(`/api/permissions/check?id_accesibilidad=4&id_rol=${roleNum}`, {
+            headers,
+            credentials: 'include',
+          }),
+          fetch(`/api/permissions/check?id_accesibilidad=3&id_rol=${roleNum}`, {
+            headers,
+            credentials: 'include',
+          }),
+        ])
 
         if (!permissionRes.ok) {
           if (!canceled) setAuthorized(false)
@@ -210,14 +216,8 @@ export default function EventDashboard() {
         const hasDashboardAccess = Boolean(permissionData?.hasAccess)
         if (!canceled) setAuthorized(hasDashboardAccess)
         if (!canceled && !hasDashboardAccess) {
-          // user authenticated but not allowed
           return
         }
-
-        const manageEventsPermissionRes = await fetch(`/api/permissions/check?id_accesibilidad=3&id_rol=${roleNum}`, {
-          headers,
-          credentials: 'include',
-        })
 
         let hasManageEventsPermission = false
         if (manageEventsPermissionRes.ok) {
@@ -226,68 +226,59 @@ export default function EventDashboard() {
         }
         if (!canceled) setCanManageEvents(hasManageEventsPermission)
 
-        // Fetch categorías de eventos desde base de datos
-        try {
-          const categoriesRes = await fetch('/api/categoria_evento', { headers, credentials: 'include' })
-          if (categoriesRes.ok) {
-            const categoriesData = await categoriesRes.json()
-            if (!canceled && Array.isArray(categoriesData)) {
+        // Desbloquear UI del menú apenas se valida acceso
+        if (!canceled) setLoading(false)
+
+        // Cargar datos pesados en segundo plano para evitar retraso perceptible en menú
+        const eventsUrl = hasManageEventsPermission ? '/api/events?includeAll=true' : '/api/events'
+
+        void Promise.allSettled([
+          fetch('/api/categoria_evento', { headers, credentials: 'include' }),
+          fetch(eventsUrl, { headers, credentials: 'include' }),
+          fetch('/api/stats', { headers }),
+        ]).then(async ([categoriesResult, eventsResult, statsResult]) => {
+          if (!canceled && categoriesResult.status === 'fulfilled' && categoriesResult.value.ok) {
+            const categoriesData = await categoriesResult.value.json()
+            if (Array.isArray(categoriesData)) {
               setEventCategories(categoriesData)
             }
           }
-        } catch (error) {
-          console.error('Error cargando categorías de eventos', error)
-        }
 
-        // Fetch events (all only for users with gestión de eventos access)
-        const eventsUrl = hasManageEventsPermission ? '/api/events?includeAll=true' : '/api/events'
-        const eventsRes = await fetch(eventsUrl, { headers, credentials: 'include' })
-        if (eventsRes.ok) {
-          const eventsData = await eventsRes.json()
-          const serverEvents = eventsData.eventos || []
-          // Map server events to local Event type (include creatorId to allow scoping)
-          const mapped = serverEvents.map((ev: any) => ({
-            id: ev.id_evento,
-            name: ev.nombre_evento || 'Sin título',
-            date: ev.fecha_inicio || ev.fecha_creacion,
-            time: ev.hora_inicio || '',
-            location: ev.sitio?.nombre_sitio || ev.municipio?.nombre_municipio || '',
-            category: ev.categoria_nombre || '',
-            capacity: ev.cupo || 0,
-            ticketsSold: Number(ev.reservas_asistentes || 0),
-            status: ev.estado ? 'published' : 'hidden',
-            visibility: !!ev.estado,
-            image: (ev.imagenes && ev.imagenes[0] && ev.imagenes[0].url_imagen_evento) || '/images/placeholder.jpg',
-            promoter: ev.creador?.nombres || '',
-            creatorId: ev.creador?.id_usuario || null,
-            documentos: ev.documentos || [],
-          }))
-          if (!canceled) {
+          if (!canceled && eventsResult.status === 'fulfilled' && eventsResult.value.ok) {
+            const eventsData = await eventsResult.value.json()
+            const serverEvents = eventsData.eventos || []
+            const mapped = serverEvents.map((ev: any) => ({
+              id: ev.id_evento,
+              name: ev.nombre_evento || 'Sin título',
+              date: ev.fecha_inicio || ev.fecha_creacion,
+              time: ev.hora_inicio || '',
+              location: ev.sitio?.nombre_sitio || ev.municipio?.nombre_municipio || '',
+              category: ev.categoria_nombre || '',
+              capacity: ev.cupo || 0,
+              ticketsSold: Number(ev.reservas_asistentes || 0),
+              status: ev.estado ? 'published' : 'hidden',
+              visibility: !!ev.estado,
+              image: (ev.imagenes && ev.imagenes[0] && ev.imagenes[0].url_imagen_evento) || '/images/placeholder.jpg',
+              promoter: ev.creador?.nombres || '',
+              creatorId: ev.creador?.id_usuario || null,
+              documentos: ev.documentos || [],
+            }))
             setEvents(mapped)
           }
 
-          // Update dashboard stats based on current server data
-          try {
-            const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-            const headers: any = {}
-            if (token) headers['Authorization'] = `Bearer ${token}`
-            const statsRes = await fetch('/api/stats', { headers })
-            if (statsRes.ok) {
-              const statsData = await statsRes.json()
-              if (!canceled && statsData.ok) {
-                setStats((prev) => prev.map((s) => {
-                  if (s.title === 'Eventos Activos') return { ...s, value: statsData.eventsActive }
-                  if (s.title === 'Eventos Inactivos') return { ...s, value: statsData.eventsInactive }
-                  if (s.title === 'Usuarios Activos (Rol 1)') return { ...s, value: statsData.usersRole1Active }
-                  if (s.title === 'Usuarios Baneados') return { ...s, value: statsData.usersBanned }
-                  return s
-                }))
-              }
+          if (!canceled && statsResult.status === 'fulfilled' && statsResult.value.ok) {
+            const statsData = await statsResult.value.json()
+            if (statsData.ok) {
+              setStats((prev) => prev.map((s) => {
+                if (s.title === 'Eventos Activos') return { ...s, value: statsData.eventsActive }
+                if (s.title === 'Eventos Inactivos') return { ...s, value: statsData.eventsInactive }
+                if (s.title === 'Usuarios Activos (Rol 1)') return { ...s, value: statsData.usersRole1Active }
+                if (s.title === 'Usuarios Baneados') return { ...s, value: statsData.usersBanned }
+                return s
+              }))
             }
-          } catch (e) {
-            console.error('Failed to load stats', e)
           }
-        }
+        })
       } catch (err) {
         console.error('Error cargando datos del dashboard', err)
       } finally {
@@ -837,13 +828,13 @@ export default function EventDashboard() {
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lime-600 w-5 h-5" />
                   <input
                     type="text"
                     placeholder="Buscar eventos..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-green-600 rounded-lg placeholder-lime-600 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
                   />
                 </div>
 
@@ -851,7 +842,7 @@ export default function EventDashboard() {
                   <select
                     value={filterCategory}
                     onChange={(e) => setFilterCategory(e.target.value)}
-                    className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="px-4 py-2.5 border border-green-600 rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
                   >
                     <option value="all">Todas las categorías</option>
                     {eventCategories.map((category) => (
@@ -865,20 +856,20 @@ export default function EventDashboard() {
               </div>
 
               {selectedEvents.length > 0 && (
-                <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <span className="text-sm font-medium text-blue-900">
+                <div className="flex items-center gap-3 p-4 bg-lime-50 border border-green-200 rounded-lg">
+                  <span className="text-sm font-medium text-green-900">
                     {selectedEvents.length} evento(s) seleccionado(s)
                   </span>
                   <button
                     onClick={bulkShow}
-                    className="px-3 py-1.5 text-sm bg-white text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
+                    className="px-3 py-1.5 text-sm bg-white text-green-700 border border-green-300 rounded-lg hover:bg-lime-50 transition-colors"
                   >
                     <Eye className="w-4 h-4 inline mr-1" />
                     Mostrar
                   </button>
                   <button
                     onClick={bulkHide}
-                    className="px-3 py-1.5 text-sm bg-white text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
+                    className="px-3 py-1.5 text-sm bg-white text-green-700 border border-green-300 rounded-lg hover:bg-lime-50 transition-colors"
                   >
                     <EyeOff className="w-4 h-4 inline mr-1" />
                     Ocultar
@@ -886,12 +877,12 @@ export default function EventDashboard() {
                 </div>
               )}
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="bg-yellow-50 rounded-sm shadow-sm border border-lime-100 overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+                  <table className="w-full border-collapse border border-green-600">
+                    <thead className="bg-lime-100 border-b border-green-600">
                       <tr>
-                        <th className="px-6 py-4 text-left">
+                        <th className="px-6 py-4 text-left border-r border-green-600">
                           <input
                             type="checkbox"
                             onChange={(e) => {
@@ -905,22 +896,22 @@ export default function EventDashboard() {
                             className="rounded border-gray-300"
                           />
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">
                           Evento
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">
                           Fecha y Hora
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">
                           Ubicación
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">
                           Tickets
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">
                           Estado
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                           Acciones
                         </th>
                       </tr>

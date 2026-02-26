@@ -314,7 +314,7 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
         <h3 className="text-lg font-semibold">Insertar Datos</h3>
       </div>
 
-      <Card>
+      <Card className="border-lime-100 bg-yellow-50">
         <CardHeader>
           <CardTitle className="text-lg text-gray-800">Insertar Datos en Base de Datos</CardTitle>
           <CardDescription className="text-sm italic text-gray-500">Selecciona la tabla y completa los campos requeridos para insertar nuevos datos.</CardDescription>
@@ -329,7 +329,7 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
                 }
               }}
             >
-              <SelectTrigger className="bg-green-700 px-3 py-1 text-white cursor-pointer">
+              <SelectTrigger className="w-fit bg-green-800 px-3 py-1 text-white cursor-pointer border-green-700 hover:bg-lime-600 focus:ring-lime-400">
                 <SelectValue placeholder="Selecciona una tabla" />
               </SelectTrigger>
               <SelectContent>
@@ -361,7 +361,7 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4 max-w-3xl w-full mx-auto">
+            <form onSubmit={handleSubmit} className="space-y-4 max-w-3xl w-full mx-auto bg-white rounded-sm shadow-sm border border-green-600 p-4">
               <div className="grid grid-cols-1 gap-4">
                 {currentConfig.fields.map((field) => (
                   <div key={field.name} className="space-y-2">
@@ -377,7 +377,7 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
                           [field.name]: value,
                         }))
                       }}>
-                        <SelectTrigger id={field.name}>
+                        <SelectTrigger id={field.name} className="border-green-600 focus:ring-lime-400">
                           <SelectValue placeholder={`Selecciona ${field.label.toLowerCase()}`} />
                         </SelectTrigger>
                         <SelectContent>
@@ -415,6 +415,7 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
                         rows={3}
                         minLength={field.minLength}
                         maxLength={field.maxLength}
+                        className="border-green-600 focus-visible:ring-lime-400"
                       />
                     ) : (
                       <Input
@@ -441,6 +442,7 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
                             : field.pattern
                         }
                         title={field.validationMessage}
+                        className="border-green-600 focus-visible:ring-lime-400"
                       />
                     )}
                   </div>

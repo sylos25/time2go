@@ -2,6 +2,38 @@
 
 import { useEffect, useState } from "react";
 
+const relativeFormatter = new Intl.RelativeTimeFormat("es", { numeric: "auto" });
+
+function formatRelativeTime(dateInput: string | Date) {
+  const date = new Date(dateInput);
+  if (Number.isNaN(date.getTime())) return "Fecha desconocida";
+
+  const now = new Date();
+  const diffMs = date.getTime() - now.getTime();
+  const diffSeconds = Math.round(diffMs / 1000);
+  const absSeconds = Math.abs(diffSeconds);
+
+  if (absSeconds < 60) return relativeFormatter.format(diffSeconds, "second");
+
+  const diffMinutes = Math.round(diffSeconds / 60);
+  if (Math.abs(diffMinutes) < 60) return relativeFormatter.format(diffMinutes, "minute");
+
+  const diffHours = Math.round(diffMinutes / 60);
+  if (Math.abs(diffHours) < 24) return relativeFormatter.format(diffHours, "hour");
+
+  const diffDays = Math.round(diffHours / 24);
+  if (Math.abs(diffDays) < 7) return relativeFormatter.format(diffDays, "day");
+
+  const diffWeeks = Math.round(diffDays / 7);
+  if (Math.abs(diffWeeks) < 5) return relativeFormatter.format(diffWeeks, "week");
+
+  const diffMonths = Math.round(diffDays / 30);
+  if (Math.abs(diffMonths) < 12) return relativeFormatter.format(diffMonths, "month");
+
+  const diffYears = Math.round(diffDays / 365);
+  return relativeFormatter.format(diffYears, "year");
+}
+
 export default function Valoraciones({ eventId }: { eventId: number }) {
   const [valoraciones, setValoraciones] = useState<any[]>([]);
   const [rating, setRating] = useState<number>(5);
@@ -107,7 +139,9 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
                   {`${valoracionItem.nombres || ""} ${valoracionItem.apellidos || ""}`.trim() || `Usuario #${valoracionItem.id_usuario}`}
                 </strong>
               </div>
-              <div>{new Date(valoracionItem.fecha_creacion).toLocaleString()}</div>
+              <div title={new Date(valoracionItem.fecha_creacion).toLocaleString("es-CO")}>
+                {formatRelativeTime(valoracionItem.fecha_creacion)}
+              </div>
             </div>
             <div className="mt-2">{valoracionItem.valoracion} ⭐</div>
             {valoracionItem.comentario && <div className="mt-2 text-gray-700">{valoracionItem.comentario}</div>}

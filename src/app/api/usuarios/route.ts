@@ -31,7 +31,7 @@ export async function GET(req: Request) {
       [requesterId]
     );
     const role = roleRes.rows && roleRes.rows[0] ? Number(roleRes.rows[0].id_rol) : null;
-    if (role !== 4) {
+    if (role !== 4 && role !== 3) {
       return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
     }
 
