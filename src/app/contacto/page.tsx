@@ -85,7 +85,7 @@ export default function ContactoPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100">
+    <main className="min-h-screen bg-background">
       <Header onAuthClick={openAuthModal} />
 
       {/* Formulario de Contacto e Info */}
@@ -93,13 +93,13 @@ export default function ContactoPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Formulario */}
-            <Card className="bg-white/80 backdrop-blur-sm border-white/50 rounded-sm">
+            <Card className="bg-card/90 backdrop-blur-sm border-border rounded-sm">
               <CardContent className="p-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+                <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center">
                   <Send className="w-6 h-6 mr-2 text-green-600" />
                   Contáctanos
                 </h2>
-                <p className="text-gray-600 mb-6">Completa el formulario y te responderemos pronto</p>
+                <p className="text-muted-foreground mb-6">Completa el formulario y te responderemos pronto</p>
                 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -169,15 +169,15 @@ export default function ContactoPage() {
               {/* Info de contacto */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {contactInfo.map((info, index) => (
-                  <Card key={index} className="bg-white/80 backdrop-blur-sm border-white/50 rounded-sm">
+                  <Card key={index} className="bg-card/90 backdrop-blur-sm border-border rounded-sm">
                     <CardContent className="p-5">
                       <div className="flex items-start gap-3">
                         {/* Ícono directo, sin contenedor */}
                         <info.icon className="mt-3 w-9 h-9 text-green-600 flex-shrink-0" />
                         <div className="ml-3">
-                          <h3 className="font-bold text-gray-900 mb-1">{info.title}</h3>
+                          <h3 className="font-bold text-foreground mb-1">{info.title}</h3>
                           {info.details.map((detail, idx) => (
-                            <p key={idx} className="text-gray-600 text-sm">{detail}</p>
+                            <p key={idx} className="text-muted-foreground text-sm">{detail}</p>
                           ))}
                         </div>
                       </div>
@@ -187,7 +187,7 @@ export default function ContactoPage() {
               </div>
 
               {/* Mapa de ubicación */}
-              <Card className="bg-white/80 backdrop-blur-sm border-white/50 rounded-sm overflow-hidden">
+              <Card className="bg-card/90 backdrop-blur-sm border-border rounded-sm overflow-hidden">
                 <CardContent className="p-0">
                   <iframe
                     src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d588.4989388901223!2d-73.11983611242613!3d7.1337252775636975!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e68156f047412a7%3A0xf61352554c2947e2!2sSENA%20Regional%20Oriente%2C%20Bucaramanga%2C%20Santander!5e0!3m2!1ses-419!2sco!4v1768838168494!5m2!1ses-419!2sco"
@@ -204,14 +204,14 @@ export default function ContactoPage() {
               </Card>
 
               {/* FAQs */}
-              <Card className="bg-white/80 backdrop-blur-sm border-white/50 rounded-sm">
+              <Card className="bg-card/90 backdrop-blur-sm border-border rounded-sm">
                 <CardContent className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Preguntas Frecuentes</h3>
+                  <h3 className="text-xl font-bold text-foreground mb-4">Preguntas Frecuentes</h3>
                   <div className="space-y-4">
                     {faqs.map((faq, index) => (
                       <div key={index}>
-                        <h4 className="font-medium text-gray-900 mb-1">{faq.question}</h4>
-                        <p className="text-gray-600 text-sm">{faq.answer}</p>
+                        <h4 className="font-medium text-foreground mb-1">{faq.question}</h4>
+                        <p className="text-muted-foreground text-sm">{faq.answer}</p>
                       </div>
                     ))}
                   </div>
@@ -225,20 +225,20 @@ export default function ContactoPage() {
       {/* Características del Software */}
       <section className="pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 text-center mb-8">
+          <h2 className="text-2xl lg:text-3xl font-bold text-foreground text-center mb-8">
             ¿Por qué elegir Time2Go?
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {softwareFeatures.map((feature, index) => (
-              <Card key={index} className="bg-white/80 backdrop-blur-sm border-white/50 rounded-sm">
+              <Card key={index} className="bg-card/90 backdrop-blur-sm border-border rounded-sm">
                 <CardContent className="p-6">
                   {/* Contenedor solo para controlar posición del ícono */}
                   <div className="flex justify-start ml-25 mb-4">
                     <feature.icon className="w-9 h-9 text-green-700" />
                   </div>
 
-                  <h3 className="text-center text-lg font-bold text-gray-900 mb-2">{feature.title}</h3>
-                  <p className="text-gray-600 text-sm">{feature.description}</p>
+                  <h3 className="text-center text-lg font-bold text-foreground mb-2">{feature.title}</h3>
+                  <p className="text-muted-foreground text-sm">{feature.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -249,13 +249,13 @@ export default function ContactoPage() {
       {/* Logo y Visión */}
       <section className="pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Card className="bg-white/80 backdrop-blur-sm border-white/50 rounded-sm">
+          <Card className="bg-card/90 backdrop-blur-sm border-border rounded-sm">
             <CardContent className="p-8 text-center">
             <div className="flex items-center justify-center mb-6">
                 <img src="/images/logo_color.png" 
                     className="mx-auto mb-3 max-w-[250px] max-h-[250px] object-contain" />
               </div>
-              <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-6">
+              <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-6">
                 Nuestra visión es revolucionar la industria de eventos, conectando a organizadores y asistentes 
                 a través de tecnología innovadora que simplifica cada paso del proceso.
               </p>

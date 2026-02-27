@@ -51,18 +51,18 @@ export default function ReservaDetallePage() {
   }, [params?.id]);
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-sky-100 flex flex-col">
+    <main className="min-h-screen bg-background flex flex-col">
       <Header onAuthClick={() => {}} />
       <div className="flex-1 w-full">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-10">
           <div className="flex items-center justify-between mb-6 gap-3">
-            <h1 className="text-3xl font-bold text-gray-900">Detalle de Reserva</h1>
+            <h1 className="text-3xl font-bold text-foreground">Detalle de Reserva</h1>
             <Button variant="outline" onClick={() => router.push("/mis-reservas")}>Volver</Button>
           </div>
 
           {loading && (
-            <Card className="bg-white/90">
-              <CardContent className="pt-6 flex items-center gap-2 text-gray-700">
+            <Card className="bg-card/90">
+              <CardContent className="pt-6 flex items-center gap-2 text-foreground">
                 <Loader2 className="h-5 w-5 animate-spin" />
                 Cargando reserva...
               </CardContent>
@@ -70,13 +70,13 @@ export default function ReservaDetallePage() {
           )}
 
           {!loading && error && (
-            <Card className="bg-white/90">
+            <Card className="bg-card/90">
               <CardContent className="pt-6 text-red-600">{error}</CardContent>
             </Card>
           )}
 
           {!loading && !error && reserva && (
-            <Card className="bg-white/90">
+            <Card className="bg-card/90">
               <CardHeader>
                 <CardTitle>{reserva.nombre_evento || "Reserva"}</CardTitle>
               </CardHeader>
@@ -89,7 +89,7 @@ export default function ReservaDetallePage() {
                   />
                 )}
 
-                <div className="grid md:grid-cols-2 gap-3 text-sm text-gray-700">
+                <div className="grid md:grid-cols-2 gap-3 text-sm text-foreground">
                   <div className="flex items-center gap-2">
                     <Ticket className="h-4 w-4" />
                     <span>ID Reserva: {reserva.id_reserva_evento}</span>

@@ -64,14 +64,14 @@ export function ToggleEventStatusModal({ isOpen, onClose, event, onSave }: Toggl
         </DialogHeader>
 
         <div className="py-6">
-          <div className="bg-gray-50 rounded-lg p-6 space-y-4">
+          <div className="bg-muted/40 border border-border rounded-lg p-6 space-y-4">
             <div>
-              <p className="text-sm font-medium text-gray-600 mb-2">Evento Actual:</p>
-              <p className="text-lg font-semibold text-gray-900">{event?.name}</p>
+              <p className="text-sm font-medium text-muted-foreground mb-2">Evento Actual:</p>
+              <p className="text-lg font-semibold text-foreground">{event?.name}</p>
             </div>
 
-            <div className="border-t border-gray-200 pt-4">
-              <p className="text-sm font-medium text-gray-600 mb-3">Estado Actual:</p>
+            <div className="border-t border-border pt-4">
+              <p className="text-sm font-medium text-muted-foreground mb-3">Estado Actual:</p>
               <div className="flex items-center gap-2">
                 {isCurrentlyEnabled ? (
                   <>
@@ -80,8 +80,8 @@ export function ToggleEventStatusModal({ isOpen, onClose, event, onSave }: Toggl
                   </>
                 ) : (
                   <>
-                    <XCircle className="w-5 h-5 text-gray-400" />
-                    <span className="text-sm font-medium text-gray-500">Inactivo/Deshabilitado</span>
+                    <XCircle className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-sm font-medium text-muted-foreground">Inactivo/Deshabilitado</span>
                   </>
                 )}
               </div>

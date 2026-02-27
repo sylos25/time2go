@@ -67,7 +67,7 @@ function AuthPageContent() {
                   index === currentIndex ? "opacity-100" : "opacity-0" }`} /> ))}
 
     <div className="absolute top-20 w-full text-center p-2 bg-black/30 z-10"> 
-      <p className="text-xs text-gray-200"> Fotografías: © Autores originales </p> 
+      <p className="text-xs text-white/80"> Fotografías: © Autores originales </p> 
     </div>
 
       {/* Banner de registro exitoso */}
@@ -87,11 +87,11 @@ function AuthPageContent() {
       <div className="mt-40 relative z-10 flex items-center justify-center h-full">
         <div className="max-w-md mx-auto">
           {step === "choice" && (
-            <div className="w-100 bg-white rounded-lg shadow-lg p-8">
+            <div className="w-100 bg-card/95 text-card-foreground rounded-lg shadow-lg p-8 border border-border">
               <div className="flex flex-col items-center mb-6">
                 <img src="/images/logo_color.png" 
                     className="mb-3 max-w-[350px] max-h-[350px] object-contain" />
-                <p className="mt-6 text-gray-600 -mt-6">
+                <p className="mt-6 text-muted-foreground -mt-6">
                   Los eventos de tu ciudad, justo donde estás. 
                 </p>
               </div>
@@ -117,7 +117,7 @@ function AuthPageContent() {
                 <Button
                   variant="link"
                   onClick={() => router.push("/")}
-                  className="text-gray-500 hover:text-gray-600"
+                  className="text-muted-foreground hover:text-foreground"
                 >
                   Regresar
                 </Button>
@@ -126,12 +126,12 @@ function AuthPageContent() {
           )}
 
           {step === "login" && (
-            <div className="bg-white rounded-lg shadow-lg p-8">
+            <div className="bg-card/95 text-card-foreground rounded-lg shadow-lg p-8 border border-border">
               <div className="text-center mb-6">
                 <h1 className="text-4xl font-bold leading-relaxed bg-gradient-to-tr from-green-600 to-lime-500 bg-clip-text text-transparent mb-2">
                   Bienvenido
                 </h1>
-                <p className="mt-1 text-1xl text-gray-600">
+                <p className="mt-1 text-1xl text-muted-foreground">
                   Inicia sesión para continuar con la experiencia
                 </p>
               </div>
@@ -146,7 +146,7 @@ function AuthPageContent() {
                 <Button
                   variant="link"
                   onClick={() => setStep("choice")}
-                  className="text-gray-500 hover:text-gray-600"
+                  className="text-muted-foreground hover:text-foreground"
                 >
                   Volver atrás
                 </Button>
@@ -155,12 +155,12 @@ function AuthPageContent() {
           )}
 
           {step === "register" && (
-            <div className="bg-white rounded-lg shadow-lg p-8">
+            <div className="bg-card/95 text-card-foreground rounded-lg shadow-lg p-8 border border-border">
               <div className="text-center mb-8">
                 <h1 className="text-4xl font-bold leading-relaxed bg-gradient-to-tr from-green-600 to-lime-500 bg-clip-text text-transparent mb-2">
                   Registrate
                 </h1>
-                <p className="mt-2 text-gray-600">Crea tu cuenta y descubre los eventos de la ciudad</p>
+                <p className="mt-2 text-muted-foreground">Crea tu cuenta y descubre los eventos de la ciudad</p>
               </div>
 
               <RegisterForm onSuccess={handleRegisterSuccess} />
@@ -169,7 +169,7 @@ function AuthPageContent() {
                 <Button
                   variant="link"
                   onClick={() => setStep("choice")}
-                  className="text-gray-500 hover:text-gray-600"
+                  className="text-muted-foreground hover:text-foreground"
                 >
                   Volver atrás
                 </Button>

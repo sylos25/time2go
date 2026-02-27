@@ -7,7 +7,7 @@ import { CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 
 export default function ValidateEmailPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50" />}>
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
       <ValidateEmailPageContent />
     </Suspense>
   )
@@ -55,22 +55,22 @@ function ValidateEmailPageContent() {
   }, [token, router])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center px-4">
-      <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="bg-card text-card-foreground rounded-lg shadow-lg p-8 max-w-md w-full text-center border border-border">
         {status === "loading" && (
           <>
             <Loader2 className="h-16 w-16 text-blue-500 mx-auto mb-4 animate-spin" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Validando correo...</h1>
-            <p className="text-gray-600">Por favor espera un momento</p>
+            <h1 className="text-2xl font-bold text-foreground mb-2">Validando correo...</h1>
+            <p className="text-muted-foreground">Por favor espera un momento</p>
           </>
         )}
 
         {status === "success" && (
           <>
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">¡Éxito!</h1>
-            <p className="text-gray-600 mb-6">{message}</p>
-            <p className="text-sm text-gray-500 mb-6">
+            <h1 className="text-2xl font-bold text-foreground mb-2">¡Éxito!</h1>
+            <p className="text-muted-foreground mb-6">{message}</p>
+            <p className="text-sm text-muted-foreground mb-6">
               Serás redirigido al login en unos segundos...
             </p>
             <Link
@@ -85,12 +85,12 @@ function ValidateEmailPageContent() {
         {status === "error" && (
           <>
             <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Error</h1>
-            <p className="text-gray-600 mb-6">{message}</p>
+            <h1 className="text-2xl font-bold text-foreground mb-2">Error</h1>
+            <p className="text-muted-foreground mb-6">{message}</p>
             <div className="flex gap-3">
               <Link
                 href="/"
-                className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
+                className="flex-1 bg-secondary text-secondary-foreground px-4 py-2 rounded-lg hover:bg-accent transition"
               >
                 Ir al inicio
               </Link>

@@ -525,13 +525,13 @@ export default function CrearEventoPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header isLoggedIn={true} />
-      <main className="flex-grow bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <main className="flex-grow bg-background">
         <div className="pt-24 pb-16">
           {authorized === false && (
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-              <div className="bg-white rounded-3xl shadow-xl p-8 text-center">
+              <div className="bg-card rounded-3xl shadow-xl p-8 text-center">
                 <h2 className="text-2xl font-semibold text-red-600">Acceso denegado</h2>
-                <p className="mt-4 text-gray-600">No estás autorizado para crear eventos. Inicia sesión con una cuenta que tenga permisos.</p>
+                <p className="mt-4 text-muted-foreground">No estás autorizado para crear eventos. Inicia sesión con una cuenta que tenga permisos.</p>
                 <div className="mt-6">
                   <Button onClick={() => router.push('/')} className="bg-lime-600 text-white">Volver al inicio</Button>
                 </div>
@@ -540,7 +540,7 @@ export default function CrearEventoPage() {
           )}
           {authorized === null ? (
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-              <div className="text-gray-600">Comprobando permisos...</div>
+              <div className="text-muted-foreground">Comprobando permisos...</div>
             </div>
           ) : authorized === true ? (
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-10 mt-8">
@@ -555,12 +555,12 @@ export default function CrearEventoPage() {
                 </Button>
                 <div className="ml-29 text-center">
                   <h1 className="text-5xl font-bold bg-gradient-to-tr from-fuchsia-700 to-red-600 bg-clip-text text-transparent">Crear Nuevo Evento</h1>
-                  <p className="text-gray-600 mt-2">Completa el formulario para crear el evento</p>
+                  <p className="text-muted-foreground mt-2">Completa el formulario para crear el evento</p>
                 </div>
               </div>
 
               {/* Form */}
-              <div className="bg-white rounded-3xl shadow-xl p-8 space-y-6">
+              <div className="bg-card rounded-3xl shadow-xl p-8 space-y-6">
               {/* Basic Info */}
               <div className="space-y-6">
                 <div className="space-y-2">
@@ -592,7 +592,7 @@ export default function CrearEventoPage() {
                     placeholder="Código del Portal Único de Espectáculos Públicos de las Artes Escénicas"
                     className="rounded-xl"
                   />
-                  <p className="text-xs text-gray-500">Este código identifica públicamente tu evento</p>
+                  <p className="text-xs text-muted-foreground">Este código identifica públicamente tu evento</p>
                   {formErrors.pulep_evento && (
                     <p className="text-xs text-red-600">{formErrors.pulep_evento}</p>
                   )}
@@ -693,7 +693,7 @@ export default function CrearEventoPage() {
                     <p className="text-xs text-red-600">{formErrors.id_sitio}</p>
                   )}
                   {sitios.length > 0 && (
-                    <ul className="absolute z-10 bg-white border rounded-xl mt-1 w-full max-h-60 overflow-y-auto shadow-lg">
+                    <ul className="absolute z-10 bg-popover text-popover-foreground border border-border rounded-xl mt-1 w-full max-h-60 overflow-y-auto shadow-lg">
                       {sitios.map((sitio) => (
                         <li
                           key={sitio.id_sitio}
@@ -725,7 +725,7 @@ export default function CrearEventoPage() {
                   placeholder="Descripción breve del evento"
                   className="rounded-xl min-h-[100px]"
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   {newEvent.descripcion.length}/∞ caracteres (mínimo 10)
                 </p>
                 {formErrors.descripcion && (
@@ -733,16 +733,16 @@ export default function CrearEventoPage() {
                 )}
               </div>
 
-              <div className="space-y-4 p-4 border rounded-lg shadow-md">
+              <div className="space-y-4 p-4 border border-border bg-muted/20 rounded-lg shadow-md">
                 <div>
                   <Label>Información adicional del evento</Label>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Registra los datos clave del evento por ítems para mejorar la lectura y la escalabilidad.
                   </p>
                 </div>
 
                 {(newEvent.informacion_adicional_items || []).map((item: EventoInfoItem, index: number) => (
-                  <div key={index} className="space-y-3 p-3 bg-gray-50 rounded-lg border">
+                  <div key={index} className="space-y-3 p-3 bg-muted/40 rounded-lg border border-border">
                     <div className="space-y-2">
                       <Label className="text-xs">Detalle importante</Label>
                       <Textarea
@@ -757,12 +757,12 @@ export default function CrearEventoPage() {
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <label className="flex items-center gap-2 text-sm cursor-pointer text-foreground">
                         <input
                           type="checkbox"
                           checked={Boolean(item.obligatorio)}
                           onChange={(e) => updateInfoItem(index, "obligatorio", e.target.checked)}
-                          className="w-4 h-4 cursor-pointer"
+                          className="w-4 h-4 cursor-pointer border-border"
                         />
                         Ítem obligatorio para asistentes
                       </label>
@@ -792,7 +792,7 @@ export default function CrearEventoPage() {
                   >
                     + Añadir ítem
                   </button>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-muted-foreground">
                     {(newEvent.informacion_adicional_items || []).length}/20 ítems
                   </span>
                 </div>
@@ -884,7 +884,7 @@ export default function CrearEventoPage() {
                     dateFormat="dd/MM/yyyy"
                     minDate={new Date()}
                     placeholderText="01/01/2025"
-                    className="cursor-pointer w-75 rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+                    className="cursor-pointer w-75 rounded-xl border-border bg-card text-foreground shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
                   />
                   {formErrors.fecha_inicio && (
                     <p className="text-xs text-red-600">{formErrors.fecha_inicio}</p>
@@ -908,7 +908,7 @@ export default function CrearEventoPage() {
                     dateFormat="dd/MM/yyyy"
                     minDate={newEvent.fecha_inicio || new Date()} 
                     placeholderText="31/12/2025"
-                    className="cursor-pointer w-75 rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+                    className="cursor-pointer w-75 rounded-xl border-border bg-card text-foreground shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
                   />
                   {formErrors.fecha_final && (
                     <p className="text-xs text-red-600">{formErrors.fecha_final}</p>
@@ -984,7 +984,7 @@ export default function CrearEventoPage() {
                 </div>
 
                 {!newEvent.pago && (
-                  <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-500">
+                  <div className="flex items-center gap-2 p-3 bg-muted/40 rounded-lg border border-border">
                     <input
                       id="reservar_anticipado"
                       type="checkbox"
@@ -993,23 +993,23 @@ export default function CrearEventoPage() {
                       className="w-4 h-4 cursor-pointer"
                     />
                     <label htmlFor="reservar_anticipado" className="cursor-pointer">
-                      <span className="font-medium text-gray-900">¿Se requiere reserva anticipada?</span>
-                      <p className="text-xs text-gray-600">Marca esta opción si los usuarios deben reservar entrada para asistir al evento</p>
+                      <span className="font-medium text-foreground">¿Se requiere reserva anticipada?</span>
+                      <p className="text-xs text-muted-foreground">Marca esta opción si los usuarios deben reservar entrada para asistir al evento</p>
                     </label>
                   </div>
                 )}
 
                 {newEvent.pago && (
-                  <div className="space-y-4 p-4 border rounded-lg shadow-md">
+                  <div className="space-y-4 p-4 border border-border rounded-lg shadow-md bg-muted/20">
                     <h2 className="text-lg font-semibold cursor-default">Tipos de Boletas y Precios</h2>
-                    <p className="text-xs text-gray-600 italic -translate-y-3 cursor-default"> 
+                    <p className="text-xs text-muted-foreground italic -translate-y-3 cursor-default"> 
                       Define los diferentes tipos de boletas disponibles para tu evento con sus precios.
                     </p>
                     {formErrors.boletas && (
                       <p className="text-xs text-red-600">{formErrors.boletas}</p>
                     )}
                     {newEvent.boletas.map((boleta: any, index: number) => (
-                      <div key={index} className="space-y-3 p-3 bg-gray-50 rounded-lg">
+                      <div key={index} className="space-y-3 p-3 bg-muted/40 rounded-lg border border-border">
                         <div className="space-y-2">
                           <Label className="text-xs">Nombre de la boleta</Label>
                           <Input
@@ -1045,7 +1045,7 @@ export default function CrearEventoPage() {
                               placeholder="$0"
                               className="rounded-xl border px-2 py-1 w-full text-sm"
                             />
-                            <p className="text-xs text-gray-500">Cargo adicional por procesamiento/plataforma</p>
+                            <p className="text-xs text-muted-foreground">Cargo adicional por procesamiento/plataforma</p>
                           </div>
                         </div>
 
@@ -1083,7 +1083,7 @@ export default function CrearEventoPage() {
                           </button>
                         )}
                       </div>
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-muted-foreground">
                         {newEvent.boletas.length}/12 tipos de boletas
                       </span>
                     </div>
@@ -1111,7 +1111,7 @@ export default function CrearEventoPage() {
                   placeholder="100"
                   className="rounded-xl border px-2 py-1 w-full"
                 />
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   Ingrese un número entre 1 y 5000
                 </p>
                 {formErrors.cupo && (
@@ -1153,13 +1153,13 @@ export default function CrearEventoPage() {
                   {newEvent.imagenes && newEvent.imagenes.length > 0 && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
                       {newEvent.imagenes.map((file: File, index: number) => (
-                        <div key={`${file.name}-${index}`} className="rounded-xl border bg-white p-2 shadow-sm">
+                        <div key={`${file.name}-${index}`} className="rounded-xl border bg-card p-2 shadow-sm">
                           <img
                             src={URL.createObjectURL(file)}
                             alt={file.name}
                             className="h-24 w-full rounded-lg object-cover"
                           />
-                          <p className="mt-2 text-xs text-gray-600 truncate">{file.name}</p>
+                          <p className="mt-2 text-xs text-muted-foreground truncate">{file.name}</p>
                           <button
                             type="button"
                             onClick={() => {
@@ -1177,7 +1177,7 @@ export default function CrearEventoPage() {
                       ))}
                     </div>
                   )}
-                  <p className="text-xs text-gray-500">{(newEvent.imagenes || []).length}/8 imagenes</p>
+                  <p className="text-xs text-muted-foreground">{(newEvent.imagenes || []).length}/8 imagenes</p>
                 </div>
 
                 <div className="space-y-2">
@@ -1217,11 +1217,11 @@ export default function CrearEventoPage() {
                     <p className="text-xs text-red-600">{formErrors.documento}</p>
                   )}
                   {newEvent.documento && (
-                    <div className="mt-2 rounded-xl border bg-slate-50 p-3">
+                    <div className="mt-2 rounded-xl border border-border bg-muted/40 p-3">
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{newEvent.documento.name}</p>
-                          <p className="text-xs text-gray-600">
+                          <p className="text-sm font-medium text-foreground">{newEvent.documento.name}</p>
+                          <p className="text-xs text-muted-foreground">
                             {(newEvent.documento.size / 1024).toFixed(1)} KB
                           </p>
                         </div>

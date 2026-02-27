@@ -321,7 +321,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               value={formData.firstName}
               onChange={handleFirstnameChange}
               onBlur={() => handleBlur("firstName")}
-              className={`w-full border rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 touchedFields.firstName && !formData.firstName ? "border-red-500 ring-red-500" : "border-gray-300"
               }`}
               placeholder="Ingrese sus nombres"
@@ -341,7 +341,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               value={formData.lastName}
               onChange={handleLastnameChange}
               onBlur={() => handleBlur("lastName")}
-              className={`w-full border rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 touchedFields.lastName && !formData.lastName ? "border-red-500 ring-red-500" : "border-gray-300"
               }`}
               placeholder="Ingrese sus apellidos"
@@ -363,7 +363,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             value={formData.pais}
             onChange={(e) => handleInputChange("pais", e.target.value)}
             onBlur={() => handleBlur("pais")}
-            className={`pl-3 pr-4 py-2 w-full border rounded-md text-sm bg-white cursor-pointer ${
+            className={`pl-3 pr-4 py-2 w-full border rounded-md text-sm bg-card cursor-pointer ${
               touchedFields.pais && !formData.pais ? "border-red-500 ring-red-500" : "border-gray-300"
             }`}
           >
@@ -391,7 +391,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             value={formData.telefono}
             onChange={handlePhoneChange}
             onBlur={() => handleBlur("telefono")}
-            className={`w-full border rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               touchedFields.telefono && !formData.telefono ? "border-red-500 ring-red-500" : "border-gray-300"
             }`}
           />
@@ -412,7 +412,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             onChange={handleEmailChange}
             onBlur={() => handleBlur("email")}
             autoCapitalize="none"
-            className={`w-full border rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               (touchedFields.email && !formData.email) || emailError ? "border-red-500 ring-red-500" : "border-gray-300"
             }`}
             placeholder="ejemplo@correo.com"
@@ -431,7 +431,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             Contraseña
           </Label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
@@ -453,7 +453,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               {showPassword ? (
                 <EyeOff className="h-4 w-4 cursor-pointer" />
@@ -512,7 +512,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             Confirmar Contraseña
           </Label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               id="confirmPassword"
               type={showConfirmPassword ? "text" : "password"}
@@ -521,7 +521,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               maxLength={12}
               onChange={(e) => setConfirmPassword(e.target.value)}
               onBlur={() => setTouchedConfirmPassword(true)}
-              className={`pl-10 pr-10 w-full border rounded-md py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`pl-10 pr-10 w-full border rounded-md py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 formData.password && confirmPassword && formData.password !== confirmPassword
                   ? "border-red-500 ring-red-500"
                   : formData.password && confirmPassword && formData.password === confirmPassword
@@ -532,7 +532,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               {showConfirmPassword ? (
                 <EyeOff className="h-4 w-4 cursor-pointer" />
@@ -584,7 +584,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                 setTouchedTerminosCondiciones(true)
               }}
             />
-            <Label htmlFor="terminosCondiciones" className="text-sm text-gray-600">
+            <Label htmlFor="terminosCondiciones" className="text-sm text-muted-foreground">
               Acepto los{" "}
               <Button
                 type="button"
@@ -625,12 +625,12 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             <div
               ref={modalRef}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white p-6 w-full max-w-md rounded-lg shadow-xl max-h-[80vh] overflow-auto"
+              className="bg-card p-6 w-full max-w-md rounded-lg shadow-xl max-h-[80vh] overflow-auto"
             >
               <h2 id="policy-title" className="text-lg font-semibold mb-4 text-center">
                 Politica de seguridad de la informacion
               </h2>
-              <div id="policy-body" className="text-sm text-gray-700 space-y-3 mb-6">
+              <div id="policy-body" className="text-sm text-foreground space-y-3 mb-6">
                 <p>Al registrarse en Time2Go, el usuario autoriza de manera previa, expresa e informada el tratamiento de sus datos personales conforme a lo establecido en la Ley 1581 de 2012 y demas normas concordantes.</p>
                 <p>Los datos personales suministrados seran tratados por Time2Go con la finalidad de permitir el registro en la plataforma, brindar informacion sobre eventos en la ciudad de Bucaramanga, enviar comunicaciones informativas y mejorar la experiencia del usuario.</p>
                 <p>El titular podra ejercer en cualquier momento sus derechos de acceso, actualizacion, rectificacion y supresion de datos, asi como revocar la autorizacion otorgada, conforme a la Politica de Tratamiento de Datos Personales, disponible en el sitio web.</p>
@@ -669,13 +669,13 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
           aria-modal="true"
           aria-labelledby="dup-title"
         >
-          <div className="bg-white rounded-md p-6 w-full max-w-sm shadow-lg">
+          <div className="bg-card rounded-md p-6 w-full max-w-sm shadow-lg">
             <h3 id="dup-title" className="text-lg font-semibold mb-2">
               Campos ya registrados
             </h3>
-            <p className="text-sm text-gray-700 mb-4">{duplicateModal.message}</p>
+            <p className="text-sm text-foreground mb-4">{duplicateModal.message}</p>
             {duplicateModal.duplicates.length > 0 && (
-              <ul className="text-sm text-gray-600 mb-4 list-disc list-inside">
+              <ul className="text-sm text-muted-foreground mb-4 list-disc list-inside">
                 {duplicateModal.duplicates.map((dup, idx) => (
                   <li key={idx}>{dup}</li>
                 ))}

@@ -55,7 +55,7 @@ export function EventsPreview() {
   }
 
   const EventCard = ({ event }: { event: (typeof featuredEvents)[0] }) => (
-    <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-white/80 backdrop-blur-sm border-white/50 overflow-hidden h-full rounded-sm">
+    <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-card/80 backdrop-blur-sm border-border overflow-hidden h-full rounded-sm">
       <div className="relative">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -67,28 +67,28 @@ export function EventsPreview() {
         <Badge className="absolute top-3 left-3 bg-gradient-to-r from-green-500 to-lime-400 text-white rounded-sm">
           {event.category}
         </Badge>
-        <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-sm px-2 py-1">
+        <div className="absolute top-3 right-3 flex items-center gap-1 bg-card/90 backdrop-blur-sm rounded-sm px-2 py-1">
           <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
           <span className="text-xs font-medium">{event.rating}</span>
         </div>
       </div>
 
       <CardContent className="p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-green-600 transition-colors">
+        <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-green-600 transition-colors">
           {event.title}
         </h3>
-        <p className="text-gray-600 mb-4 line-clamp-2">{event.description}</p>
+        <p className="text-muted-foreground mb-4 line-clamp-2">{event.description}</p>
 
         <div className="space-y-2 mb-4">
-          <div className="flex items-center text-sm text-gray-600">
+          <div className="flex items-center text-sm text-muted-foreground">
             <Calendar className="h-4 w-4 mr-2 text-green-500" />
             {event.date}
           </div>
-          <div className="flex items-center text-sm text-gray-600">
+          <div className="flex items-center text-sm text-muted-foreground">
             <MapPin className="h-4 w-4 mr-2 text-green-500" />
             {event.location}
           </div>
-          <div className="flex items-center text-sm text-gray-600">
+          <div className="flex items-center text-sm text-muted-foreground">
             <Users className="h-4 w-4 mr-2 text-green-500" />
             {event.attendees.toLocaleString()} interesados
           </div>
@@ -128,7 +128,7 @@ export function EventsPreview() {
             <h3 className="text-3xl lg:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-green-600 to-lime-500 bg-clip-text text-transparent">
               {title}
             </h3>
-            <p className="text-sm text-gray-400 mt-0.5 font-medium tracking-wide uppercase">
+            <p className="text-sm text-muted-foreground mt-0.5 font-medium tracking-wide uppercase">
               Eventos destacados
             </p>
           </div>
@@ -169,7 +169,7 @@ export function EventsPreview() {
             <Button
               size="lg"
               variant="outline"
-              className="bg-white/80 backdrop-blur-sm border-2 border-green-200 hover:border-green-500 hover:text-green-600 transition-all duration-300 px-8 py-3 rounded-sm"
+              className="bg-card/80 backdrop-blur-sm border-2 border-border hover:border-green-500 hover:text-green-600 transition-all duration-300 px-8 py-3 rounded-sm"
             >
               Ver todos los eventos
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -188,12 +188,12 @@ export function EventsPreview() {
         .events-swiper .swiper-button-prev {
           width: 44px !important;
           height: 44px !important;
-          background: rgba(255, 255, 255, 0.55) !important;
+          background: hsl(var(--card) / 0.78) !important;
           backdrop-filter: blur(4px) !important;
           border-radius: 4px !important;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07) !important;
+          box-shadow: 0 2px 8px hsl(var(--foreground) / 0.12) !important;
           color: #16a34a !important;
-          border: 1px solid rgba(22, 163, 74, 0.12) !important;
+          border: 1px solid hsl(var(--border)) !important;
           transition: all 0.3s ease !important;
         }
 
@@ -212,7 +212,7 @@ export function EventsPreview() {
         }
 
         .events-swiper .swiper-pagination-bullet {
-          background: #cbd5e1 !important;
+          background: hsl(var(--muted-foreground) / 0.35) !important;
           opacity: 1 !important;
           width: 10px !important;
           height: 10px !important;

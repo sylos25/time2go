@@ -186,12 +186,12 @@ export default function PerfilPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-background">
         <Header isLoggedIn={true} userName="Usuario" />
         <div className="pt-32 pb-12 px-4 flex items-center justify-center h-96">
           <div className="text-center">
             <Loader2 className="h-12 w-12 text-green-800 animate-spin mx-auto mb-4" />
-            <p className="text-gray-700 text-lg">Cargando datos del perfil...</p>
+            <p className="text-muted-foreground text-lg">Cargando datos del perfil...</p>
           </div>
         </div>
       </div>
@@ -200,12 +200,12 @@ export default function PerfilPage() {
 
   if (error || !user) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-background">
         <Header isLoggedIn={true} userName="Usuario" />
         <div className="pt-32 pb-12 px-4">
           <div className="max-w-2xl mx-auto bg-red-50 border border-red-200 rounded-lg p-6 text-center">
             <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
-            <p className="text-gray-700 text-lg font-medium mb-4">
+            <p className="text-foreground text-lg font-medium mb-4">
               {error || "Error al cargar el perfil"}
             </p>
             <Button
@@ -221,7 +221,7 @@ export default function PerfilPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <Header isLoggedIn={true} userName={user.nombres} />
 
       <div className="pt-32 pb-12 px-4">
@@ -235,7 +235,7 @@ export default function PerfilPage() {
           )}
 
           {/* Contenedor Principal */}
-          <Card className="bg-gradient-to-tr from-stone-50 to-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+          <Card className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
             {/* Encabezado */}
             <div 
               className="h-32 bg-cover bg-center bg-no-repeat" 
@@ -247,7 +247,7 @@ export default function PerfilPage() {
             <div className="px-8 pb-8">
               {/* Avatar y Nombre */}
               <div className="flex items-end gap-6 mb-8 relative -mt-12">
-                <div className="w-32 h-32 rounded-lg bg-white flex items-center justify-center border-4 border-green-700 shadow-lg">
+                <div className="w-32 h-32 rounded-lg bg-card flex items-center justify-center border-4 border-green-700 shadow-lg">
                   <Rat className="h-16 w-16 text-lime-500" />
                 </div>
                 <div className="flex-1 pb-4">
@@ -258,7 +258,7 @@ export default function PerfilPage() {
                       </h1>
                       <div className="flex items-center gap-4 mt-2">
                         {user.fecha_registro && (
-                          <span className="text-gray-600 text-sm">
+                          <span className="text-muted-foreground text-sm">
                             Registrado el {new Date(user.fecha_registro).toLocaleDateString("es-ES")}
                           </span>
                         )}
@@ -290,11 +290,11 @@ export default function PerfilPage() {
                 <h2 className="text-2xl font-bold text-lime-500 mb-6">Información Personal</h2>
 
                 {/* Nombres */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:bg-teal-50 hover:border-green-500 transition-colors">
+                <div className="border border-border rounded-lg p-5 hover:bg-accent hover:border-green-500 transition-colors">
                   <div className="flex items-start gap-4">
                     <div className="flex-1">
                       <p className="text-green-600 text-sm font-bold mb-1">NOMBRE COMPLETO</p>
-                      <p className="text-gray-700 text-lg font-medium">
+                      <p className="text-foreground text-lg font-medium">
                         {user.nombres} {user.apellidos}
                       </p>
                     </div>
@@ -302,11 +302,11 @@ export default function PerfilPage() {
                 </div>
 
                 {/* País */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:bg-teal-50 hover:border-green-500 transition-colors">
+                <div className="border border-border rounded-lg p-5 hover:bg-accent hover:border-green-500 transition-colors">
                   <div className="flex items-start gap-4">
                     <div className="flex-1">
                       <p className="text-green-700 text-sm font-bold mb-1">PAÍS</p>
-                      <p className="text-gray-700 text-lg font-medium">
+                      <p className="text-foreground text-lg font-medium">
                         {user.nombre_pais || "No especificado"}
                       </p>
                     </div>
@@ -314,12 +314,12 @@ export default function PerfilPage() {
                 </div>
 
                 {/* Correo */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:bg-teal-50 hover:border-green-500 transition-colors">
+                <div className="border border-border rounded-lg p-5 hover:bg-accent hover:border-green-500 transition-colors">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4 flex-1">
                       <div className="flex-1">
                         <p className="text-green-700 text-sm font-bold mb-1">CORREO ELECTRÓNICO</p>
-                        <p className="text-gray-700 text-lg font-medium break-all">{user.correo}</p>
+                        <p className="text-foreground text-lg font-medium break-all">{user.correo}</p>
                       </div>
                     </div>
                     <div className="flex-shrink-0 pt-2">
@@ -339,12 +339,12 @@ export default function PerfilPage() {
                 </div>
 
                 {/* Teléfono */}
-                <div className="border border-gray-200 rounded-lg p-5 hover:bg-teal-50 hover:border-green-500 transition-colors">
+                <div className="border border-border rounded-lg p-5 hover:bg-accent hover:border-green-500 transition-colors">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4 flex-1">
                       <div className="flex-1">
                         <p className="text-green-700 text-sm font-bold mb-1">NÚMERO DE TELÉFONO</p>
-                        <p className="text-gray-700 text-lg font-medium">
+                        <p className="text-foreground text-lg font-medium">
                           {user.telefono ? String(user.telefono) : "No registrado"}
                         </p>
                       </div>
@@ -385,7 +385,7 @@ export default function PerfilPage() {
                     router.push("/")
                   }}
                   variant="outline"
-                  className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 hover:scale-102 font-medium"
+                  className="w-full border-border text-foreground hover:bg-accent hover:scale-102 font-medium"
                 >
                   Volver al Inicio
                 </Button>
@@ -413,7 +413,7 @@ export default function PerfilPage() {
               disabled={isUploadingPdf}
             />
             {selectedPdf && (
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 Archivo seleccionado: <span className="font-medium">{selectedPdf.name}</span>
               </p>
             )}

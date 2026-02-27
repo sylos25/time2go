@@ -130,10 +130,10 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
           Promedio: <span className="font-semibold text-foreground">{promedioValoraciones.toFixed(1)} / 5 ⭐</span>
           {" "}({totalValoraciones} valoración{totalValoraciones === 1 ? "" : "es"})
         </div>
-        {valoraciones.length === 0 && <div className="text-sm text-gray-500">Sé el primero en valorar este evento.</div>}
+        {valoraciones.length === 0 && <div className="text-sm text-muted-foreground">Sé el primero en valorar este evento.</div>}
         {valoraciones.map((valoracionItem) => (
           <div key={valoracionItem.id_valoracion} className="border p-3 rounded-md">
-            <div className="flex items-center justify-between text-sm text-gray-600">
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
               <div>
                 <strong>
                   {`${valoracionItem.nombres || ""} ${valoracionItem.apellidos || ""}`.trim() || `Usuario #${valoracionItem.id_usuario}`}
@@ -144,7 +144,7 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
               </div>
             </div>
             <div className="mt-2">{valoracionItem.valoracion} ⭐</div>
-            {valoracionItem.comentario && <div className="mt-2 text-gray-700">{valoracionItem.comentario}</div>}
+            {valoracionItem.comentario && <div className="mt-2 text-foreground">{valoracionItem.comentario}</div>}
           </div>
         ))}
       </div>

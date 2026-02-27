@@ -314,10 +314,10 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
         <h3 className="text-lg font-semibold">Insertar Datos</h3>
       </div>
 
-      <Card className="border-lime-100 bg-yellow-50">
+      <Card className="border-border bg-card">
         <CardHeader>
-          <CardTitle className="text-lg text-gray-800">Insertar Datos en Base de Datos</CardTitle>
-          <CardDescription className="text-sm italic text-gray-500">Selecciona la tabla y completa los campos requeridos para insertar nuevos datos.</CardDescription>
+          <CardTitle className="text-lg text-foreground">Insertar Datos en Base de Datos</CardTitle>
+          <CardDescription className="text-sm italic text-muted-foreground">Selecciona la tabla y completa los campos requeridos para insertar nuevos datos.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="mb-4">
@@ -333,14 +333,14 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
                 <SelectValue placeholder="Selecciona una tabla" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="paises" className="cursor-pointer bg-lime-50">Países</SelectItem>
-                <SelectItem value="departamentos" className="cursor-pointer bg-green-50">Departamentos</SelectItem>
-                <SelectItem value="municipios" className="cursor-pointer bg-lime-50">Municipios</SelectItem>
-                <SelectItem value="tipo_sitios" className="cursor-pointer bg-green-50">Tipo de sitios</SelectItem>
-                <SelectItem value="sitios" className="cursor-pointer bg-lime-50">Sitios</SelectItem>
-                <SelectItem value="tipo_infraestructura_discapacitados" className="cursor-pointer bg-green-50">Infraestructura discapacitados</SelectItem>
-                <SelectItem value="sitios_discapacitados" className="cursor-pointer bg-lime-50">Sitio con condiciones para discapacitados</SelectItem>
-                <SelectItem value="tipo_eventos" className="cursor-pointer bg-lime-50">Tipo de eventos</SelectItem>
+                <SelectItem value="paises" className="cursor-pointer">Países</SelectItem>
+                <SelectItem value="departamentos" className="cursor-pointer">Departamentos</SelectItem>
+                <SelectItem value="municipios" className="cursor-pointer">Municipios</SelectItem>
+                <SelectItem value="tipo_sitios" className="cursor-pointer">Tipo de sitios</SelectItem>
+                <SelectItem value="sitios" className="cursor-pointer">Sitios</SelectItem>
+                <SelectItem value="tipo_infraestructura_discapacitados" className="cursor-pointer">Infraestructura discapacitados</SelectItem>
+                <SelectItem value="sitios_discapacitados" className="cursor-pointer">Sitio con condiciones para discapacitados</SelectItem>
+                <SelectItem value="tipo_eventos" className="cursor-pointer">Tipo de eventos</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -361,13 +361,12 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4 max-w-3xl w-full mx-auto bg-white rounded-sm shadow-sm border border-green-600 p-4">
+            <form onSubmit={handleSubmit} className="space-y-4 max-w-3xl w-full mx-auto bg-card rounded-sm shadow-sm border border-border p-4">
               <div className="grid grid-cols-1 gap-4">
                 {currentConfig.fields.map((field) => (
                   <div key={field.name} className="space-y-2">
                     <Label htmlFor={field.name}>
                       {field.label}
-                      {field.required && <span className="text-red-500">*</span>}
                     </Label>
 
                     {field.type === "select" ? (
@@ -398,7 +397,7 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
                           name={field.name}
                           checked={(formData[field.name] as boolean) || false}
                           onChange={handleInputChange}
-                          className="h-4 w-4 rounded border-gray-300"
+                          className="h-4 w-4 rounded border-border"
                         />
                         <Label htmlFor={field.name} className="font-normal cursor-pointer">
                           {field.label}

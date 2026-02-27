@@ -157,7 +157,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           onChange={handleEmailChange}
           onBlur={() => handleBlur("email")}
           autoCapitalize="none"
-          className={`w-full border rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+          className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             touchedFields.email && !email ? "border-red-500 ring-red-500" : "border-gray-300"
           }`}
           placeholder="ejemplo@correo.com"
@@ -172,7 +172,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           Contraseña
         </Label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             id="password"
             type={showPassword ? "text" : "password"}
@@ -180,14 +180,14 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             onBlur={() => handleBlur("password")}
-            className={`pl-10 pr-10 w-full border rounded-md py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`pl-10 pr-10 w-full border rounded-md py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               touchedFields.password && !password ? "border-red-500 ring-red-500" : "border-gray-300"
             }`}
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
             {showPassword ? (
               <EyeOff className="h-4 w-4 cursor-pointer" />
@@ -209,7 +209,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             checked={rememberMe}
             onCheckedChange={(checked) => setRememberMe(checked as boolean)}
           />
-          <Label htmlFor="rememberMe" className="text-sm text-gray-600">
+          <Label htmlFor="rememberMe" className="text-sm text-muted-foreground">
             Recordarme
           </Label>
         </div>

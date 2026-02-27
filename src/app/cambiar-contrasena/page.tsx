@@ -165,12 +165,12 @@ export default function CambiarContrasenaPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-background">
         <Header isLoggedIn={true} userName="Usuario" />
         <div className="pt-32 pb-12 px-4 flex items-center justify-center h-96">
           <div className="text-center">
             <Loader2 className="h-12 w-12 text-purple-600 animate-spin mx-auto mb-4" />
-            <p className="text-gray-700 text-lg">Cargando...</p>
+            <p className="text-muted-foreground text-lg">Cargando...</p>
           </div>
         </div>
       </div>
@@ -179,12 +179,12 @@ export default function CambiarContrasenaPage() {
 
   if (error || !user) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-background">
         <Header isLoggedIn={true} userName="Usuario" />
         <div className="pt-32 pb-12 px-4">
           <div className="max-w-2xl mx-auto bg-red-50 border border-red-200 rounded-lg p-6 text-center">
             <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
-            <p className="text-gray-700 text-lg font-medium mb-4">
+            <p className="text-foreground text-lg font-medium mb-4">
               {error || "Error al cargar los datos"}
             </p>
             <Button
@@ -200,7 +200,7 @@ export default function CambiarContrasenaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <Header isLoggedIn={true} userName={user.nombres} />
 
       <div className="pt-32 pb-12 px-4">
@@ -223,7 +223,7 @@ export default function CambiarContrasenaPage() {
           )}
 
           {/* Contenedor Principal */}
-          <Card className="bg-gradient-to-tr from-stone-50 to-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+          <Card className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
             {/* Encabezado */}
             <div 
               className="h-32 bg-cover bg-center bg-no-repeat" 
@@ -235,7 +235,7 @@ export default function CambiarContrasenaPage() {
             <div className="px-8 pb-8">
               {/* Avatar y Nombre */}
               <div className="flex items-end gap-6 mb-8 relative -mt-12">
-                <div className="w-32 h-32 rounded-lg bg-white flex items-center justify-center border-4 border-green-700 shadow-lg">
+                <div className="w-32 h-32 rounded-lg bg-card flex items-center justify-center border-4 border-green-700 shadow-lg">
                   <Rat className="h-16 w-16 text-lime-500" />
                 </div>
                 <div className="flex-1 pb-4">
@@ -244,7 +244,7 @@ export default function CambiarContrasenaPage() {
                   </h1>
                   <div className="flex items-center gap-4 mt-2">
                     {user.fecha_registro && (
-                      <span className="text-gray-600 text-sm">
+                      <span className="text-muted-foreground text-sm">
                         Registrado el {new Date(user.fecha_registro).toLocaleDateString("es-ES")}
                       </span>
                     )}
@@ -279,7 +279,7 @@ export default function CambiarContrasenaPage() {
                         type={showPasswords.current ? "text" : "password"}
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
-                        className="border-gray-300 text-gray-900 pr-10"
+                        className="border-input text-foreground pr-10"
                         placeholder="Ingresa tu contraseña actual"
                       />
                       <button
@@ -287,7 +287,7 @@ export default function CambiarContrasenaPage() {
                         onClick={() =>
                           setShowPasswords((prev) => ({ ...prev, current: !prev.current }))
                         }
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       >
                         {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
@@ -302,7 +302,7 @@ export default function CambiarContrasenaPage() {
                         type={showPasswords.new ? "text" : "password"}
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="border-gray-300 text-gray-900 pr-10"
+                        className="border-input text-foreground pr-10"
                         placeholder="Ingresa tu nueva contraseña"
                       />
                       <button
@@ -310,7 +310,7 @@ export default function CambiarContrasenaPage() {
                         onClick={() =>
                           setShowPasswords((prev) => ({ ...prev, new: !prev.new }))
                         }
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       >
                         {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
@@ -325,7 +325,7 @@ export default function CambiarContrasenaPage() {
                         type={showPasswords.confirm ? "text" : "password"}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="border-gray-300 text-gray-900 pr-10"
+                        className="border-input text-foreground pr-10"
                         placeholder="Confirma tu nueva contraseña"
                       />
                       <button
@@ -333,7 +333,7 @@ export default function CambiarContrasenaPage() {
                         onClick={() =>
                           setShowPasswords((prev) => ({ ...prev, confirm: !prev.confirm }))
                         }
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       >
                         {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
@@ -363,7 +363,7 @@ export default function CambiarContrasenaPage() {
                       type="button"
                       onClick={() => router.push("/perfil")}
                       variant="outline"
-                      className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 hover:scale-102 font-medium"
+                      className="flex-1 border-border text-foreground hover:bg-accent hover:scale-102 font-medium"
                     >
                       Cancelar
                     </Button>
@@ -371,9 +371,9 @@ export default function CambiarContrasenaPage() {
                 </form>
 
                 {/* Información adicional */}
-                <div className="bg-yellow-50 border border-green-600 rounded-lg p-4 mt-6">
-                  <h3 className="font-semibold text-green-900 mb-2">Recomendaciones de Seguridad:</h3>
-                  <ul className="space-y-1 text-sm text-green-800">
+                <div className="bg-muted/40 border border-border rounded-lg p-4 mt-6">
+                  <h3 className="font-semibold text-foreground mb-2">Recomendaciones de Seguridad:</h3>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
                     <li>• Usa una contraseña con al menos 8 caracteres</li>
                     <li>• Incluye mayúsculas, minúsculas y números</li>
                     <li>• Evita usar información personal (nombre, fecha de nacimiento)</li>

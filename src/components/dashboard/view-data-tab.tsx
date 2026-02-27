@@ -262,10 +262,10 @@ export function ViewDataTab() {
         <h3 className="text-lg font-semibold">Ver Datos</h3>
       </div>
 
-      <Card className="border-lime-100 bg-yellow-50">
+      <Card className="border-border bg-card">
         <CardHeader>
-          <CardTitle className="text-lg text-gray-800">Ver Datos</CardTitle>
-          <CardDescription className="text-sm italic text-gray-500">Visualiza registros existentes.</CardDescription>
+          <CardTitle className="text-lg text-foreground">Ver Datos</CardTitle>
+          <CardDescription className="text-sm italic text-muted-foreground">Visualiza registros existentes.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="mb-4 flex flex-col lg:flex-row lg:items-center gap-3">
@@ -274,19 +274,19 @@ export function ViewDataTab() {
                 <SelectValue placeholder="Selecciona una tabla" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="paises" className="cursor-pointer bg-lime-50">Países</SelectItem>
-                <SelectItem value="departamentos" className="cursor-pointer bg-green-50">Departamentos</SelectItem>
-                <SelectItem value="municipios" className="cursor-pointer bg-lime-50">Municipios</SelectItem>
-                <SelectItem value="tipo_sitios" className="cursor-pointer bg-green-50">Tipos del sitio</SelectItem>
-                <SelectItem value="sitios" className="cursor-pointer bg-lime-50">Sitios para eventos</SelectItem>
-                <SelectItem value="tipo_infraestructura_discapacitados" className="cursor-pointer bg-green-50">Tipos de infraestructura para discapacitados</SelectItem>
-                <SelectItem value="sitios_discapacitados" className="cursor-pointer bg-lime-50">Sitios con acceso inclusivo</SelectItem>
-                <SelectItem value="categoria_eventos" className="cursor-pointer bg-green-50">Categorías de los eventos</SelectItem>
-                <SelectItem value="tipo_eventos" className="cursor-pointer bg-lime-50">Tipos de eventos</SelectItem>
-                <SelectItem value="eventos" className="cursor-pointer bg-green-50">Eventos</SelectItem>
-                <SelectItem value="eventos_informacion_importante" className="cursor-pointer bg-lime-50">Eventos - Información importante</SelectItem>
-                <SelectItem value="boleteria" className="cursor-pointer bg-green-50">Boletería</SelectItem>
-                <SelectItem value="links" className="cursor-pointer bg-lime-50">Links</SelectItem>
+                <SelectItem value="paises" className="cursor-pointer">Países</SelectItem>
+                <SelectItem value="departamentos" className="cursor-pointer">Departamentos</SelectItem>
+                <SelectItem value="municipios" className="cursor-pointer">Municipios</SelectItem>
+                <SelectItem value="tipo_sitios" className="cursor-pointer">Tipos del sitio</SelectItem>
+                <SelectItem value="sitios" className="cursor-pointer">Sitios para eventos</SelectItem>
+                <SelectItem value="tipo_infraestructura_discapacitados" className="cursor-pointer">Tipos de infraestructura para discapacitados</SelectItem>
+                <SelectItem value="sitios_discapacitados" className="cursor-pointer">Sitios con acceso inclusivo</SelectItem>
+                <SelectItem value="categoria_eventos" className="cursor-pointer">Categorías de los eventos</SelectItem>
+                <SelectItem value="tipo_eventos" className="cursor-pointer">Tipos de eventos</SelectItem>
+                <SelectItem value="eventos" className="cursor-pointer">Eventos</SelectItem>
+                <SelectItem value="eventos_informacion_importante" className="cursor-pointer">Eventos - Información importante</SelectItem>
+                <SelectItem value="boleteria" className="cursor-pointer">Boletería</SelectItem>
+                <SelectItem value="links" className="cursor-pointer">Links</SelectItem>
               </SelectContent>
             </Select>
 
@@ -314,32 +314,32 @@ export function ViewDataTab() {
           {error && <div className="text-red-600">{error}</div>}
 
           {!loading && !error && (
-            <div className="bg-white rounded-sm shadow-sm border border-green-600 overflow-hidden">
+            <div className="bg-card rounded-sm shadow-sm border border-border overflow-hidden">
               {filteredRows.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">No hay registros</div>
+                <div className="text-center py-8 text-muted-foreground">No hay registros</div>
               ) : (
                 <div className="overflow-x-auto">
-                <table className="w-full min-w-max text-sm table-auto border-collapse border border-green-600">
-                  <thead className="bg-lime-100 border-b border-green-600">
+                <table className="w-full min-w-max text-sm table-auto border-collapse border border-border">
+                  <thead className="bg-muted/40 border-b border-border">
                     <tr>
                       {Object.keys(filteredRows[0]).map((col) => (
                         <th
                           key={col}
-                          className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600 last:border-r-0"
+                          className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border last:border-r-0"
                         >
                           {getColumnLabel(col)}
                         </th>
                       ))}
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Editar
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-border">
                     {filteredRows.map((r, i) => (
-                      <tr key={i} className="hover:bg-gray-50 transition-colors">
+                      <tr key={i} className="hover:bg-accent transition-colors">
                         {Object.keys(filteredRows[0]).map((col) => (
-                          <td key={col} className="px-4 py-3 align-top text-center text-sm text-gray-800">
+                          <td key={col} className="px-4 py-3 align-top text-center text-sm text-foreground">
                             {String((r as any)[col] ?? "")}
                           </td>
                         ))}
@@ -371,7 +371,7 @@ export function ViewDataTab() {
 
           <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
             {Object.keys(editFormData).length === 0 && (
-              <p className="text-sm text-gray-500">Este registro no tiene campos editables disponibles.</p>
+              <p className="text-sm text-muted-foreground">Este registro no tiene campos editables disponibles.</p>
             )}
 
             {Object.entries(editFormData).map(([field, value]) => {
@@ -416,7 +416,7 @@ export function ViewDataTab() {
             <button
               type="button"
               onClick={() => setEditModalOpen(false)}
-              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="px-4 py-2 rounded-lg border border-border text-foreground hover:bg-accent"
             >
               Cancelar
             </button>

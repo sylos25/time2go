@@ -24,14 +24,14 @@ export default function MisEventosRedirectPage() {
   }, [id]);
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-sky-100 flex flex-col">
+    <main className="min-h-screen bg-background flex flex-col">
       <Header onAuthClick={() => {}} />
       <div className="flex-1 w-full">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-10">
         <div className="h-[40vh] flex items-center justify-center">
           <div className="text-center">
             <Loader2 className="h-12 w-12 text-green-800 animate-spin mx-auto mb-4" />
-            <p className="text-gray-700 text-lg">Abriendo el detalle de tu evento...</p>
+            <p className="text-muted-foreground text-lg">Abriendo el detalle de tu evento...</p>
           </div>
         </div>
       </div>

@@ -47,7 +47,7 @@ export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalP
           <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600 bg-clip-text text-transparent">
             {isLogin ? "Bienvenido de vuelta" : "Únete a Time2Go"}
           </DialogTitle>
-          <p className="text-center text-gray-600 mt-2">
+          <p className="text-center text-muted-foreground mt-2">
             {isLogin
               ? "Inicia sesión para continuar con tu experiencia"
               : "Crea tu cuenta y descubre eventos increíbles"}
@@ -80,7 +80,7 @@ export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalP
         </div>
 
         <div className="text-center text-sm">
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-muted-foreground">
             {isLogin ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}
           </span>
           <Button

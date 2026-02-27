@@ -41,13 +41,13 @@ export function CookieConsent() {
   }
 
   return (
-    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 max-w-3xl w-[92%] bg-white/95 border border-gray-200 shadow-lg rounded-md p-4 flex flex-col md:flex-row items-start md:items-center gap-3">
-      <div className="flex-1 text-sm text-gray-800">
+    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 max-w-3xl w-[92%] bg-card/95 border border-border shadow-lg rounded-md p-4 flex flex-col md:flex-row items-start md:items-center gap-3">
+      <div className="flex-1 text-sm text-foreground">
         <strong className="block font-medium mb-1">Usamos cookies</strong>
         Utilizamos cookies propias y de terceros para mejorar tu experiencia, mantener la sesión y analizar el uso. Puedes aceptar o rechazar cookies no esenciales. <a href="/politicas/cookies" className="underline text-lime-600 ml-1">Más información</a>
       </div>
       <div className="flex items-center gap-2">
-        <button onClick={reject} className="px-3 py-2 text-sm rounded-md border border-gray-300 bg-white text-gray-700 cursor-pointer">Rechazar</button>
+        <button onClick={reject} className="px-3 py-2 text-sm rounded-md border border-border bg-secondary text-secondary-foreground cursor-pointer">Rechazar</button>
         <button onClick={accept} className="px-4 py-2 text-sm rounded-md bg-lime-600 text-white cursor-pointer">Aceptar</button>
       </div>
     </div>

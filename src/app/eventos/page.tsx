@@ -297,7 +297,7 @@ const handleAddEvent = async () => {
 
   
   return (
-    <main className="min-h-screen bg-gradient-to-tr from-purple-50 via-indigo-50 to-sky-100">
+    <main className="min-h-screen bg-background">
       <Header onAuthClick={openAuthModal} />
 
       {/* Hero Section */}
@@ -305,10 +305,10 @@ const handleAddEvent = async () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
           {/* Enhanced Search and Filters */}
-          <div className="mt-20 bg-white/90 backdrop-blur-md rounded-3xl p-8 shadow-xl border border-white/60 mb-12 relative">
+          <div className="mt-20 bg-card/90 backdrop-blur-md rounded-3xl p-8 shadow-xl border border-border mb-12 relative">
             <div className="flex flex-col lg:flex-row gap-6 items-center">
               <div className="flex-1 relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-6 w-6" />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-6 w-6" />
                 <Input
                   placeholder="¿Qué evento buscas hoy?"
                   value={searchTerm}
@@ -319,9 +319,9 @@ const handleAddEvent = async () => {
                 />
 
                 {isSearchFocused && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[60] overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-popover text-popover-foreground rounded-2xl shadow-2xl border border-border z-[60] overflow-hidden">
                     <div className="p-4 border-b border-gray-100">
-                      <h3 className="text-sm font-semibold text-gray-700 mb-3">Eventos mejor valorados</h3>
+                      <h3 className="text-sm font-semibold text-foreground mb-3">Eventos mejor valorados</h3>
                       <div className="space-y-3">
                         {topRatedEvents.map((event) => (
                           <div
@@ -334,11 +334,11 @@ const handleAddEvent = async () => {
                               className="w-12 h-12 rounded-lg object-cover"
                             />
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-gray-900 truncate">{event.title}</h4>
+                              <h4 className="font-medium text-foreground truncate">{event.title}</h4>
                               <div className="flex items-center gap-2 mt-1">
                                 <div className="flex items-center gap-1">
                                   <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                  <span className="text-xs font-medium text-gray-600">{event.rating}</span>
+                                  <span className="text-xs font-medium text-muted-foreground">{event.rating}</span>
                                 </div>
                                 <Badge variant="outline" className="text-xs">
                                   {event.category}
@@ -391,11 +391,11 @@ const handleAddEvent = async () => {
 
       {expandedEvent && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-card rounded-3xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
             <div className="relative">
               <Button
                 onClick={() => setExpandedEventId(null)}
-                className="absolute top-4 right-4 z-10 bg-white/90 hover:bg-white text-gray-900 rounded-full h-10 w-10 p-0"
+                className="absolute top-4 right-4 z-10 bg-card/90 hover:bg-card text-foreground rounded-full h-10 w-10 p-0"
                 variant="ghost"
               >
                 <X className="h-5 w-5" />
@@ -446,14 +446,14 @@ const handleAddEvent = async () => {
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between mb-4">
-                      <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">{expandedEvent.title}</h1>
+                      <h1 className="text-3xl lg:text-4xl font-bold text-foreground">{expandedEvent.title}</h1>
                       <div className="flex items-center gap-2 bg-yellow-50 px-4 py-2 rounded-xl">
                         <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
-                        <span className="text-xl font-bold text-gray-900">{expandedEvent.rating}</span>
-                        <span className="text-sm text-gray-600">/ 5.0</span>
+                        <span className="text-xl font-bold text-foreground">{expandedEvent.rating}</span>
+                        <span className="text-sm text-muted-foreground">/ 5.0</span>
                       </div>
                     </div>
-                    <p className="text-lg text-gray-600 leading-relaxed">{expandedEvent.fullDescription}</p>
+                    <p className="text-lg text-muted-foreground leading-relaxed">{expandedEvent.fullDescription}</p>
                   </div>
 
                   {/* Event Details Grid */}
@@ -461,41 +461,41 @@ const handleAddEvent = async () => {
                     <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
                       <Calendar className="h-5 w-5 text-blue-600" />
                       <div>
-                        <div className="font-semibold text-gray-900">{expandedEvent.date}</div>
-                        <div className="text-sm text-gray-600">{expandedEvent.time}</div>
+                        <div className="font-semibold text-foreground">{expandedEvent.date}</div>
+                        <div className="text-sm text-muted-foreground">{expandedEvent.time}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
                       <Clock className="h-5 w-5 text-blue-600" />
                       <div>
-                        <div className="font-semibold text-gray-900">Duración</div>
-                        <div className="text-sm text-gray-600">{expandedEvent.duration}</div>
+                        <div className="font-semibold text-foreground">Duración</div>
+                        <div className="text-sm text-muted-foreground">{expandedEvent.duration}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
                       <MapPin className="h-5 w-5 text-blue-600" />
                       <div>
-                        <div className="font-semibold text-gray-900">Ubicación</div>
-                        <div className="text-sm text-gray-600">{expandedEvent.location}</div>
+                        <div className="font-semibold text-foreground">Ubicación</div>
+                        <div className="text-sm text-muted-foreground">{expandedEvent.location}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
                       <Users className="h-5 w-5 text-blue-600" />
                       <div>
-                        <div className="font-semibold text-gray-900">Asistentes</div>
-                        <div className="text-sm text-gray-600">{expandedEvent.attendees.toLocaleString()}</div>
+                        <div className="font-semibold text-foreground">Asistentes</div>
+                        <div className="text-sm text-muted-foreground">{expandedEvent.attendees.toLocaleString()}</div>
                       </div>
                     </div>
                   </div>
 
                   {/* Highlights */}
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-3">Lo que incluye</h3>
+                    <h3 className="text-xl font-bold text-foreground mb-3">Lo que incluye</h3>
                     <div className="grid grid-cols-2 gap-2">
                       {expandedEvent.highlights.map((highlight: string, index: number) => (
                         <div key={index} className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                          <span className="text-gray-700">{highlight}</span>
+                          <span className="text-foreground">{highlight}</span>
                         </div>
                       ))}
                     </div>
@@ -506,7 +506,7 @@ const handleAddEvent = async () => {
                     <div className="flex items-center gap-3">
                       <Info className="h-5 w-5 text-blue-600" />
                       <div>
-                        <div className="font-semibold text-gray-900">Organizado por</div>
+                        <div className="font-semibold text-foreground">Organizado por</div>
                         <div className="text-blue-600">{expandedEvent.organizer}</div>
                       </div>
                     </div>
@@ -517,7 +517,7 @@ const handleAddEvent = async () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-3xl font-bold text-blue-600">{typeof expandedEvent.price === 'number' ? `$${expandedEvent.price}` : expandedEvent.price}</span>
-                        <span className="text-gray-600">por persona</span>
+                        <span className="text-muted-foreground">por persona</span>
                       </div>
                       <div className="flex gap-3">
                         <Button className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-700 hover:to-cyan-700 rounded-xl px-15 py-8 text-lg font-semibold text-white">
@@ -537,7 +537,7 @@ const handleAddEvent = async () => {
       <section className="pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900">
+            <h2 className="text-3xl lg:text-4xl font-bold text-foreground">
               Eventos Disponibles ({filteredEvents.length})
             </h2>
           </div>
@@ -546,7 +546,7 @@ const handleAddEvent = async () => {
             {filteredEvents.map((event) => (
               <Card
                 key={event.id_evento ?? event.id}
-                className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-white/90 backdrop-blur-sm border-white/60 rounded-2xl overflow-hidden"
+                className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-card/90 backdrop-blur-sm border-border rounded-2xl overflow-hidden"
               >
                 <div className="relative overflow-hidden">
                   <div className="w-full h-52 bg-gray-100">
@@ -563,7 +563,7 @@ const handleAddEvent = async () => {
                               key={i}
                               src={imgObj.url_imagen_evento}
                               alt={`${event.title} ${i + 1}`}
-                              className="h-10 w-16 object-cover rounded-md border border-white shadow-sm"
+                              className="h-10 w-16 object-cover rounded-md border border-border shadow-sm"
                             />
                           ))}
                         </div>
@@ -586,14 +586,14 @@ const handleAddEvent = async () => {
                     <Button
                       size="icon"
                       variant="secondary"
-                      className="h-9 w-9 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white"
+                      className="h-9 w-9 bg-card/90 backdrop-blur-sm rounded-full hover:bg-card"
                     >
                       <Heart className="h-4 w-4" />
                     </Button>
                     <Button
                       size="icon"
                       variant="secondary"
-                      className="h-9 w-9 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white"
+                      className="h-9 w-9 bg-card/90 backdrop-blur-sm rounded-full hover:bg-card"
                     >
                       <Share2 className="h-4 w-4" />
                     </Button>
@@ -602,7 +602,7 @@ const handleAddEvent = async () => {
                 
                 <CardContent className="p-6">
                   <div className="space-y-2 mb-4">
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-muted-foreground">
                       <Calendar className="h-4 w-4 mr-3" />
                       {event.date} • {event.time}
                     </div>
@@ -618,16 +618,16 @@ const handleAddEvent = async () => {
                     </div>
                   </div>
 
-                  <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-lime-500 transition-colors">
+                  <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-lime-500 transition-colors">
                     {event.title}
                   </h3>
-                  <p className="text-gray-600 mb-4 line-clamp-2">{event.description}</p>
+                  <p className="text-muted-foreground mb-4 line-clamp-2">{event.description}</p>
                   <div className="space-y-2 mb-6">
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-muted-foreground">
                       <MapPin className="h-4 w-4 mr-3" />
                       {event.location}
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-muted-foreground">
                       <Users className="h-4 w-4 mr-3" />
                       Aforo para {Number(event.attendees ?? event.cupo ?? 0).toLocaleString()}
                     </div>
@@ -650,8 +650,8 @@ const handleAddEvent = async () => {
           {filteredEvents.length === 0 && (
             <div className="text-center py-16">
               <div className="text-8xl mb-6">🔍</div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">No se encontraron eventos</h3>
-              <p className="text-lg text-gray-600">Intenta con otros términos de búsqueda o filtros</p>
+              <h3 className="text-2xl font-bold text-foreground mb-3">No se encontraron eventos</h3>
+              <p className="text-lg text-muted-foreground">Intenta con otros términos de búsqueda o filtros</p>
             </div>
           )}
         </div>

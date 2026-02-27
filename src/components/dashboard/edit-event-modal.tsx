@@ -466,7 +466,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                 name="id_categoria_evento"
                 value={formData.id_categoria_evento}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Selecciona una categoría</option>
                 {categories.map((cat) => (
@@ -483,7 +483,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                 name="id_tipo_evento"
                 value={formData.id_tipo_evento}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Selecciona un tipo</option>
                 {eventTypes.map((t) => (
@@ -508,7 +508,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                 className="rounded-lg"
               />
               {sites.length > 0 && (
-                <ul className="absolute z-10 bg-white border rounded-lg mt-1 w-full max-h-60 overflow-y-auto shadow-lg">
+                <ul className="absolute z-10 bg-card border border-border rounded-lg mt-1 w-full max-h-60 overflow-y-auto shadow-lg">
                   {sites.map((sitio) => (
                     <li
                       key={sitio.id_sitio || sitio.id}
@@ -517,7 +517,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                         setFormData((prev) => ({ ...prev, id_sitio: sitio.id_sitio || sitio.id }))
                         setSites([])
                       }}
-                      className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                      className="px-4 py-2 hover:bg-accent cursor-pointer"
                     >
                       {sitio.nombre_sitio || sitio.nombre}
                     </li>
@@ -550,16 +550,16 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
             />
           </div>
 
-          <div className="space-y-4 p-4 border rounded-lg shadow-md">
+          <div className="space-y-4 p-4 border border-border bg-muted/20 rounded-lg shadow-md">
             <div>
               <Label>Información adicional del evento</Label>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Registra los datos clave del evento por ítems para mantener una descripción detallada.
               </p>
             </div>
 
             {informacionAdicionalItems.map((item, index) => (
-              <div key={index} className="space-y-3 p-3 bg-gray-50 rounded-lg border">
+              <div key={index} className="space-y-3 p-3 bg-muted/40 rounded-lg border border-border">
                 <div className="space-y-2">
                   <Label className="text-xs">Detalle importante</Label>
                   <Textarea
@@ -605,7 +605,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
               >
                 + Añadir ítem
               </button>
-              <span className="text-sm text-gray-600">{informacionAdicionalItems.length}/20 ítems</span>
+              <span className="text-sm text-muted-foreground">{informacionAdicionalItems.length}/20 ítems</span>
             </div>
           </div>
 
@@ -651,7 +651,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                 type="date"
                 value={formData.fecha_inicio}
                 onChange={handleInputChange}
-                className="cursor-pointer w-full rounded-xl border-gray-300 shadow-sm p-2"
+                className="cursor-pointer w-full rounded-xl border-border bg-card text-foreground shadow-sm p-2"
               />
             </div>
             <div className="space-y-2">
@@ -662,7 +662,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                 type="date"
                 value={formData.fecha_fin}
                 onChange={handleInputChange}
-                className="cursor-pointer w-full rounded-xl border-gray-300 shadow-sm p-2"
+                className="cursor-pointer w-full rounded-xl border-border bg-card text-foreground shadow-sm p-2"
               />
             </div>
           </div>
@@ -701,14 +701,14 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                 name="gratis_pago"
                 checked={formData.gratis_pago}
                 onChange={handleInputChange}
-                className="rounded border-gray-300"
+                className="rounded border-border"
               />
               <span className="text-sm font-medium">Evento de Pago</span>
             </label>
           </div>
 
           {!formData.gratis_pago && (
-            <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-500">
+            <div className="flex items-center gap-2 p-3 bg-muted/40 rounded-lg border border-border">
               <input
                 id="reservar_anticipado"
                 name="reservar_anticipado"
@@ -727,12 +727,12 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
           {formData.gratis_pago && (
             <div className="space-y-4 p-4 border rounded-lg shadow-md">
               <h2 className="text-lg font-semibold">Tipos de Boletas y Precios</h2>
-              <p className="text-xs text-gray-600 italic -translate-y-2">
+              <p className="text-xs text-muted-foreground italic -translate-y-2">
                 Define los diferentes tipos de boletas disponibles para tu evento con sus precios.
               </p>
 
               {boletas.map((boleta, index) => (
-                <div key={index} className="space-y-3 p-3 bg-gray-50 rounded-lg">
+                <div key={index} className="space-y-3 p-3 bg-muted/40 border border-border rounded-lg">
                   <div className="space-y-2">
                     <Label className="text-xs">Nombre de la boleta</Label>
                     <Input
@@ -803,7 +803,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                     </button>
                   )}
                 </div>
-                <span className="text-sm text-gray-600">{boletas.length}/12 tipos de boletas</span>
+                <span className="text-sm text-muted-foreground">{boletas.length}/12 tipos de boletas</span>
               </div>
             </div>
           )}
@@ -822,7 +822,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
               placeholder="100"
               className="rounded-xl"
             />
-            <p className="text-sm text-gray-500">Ingresa un número entre 1 y 5000</p>
+            <p className="text-sm text-muted-foreground">Ingresa un número entre 1 y 5000</p>
           </div>
 
           {/* Imágenes existentes */}
@@ -853,7 +853,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
           {/* Nuevas imágenes */}
           <div>
             <Label htmlFor="images">Agregar Nuevas Imágenes</Label>
-            <div className="mt-2 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer hover:border-blue-500 transition-colors">
+            <div className="mt-2 flex items-center justify-center border-2 border-dashed border-border rounded-lg p-6 cursor-pointer hover:border-blue-500 transition-colors">
               <input
                 id="images"
                 type="file"
@@ -863,8 +863,8 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                 className="hidden"
               />
               <label htmlFor="images" className="flex flex-col items-center cursor-pointer">
-                <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                <span className="text-sm font-medium text-gray-600">Haz clic para seleccionar imágenes</span>
+                <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                <span className="text-sm font-medium text-muted-foreground">Haz clic para seleccionar imágenes</span>
               </label>
             </div>
 

@@ -55,11 +55,11 @@ export function PDFViewer({ pdfUrl, fileName = "documento.pdf", onClose }: PDFVi
   return (
     <div className="flex flex-col h-full bg-gray-50 rounded-lg">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-white border-b">
+      <div className="flex items-center justify-between p-4 bg-card border-b border-border">
         <div className="flex-1">
-          <h3 className="font-semibold text-gray-900">{fileName}</h3>
+          <h3 className="font-semibold text-foreground">{fileName}</h3>
           {!loading && numPages && (
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Página {pageNumber} de {numPages}
             </p>
           )}
@@ -91,7 +91,7 @@ export function PDFViewer({ pdfUrl, fileName = "documento.pdf", onClose }: PDFVi
       {/* PDF Content */}
       <div className="flex-1 overflow-auto flex items-center justify-center p-4">
         {loading && (
-          <div className="text-center text-gray-500">
+          <div className="text-center text-muted-foreground">
             <p>Cargando PDF...</p>
           </div>
         )}
@@ -131,7 +131,7 @@ export function PDFViewer({ pdfUrl, fileName = "documento.pdf", onClose }: PDFVi
 
       {/* Navigation */}
       {!loading && numPages && numPages > 1 && (
-        <div className="flex items-center justify-between p-4 bg-white border-t">
+        <div className="flex items-center justify-between p-4 bg-card border-t border-border">
           <Button
             variant="outline"
             onClick={goToPrevPage}
@@ -142,7 +142,7 @@ export function PDFViewer({ pdfUrl, fileName = "documento.pdf", onClose }: PDFVi
             Anterior
           </Button>
 
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-muted-foreground">
             Página {pageNumber} de {numPages}
           </div>
 

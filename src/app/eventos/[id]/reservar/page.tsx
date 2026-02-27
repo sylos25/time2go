@@ -128,15 +128,15 @@ export default function ReservarEventoPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-sky-100">
+    <main className="min-h-screen bg-background">
       <Header onAuthClick={() => {}} />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-10">
-        <div className="bg-white rounded-2xl shadow-md p-6 space-y-5">
-          <h1 className="text-2xl font-bold text-gray-900">Reservar evento</h1>
+        <div className="bg-card rounded-2xl shadow-md p-6 space-y-5">
+          <h1 className="text-2xl font-bold text-foreground">Reservar evento</h1>
 
           {event && (
             <div className="rounded-lg bg-muted/50 p-4 text-sm">
-              <p className="font-semibold text-gray-900">{event.nombre_evento}</p>
+              <p className="font-semibold text-foreground">{event.nombre_evento}</p>
               <p className="text-muted-foreground">
                 {event.fecha_inicio ? new Date(event.fecha_inicio).toLocaleDateString("es-ES") : ""}
                 {event.hora_inicio ? ` · ${String(event.hora_inicio).slice(0, 5)}` : ""}

@@ -29,7 +29,6 @@ import {
   Calendar,
   Users,
   TrendingUp,
-  Eye,
   Settings,
   Bell,
   Search,
@@ -44,7 +43,6 @@ import {
   Download,
   Home,
   LogOut,
-  CheckSquare,
   Activity,
   MoreVertical,
   Target,
@@ -101,7 +99,6 @@ export default function EventDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [searchTerm, setSearchTerm] = useState("")
   const [filterCategory, setFilterCategory] = useState("all")
-  const [selectedEvents, setSelectedEvents] = useState<number[]>([])
   const [loading, setLoading] = useState(true)
   const [meUser, setMeUser] = useState<any>(null)
   const [canManageEvents, setCanManageEvents] = useState(false)
@@ -134,7 +131,7 @@ export default function EventDashboard() {
   const [stats, setStats] = useState<StatCard[]>([
     { title: "Eventos Activos", value: 0, icon: Calendar, color: "from-fuchsia-500 to-red-700" },
     { title: "Eventos Inactivos", value: 0, icon: EyeOff, color: "from-gray-500 to-gray-600" },
-    { title: "Usuarios Activos (Rol 1)", value: 0, icon: Users, color: "from-lime-500 to-green-700" },
+    { title: "Usuarios Activos", value: 0, icon: Users, color: "from-lime-500 to-green-700" },
     { title: "Usuarios Baneados", value: 0, icon: Users, color: "from-gray-500 to-gray-600" },
   ])
   const [events, setEvents] = useState<Event[]>([])
@@ -236,7 +233,8 @@ export default function EventDashboard() {
           fetch('/api/categoria_evento', { headers, credentials: 'include' }),
           fetch(eventsUrl, { headers, credentials: 'include' }),
           fetch('/api/stats', { headers }),
-        ]).then(async ([categoriesResult, eventsResult, statsResult]) => {
+          fetch('/api/usuarios?roles=1,2', { headers }),
+        ]).then(async ([categoriesResult, eventsResult, statsResult, usersRolesResult]) => {
           if (!canceled && categoriesResult.status === 'fulfilled' && categoriesResult.value.ok) {
             const categoriesData = await categoriesResult.value.json()
             if (Array.isArray(categoriesData)) {
@@ -272,11 +270,28 @@ export default function EventDashboard() {
               setStats((prev) => prev.map((s) => {
                 if (s.title === 'Eventos Activos') return { ...s, value: statsData.eventsActive }
                 if (s.title === 'Eventos Inactivos') return { ...s, value: statsData.eventsInactive }
-                if (s.title === 'Usuarios Activos (Rol 1)') return { ...s, value: statsData.usersRole1Active }
                 if (s.title === 'Usuarios Baneados') return { ...s, value: statsData.usersBanned }
                 return s
               }))
             }
+          }
+
+          if (!canceled && usersRolesResult.status === 'fulfilled' && usersRolesResult.value.ok) {
+            const usersRolesData = await usersRolesResult.value.json()
+            const usersList = Array.isArray(usersRolesData?.usuarios) ? usersRolesData.usuarios : []
+            const activeRolesOneAndTwo = usersList.filter((u: any) => {
+              const estado = u?.estado
+              return (
+                estado === true ||
+                estado === 1 ||
+                estado === "1" ||
+                String(estado).toLowerCase() === "true"
+              )
+            }).length
+
+            setStats((prev) =>
+              prev.map((s) => (s.title === 'Usuarios Activos' ? { ...s, value: activeRolesOneAndTwo } : s))
+            )
           }
         })
       } catch (err) {
@@ -438,19 +453,19 @@ export default function EventDashboard() {
 
   if (authorized === null) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-gray-600">Comprobando permisos...</div>
+      <main className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">Comprobando permisos...</div>
       </main>
     )
   }
 
   if (authorized === false) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+      <main className="min-h-screen bg-background flex items-center justify-center">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="bg-white rounded-3xl shadow-xl p-8 text-center">
+          <div className="bg-card border border-border rounded-3xl shadow-xl p-8 text-center">
             <h2 className="text-2xl font-semibold text-red-600">Acceso denegado</h2>
-            <p className="mt-4 text-gray-600">No tienes permisos para ver el dashboard.</p>
+            <p className="mt-4 text-muted-foreground">No tienes permisos para ver el dashboard.</p>
             <div className="mt-6">
               <Button onClick={() => router.push('/')} className="bg-lime-600 text-white">Volver al inicio</Button>
             </div>
@@ -548,16 +563,6 @@ export default function EventDashboard() {
     }
   }
 
-  const bulkHide = () => {
-    setEvents(events.map((event) => (selectedEvents.includes(event.id) ? { ...event, visibility: false } : event)))
-    setSelectedEvents([])
-  }
-
-  const bulkShow = () => {
-    setEvents(events.map((event) => (selectedEvents.includes(event.id) ? { ...event, visibility: true } : event)))
-    setSelectedEvents([])
-  }
-
   const toggleChecklistItem = (id: number) => {
     setChecklistItems(checklistItems.map((item) => (item.id === id ? { ...item, completed: !item.completed } : item)))
   }
@@ -573,13 +578,13 @@ export default function EventDashboard() {
       case "published":
         return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
       case "hidden":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
+        return "bg-muted text-muted-foreground"
       case "cancelled":
         return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
       case "completed":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-muted text-muted-foreground"
     }
   }
 
@@ -622,17 +627,17 @@ export default function EventDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-4">
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="text-center">
           <Loader2 className="h-12 w-12 text-green-800 animate-spin mx-auto mb-4" />
-          <p className="text-gray-700 text-lg">Cargando datos del panel...</p>
+          <p className="text-muted-foreground text-lg">Cargando datos del panel...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-amber-50/30 to-indigo-50/50">
+    <div className="min-h-screen bg-background">
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 lg:hidden"
@@ -641,11 +646,11 @@ export default function EventDashboard() {
       )}
 
       <aside
-        className={`fixed top-0 left-0 z-40 w-72 h-screen bg-gradient-to-tr from-green-700 to-lime-500 transform transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed top-0 left-0 z-40 w-72 h-screen bg-card border-r border-border transform transition-transform duration-300 lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border">
           <div className="flex items-center gap-3">
             <img 
               src="/images/logo.png" 
@@ -667,7 +672,7 @@ export default function EventDashboard() {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all ${
                 activeTab === item.id
                   ? "bg-gradient-to-bl from-fuchsia-700 to-red-600 text-white shadow-md shadow-sky-600/25 cursor-pointer"
-                  : "bg-gradient-to-bl from-yellow-50 to-green-50 text-gray-700 hover:bg-gray-50 cursor-pointer"
+                  : "text-foreground hover:bg-accent cursor-pointer"
               }`}
             >
               <item.icon className="w-5 h-5" />
@@ -680,22 +685,22 @@ export default function EventDashboard() {
       </aside>
 
       <div className="lg:ml-72">
-        <header className="bg-gradient-to-l from-green-700 to-lime-500 backdrop-blur-xl sticky top-0 z-20">
+        <header className="bg-card border-b border-border backdrop-blur-xl sticky top-0 z-20">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="lg:hidden p-2 rounded-lg hover:bg-accent transition-colors"
               >
-                <Menu className="w-5 h-5 text-gray-700" />
+                <Menu className="w-5 h-5 text-foreground" />
               </button>
               <div>
-                <p className="text-3xl text-white font-sans font-bold mt-0.5">Bienvenido , {meUser?.nombres || meUser?.name || 'Usuario'}</p>
+                <p className="text-3xl text-foreground font-sans font-bold mt-0.5">Bienvenido , {meUser?.nombres || meUser?.name || 'Usuario'}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3 ">
-              <button onClick={() => router.push('/')} className="px-3 py-1 text-sm bg-white text-gray-700 rounded-lg shadow-sm hover:bg-gray-50 cursor-pointer">
+              <button onClick={() => router.push('/')} className="px-3 py-1 text-sm bg-card/90 text-foreground rounded-lg shadow-sm hover:bg-accent cursor-pointer border border-border">
                 Salir
               </button>
             </div>
@@ -709,12 +714,12 @@ export default function EventDashboard() {
                 {stats.map((stat, index) => (
                   <div
                     key={index}
-                    className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md hover:border-gray-200 transition-all"
+                    className="bg-card rounded-xl shadow-sm border border-border p-6 hover:shadow-md hover:border-border transition-all"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-2">{stat.value}</p>
+                        <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                        <p className="text-3xl font-bold text-foreground mt-2">{stat.value}</p>
 
                       </div>
                       <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.color} shadow-sm`}>
@@ -726,11 +731,11 @@ export default function EventDashboard() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div className="lg:col-span-2 bg-card rounded-xl shadow-sm border border-border p-6">
                   <div className="flex items-center justify-between mb-6">
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900">Evolución de Vistas y Asistentes</h3>
-                      <p className="text-sm text-gray-500 mt-1">Últimos 6 meses</p>
+                      <h3 className="text-lg font-bold text-foreground">Evolución de Vistas y Asistentes</h3>
+                      <p className="text-sm text-muted-foreground mt-1">Últimos 6 meses</p>
                     </div>
                     <button className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors">
                       <Download className="w-4 h-4" />
@@ -764,10 +769,10 @@ export default function EventDashboard() {
                   </ResponsiveContainer>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div className="bg-card rounded-xl shadow-sm border border-border p-6">
                   <div className="mb-6">
-                    <h3 className="text-lg font-bold text-gray-900">Eventos por Categoría</h3>
-                    <p className="text-sm text-gray-500 mt-1">Distribución actual</p>
+                    <h3 className="text-lg font-bold text-foreground">Eventos por Categoría</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Distribución actual</p>
                   </div>
                   <ResponsiveContainer width="100%" height={240}>
                     <PieChart>
@@ -793,20 +798,20 @@ export default function EventDashboard() {
                       <div key={index} className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
-                          <span className="text-gray-700">{category.name}</span>
+                          <span className="text-foreground">{category.name}</span>
                         </div>
-                        <span className="font-semibold text-gray-900">{category.value}%</span>
+                        <span className="font-semibold text-foreground">{category.value}%</span>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="bg-card rounded-xl shadow-sm border border-border p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">Eventos Más Populares</h3>
-                    <p className="text-sm text-gray-500 mt-1">Ordenados por número de tickets vendidos</p>
+                    <h3 className="text-lg font-bold text-foreground">Eventos Más Populares</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Ordenados por número de tickets vendidos</p>
                   </div>
                 </div>
                 <ResponsiveContainer width="100%" height={300}>
@@ -834,7 +839,7 @@ export default function EventDashboard() {
                     placeholder="Buscar eventos..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-green-600 rounded-lg placeholder-lime-600 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg placeholder:text-muted-foreground text-foreground focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
                   />
                 </div>
 
@@ -842,7 +847,7 @@ export default function EventDashboard() {
                   <select
                     value={filterCategory}
                     onChange={(e) => setFilterCategory(e.target.value)}
-                    className="px-4 py-2.5 border border-green-600 rounded-lg bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+                    className="px-4 py-2.5 border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
                   >
                     <option value="all">Todas las categorías</option>
                     {eventCategories.map((category) => (
@@ -855,117 +860,67 @@ export default function EventDashboard() {
                 </div>
               </div>
 
-              {selectedEvents.length > 0 && (
-                <div className="flex items-center gap-3 p-4 bg-lime-50 border border-green-200 rounded-lg">
-                  <span className="text-sm font-medium text-green-900">
-                    {selectedEvents.length} evento(s) seleccionado(s)
-                  </span>
-                  <button
-                    onClick={bulkShow}
-                    className="px-3 py-1.5 text-sm bg-white text-green-700 border border-green-300 rounded-lg hover:bg-lime-50 transition-colors"
-                  >
-                    <Eye className="w-4 h-4 inline mr-1" />
-                    Mostrar
-                  </button>
-                  <button
-                    onClick={bulkHide}
-                    className="px-3 py-1.5 text-sm bg-white text-green-700 border border-green-300 rounded-lg hover:bg-lime-50 transition-colors"
-                  >
-                    <EyeOff className="w-4 h-4 inline mr-1" />
-                    Ocultar
-                  </button>
-                </div>
-              )}
-
-              <div className="bg-yellow-50 rounded-sm shadow-sm border border-lime-100 overflow-hidden">
+              <div className="bg-card rounded-sm shadow-sm border border-border overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse border border-green-600">
-                    <thead className="bg-lime-100 border-b border-green-600">
+                  <table className="w-full border-collapse border border-border">
+                    <thead className="bg-muted/40 border-b border-border">
                       <tr>
-                        <th className="px-6 py-4 text-left border-r border-green-600">
-                          <input
-                            type="checkbox"
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedEvents(filteredEvents.map((event) => event.id))
-                              } else {
-                                setSelectedEvents([])
-                              }
-                            }}
-                            checked={selectedEvents.length === filteredEvents.length && filteredEvents.length > 0}
-                            className="rounded border-gray-300"
-                          />
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">
                           Evento
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">
                           Fecha y Hora
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">
                           Ubicación
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">
                           Tickets
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">
                           Estado
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                           Acciones
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y divide-border">
                       {filteredEvents.map((event) => {
                         const documents = event.documentos ?? []
                         const hasDocuments = documents.length > 0
 
                         return (
-                        <tr key={event.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4">
-                            <input
-                              type="checkbox"
-                              checked={selectedEvents.includes(event.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedEvents([...selectedEvents, event.id])
-                                } else {
-                                  setSelectedEvents(selectedEvents.filter((id) => id !== event.id))
-                                }
-                              }}
-                              className="rounded border-gray-300"
-                            />
-                          </td>
+                        <tr key={event.id} className="hover:bg-accent transition-colors">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div>
-                                <p className="font-semibold text-gray-900">{event.name}</p>
-                                <p className="text-sm text-gray-500">{event.category}</p>
+                                <p className="font-semibold text-foreground">{event.name}</p>
+                                <p className="text-sm text-muted-foreground">{event.category}</p>
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex flex-col gap-1">
-                              <div className="flex items-center gap-1.5 text-sm text-gray-700">
+                              <div className="flex items-center gap-1.5 text-sm text-foreground">
                                 {formatEventDate(event.date)}
                               </div>
-                              <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                                 {formatEventTime(event.time)}
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="flex items-center gap-1.5 text-sm text-gray-700">
+                            <div className="flex items-center gap-1.5 text-sm text-foreground">
                               {event.location}
                             </div>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex flex-col gap-1">
-                              <span className="text-sm font-semibold text-gray-900">
+                              <span className="text-sm font-semibold text-foreground">
                                 {event.ticketsSold} / {event.capacity}
                               </span>
-                              <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                              <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
                                 <div
                                   className="h-full bg-blue-600 rounded-full"
                                   style={{ width: `${event.capacity > 0 ? Math.min(100, (event.ticketsSold / event.capacity) * 100) : 0}%` }}
@@ -984,7 +939,7 @@ export default function EventDashboard() {
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => approveEvent(event.id)}
-                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="p-2 text-green-600 hover:bg-accent rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                 title={event.visibility ? 'Evento validado' : 'Validar evento'}
                                 disabled={Boolean(event.visibility)}
                               >
@@ -1045,9 +1000,9 @@ export default function EventDashboard() {
 
                 {filteredEvents.length === 0 && (
                   <div className="text-center py-12">
-                    <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 font-medium">No se encontraron eventos</p>
-                    <p className="text-sm text-gray-400 mt-1">Intenta con otros filtros de búsqueda</p>
+                    <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground font-medium">No se encontraron eventos</p>
+                    <p className="text-sm text-muted-foreground mt-1">Intenta con otros filtros de búsqueda</p>
                   </div>
                 )}
               </div>
@@ -1068,14 +1023,14 @@ export default function EventDashboard() {
 
           {activeTab === "analytics" && (
             <div className="text-center py-20">
-              <Activity className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 font-medium">Sección de Analíticas</p>
-              <p className="text-sm text-gray-400 mt-1">Esta funcionalidad estará disponible próximamente</p>
+              <Activity className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground font-medium">Sección de Analíticas</p>
+              <p className="text-sm text-muted-foreground mt-1">Esta funcionalidad estará disponible próximamente</p>
             </div>
           )}
 
           {activeTab === "users" && (
-            <Card className="border-lime-100 bg-yellow-50">
+            <Card className="border-border bg-card">
             <div className="space-y-6">
               <div className="flex items-center justify-between gap-4">
                 <CardContent>
@@ -1085,7 +1040,7 @@ export default function EventDashboard() {
                     placeholder="Buscar usuarios..."
                     value={searchUsers}
                     onChange={(e) => setSearchUsers(e.target.value)}
-                    className="w-full pl-3 pr-30 py-1.5 bg-white border border-green-600 rounded-lg placeholder-lime-600 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+                    className="w-full pl-3 pr-30 py-1.5 bg-card border border-border rounded-lg placeholder:text-muted-foreground text-foreground focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
                   />
                 </div>
                 </CardContent>
@@ -1101,26 +1056,26 @@ export default function EventDashboard() {
                 </CardContent>
               </div>
             <CardContent>
-              <div className="bg-white rounded-sm shadow-sm border border-green-600 overflow-hidden">
+              <div className="bg-card rounded-sm shadow-sm border border-border overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="table-fixed w-full border-collapse border border-green-600">
-                    <thead className="bg-lime-100 border-b border-green-600">
+                  <table className="table-fixed w-full border-collapse border border-border">
+                    <thead className="bg-muted/40 border-b border-border">
                       <tr>
-                        <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">ID Usuario</th>
-                        <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">ID Rol</th>
-                        <th className="w-36 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">IG Google</th>
-                        <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Nombres</th>
-                        <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Apellidos</th>
-                        <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Teléfono</th>
-                        <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Tel. Validado</th>
-                        <th className="w-80 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Correo</th>
-                        <th className="w-45 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Correo Validado</th>
-                        <th className="w-56 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Términos y Condiciones</th>
-                        <th className="w-26 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-green-600">Estado</th>
-                        <th className="w-56 px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
+                        <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">ID Usuario</th>
+                        <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">ID Rol</th>
+                        <th className="w-36 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">IG Google</th>
+                        <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Nombres</th>
+                        <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Apellidos</th>
+                        <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Teléfono</th>
+                        <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Tel. Validado</th>
+                        <th className="w-80 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Correo</th>
+                        <th className="w-45 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Correo Validado</th>
+                        <th className="w-56 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Términos y Condiciones</th>
+                        <th className="w-26 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Estado</th>
+                        <th className="w-56 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">Acciones</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y divide-border">
                       {users
                         .filter(u => {
                           if (!searchUsers) return true
@@ -1128,18 +1083,18 @@ export default function EventDashboard() {
                           return hay.includes(searchUsers.toLowerCase())
                         })
                         .map((u) => (
-                          <tr key={u.id_usuario} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.id_usuario}</td>
-                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.id_rol || '-'}</td>
-                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.ig_google ? 'Sí' : 'No'}</td>
-                            <td className="px-6 py-4 text-center text-sm text-gray-900">{u.nombres}</td>
-                            <td className="px-6 py-4 text-center text-sm text-gray-900">{u.apellidos}</td>
-                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.telefono || '-'}</td>
-                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.validacion_telefono ? 'Sí' : 'No'}</td>
-                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.correo}</td>
-                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.validacion_correo ? 'Sí' : 'No'}</td>
-                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.terminos_condiciones ? 'Sí' : 'No'}</td>
-                            <td className="px-6 py-4 text-center text-sm text-gray-700">{u.estado ? 'Activo' : 'Inactivo'}</td>
+                          <tr key={u.id_usuario} className="hover:bg-accent transition-colors">
+                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.id_usuario}</td>
+                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.id_rol || '-'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.ig_google ? 'Sí' : 'No'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-foreground">{u.nombres}</td>
+                            <td className="px-6 py-4 text-center text-sm text-foreground">{u.apellidos}</td>
+                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.telefono || '-'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.validacion_telefono ? 'Sí' : 'No'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.correo}</td>
+                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.validacion_correo ? 'Sí' : 'No'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.terminos_condiciones ? 'Sí' : 'No'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.estado ? 'Activo' : 'Inactivo'}</td>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-2">
                                 <button
@@ -1166,9 +1121,9 @@ export default function EventDashboard() {
 
                 {(!users || users.length === 0) && (
                   <div className="text-center py-12">
-                    <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 font-medium">No se encontraron usuarios</p>
-                    <p className="text-sm text-gray-400 mt-1">Pulsa "Actualizar" para cargar la lista</p>
+                    <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground font-medium">No se encontraron usuarios</p>
+                    <p className="text-sm text-muted-foreground mt-1">Pulsa "Actualizar" para cargar la lista</p>
                   </div>
                 )}
               </div>
@@ -1180,9 +1135,9 @@ export default function EventDashboard() {
 
           {activeTab === "settings" && (
             <div className="text-center py-20">
-              <Settings className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 font-medium">Configuración</p>
-              <p className="text-sm text-gray-400 mt-1">Esta funcionalidad estará disponible próximamente</p>
+              <Settings className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground font-medium">Configuración</p>
+              <p className="text-sm text-muted-foreground mt-1">Esta funcionalidad estará disponible próximamente</p>
             </div>
           )}
         </main>
@@ -1195,56 +1150,56 @@ export default function EventDashboard() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">ID Usuario</label>
+                <label className="block text-sm font-medium text-foreground mb-1">ID Usuario</label>
                 <input
                   type="text"
                   inputMode="numeric"
                   value={banForm.id_usuario}
                   onChange={(e) => setBanForm((prev) => ({ ...prev, id_usuario: e.target.value.replace(/\D/g, '') }))}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  className="w-full border border-border bg-card text-foreground rounded-md px-3 py-2"
                   placeholder="ID del usuario a bannear"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Motivo del ban</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Motivo del ban</label>
                 <textarea
                   value={banForm.motivo_ban}
                   onChange={(e) => setBanForm((prev) => ({ ...prev, motivo_ban: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 min-h-24"
+                  className="w-full border border-border bg-card text-foreground rounded-md px-3 py-2 min-h-24"
                   placeholder="Describe el motivo (mínimo 10 caracteres)"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de inicio</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Fecha de inicio</label>
                   <input
                     type="datetime-local"
                     value={banForm.inicio_ban}
                     onChange={(e) => setBanForm((prev) => ({ ...prev, inicio_ban: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    className="w-full border border-border bg-card text-foreground rounded-md px-3 py-2"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha final</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Fecha final</label>
                   <input
                     type="datetime-local"
                     value={banForm.fin_ban}
                     onChange={(e) => setBanForm((prev) => ({ ...prev, fin_ban: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    className="w-full border border-border bg-card text-foreground rounded-md px-3 py-2"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Responsable</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Responsable</label>
                 <input
                   type="text"
                   inputMode="numeric"
                   value={banForm.responsable}
                   onChange={(e) => setBanForm((prev) => ({ ...prev, responsable: e.target.value.replace(/\D/g, '') }))}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  className="w-full border border-border bg-card text-foreground rounded-md px-3 py-2"
                   placeholder="ID del usuario responsable"
                 />
               </div>
@@ -1294,7 +1249,7 @@ export default function EventDashboard() {
               />
             ) : (
               <div className="flex items-center justify-center h-96">
-                <p className="text-gray-500">No hay documento</p>
+                <p className="text-muted-foreground">No hay documento</p>
               </div>
             )}
           </DialogContent>

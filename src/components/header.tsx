@@ -312,14 +312,14 @@ export function Header({
 
       {/* Header */}
       <header
-        className="fixed top-0 left-0 right-0 z-[70] w-full bg-gradient-to-tr from-green-700 to-lime-500 shadow-md shadow-black/10">
+        className="fixed top-0 left-0 right-0 z-[70] w-full bg-gradient-to-tr from-green-700 to-lime-500 dark:from-slate-900 dark:to-slate-800 dark:border-b dark:border-border shadow-md shadow-black/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Mobile menu button */}
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden text-white hover:bg-white/10"
+              className="lg:hidden text-white hover:bg-black/10 dark:hover:bg-white/10"
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label="Toggle menu"
             >
@@ -385,13 +385,13 @@ export function Header({
                       <Button
                         variant="ghost"
                         className="flex items-center gap-3 px-4 py-6 hover:bg-black/10 text-white">
-                        <div className="w-8 h-8 rounded-sm bg-white flex items-center justify-center text-lime-600 font-medium">
+                        <div className="w-8 h-8 rounded-sm bg-card flex items-center justify-center text-lime-600 font-medium">
                           {displayName.charAt(0).toUpperCase()}
                         </div>
                         <span className="font-medium">{displayName}</span>
                       </Button>
                     </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56 z-[80] bg-gradient-to-tr from-stone-50 to-white shadow-lg">
+                      <DropdownMenuContent align="end" className="w-56 z-[80] bg-popover text-popover-foreground border border-border shadow-lg">
                         <DropdownMenuLabel className="text-green-700">
                           <p>Mi Cuenta</p>
                         </DropdownMenuLabel>
@@ -433,7 +433,7 @@ export function Header({
 
       {/* Mobile Navigation */}
       <nav
-        className={`fixed top-0 left-0 h-full w-72 sm:w-80 max-w-full bg-white/95 backdrop-blur-md shadow-2xl transform transition-transform duration-300 z-40 lg:hidden ${
+        className={`fixed top-0 left-0 h-full w-72 sm:w-80 max-w-full bg-background/95 dark:bg-card/95 text-foreground backdrop-blur-md shadow-2xl transform transition-transform duration-300 z-40 lg:hidden ${
           menuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -443,7 +443,7 @@ export function Header({
               <li key={item.name}>
                 <button
                   onClick={() => navigateTo(item.path)}
-                  className="flex items-center space-x-3 text-gray-800 hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-teal-50 transition-all w-full text-left group"
+                  className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
                 >
                   <span className="w-2 h-2 bg-lime-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                   <span>{item.name}</span>
@@ -456,7 +456,7 @@ export function Header({
                   <li>
                     <button
                       onClick={() => navigateTo("/eventos/crear")}
-                      className="flex items-center space-x-3 text-gray-800 hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-teal-50 transition-all w-full text-left group"
+                      className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
                     >
                       <span className="w-2 h-2 bg-lime-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                       <span>Crear Evento</span>
@@ -467,7 +467,7 @@ export function Header({
                   <li>
                     <button
                       onClick={() => navigateTo("/dashboard")}
-                      className="flex items-center space-x-3 text-gray-800 hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-teal-50 transition-all w-full text-left group"
+                      className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
                     >
                       <span className="w-2 h-2 bg-lime-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                       <span>Dashboard</span>
@@ -490,7 +490,7 @@ export function Header({
               <div className="space-y-2">
                 <button
                   onClick={() => navigateTo("/perfil")}
-                  className="flex items-center space-x-3 text-gray-800 hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-amber-50 transition-all w-full text-left group"
+                  className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
                 >
                   <User className="h-5 w-5 text-lime-600" />
                   <span>Mi Perfil</span>
@@ -498,7 +498,7 @@ export function Header({
                 {isRegularUser ? (
                   <button
                     onClick={() => navigateTo("/mis-reservas")}
-                    className="flex items-center space-x-3 text-gray-800 hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-amber-50 transition-all w-full text-left group"
+                    className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
                   >
                     <Ticket className="h-5 w-5 text-lime-600" />
                     <span>Mis Reservas</span>
@@ -506,7 +506,7 @@ export function Header({
                 ) : (
                   <button
                     onClick={() => navigateTo("/mis-eventos")}
-                    className="flex items-center space-x-3 text-gray-800 hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-amber-50 transition-all w-full text-left group"
+                    className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
                   >
                     <Calendar className="h-5 w-5 text-lime-600" />
                     <span>Mis Eventos</span>
@@ -514,7 +514,7 @@ export function Header({
                 )}
                 <button
                   onClick={() => navigateTo("/configuracion")}
-                  className="flex items-center space-x-3 text-gray-800 hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-amber-50 transition-all w-full text-left group"
+                  className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
                 >
                   <Settings className="h-5 w-5 text-lime-600" />
                   <span>Configuración</span>

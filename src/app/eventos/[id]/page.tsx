@@ -344,7 +344,7 @@ export default function EventLanding() {
   const backPath = "/eventos";
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-sky-100">
+    <main className="min-h-screen bg-background">
       <Header onAuthClick={() => {}} />
 
       {/* Header Section */}
@@ -355,7 +355,7 @@ export default function EventLanding() {
             variant="secondary"
             size="sm"
             onClick={() => router.push(backPath)}
-            className="bg-white/80 backdrop-blur-sm hover:bg-white shadow-md"
+            className="bg-card/80 backdrop-blur-sm hover:bg-card shadow-md"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver
@@ -364,7 +364,7 @@ export default function EventLanding() {
 
         {/* Event Title */}
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
             {event.nombre_evento}
           </h1>
         </div>
@@ -392,7 +392,7 @@ export default function EventLanding() {
                         prev === 0 ? event.imagenes.length - 1 : prev - 1
                       )
                     }
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white p-2 rounded-full shadow-lg transition-all"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-card/90 backdrop-blur-sm hover:bg-card p-2 rounded-full shadow-lg transition-all"
                   >
                     <ArrowLeft className="h-5 w-5 cursor-pointer" />
                   </button>
@@ -402,7 +402,7 @@ export default function EventLanding() {
                         prev === event.imagenes.length - 1 ? 0 : prev + 1
                       )
                     }
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white p-2 rounded-full shadow-lg transition-all"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-card/90 backdrop-blur-sm hover:bg-card p-2 rounded-full shadow-lg transition-all"
                   >
                     <ArrowLeft className="h-5 w-5 rotate-180 cursor-pointer" />
                   </button>
@@ -449,7 +449,7 @@ export default function EventLanding() {
           <div className="lg:col-span-2 space-y-6">
             {/* Tarjetas de información rápida */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              <Card className="bg-white/80 backdrop-blur-sm">
+              <Card className="bg-card/80 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
                   <TagIcon className="h-5 w-5 mx-auto mb-2 text-fuchsia-600" />
                   <p className="text-xs text-muted-foreground">Categoria</p>
@@ -458,7 +458,7 @@ export default function EventLanding() {
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-white/80 backdrop-blur-sm">
+              <Card className="bg-card/80 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
                   <Grid3X3 className="h-5 w-5 mx-auto mb-2 text-red-600" />
                   <p className="text-xs text-muted-foreground">Tipo</p>
@@ -467,7 +467,7 @@ export default function EventLanding() {
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-white/80 backdrop-blur-sm">
+              <Card className="bg-card/80 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
                   <Calendar className="h-5 w-5 mx-auto mb-2 text-fuchsia-600" />
                   <p className="text-xs text-muted-foreground">Fecha</p>
@@ -476,7 +476,7 @@ export default function EventLanding() {
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-white/80 backdrop-blur-sm">
+              <Card className="bg-card/80 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
                   <Clock className="h-5 w-5 mx-auto mb-2 text-red-600" />
                   <p className="text-xs text-muted-foreground">Hora</p>
@@ -485,7 +485,7 @@ export default function EventLanding() {
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-white/80 backdrop-blur-sm">
+              <Card className="bg-card/80 backdrop-blur-sm">
                 <CardContent className="p-4 text-center">
                   <Users className="h-5 w-5 mx-auto mb-2 text-fuchsia-600" />
                   <p className="text-xs text-muted-foreground">Aforo para</p>
@@ -497,7 +497,7 @@ export default function EventLanding() {
             </div>
 
             {/* Detalles de la locación */}
-              <Card className="bg-white/80 backdrop-blur-sm">
+              <Card className="bg-card/80 backdrop-blur-sm">
                 <CardHeader className="flex items-start gap-4">
                   <div className="flex-1 text-left">
                     <CardTitle className="text-lg">Ubicación</CardTitle>
@@ -512,7 +512,7 @@ export default function EventLanding() {
               </Card>
 
             {/* Descripción */}
-              <Card className="bg-white/80 backdrop-blur-sm">
+              <Card className="bg-card/80 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="text-lg">Acerca del evento</CardTitle>
                 </CardHeader>
@@ -520,7 +520,7 @@ export default function EventLanding() {
                   <p className="text-base text-muted-foreground leading-relaxed whitespace-pre-line">
                     {event.descripcion}
                   </p>
-                  <div className="flex items-center justify-between rounded-lg bg-stone-50 p-3">
+                  <div className="flex items-center justify-between rounded-lg bg-muted/40 border border-border p-3">
                     <div>
                       <p className="text-xs text-muted-foreground">Responsable del evento</p>
                       <p className="text-sm">
@@ -537,7 +537,7 @@ export default function EventLanding() {
 
 
             {informacionImportante && (
-              <Card className="bg-white/80 backdrop-blur-sm">
+              <Card className="bg-card/80 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     Información importante
@@ -553,7 +553,7 @@ export default function EventLanding() {
 
             {/* Pricing */}
             {event.valores && event.valores.length > 0 && (
-              <Card className="bg-white/80 backdrop-blur-sm">
+              <Card className="bg-card/80 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Ticket className="h-5 w-5" />
@@ -587,7 +587,7 @@ export default function EventLanding() {
             )}
 
             {creatorMode && (
-              <Card className="bg-white/80 backdrop-blur-sm">
+              <Card className="bg-card/80 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Users className="h-5 w-5" />
@@ -629,7 +629,7 @@ export default function EventLanding() {
             )}
 
             {/* Valoraciones */}
-            <Card className="bg-white/80 backdrop-blur-sm">
+            <Card className="bg-card/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-lg">Valoraciones</CardTitle>
               </CardHeader>
@@ -639,7 +639,7 @@ export default function EventLanding() {
             </Card>
           </div>
           <div className="space-y-6">
-            <Card className="border-blue-200 bg-white/80 backdrop-blur-sm shadow-lg">
+            <Card className="border-blue-200 bg-card/80 backdrop-blur-sm shadow-lg">
               <CardContent className="p-6">
                 <div className="text-center mb-6">
                   <p className="text-sm text-muted-foreground mb-1">
@@ -694,7 +694,7 @@ export default function EventLanding() {
             </Card>
 
             {/* Fecha y hora */}
-            <Card className="bg-white/80 backdrop-blur-sm">
+            <Card className="bg-card/80 backdrop-blur-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
@@ -804,7 +804,7 @@ export default function EventLanding() {
             </Card>
 
             {/* Organizer Card */}
-              <Card className="bg-white/80 backdrop-blur-sm">
+              <Card className="bg-card/80 backdrop-blur-sm">
                 <CardHeader className="pb-1">
                   <CardTitle className="text-base">Organizador</CardTitle>
                 </CardHeader>

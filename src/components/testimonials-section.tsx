@@ -33,18 +33,18 @@ const testimonials = [
 
 export function TestimonialsSection() {
   return (
-    <section className="bg-blue-50 py-16 lg:py-24 relative overflow-hidden">
+    <section className="bg-background py-16 lg:py-24 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="text-center mb-16">
 
-          <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-6">
+          <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-6">
             Reseñas de
             <span className="block bg-gradient-to-r  from-blue-500 to-cyan-500 bg-clip-text text-transparent">
               usuarios satisfechos
             </span>
           </h2>
 
-          <p className="text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg lg:text-xl text-muted-foreground max-w-2xl mx-auto">
             Miles de personas ya confían en Time2Go para descubrir y crear experiencias memorables
           </p>
         </div>
@@ -53,7 +53,7 @@ export function TestimonialsSection() {
           {testimonials.map((testimonial) => (
             <Card
               key={testimonial.id}
-              className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 bg-white/90 backdrop-blur-sm border-white/50"
+              className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 bg-card/90 backdrop-blur-sm border-border"
             >
               <CardContent className="p-8">
                 <div className="flex items-center mb-4">
@@ -66,7 +66,7 @@ export function TestimonialsSection() {
                   ))}
                 </div>
 
-                <p className="text-gray-700 mb-6 leading-relaxed">"{testimonial.text}"</p>
+                <p className="text-muted-foreground mb-6 leading-relaxed">"{testimonial.text}"</p>
 
                 <div className="flex items-center">
                   <Avatar className="h-12 w-12 mr-4">
@@ -76,8 +76,8 @@ export function TestimonialsSection() {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-bold text-gray-900">{testimonial.name}</p>
-                    <p className="text-sm text-gray-600">{testimonial.role}</p>
+                    <p className="font-bold text-foreground">{testimonial.name}</p>
+                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
                   </div>
                 </div>
               </CardContent>

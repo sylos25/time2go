@@ -111,12 +111,12 @@ export default function MisReservasPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-white flex flex-col">
+      <main className="min-h-screen bg-background flex flex-col">
         <Header onAuthClick={() => {}} />
         <div className="flex-1 pt-32 pb-12 px-4 flex items-center justify-center">
           <div className="text-center">
             <Loader2 className="h-12 w-12 text-green-800 animate-spin mx-auto mb-4" />
-            <p className="text-gray-700 text-lg">Cargando tus reservas...</p>
+            <p className="text-muted-foreground text-lg">Cargando tus reservas...</p>
           </div>
         </div>
         <Footer />
@@ -125,19 +125,19 @@ export default function MisReservasPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-sky-100 flex flex-col">
+    <main className="min-h-screen bg-background flex flex-col">
       <Header onAuthClick={() => {}} />
       <div className="flex-1 w-full">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-10">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Mis Reservas</h1>
+            <h1 className="text-3xl font-bold text-foreground">Mis Reservas</h1>
             <Button variant="outline" onClick={() => router.push("/eventos")}>Explorar eventos</Button>
           </div>
 
           {error && <p className="text-red-600 text-sm">{error}</p>}
 
           {!loading && !error && reservas.length === 0 && (
-            <Card className="bg-white/90">
+            <Card className="bg-card/90">
               <CardContent className="pt-6 text-center text-muted-foreground">
                 Aún no has realizado reservas.
               </CardContent>
@@ -146,7 +146,7 @@ export default function MisReservasPage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {reservas.map((reserva) => (
-              <Card key={reserva.id_reserva_evento} className="bg-white/90 backdrop-blur-sm">
+              <Card key={reserva.id_reserva_evento} className="bg-card/90 backdrop-blur-sm">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg line-clamp-2">{reserva.nombre_evento}</CardTitle>
                 </CardHeader>
