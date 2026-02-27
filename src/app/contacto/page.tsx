@@ -2,7 +2,6 @@
 
 import type React from "react"
 import { useState } from "react"
-import Image from "next/image"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { AuthModal } from "@/components/auth-modal"
@@ -69,6 +68,8 @@ export default function ContactoPage() {
     subject: "",
     message: "",
   })
+  const [sending, setSending] = useState(false)
+  const [submitFeedback, setSubmitFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null)
 
   const openAuthModal = (loginMode = true) => {
     setIsLogin(loginMode)
@@ -79,9 +80,49 @@ export default function ContactoPage() {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Form submitted:", formData)
+    setSubmitFeedback(null)
+    setSending(true)
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setSubmitFeedback({
+          type: "error",
+          message: data?.error || "No se pudo enviar el mensaje. Intenta nuevamente.",
+        })
+        return
+      }
+
+      setSubmitFeedback({
+        type: "success",
+        message: "Tu mensaje fue enviado correctamente. Te responderemos pronto.",
+      })
+      setFormData({
+        name: "",
+        email: "",
+        subject: "",
+        message: "",
+      })
+    } catch (error) {
+      console.error("Error enviando mensaje de contacto:", error)
+      setSubmitFeedback({
+        type: "error",
+        message: "Error de red. Verifica tu conexión e intenta nuevamente.",
+      })
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -155,11 +196,20 @@ export default function ContactoPage() {
 
                   <Button
                     type="submit"
+                    disabled={sending}
                     className="w-full bg-linear-to-tr from-fuchsia-700 to-red-500 hover:scale-103 hover:from-fuchsia-600 hover:to-red-500 text-white font-medium rounded-sm cursor-pointer"
                   >
                     <Send className="w-4 h-4 mr-2" />
-                    Enviar mensaje
+                    {sending ? "Enviando..." : "Enviar mensaje"}
                   </Button>
+
+                  {submitFeedback && (
+                    <p
+                      className={`text-sm ${submitFeedback.type === "success" ? "text-green-700" : "text-red-600"}`}
+                    >
+                      {submitFeedback.message}
+                    </p>
+                  )}
                 </form>
               </CardContent>
             </Card>

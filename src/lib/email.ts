@@ -151,3 +151,65 @@ export async function sendResetPasswordEmail(email: string, newPassword: string)
     return false
   }
 }
+
+export async function sendContactMessageEmail({
+  name,
+  email,
+  subject,
+  message,
+}: {
+  name: string
+  email: string
+  subject: string
+  message: string
+}): Promise<boolean> {
+  try {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      console.error("Email no configurado: falta EMAIL_USER o EMAIL_PASSWORD")
+      return false
+    }
+
+    const appBaseUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.APP_URL ||
+      process.env.BETTER_AUTH_URL ||
+      "http://localhost:3000"
+    const bannerUrl = `${appBaseUrl.replace(/\/$/, "")}/images/banner_top.jpg`
+
+    const sanitizedMessage = message
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\n/g, "<br/>")
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_USER,
+      replyTo: email,
+      subject: `Contacto Time2Go: ${subject}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 680px; margin: 0 auto;">
+          <img src="${bannerUrl}" alt="Banner" style="width: 100%; border-radius: 8px 8px 0 0; display: block;" />
+          <div style="background: linear-gradient(to bottom left, #a21caf, #dc2626); padding: 20px; border-radius: 0 0 8px 8px; color: white;">
+            <h2 style="margin: 0;">Nuevo mensaje desde Contáctanos</h2>
+          </div>
+          <div style="padding: 20px; background: #FBFEFF; border-radius: 0 0 8px 8px; color: #111827;">
+            <p><strong>Nombre:</strong> ${name}</p>
+            <p><strong>Correo:</strong> ${email}</p>
+            <p><strong>Asunto:</strong> ${subject}</p>
+            <div style="margin-top: 16px; padding: 14px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 6px;">
+              ${sanitizedMessage}
+            </div>
+          </div>
+        </div>
+      `,
+    }
+
+    const info = await transporter.sendMail(mailOptions)
+    console.log("Correo de contacto enviado:", info.response)
+    return true
+  } catch (error) {
+    console.error("Error enviando correo de contacto:", error)
+    return false
+  }
+}
