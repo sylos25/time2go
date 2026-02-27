@@ -228,7 +228,7 @@ export default function CambiarContrasenaPage() {
             <div 
               className="h-32 bg-cover bg-center bg-no-repeat" 
               style={{
-                backgroundImage: 'url(/images/banner_top.jpg)'
+                backgroundImage: 'url(/images/banner_perfil.jpg)'
               }}
             />
 

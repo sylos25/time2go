@@ -44,7 +44,7 @@ export async function sendEmailValidationEmail(
     }
 
     const validationUrl = `${baseUrl}/validate-email?token=${token}`
-    const bannerUrl = `${baseUrl.replace(/\/$/, "")}/images/banner_top.jpg`
+    const bannerUrl = `https://res.cloudinary.com/dljthy97e/image/upload/v1770842202/banner_top_azaedp.jpg`
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -110,7 +110,7 @@ export async function sendResetPasswordEmail(email: string, newPassword: string)
       process.env.APP_URL ||
       process.env.BETTER_AUTH_URL ||
       "http://localhost:3000"
-    const bannerUrl = `${appBaseUrl.replace(/\/$/, "")}/images/banner_top.jpg`
+    const bannerUrl = "https://res.cloudinary.com/dljthy97e/image/upload/v1770842202/banner_top_azaedp.jpg"
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -174,7 +174,7 @@ export async function sendContactMessageEmail({
       process.env.APP_URL ||
       process.env.BETTER_AUTH_URL ||
       "http://localhost:3000"
-    const bannerUrl = `${appBaseUrl.replace(/\/$/, "")}/images/banner_top.jpg`
+    const bannerUrl = "https://res.cloudinary.com/dljthy97e/image/upload/v1770842202/banner_top_azaedp.jpg"
 
     const sanitizedMessage = message
       .replace(/&/g, "&amp;")
