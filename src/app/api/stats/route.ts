@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
-import { getAuth } from "@/lib/auth";
 import { verifyToken } from "@/lib/jwt";
+import { parseCookies } from "@/lib/cookies";
 
 export async function GET(req: Request) {
   try {
@@ -18,12 +18,21 @@ export async function GET(req: Request) {
       }
       requesterId = String(userIdFromToken);
     } else {
-      const session = await getAuth().api.getSession({ headers: req.headers as any });
-      const sid = (session && session.user && (session.user as any).id_usuario) || null;
-      if (!sid) {
+      const cookieHeader = req.headers.get("cookie");
+      if (cookieHeader) {
+        const cookies = parseCookies(cookieHeader);
+        const token = cookies["token"];
+        if (token) {
+          const payload = verifyToken(token);
+          const userIdFromToken = payload?.id_usuario;
+          if (payload && userIdFromToken) {
+            requesterId = String(userIdFromToken);
+          }
+        }
+      }
+      if (!requesterId) {
         return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
       }
-      requesterId = String(sid);
     }
 
     const roleRes = await pool.query(

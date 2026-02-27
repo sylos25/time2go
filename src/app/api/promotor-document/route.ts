@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import pool from "@/lib/db"
-import { getAuth } from "@/lib/auth"
 import { parseCookies } from "@/lib/cookies"
 import { verifyToken } from "@/lib/jwt"
 import { uploadDocumentBuffer } from "@/lib/document-storage"
@@ -34,14 +33,7 @@ async function getAuthenticatedUserId(req: Request): Promise<string | null> {
     }
   }
 
-  const session = await getAuth().api.getSession({ headers: req.headers as any })
-  const sid =
-    (session &&
-      session.user &&
-      (session.user as any).id_usuario) ||
-    null
-
-  return sid ? String(sid) : null
+  return null
 }
 
 function isPdf(file: File) {

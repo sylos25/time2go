@@ -10,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { signOut } from "@/lib/auth-client"
 
 interface SessionExpiredAlertProps {
   isOpen: boolean
@@ -22,14 +21,18 @@ export function SessionExpiredAlert({
   onClose,
 }: SessionExpiredAlertProps) {
   const handleLogout = async () => {
-    await signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          // Redirigir al login después de cerrar sesión
-          window.location.href = "/auth"
-        },
-      },
-    })
+    try {
+      await fetch("/api/logout", { method: "POST", credentials: "include" })
+    } catch (error) {
+      console.error("Logout request error:", error)
+    } finally {
+      localStorage.removeItem("token")
+      localStorage.removeItem("userName")
+      localStorage.removeItem("userId")
+      localStorage.removeItem("userRole")
+      window.dispatchEvent(new CustomEvent("user:logout"))
+      window.location.href = "/auth"
+    }
   }
 
   return (

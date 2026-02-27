@@ -7,9 +7,6 @@ export async function middleware(request: NextRequest) {
   // Solo proteger dashboard
   const isDashboardRoute = pathname.startsWith("/dashboard")
 
-  // Get session token from cookies
-  const sessionToken = request.cookies.get("better-auth.session_token")
-
   // Dashboard ahora es accesible sin sesión
   // Si intenta acceder a dashboard sin sesión, permitir acceso
   // if (isDashboardRoute && !sessionToken) {

@@ -1,10 +1,8 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { useSession } from "@/lib/auth-client"
 
 export function useSessionExpiry() {
-  const { data: session } = useSession()
   const [isSessionExpired, setIsSessionExpired] = useState(false)
 
   const checkSessionValidity = useCallback(async () => {
@@ -24,8 +22,8 @@ export function useSessionExpiry() {
   }, [])
 
   useEffect(() => {
-    // Solo verificar si hay una sesión activa
-    if (!session?.user) {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+    if (!token) {
       setIsSessionExpired(false)
       return
     }
@@ -49,7 +47,7 @@ export function useSessionExpiry() {
       clearInterval(interval)
       document.removeEventListener("visibilitychange", handleVisibilityChange)
     }
-  }, [session?.user, checkSessionValidity])
+  }, [checkSessionValidity])
 
   const resetExpiry = useCallback(() => {
     setIsSessionExpired(false)

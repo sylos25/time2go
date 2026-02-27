@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { uploadDocumentBuffer, uploadImageBuffer } from "@/lib/document-storage";
 import pool from "@/lib/db";
 import { verifyToken } from "@/lib/jwt";
+import { parseCookies } from "@/lib/cookies";
 import { PERMISSION_IDS } from "@/lib/permissions";
 
 export const runtime = "nodejs";
@@ -22,19 +23,21 @@ export async function POST(req: Request) {
       }
       requesterId = String(userIdFromToken);
     } else {
-      let session: any = null;
-      try {
-        const { getAuth } = await import("@/lib/auth");
-        session = await getAuth().api.getSession({ headers: req.headers as any });
-      } catch (error) {
-        console.error("BetterAuth session error", error);
+      const cookieHeader = req.headers.get("cookie");
+      if (cookieHeader) {
+        const cookies = parseCookies(cookieHeader);
+        const token = cookies["token"];
+        if (token) {
+          const payload = verifyToken(token);
+          const userIdFromToken = payload?.id_usuario;
+          if (payload && userIdFromToken) {
+            requesterId = String(userIdFromToken);
+          }
+        }
+      }
+      if (!requesterId) {
         return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
       }
-      const sid = (session && session.user && (session.user as any).id_usuario) || null;
-      if (!sid) {
-        return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
-      }
-      requesterId = String(sid);
     }
 
     const roleRes = await client.query(
@@ -354,13 +357,17 @@ export async function GET(req: Request) {
       }
 
       if (!requesterId) {
-        try {
-          const { getAuth } = await import("@/lib/auth");
-          const session = await getAuth().api.getSession({ headers: req.headers as any });
-          const sid = (session && session.user && (session.user as any).id_usuario) || null;
-          if (sid) requesterId = String(sid);
-        } catch (error) {
-          console.error("BetterAuth session error", error);
+        const cookieHeader = req.headers.get("cookie");
+        if (cookieHeader) {
+          const cookies = parseCookies(cookieHeader);
+          const token = cookies["token"];
+          if (token) {
+            const payload = verifyToken(token);
+            const userIdFromToken = payload?.id_usuario;
+            if (payload && userIdFromToken) {
+              requesterId = String(userIdFromToken);
+            }
+          }
         }
       }
 

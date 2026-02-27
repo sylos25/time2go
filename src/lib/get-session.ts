@@ -1,4 +1,3 @@
-import { getAuth } from "./auth"
 import { headers } from "next/headers"
 import { verifyToken } from "./jwt"
 import { parseCookies } from "./cookies"
@@ -30,9 +29,5 @@ export async function getSession() {
     }
   }
 
-  const session = await getAuth().api.getSession({
-    headers: hdrs,
-  })
-
-  return session
+  return null
 }
