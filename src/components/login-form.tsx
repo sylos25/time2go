@@ -107,10 +107,9 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
       if (consent !== 'rejected') {
         if (data.token) localStorage.setItem("token", data.token)
-        const userId = data.id_usuario ?? data.numero_documento
+        const userId = data.id_usuario
         if (userId) {
           localStorage.setItem("userId", String(userId))
-          localStorage.removeItem("userDocument")
         }
         localStorage.setItem("userName", name)
         if (rememberMe) {
@@ -122,7 +121,6 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         // Si el consentimiento es rechazado, asegurarse de no almacenar datos en localStorage y limpiar cualquier dato existente
         localStorage.removeItem("token")
         localStorage.removeItem("userId")
-        localStorage.removeItem("userDocument")
         localStorage.removeItem("userName")
         localStorage.removeItem("rememberedEmail")
       }
@@ -134,7 +132,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             token: consent !== 'rejected' ? data.token : undefined,
             name,
             expiresAt: data.expiresAt,
-            id_usuario: data.id_usuario ?? data.numero_documento,
+            id_usuario: data.id_usuario,
           },
         })
       )

@@ -59,7 +59,7 @@ export function getAuth() {
     callbacks: {
       async jwt({ token, user }: JWTCallbackParams) {
         if (user) {
-          token.id_usuario = (user as any).id_usuario || (user as any).numero_documento;
+          token.id_usuario = (user as any).id_usuario;
           // si el flujo de registro devuelve nombre, incluirlo en token
           if ((user as any).nombres) token.name = (user as any).nombres;
         }
@@ -67,8 +67,8 @@ export function getAuth() {
       },
       async session({ session, token }: SessionCallbackParams) {
         // exponer id_usuario y name en session.user si está en token
-        if ((token as any)?.id_usuario || (token as any)?.numero_documento) {
-          session.user.id_usuario = (token as any).id_usuario || (token as any).numero_documento;
+        if ((token as any)?.id_usuario) {
+          session.user.id_usuario = (token as any).id_usuario;
         }
         if ((token as any).name) {
           session.user.name = (token as any).name;

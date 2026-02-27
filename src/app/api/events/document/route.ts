@@ -13,7 +13,7 @@ async function ensureAdminRole(req: NextRequest) {
   if (authHeader.startsWith("Bearer ")) {
     const token = authHeader.slice(7).trim()
     const payload = verifyToken(token)
-    const userIdFromToken = payload?.id_usuario || payload?.numero_documento
+    const userIdFromToken = payload?.id_usuario
     if (payload && userIdFromToken) userId = String(userIdFromToken)
   }
 
@@ -22,7 +22,7 @@ async function ensureAdminRole(req: NextRequest) {
     const token = cookies["token"]
     if (token) {
       const payload = verifyToken(token)
-      const userIdFromToken = payload?.id_usuario || payload?.numero_documento
+      const userIdFromToken = payload?.id_usuario
       if (payload && userIdFromToken) userId = String(userIdFromToken)
     }
   }

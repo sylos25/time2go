@@ -11,7 +11,7 @@ async function getRequester(req: Request, client: any) {
     try {
       const token = authHeader.slice(7).trim()
       const payload = verifyToken(token)
-      const userIdFromToken = payload?.id_usuario || payload?.numero_documento
+      const userIdFromToken = payload?.id_usuario
       if (payload && userIdFromToken) userId = String(userIdFromToken)
     } catch {
       userId = null
@@ -24,7 +24,7 @@ async function getRequester(req: Request, client: any) {
       const token = cookies["token"]
       if (token) {
         const payload = verifyToken(token)
-        const userIdFromToken = payload?.id_usuario || payload?.numero_documento
+        const userIdFromToken = payload?.id_usuario
         if (payload && userIdFromToken) userId = String(userIdFromToken)
       }
     } catch {

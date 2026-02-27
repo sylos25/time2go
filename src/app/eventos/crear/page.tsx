@@ -461,7 +461,7 @@ export default function CrearEventoPage() {
       const diasStrings = (newEvent.diasSeleccionados || []).map((d: Date) => d.toISOString().split('T')[0]);
       formData.append("dias_semana", JSON.stringify(diasStrings));
       
-      const storedUserId = localStorage.getItem('userId') || localStorage.getItem('userDocument') || "";
+      const storedUserId = localStorage.getItem('userId') || "";
       formData.append("id_usuario", String(newEvent.id_usuario || storedUserId));
       formData.append("id_categoria_evento", String(newEvent.id_categoria_evento || 0));
       formData.append("id_tipo_evento", String(newEvent.id_tipo_evento || 0));

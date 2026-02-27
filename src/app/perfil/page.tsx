@@ -382,7 +382,6 @@ export default function PerfilPage() {
                     localStorage.removeItem("token")
                     localStorage.removeItem("userName")
                     localStorage.removeItem("userId")
-                    localStorage.removeItem("userDocument")
                     router.push("/")
                   }}
                   variant="outline"

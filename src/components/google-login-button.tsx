@@ -71,16 +71,14 @@ export function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps) {
 
             if (consent !== "rejected") {
               if (data.token) localStorage.setItem("token", data.token)
-              const userId = data.id_usuario ?? data.numero_documento
+              const userId = data.id_usuario
               if (userId) {
                 localStorage.setItem("userId", String(userId))
-                localStorage.removeItem("userDocument")
               }
               localStorage.setItem("userName", name)
             } else {
               localStorage.removeItem("token")
               localStorage.removeItem("userId")
-              localStorage.removeItem("userDocument")
               localStorage.removeItem("userName")
             }
 
@@ -90,7 +88,7 @@ export function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps) {
                   token: consent !== "rejected" ? data.token : undefined,
                   name,
                   expiresAt: data.expiresAt,
-                  id_usuario: data.id_usuario ?? data.numero_documento,
+                  id_usuario: data.id_usuario,
                 },
               })
             )

@@ -11,7 +11,7 @@ async function getAuthenticatedUser(req: Request, client: any) {
     try {
       const t = authHeader.slice(7).trim();
       const payload = verifyToken(t);
-      const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
+      const userIdFromToken = payload?.id_usuario;
       if (payload && userIdFromToken) userId = String(userIdFromToken);
     } catch (e) {
       console.error("token verification failed", e);
@@ -24,7 +24,7 @@ async function getAuthenticatedUser(req: Request, client: any) {
     if (token) {
       try {
         const payload = verifyToken(token);
-        const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
+        const userIdFromToken = payload?.id_usuario;
         if (payload && userIdFromToken) userId = String(userIdFromToken);
       } catch (e) {
         console.error("cookie token verification failed", e);

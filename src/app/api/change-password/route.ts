@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     const token = authHeader.slice(7).trim();
     const payload = verifyToken(token);
 
-    const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
+    const userIdFromToken = payload?.id_usuario;
     if (!payload || !userIdFromToken) {
       return NextResponse.json(
         { ok: false, message: "Token inválido" },

@@ -5,8 +5,8 @@ import { sendEmailValidationEmail, generateEmailValidationToken } from "@/lib/em
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, id_usuario, numero_documento, baseUrl } = await req.json();
-    const userId = id_usuario ?? numero_documento;
+    const { email, id_usuario, baseUrl } = await req.json();
+    const userId = id_usuario;
 
     if (!email || !userId) {
       return NextResponse.json(

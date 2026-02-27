@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     if (authHeader.startsWith("Bearer ")) {
       const token = authHeader.slice(7).trim();
       const payload = verifyToken(token);
-      const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
+      const userIdFromToken = payload?.id_usuario;
       if (!payload || !userIdFromToken) {
         return NextResponse.json({ ok: false, message: "Invalid token" }, { status: 401 });
       }
@@ -26,7 +26,7 @@ export async function GET(req: Request) {
         const token = cookies["token"];
         if (token) {
           const payload = verifyToken(token);
-          const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
+          const userIdFromToken = payload?.id_usuario;
           if (payload && userIdFromToken) {
             userId = String(userIdFromToken);
           }
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
 
       if (!userId) {
       const session = await getAuth().api.getSession({ headers: req.headers as any });
-      const sid = (session && session.user && ((session.user as any).id_usuario || (session.user as any).numero_documento)) || null;
+      const sid = (session && session.user && (session.user as any).id_usuario) || null;
       if (!sid) {
         return NextResponse.json({ ok: false, message: "No authenticated user" }, { status: 401 });
       }

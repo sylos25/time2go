@@ -30,7 +30,7 @@ export async function GET(req: Request) {
       if (authHeader.startsWith("Bearer ")) {
         const token = authHeader.slice(7).trim();
         const payload = verifyToken(token);
-        const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
+        const userIdFromToken = payload?.id_usuario;
         if (!payload || !userIdFromToken) {
           return NextResponse.json(
             { ok: false, message: "Token inválido" },
@@ -45,7 +45,7 @@ export async function GET(req: Request) {
           const token = cookies["token"];
           if (token) {
             const payload = verifyToken(token);
-            const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
+            const userIdFromToken = payload?.id_usuario;
             if (payload && userIdFromToken) {
               userId = String(userIdFromToken);
             }

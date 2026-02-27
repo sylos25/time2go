@@ -15,7 +15,7 @@ async function getAuthenticatedUserId(req: Request): Promise<string | null> {
   if (authHeader.startsWith("Bearer ")) {
     const token = authHeader.slice(7).trim()
     const payload = verifyToken(token)
-    const userIdFromToken = payload?.id_usuario || payload?.numero_documento
+    const userIdFromToken = payload?.id_usuario
     if (payload && userIdFromToken) {
       return String(userIdFromToken)
     }
@@ -27,7 +27,7 @@ async function getAuthenticatedUserId(req: Request): Promise<string | null> {
     const token = cookies["token"]
     if (token) {
       const payload = verifyToken(token)
-      const userIdFromToken = payload?.id_usuario || payload?.numero_documento
+      const userIdFromToken = payload?.id_usuario
       if (payload && userIdFromToken) {
         return String(userIdFromToken)
       }
@@ -38,7 +38,7 @@ async function getAuthenticatedUserId(req: Request): Promise<string | null> {
   const sid =
     (session &&
       session.user &&
-      ((session.user as any).id_usuario || (session.user as any).numero_documento)) ||
+      (session.user as any).id_usuario) ||
     null
 
   return sid ? String(sid) : null

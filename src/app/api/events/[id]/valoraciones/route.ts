@@ -11,7 +11,7 @@ async function getAuthenticatedUser(req: Request) {
     try {
       const token = authHeader.slice(7).trim();
       const payload = verifyToken(token);
-      const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
+      const userIdFromToken = payload?.id_usuario;
       if (payload && userIdFromToken) {
         userId = String(userIdFromToken);
       }
@@ -26,7 +26,7 @@ async function getAuthenticatedUser(req: Request) {
     if (token) {
       try {
         const payload = verifyToken(token);
-        const userIdFromToken = payload?.id_usuario || payload?.numero_documento;
+        const userIdFromToken = payload?.id_usuario;
         if (payload && userIdFromToken) {
           userId = String(userIdFromToken);
         }

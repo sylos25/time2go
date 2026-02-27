@@ -85,7 +85,7 @@ export function Header({
     const syncFromStorage = () => {
       const token = localStorage.getItem("token");
       const storedName = localStorage.getItem("userName");
-      const storedUserId = localStorage.getItem("userId") || localStorage.getItem("userDocument");
+      const storedUserId = localStorage.getItem("userId");
       const storedRole = localStorage.getItem("userRole");
       if (token) {
         const exp = parseJwtExp(token);
@@ -123,11 +123,10 @@ export function Header({
             const data = await res.json();
             if (data?.ok && data.user) {
               const name = data.user.nombres || data.user.correo || storedName || user?.name;
-              const userId = data.user.id_usuario || data.user.numero_documento || localStorage.getItem('userId') || localStorage.getItem('userDocument') || undefined;
+              const userId = data.user.id_usuario || localStorage.getItem('userId') || undefined;
               const roleNumber = data.user.id_rol !== undefined ? Number(data.user.id_rol) : undefined;
               if (userId) {
                 localStorage.setItem('userId', String(userId));
-                localStorage.removeItem('userDocument');
               }
               if (roleNumber !== undefined) localStorage.setItem('userRole', String(roleNumber));
               setUser({ token, name, id_usuario: userId, role: roleNumber });
@@ -152,11 +151,10 @@ export function Header({
         if (data?.ok && data.user) {
           const name = data.user.nombres || data.user.correo || localStorage.getItem('userName') || user?.name;
           const tokenFromStorage = localStorage.getItem('token') || (user as any)?.token;
-          const userId = data.user.id_usuario || data.user.numero_documento || localStorage.getItem('userId') || localStorage.getItem('userDocument') || undefined;
+          const userId = data.user.id_usuario || localStorage.getItem('userId') || undefined;
           const roleNumber = data.user.id_rol !== undefined ? Number(data.user.id_rol) : undefined;
           if (userId) {
             localStorage.setItem('userId', String(userId));
-            localStorage.removeItem('userDocument');
           }
           if (roleNumber !== undefined) localStorage.setItem('userRole', String(roleNumber));
           setUser({ token: tokenFromStorage, name, id_usuario: userId, role: roleNumber });
@@ -179,13 +177,12 @@ export function Header({
       const detail = ev.detail ?? {};
       const token = detail.token || localStorage.getItem("token");
       const name = detail.name || detail.nombre || localStorage.getItem("userName") || "Usuario";
-      const userId = detail.id_usuario || detail.numero_documento || localStorage.getItem("userId") || localStorage.getItem("userDocument") || undefined;
+      const userId = detail.id_usuario || localStorage.getItem("userId") || undefined;
       const roleNumber = detail.id_rol !== undefined ? Number(detail.id_rol) : undefined;
       if (token) localStorage.setItem("token", token);
       if (name) localStorage.setItem("userName", name);
       if (userId) {
         localStorage.setItem("userId", String(userId));
-        localStorage.removeItem("userDocument");
       }
       if (roleNumber !== undefined) localStorage.setItem('userRole', String(roleNumber));
       setUser({ token, name, id_usuario: userId, role: roleNumber });
@@ -260,7 +257,6 @@ export function Header({
     localStorage.removeItem("userName");
     localStorage.removeItem('userRole');
     localStorage.removeItem('userId');
-    localStorage.removeItem('userDocument');
     setUser(null);
     if (logoutTimerRef.current) {
       window.clearTimeout(logoutTimerRef.current);
@@ -278,7 +274,6 @@ export function Header({
     localStorage.removeItem("userName");
     localStorage.removeItem('userRole');
     localStorage.removeItem('userId');
-    localStorage.removeItem('userDocument');
     setUser(null);
     if (logoutTimerRef.current) {
       window.clearTimeout(logoutTimerRef.current);
