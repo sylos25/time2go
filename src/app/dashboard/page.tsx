@@ -504,9 +504,7 @@ export default function EventDashboard() {
     ...(canManageEvents ? [{ id: "events", name: "Gestión de Eventos", icon: Calendar }] : []),
     { id: "ingresar-datos", name: "Ingresar Datos", icon: MapPin },
     { id: "ver-datos", name: "Ver Datos", icon: Search },
-    { id: "analytics", name: "Analíticas", icon: TrendingUp },
     { id: "users", name: "Usuarios", icon: Users },
-    { id: "settings", name: "Configuración", icon: Settings },
   ]
 
   const toggleVisibility = (id: number) => {
