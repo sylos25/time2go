@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Menu, X, User, LogOut, Settings, LayoutDashboard, Calendar, Ticket } from "lucide-react"
+import { Menu, X, User, LogOut, Settings, LayoutDashboard, Calendar, Ticket, Heart, Star } from "lucide-react"
 import { usePermission, PERMISSIONS } from "@/hooks/use-permissions"
 import type { JSX } from "react"
 
@@ -401,10 +401,20 @@ export function Header({
                           <p>Mi Perfil</p>
                         </DropdownMenuItem>
                         {isRegularUser ? (
-                          <DropdownMenuItem onClick={() => navigateTo("/mis-reservas")} className="cursor-pointer">
-                            <Ticket className="h-4 w-4 mr-2" />
-                            Mis Reservas
-                          </DropdownMenuItem>
+                          <>
+                            <DropdownMenuItem onClick={() => navigateTo("/mis-reservas")} className="cursor-pointer">
+                              <Ticket className="h-4 w-4 mr-2" />
+                              Mis Reservas
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigateTo("/mis-favoritos")} className="cursor-pointer">
+                              <Heart className="h-4 w-4 mr-2" />
+                              Mis Favoritos
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigateTo("/mis-valoraciones")} className="cursor-pointer">
+                              <Star className="h-4 w-4 mr-2" />
+                              Mis Valoraciones
+                            </DropdownMenuItem>
+                          </>
                         ) : (
                           <DropdownMenuItem onClick={() => navigateTo("/mis-eventos")} className="cursor-pointer">
                             <Calendar className="h-4 w-4 mr-2" />
