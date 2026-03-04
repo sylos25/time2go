@@ -116,7 +116,8 @@ CREATE TABLE IF NOT EXISTS tabla_sitios_discapacitados (
     id_infraestructura_discapacitados       INT                          NOT NULL,
     descripcion                             TEXT                         NOT NULL       CHECK (char_length(descripcion) >= 10),
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP
+    fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_infraestructura_discapacitados) REFERENCES tabla_tipo_infraestructura_discapacitados(id_infraestructura_discapacitados)
 );
 
 CREATE TABLE IF NOT EXISTS tabla_roles (
@@ -146,6 +147,15 @@ CREATE TABLE IF NOT EXISTS tabla_usuarios (
     fecha_desactivacion                     TIMESTAMP   WITH TIME ZONE,
     FOREIGN KEY (id_pais)                               REFERENCES       tabla_paises(id_pais),
     FOREIGN KEY (id_rol)                                REFERENCES       tabla_roles(id_rol)
+);
+
+CREATE TABLE tabla_favoritos (
+    id_favorito    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_usuario     INT NOT NULL UNIQUE,
+    id_evento      INT NOT NULL UNIQUE,
+    fecha_creacion TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(id_usuario),
+    FOREIGN KEY (id_evento)  REFERENCES tabla_eventos(id_evento)
 );
 
 CREATE TABLE IF NOT EXISTS tabla_auditoria_bd (
@@ -253,10 +263,17 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
     cupo                                    INT                          NOT NULL       DEFAULT 0 CHECK (cupo >= 0),                -- Numero de invitados (No debe ser menor a 0 y mayor a 5000).
     reservar_anticipado                     BOOLEAN                      NOT NULL       DEFAULT FALSE,                              -- FALSE: No requiere reserva anticipada and TRUE: Requiere reserva anticipada.
     estado                                  BOOLEAN                      NOT NULL       DEFAULT FALSE,                              -- FALSE: Pendiente por validar and TRUE: Aprobado.
+    motivo_rechazo                          TEXT,                                                                                   -- Detalle del motivo de rechazo en caso de que el evento sea rechazado por un moderador o administrador.
+    rechazo_por                             INT,                                                                                    -- ID del usuario que rechaza el evento. Debe ser un moderador o administrador.
+    destacado                               BOOLEAN                      NOT NULL       DEFAULT FALSE,                              -- FALSE: No destacado and TRUE: Destacado.
+    destacado_por                           INT,                                                                                    -- ID del usuario que destaca el evento. Debe ser un moderador o administrador.
+    fecha_destacado                         TIMESTAMP   WITH TIME ZONE,                                                             -- Fecha en la que se destacó el evento.
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     fecha_desactivacion                     TIMESTAMP   WITH TIME ZONE,
     FOREIGN KEY (id_usuario)                            REFERENCES       tabla_usuarios(id_usuario),
+    FOREIGN KEY (rechazo_por)                           REFERENCES       tabla_usuarios(id_usuario),
+    FOREIGN KEY (destacado_por)                         REFERENCES       tabla_usuarios(id_usuario),
     FOREIGN KEY (id_tipo_evento)                        REFERENCES       tabla_tipo_eventos(id_tipo_evento),
     FOREIGN KEY (id_categoria_evento)                   REFERENCES       tabla_categoria_eventos(id_categoria_evento),
     FOREIGN KEY (id_sitio)                              REFERENCES       tabla_sitios(id_sitio)
@@ -323,8 +340,8 @@ CREATE TABLE IF NOT EXISTS tabla_documentos_usuarios (
 
 CREATE TABLE IF NOT EXISTS tabla_valoraciones (
     id_valoracion                           INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    id_usuario                              INT                       	 NOT NULL,
-    id_evento                               INT                          NOT NULL,
+    id_usuario                              INT                       	 NOT NULL      UNIQUE,
+    id_evento                               INT                          NOT NULL      UNIQUE,
     valoracion                              INT                          NOT NULL       CHECK (valoracion BETWEEN 1 AND 5),
     comentario                              VARCHAR,
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
