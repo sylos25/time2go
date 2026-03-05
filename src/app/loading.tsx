@@ -5,7 +5,7 @@ export default function Loading() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="text-center">
         <Loader2 className="h-12 w-12 text-green-800 animate-spin mx-auto mb-4" />
-        <p className="text-muted-foreground text-lg">Cargando eventos...</p>
+        <p className="text-muted-foreground text-lg">Cargando contenido...</p>
       </div>
     </div>
   )

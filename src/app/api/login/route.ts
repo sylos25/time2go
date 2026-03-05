@@ -62,9 +62,18 @@ export async function POST(req: Request) {
 
     const userResult = await pool.query(
       `
-        SELECT id_usuario, correo, nombres, contrasena_hash, validacion_correo, estado
-        FROM tabla_usuarios
-        WHERE correo = $1
+        SELECT
+          u.id_usuario,
+          u.id_publico,
+          c.correo,
+          p.nombres,
+          c.contrasena_hash,
+          c.validacion_correo,
+          u.estado
+        FROM tabla_usuarios u
+        INNER JOIN tabla_usuarios_credenciales c ON c.id_usuario = u.id_usuario
+        LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
+        WHERE c.correo = $1
         LIMIT 1
       `,
       [email]
@@ -76,6 +85,7 @@ export async function POST(req: Request) {
 
     const user = userResult.rows[0] as {
       id_usuario: string | number;
+      id_publico: string;
       correo: string;
       nombres?: string | null;
       contrasena_hash?: string | null;
@@ -142,7 +152,7 @@ export async function POST(req: Request) {
       {
         success: true,
         token,
-        id_usuario: user.id_usuario,
+        id_publico: user.id_publico,
         expiresAt: Math.floor(Date.now() / 1000) + expiresIn,
         name: user.nombres || user.correo.split("@")[0],
       },

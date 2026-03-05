@@ -26,20 +26,26 @@ export async function POST(req: Request) {
   };
 
   try {
-    const dupCheck = await pool.query(
-      `SELECT correo, telefono FROM tabla_usuarios WHERE correo = $1 OR telefono = $2`,
-      [email, telefono]
+    const client = await pool.connect();
+    try {
+    const emailExists = await client.query(
+      `SELECT 1 FROM tabla_usuarios_credenciales WHERE correo = $1 LIMIT 1`,
+      [email]
     );
 
-    if ((dupCheck.rowCount ?? 0) > 0) {
-      const duplicates: string[] = [];
-      const rows = dupCheck.rows as Array<{ correo?: string; telefono?: string }>;
+    const phoneExists = await client.query(
+      `SELECT 1 FROM tabla_personas WHERE telefono = $1 LIMIT 1`,
+      [telefono]
+    );
 
-      if (rows.some((row) => row.correo === email)) {
+    if ((emailExists.rowCount ?? 0) > 0 || (phoneExists.rowCount ?? 0) > 0) {
+      const duplicates: string[] = [];
+
+      if ((emailExists.rowCount ?? 0) > 0) {
         duplicates.push("correo");
       }
 
-      if (rows.some((row) => row.telefono === telefono)) {
+      if ((phoneExists.rowCount ?? 0) > 0) {
         duplicates.push("telefono");
       }
 
@@ -63,32 +69,47 @@ export async function POST(req: Request) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const result = await pool.query(
+    await client.query("BEGIN");
+
+    const result = await client.query(
       `INSERT INTO tabla_usuarios (
-        nombres,
-        apellidos,
-        id_pais,
-        telefono,
-        correo,
-        contrasena_hash,
         terminos_condiciones,
         id_rol,
         estado
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id_usuario, id_publico, correo`,
-      [
-        firstName,
-        lastName,
-        pais,
-        telefono,
-        email,
-        hashedPassword,
-        terminosCondiciones,
-        1,
-        true,
-      ]
+      ) VALUES ($1,$2,$3) RETURNING id_usuario, id_publico`,
+      [terminosCondiciones, 1, true]
     );
 
-    const usuario = result.rows[0] as { id_usuario: string | number; correo: string };
+    const usuarioBase = result.rows[0] as { id_usuario: string | number; id_publico: string };
+
+    await client.query(
+      `INSERT INTO tabla_personas (
+        id_usuario,
+        nombres,
+        apellidos,
+        id_pais,
+        telefono
+      ) VALUES ($1,$2,$3,$4,$5)`,
+      [usuarioBase.id_usuario, firstName, lastName, pais, telefono]
+    );
+
+    await client.query(
+      `INSERT INTO tabla_usuarios_credenciales (
+        id_usuario,
+        correo,
+        contrasena_hash,
+        validacion_correo
+      ) VALUES ($1,$2,$3,$4) RETURNING correo`,
+      [usuarioBase.id_usuario, email, hashedPassword, false]
+    );
+
+    await client.query("COMMIT");
+
+    const usuarioInterno = {
+      id_usuario: usuarioBase.id_usuario,
+      id_publico: usuarioBase.id_publico,
+      correo: email,
+    };
 
     try {
       const token = generateEmailValidationToken();
@@ -97,7 +118,7 @@ export async function POST(req: Request) {
       await pool.query(
         `INSERT INTO tabla_validacion_email_tokens (id_usuario, token, fecha_expiracion)
          VALUES ($1, $2, $3)`,
-        [usuario.id_usuario, token, expirationTime]
+        [usuarioInterno.id_usuario, token, expirationTime]
       );
 
       const url = new URL(req.url);
@@ -111,7 +132,21 @@ export async function POST(req: Request) {
       console.error("Error en validación de email:", emailError);
     }
 
-    return NextResponse.json({ usuario }, { status: 201 });
+    return NextResponse.json(
+      {
+        usuario: {
+          id_publico: usuarioInterno.id_publico,
+          correo: usuarioInterno.correo,
+        },
+      },
+      { status: 201 }
+    );
+    } catch (txError) {
+      await client.query("ROLLBACK");
+      throw txError;
+    } finally {
+      client.release();
+    }
   } catch (error: unknown) {
     const dbError = error as { code?: string; detail?: string; constraint?: string };
 

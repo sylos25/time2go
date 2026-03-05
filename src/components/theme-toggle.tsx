@@ -7,13 +7,19 @@ const THEME_KEY = "theme"
 
 type ThemeMode = "light" | "dark"
 
+const getSystemTheme = (): ThemeMode =>
+  window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+
+const getInitialTheme = (): ThemeMode => {
+  const stored = localStorage.getItem(THEME_KEY)
+  if (stored === "dark" || stored === "light") return stored
+  return getSystemTheme()
+}
+
 const applyTheme = (theme: ThemeMode) => {
   const root = document.documentElement
-  if (theme === "dark") {
-    root.classList.add("dark")
-  } else {
-    root.classList.remove("dark")
-  }
+  root.classList.toggle("dark", theme === "dark")
+  root.style.colorScheme = theme
 }
 
 export function ThemeToggle() {
@@ -21,11 +27,24 @@ export function ThemeToggle() {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    const stored = localStorage.getItem(THEME_KEY)
-    const initialTheme: ThemeMode = stored === "dark" ? "dark" : "light"
+    const initialTheme = getInitialTheme()
     setTheme(initialTheme)
     applyTheme(initialTheme)
     setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+    const handleSystemThemeChange = () => {
+      const stored = localStorage.getItem(THEME_KEY)
+      if (stored === "dark" || stored === "light") return
+      const nextTheme = getSystemTheme()
+      setTheme(nextTheme)
+      applyTheme(nextTheme)
+    }
+
+    mediaQuery.addEventListener("change", handleSystemThemeChange)
+    return () => mediaQuery.removeEventListener("change", handleSystemThemeChange)
   }, [])
 
   const toggleTheme = () => {

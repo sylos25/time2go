@@ -65,9 +65,18 @@ export async function POST(req: Request) {
 
     const existing = await pool.query(
       `
-        SELECT id_usuario, id_publico, correo, nombres, validacion_correo, ig_google, estado
-        FROM tabla_usuarios
-        WHERE ig_google = $1 OR correo = $2
+        SELECT
+          u.id_usuario,
+          u.id_publico,
+          u.estado,
+          c.correo,
+          c.id_google,
+          c.validacion_correo,
+          p.nombres
+        FROM tabla_usuarios u
+        INNER JOIN tabla_usuarios_credenciales c ON c.id_usuario = u.id_usuario
+        LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
+        WHERE c.id_google = $1 OR c.correo = $2
         LIMIT 1
       `,
       [igGoogle, email]
@@ -97,38 +106,122 @@ export async function POST(req: Request) {
 
       const updated = await pool.query(
         `
-          UPDATE tabla_usuarios
-          SET ig_google = COALESCE(ig_google, $1),
+          UPDATE tabla_usuarios_credenciales
+          SET id_google = COALESCE(id_google, $1),
               validacion_correo = TRUE,
-              nombres = COALESCE(nombres, $3),
-              apellidos = COALESCE(apellidos, $4),
               fecha_actualizacion = CURRENT_TIMESTAMP
           WHERE id_usuario = $2
-          RETURNING id_usuario, id_publico, correo, nombres
+          RETURNING id_usuario
         `,
-        [igGoogle, user.id_usuario, nombres || null, apellidos || null]
+        [igGoogle, user.id_usuario]
       );
-      user = updated.rows[0];
-    } else {
-      const created = await pool.query(
+
+      if (nombres || apellidos) {
+        await pool.query(
+          `
+            INSERT INTO tabla_personas (id_usuario, nombres, apellidos)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (id_usuario)
+            DO UPDATE
+            SET nombres = COALESCE(tabla_personas.nombres, EXCLUDED.nombres),
+                apellidos = COALESCE(tabla_personas.apellidos, EXCLUDED.apellidos),
+                fecha_actualizacion = CURRENT_TIMESTAMP
+          `,
+          [user.id_usuario, nombres || null, apellidos || null]
+        );
+      }
+
+      const refreshed = await pool.query(
         `
-          INSERT INTO tabla_usuarios (
-            ig_google,
-            nombres,
-            apellidos,
-            correo,
-            validacion_correo,
-            terminos_condiciones,
-            estado,
-            id_rol,
-            fecha_registro,
-            fecha_actualizacion
-          ) VALUES ($1,$2,$3,$4,TRUE,TRUE,TRUE,1,NOW(),NOW())
-          RETURNING id_usuario, id_publico, correo, nombres
+          SELECT
+            u.id_usuario,
+            u.id_publico,
+            c.correo,
+            p.nombres
+          FROM tabla_usuarios u
+          INNER JOIN tabla_usuarios_credenciales c ON c.id_usuario = u.id_usuario
+          LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
+          WHERE u.id_usuario = $1
+          LIMIT 1
         `,
-        [igGoogle, nombres || null, apellidos || null, email]
+        [updated.rows[0].id_usuario]
       );
-      user = created.rows[0];
+      user = refreshed.rows[0];
+    } else {
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+
+        const createdUser = await client.query(
+          `
+            INSERT INTO tabla_usuarios (
+              terminos_condiciones,
+              estado,
+              id_rol,
+              fecha_registro,
+              fecha_actualizacion
+            ) VALUES (TRUE,TRUE,1,NOW(),NOW())
+            RETURNING id_usuario, id_publico
+          `
+        );
+
+        const newUserId = createdUser.rows[0].id_usuario;
+
+        await client.query(
+          `
+            INSERT INTO tabla_usuarios_credenciales (
+              id_usuario,
+              id_google,
+              correo,
+              validacion_correo,
+              fecha_creacion,
+              fecha_actualizacion
+            ) VALUES ($1,$2,$3,TRUE,NOW(),NOW())
+          `,
+          [newUserId, igGoogle, email]
+        );
+
+        await client.query(
+          `
+            INSERT INTO tabla_personas (
+              id_usuario,
+              nombres,
+              apellidos,
+              fecha_creacion,
+              fecha_actualizacion
+            ) VALUES ($1,$2,$3,NOW(),NOW())
+          `,
+          [newUserId, nombres || null, apellidos || null]
+        );
+
+        await client.query("COMMIT");
+
+        const created = await pool.query(
+          `
+            SELECT
+              u.id_usuario,
+              u.id_publico,
+              c.correo,
+              p.nombres
+            FROM tabla_usuarios u
+            INNER JOIN tabla_usuarios_credenciales c ON c.id_usuario = u.id_usuario
+            LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
+            WHERE u.id_usuario = $1
+            LIMIT 1
+          `,
+          [newUserId]
+        );
+        user = created.rows[0];
+      } catch (txError) {
+        await client.query("ROLLBACK");
+        throw txError;
+      } finally {
+        client.release();
+      }
+    }
+
+    if (!user) {
+      return NextResponse.json({ message: "No fue posible resolver el usuario" }, { status: 500 });
     }
 
     const secret = process.env.BETTER_AUTH_SECRET || process.env.JWT_SECRET || "dev-secret";
@@ -154,7 +247,6 @@ export async function POST(req: Request) {
       {
         success: true,
         token,
-        id_usuario: userId,
         id_publico: user.id_publico,
         expiresAt: Math.floor(Date.now() / 1000) + expiresIn,
         name: user.nombres || email.split("@")[0],

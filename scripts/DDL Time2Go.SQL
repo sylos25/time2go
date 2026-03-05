@@ -27,6 +27,8 @@ DROP TABLE IF EXISTS tabla_eventos;
 DROP TABLE IF EXISTS tabla_tipo_eventos;
 DROP TABLE IF EXISTS tabla_categoria_eventos;
 DROP TABLE IF EXISTS tabla_baneados;
+DROP TABLE IF EXISTS tabla_usuarios_credenciales;
+DROP TABLE IF EXISTS tabla_personas;
 DROP TABLE IF EXISTS tabla_usuarios;
 DROP TABLE IF EXISTS tabla_roles;
 DROP TABLE IF EXISTS tabla_sitios_disc;
@@ -131,22 +133,35 @@ CREATE TABLE IF NOT EXISTS tabla_usuarios (
 	id_usuario                              INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     id_publico                              VARCHAR                      NOT NULL       UNIQUE,
     id_rol                                  INT                          NOT NULL       DEFAULT 1,
-    ig_google                               VARCHAR,
-    nombres                                 VARCHAR(30)                                 CHECK (char_length(nombres) >= 3),
-    apellidos                               VARCHAR(30)                                 CHECK (char_length(apellidos) >= 3),
-    id_pais                                 INT,
-    telefono                                DECIMAL(10,0)                               UNIQUE  CHECK (telefono > 2999999999),
-    validacion_telefono                     BOOLEAN                                     DEFAULT FALSE,
-    correo                                  VARCHAR                      NOT NULL       UNIQUE  CHECK (char_length(correo) >= 14),
-    validacion_correo                       BOOLEAN                                     DEFAULT FALSE,
-    contrasena_hash                         VARCHAR,
     terminos_condiciones                    BOOLEAN                      NOT NULL,
     estado                                  BOOLEAN                      NOT NULL       DEFAULT TRUE,
     fecha_registro                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     fecha_desactivacion                     TIMESTAMP   WITH TIME ZONE,
-    FOREIGN KEY (id_pais)                               REFERENCES       tabla_paises(id_pais),
     FOREIGN KEY (id_rol)                                REFERENCES       tabla_roles(id_rol)
+);
+
+CREATE TABLE IF NOT EXISTS tabla_personas (
+    id_usuario                              INT                          PRIMARY KEY,
+    nombres                                 VARCHAR(30)                                 CHECK (char_length(nombres) >= 3),
+    apellidos                               VARCHAR(30)                                 CHECK (char_length(apellidos) >= 3),
+    id_pais                                 INT,
+    telefono                                DECIMAL(10,0)                               UNIQUE  CHECK (telefono > 2999999999),
+    fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario)                            REFERENCES       tabla_usuarios(id_usuario),
+    FOREIGN KEY (id_pais)                               REFERENCES       tabla_paises(id_pais)
+);
+
+CREATE TABLE IF NOT EXISTS tabla_usuarios_credenciales (
+    id_usuario                              INT                          PRIMARY KEY,
+    id_google                               VARCHAR                                     UNIQUE,
+    correo                                  VARCHAR                      NOT NULL       UNIQUE  CHECK (char_length(correo) >= 14),
+    contrasena_hash                         VARCHAR,
+    validacion_correo                       BOOLEAN                      NOT NULL       DEFAULT FALSE,
+    fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario)                            REFERENCES       tabla_usuarios(id_usuario)
 );
 
 CREATE TABLE tabla_favoritos (
@@ -437,6 +452,12 @@ FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_usuarios
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_personas
+FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
+CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_usuarios_credenciales
+FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
+
 CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_validacion_email_tokens
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
@@ -557,14 +578,32 @@ INSERT INTO tabla_accesibilidad_menu_x_rol VALUES (18, 11, 4, NOW(), NOW());
 
 
 -- Cargar en tabla_usuarios.
-INSERT INTO tabla_usuarios (id_rol, ig_google, nombres, apellidos, id_pais, telefono, validacion_telefono, correo, validacion_correo, contrasena_hash, terminos_condiciones, estado, fecha_registro, fecha_actualizacion, fecha_desactivacion) 
-    VALUES (1, NULL, 'Usuario', 'Prueba', 6, 3001234567, TRUE, 'usuario_prueba@correo.com', TRUE, crypt('Usuario123.', gen_salt('bf', 12)), TRUE, TRUE, NOW(), NOW(), NOW());
-INSERT INTO tabla_usuarios (id_rol, ig_google, nombres, apellidos, id_pais, telefono, validacion_telefono, correo, validacion_correo, contrasena_hash, terminos_condiciones, estado, fecha_registro, fecha_actualizacion, fecha_desactivacion) 
-    VALUES (2, NULL, 'Promotor', 'Prueba', 6, 3007654321, TRUE, 'promotor_prueba@correo.com', TRUE, crypt('Promotor123.', gen_salt('bf', 12)), TRUE, TRUE, NOW(), NOW(), NOW());
-INSERT INTO tabla_usuarios (id_rol, ig_google, nombres, apellidos, id_pais, telefono, validacion_telefono, correo, validacion_correo, contrasena_hash, terminos_condiciones, estado, fecha_registro, fecha_actualizacion, fecha_desactivacion) 
-    VALUES (3, NULL, 'Moderador', 'Prueba', 6, 3001122334, TRUE, 'moderador_prueba@correo.com', TRUE, crypt('Moderador123.', gen_salt('bf', 12)), TRUE, TRUE, NOW(), NOW(), NOW());
-INSERT INTO tabla_usuarios (id_rol, ig_google, nombres, apellidos, id_pais, telefono, validacion_telefono, correo, validacion_correo, contrasena_hash, terminos_condiciones, estado, fecha_registro, fecha_actualizacion, fecha_desactivacion) 
-    VALUES (4, NULL, 'Administrador', 'Prueba', 6, 3009876543, TRUE, 'administrador_prueba@correo.com', TRUE, crypt('Administrador123.', gen_salt('bf', 12)), TRUE, TRUE, NOW(), NOW(), NOW());
+INSERT INTO tabla_usuarios (id_rol, terminos_condiciones, estado, fecha_registro, fecha_actualizacion, fecha_desactivacion)
+    VALUES (1, TRUE, TRUE, NOW(), NOW(), NOW());
+INSERT INTO tabla_usuarios (id_rol, terminos_condiciones, estado, fecha_registro, fecha_actualizacion, fecha_desactivacion)
+    VALUES (2, TRUE, TRUE, NOW(), NOW(), NOW());
+INSERT INTO tabla_usuarios (id_rol, terminos_condiciones, estado, fecha_registro, fecha_actualizacion, fecha_desactivacion)
+    VALUES (3, TRUE, TRUE, NOW(), NOW(), NOW());
+INSERT INTO tabla_usuarios (id_rol, terminos_condiciones, estado, fecha_registro, fecha_actualizacion, fecha_desactivacion)
+    VALUES (4, TRUE, TRUE, NOW(), NOW(), NOW());
+
+INSERT INTO tabla_personas (id_usuario, nombres, apellidos, id_pais, telefono, validacion_telefono, fecha_creacion, fecha_actualizacion)
+    VALUES (1, 'Usuario', 'Prueba', 6, 3001234567, TRUE, NOW(), NOW());
+INSERT INTO tabla_personas (id_usuario, nombres, apellidos, id_pais, telefono, validacion_telefono, fecha_creacion, fecha_actualizacion)
+    VALUES (2, 'Promotor', 'Prueba', 6, 3007654321, TRUE, NOW(), NOW());
+INSERT INTO tabla_personas (id_usuario, nombres, apellidos, id_pais, telefono, validacion_telefono, fecha_creacion, fecha_actualizacion)
+    VALUES (3, 'Moderador', 'Prueba', 6, 3001122334, TRUE, NOW(), NOW());
+INSERT INTO tabla_personas (id_usuario, nombres, apellidos, id_pais, telefono, validacion_telefono, fecha_creacion, fecha_actualizacion)
+    VALUES (4, 'Administrador', 'Prueba', 6, 3009876543, TRUE, NOW(), NOW());
+
+INSERT INTO tabla_usuarios_credenciales (id_usuario, correo, contrasena_hash, id_google, validacion_correo, fecha_creacion, fecha_actualizacion)
+    VALUES (1, 'usuario_prueba@correo.com', crypt('Usuario123.', gen_salt('bf', 12)), NULL, TRUE, NOW(), NOW());
+INSERT INTO tabla_usuarios_credenciales (id_usuario, correo, contrasena_hash, id_google, validacion_correo, fecha_creacion, fecha_actualizacion)
+    VALUES (2, 'promotor_prueba@correo.com', crypt('Promotor123.', gen_salt('bf', 12)), NULL, TRUE, NOW(), NOW());
+INSERT INTO tabla_usuarios_credenciales (id_usuario, correo, contrasena_hash, id_google, validacion_correo, fecha_creacion, fecha_actualizacion)
+    VALUES (3, 'moderador_prueba@correo.com', crypt('Moderador123.', gen_salt('bf', 12)), NULL, TRUE, NOW(), NOW());
+INSERT INTO tabla_usuarios_credenciales (id_usuario, correo, contrasena_hash, id_google, validacion_correo, fecha_creacion, fecha_actualizacion)
+    VALUES (4, 'administrador_prueba@correo.com', crypt('Administrador123.', gen_salt('bf', 12)), NULL, TRUE, NOW(), NOW());
 
 
 -- AUDITORIA DE CAMBIOS (INSERT, UPDATE, DELETE)

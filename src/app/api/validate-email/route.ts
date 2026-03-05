@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
 
 
     await pool.query(
-      `UPDATE tabla_usuarios 
+      `UPDATE tabla_usuarios_credenciales 
        SET validacion_correo = TRUE, fecha_actualizacion = CURRENT_TIMESTAMP
        WHERE id_usuario = $1`,
       [tokenData.id_usuario]

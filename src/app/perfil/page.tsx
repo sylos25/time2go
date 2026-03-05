@@ -381,7 +381,7 @@ export default function PerfilPage() {
                   onClick={() => {
                     localStorage.removeItem("token")
                     localStorage.removeItem("userName")
-                    localStorage.removeItem("userId")
+                    localStorage.removeItem("userPublicId")
                     router.push("/")
                   }}
                   variant="outline"

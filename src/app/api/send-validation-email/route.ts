@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
 
     const userCheck = await pool.query(
-      "SELECT id_usuario FROM tabla_usuarios WHERE id_usuario = $1 AND correo = $2",
+      "SELECT id_usuario FROM tabla_usuarios_credenciales WHERE id_usuario = $1 AND correo = $2",
       [userId, email]
     );
 

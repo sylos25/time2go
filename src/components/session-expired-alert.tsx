@@ -28,7 +28,7 @@ export function SessionExpiredAlert({
     } finally {
       localStorage.removeItem("token")
       localStorage.removeItem("userName")
-      localStorage.removeItem("userId")
+      localStorage.removeItem("userPublicId")
       localStorage.removeItem("userRole")
       window.dispatchEvent(new CustomEvent("user:logout"))
       window.location.href = "/auth"

@@ -1,10 +1,20 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import CookieConsent from "@/components/cookie-consent"
-import { SessionMonitor } from "@/components/session-monitor"
-import { ThemeToggle } from "@/components/theme-toggle"
+import DeferredGlobalUI from "@/components/deferred-global-ui"
 import SecurityProvider from "@/components/shared/SecurityProvider"
+
+const themeInitializerScript = `(() => {
+  try {
+    const themeKey = "theme";
+    const storedTheme = localStorage.getItem(themeKey);
+    const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const shouldUseDark = storedTheme ? storedTheme === "dark" : systemPrefersDark;
+    const root = document.documentElement;
+    root.classList.toggle("dark", shouldUseDark);
+    root.style.colorScheme = shouldUseDark ? "dark" : "light";
+  } catch (_) {}
+})();`
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,12 +44,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitializerScript }} />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <SecurityProvider>
-          <SessionMonitor />
           {children}
-          <ThemeToggle />
-          <CookieConsent />
+          <DeferredGlobalUI />
         </SecurityProvider>
       </body>
     </html>

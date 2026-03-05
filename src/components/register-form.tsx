@@ -29,6 +29,9 @@ const ALLOWED_EMAIL_DOMAINS = [
   "protonmail.com",
 ]
 
+const MAX_NAME_LENGTH = 50
+const PHONE_LENGTH = 10
+
 const isAllowedEmail = (email: string): boolean => {
   const domain = email.split("@")[1]?.toLowerCase()
   return ALLOWED_EMAIL_DOMAINS.includes(domain || "")
@@ -41,6 +44,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const [terminosCondiciones, setTerminosCondiciones] = useState(false)
   const [registroError, setRegistroError] = useState("")
   const [emailError, setEmailError] = useState("")
+  const [phoneError, setPhoneError] = useState("")
   const [showModal, setShowModal] = useState(false)
   const [passwordValidation, setPasswordValidation] = useState<{ isValid: boolean; errors: string[] }>({ isValid: false, errors: [] })
   const acceptButtonRef = useRef<HTMLButtonElement | null>(null)
@@ -124,17 +128,20 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
 
   const handleFirstnameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
-    if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(value)) handleInputChange("firstName", value)
+    if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(value) && value.length <= MAX_NAME_LENGTH) handleInputChange("firstName", value)
   }
 
   const handleLastnameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
-    if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(value)) handleInputChange("lastName", value)
+    if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(value) && value.length <= MAX_NAME_LENGTH) handleInputChange("lastName", value)
   }
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
-    if (/^[0-9]*$/.test(value) && value.length <= 10) handleInputChange("telefono", value)
+    if (/^[0-9]*$/.test(value) && value.length <= PHONE_LENGTH) {
+      handleInputChange("telefono", value)
+      if (phoneError) setPhoneError("")
+    }
   }
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -153,6 +160,12 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
     if (!/[0-9]/.test(password)) errors.push("Al menos un número")
     if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) errors.push("Al menos un carácter especial")
     return { isValid: errors.length === 0, errors }
+  }
+
+  const validatePhone = (phone: string): boolean => {
+    if (!/^\d+$/.test(phone)) return false
+    if (phone.length !== PHONE_LENGTH) return false
+    return Number(phone) > 2999999999
   }
 
   const handleDuplicateModalClose = () => {
@@ -181,6 +194,12 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       return
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!validatePhone(formData.telefono)) {
+      setTouchedFields((prev) => ({ ...prev, telefono: true }))
+      setPhoneError("El número de teléfono debe tener 10 dígitos válidos.")
+      setRegistroError("El número de teléfono no es válido.")
+      return
+    }
     if (!emailRegex.test(formData.email)) { setTouchedFields((prev) => ({ ...prev, email: true })); setRegistroError("Formato de correo inválido."); return }
     if (!isAllowedEmail(formData.email)) { setTouchedFields((prev) => ({ ...prev, email: true })); setRegistroError("Solo se permiten dominios: gmail.com, outlook.com, yahoo.com, icloud.com, proton.me, protonmail.com."); return }
     if (!terminosCondiciones) { setTouchedTerminosCondiciones(true); setRegistroError("Debe aceptar los términos y condiciones."); return }
@@ -220,6 +239,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             <input
               id="firstname" type="text" value={formData.firstName}
               onChange={handleFirstnameChange} onBlur={() => handleBlur("firstName")}
+              maxLength={MAX_NAME_LENGTH}
               className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${touchedFields.firstName && !formData.firstName ? "border-red-500 ring-red-500" : "border-gray-300"}`}
               placeholder="Ingrese sus nombres"
             />
@@ -230,6 +250,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             <input
               id="lastName" type="text" value={formData.lastName}
               onChange={handleLastnameChange} onBlur={() => handleBlur("lastName")}
+              maxLength={MAX_NAME_LENGTH}
               className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${touchedFields.lastName && !formData.lastName ? "border-red-500 ring-red-500" : "border-gray-300"}`}
               placeholder="Ingrese sus apellidos"
             />
@@ -256,9 +277,18 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
           <Label htmlFor="telefono" className="text-sm font-medium">Teléfono</Label>
           <input
             id="telefono" type="tel" placeholder="1234567890" value={formData.telefono}
-            onChange={handlePhoneChange} onBlur={() => handleBlur("telefono")}
-            className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${touchedFields.telefono && !formData.telefono ? "border-red-500 ring-red-500" : "border-gray-300"}`}
+            onChange={handlePhoneChange}
+            onBlur={() => {
+              handleBlur("telefono")
+              if (formData.telefono && !validatePhone(formData.telefono)) {
+                setPhoneError("El número de teléfono debe tener 10 dígitos válidos.")
+              } else {
+                setPhoneError("")
+              }
+            }}
+            className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${(touchedFields.telefono && !formData.telefono) || phoneError ? "border-red-500 ring-red-500" : "border-gray-300"}`}
           />
+          {phoneError && <p className="text-red-500 text-xs mt-0.5">{phoneError}</p>}
           {touchedFields.telefono && !formData.telefono && <p className="text-red-500 text-xs mt-0.5">Este campo es obligatorio</p>}
         </div>
 
@@ -297,21 +327,17 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             </button>
           </div>
           {touchedFields.password && !formData.password && <p className="text-red-500 text-xs mt-0.5">Este campo es obligatorio</p>}
-          {formData.password && (
-            <div className={`p-3 rounded-lg text-sm ${passwordValidation.isValid ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
-              <p className={`font-semibold mb-2 ${passwordValidation.isValid ? "text-green-700" : "text-red-700"}`}>
-                {passwordValidation.isValid ? "✓ Contraseña válida" : "Requisitos de contraseña:"}
-              </p>
-              {!passwordValidation.isValid && (
-                <ul className="space-y-1 text-xs">
-                  <li className={`flex items-center gap-2 ${/[a-zA-Z]/.test(formData.password) ? "text-green-600" : "text-red-600"}`}>{/[a-zA-Z]/.test(formData.password) ? "✓" : "✗"} Al menos una letra</li>
-                  <li className={`flex items-center gap-2 ${/[0-9]/.test(formData.password) ? "text-green-600" : "text-red-600"}`}>{/[0-9]/.test(formData.password) ? "✓" : "✗"} Al menos un número</li>
-                  <li className={`flex items-center gap-2 ${/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? "text-green-600" : "text-red-600"}`}>{/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? "✓" : "✗"} Al menos un carácter especial</li>
-                  <li className={`flex items-center gap-2 ${formData.password.length <= 12 ? "text-green-600" : "text-red-600"}`}>{formData.password.length <= 12 ? "✓" : "✗"} Máximo 12 caracteres ({formData.password.length}/12)</li>
-                </ul>
-              )}
-            </div>
-          )}
+          <div className={`p-3 rounded-lg text-sm ${passwordValidation.isValid ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
+            <p className={`font-semibold mb-2 ${passwordValidation.isValid ? "text-green-700" : "text-red-700"}`}>
+              Requisitos de contraseña:
+            </p>
+            <ul className="space-y-1 text-xs">
+              <li className={`flex items-center gap-2 ${/[a-zA-Z]/.test(formData.password) ? "text-green-600" : "text-red-600"}`}>{/[a-zA-Z]/.test(formData.password) ? "✓" : "✗"} Al menos una letra</li>
+              <li className={`flex items-center gap-2 ${/[0-9]/.test(formData.password) ? "text-green-600" : "text-red-600"}`}>{/[0-9]/.test(formData.password) ? "✓" : "✗"} Al menos un número</li>
+              <li className={`flex items-center gap-2 ${/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? "text-green-600" : "text-red-600"}`}>{/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? "✓" : "✗"} Al menos un carácter especial</li>
+              <li className={`flex items-center gap-2 ${formData.password.length > 0 && formData.password.length <= 12 ? "text-green-600" : "text-red-600"}`}>{formData.password.length > 0 && formData.password.length <= 12 ? "✓" : "✗"} Máximo 12 caracteres ({formData.password.length}/12)</li>
+            </ul>
+          </div>
         </div>
 
         {/* Confirm Password */}
@@ -350,8 +376,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               id="terminosCondiciones"
               checked={terminosCondiciones}
               onCheckedChange={(checked) => {
-                if (checked) setShowModal(true)
-                else setTerminosCondiciones(false)
+                setTerminosCondiciones(Boolean(checked))
                 setTouchedTerminosCondiciones(true)
               }}
             />
