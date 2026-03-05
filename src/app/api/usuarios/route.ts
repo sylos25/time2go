@@ -44,55 +44,55 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
     }
 
-    // Return detailed user info with joins to get pais and rol names
-    // allow optional filters: role and estado (true/false)
     const url = new URL(req.url);
-    const roleParam = url.searchParams.get('role');
-    const estadoParam = url.searchParams.get('estado');
+    const roleRaw = url.searchParams.get("role");
+    const rolesRaw = url.searchParams.get("roles");
+    const estadoRaw = url.searchParams.get("estado");
+    const qParam = (url.searchParams.get("q") || "").trim();
 
-    let whereClauses: string[] = [];
-    let params: any[] = [];
-    let idx = 1;
+    const pageRaw = Number(url.searchParams.get("page") || "1");
+    const pageSizeRaw = Number(url.searchParams.get("pageSize") || "25");
 
-    if (roleParam) {
-      whereClauses.push(`u.id_rol = $${idx}`);
-      params.push(Number(roleParam));
-      idx++;
-    }
+    const roleParam = roleRaw && Number.isFinite(Number(roleRaw)) ? Number(roleRaw) : null;
+    const rolesParam = rolesRaw
+      ? rolesRaw
+          .split(",")
+          .map((value) => Number(value.trim()))
+          .filter((value) => Number.isFinite(value))
+      : null;
+    const estadoParam =
+      estadoRaw === null ? null : String(estadoRaw).toLowerCase() === "true";
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
+    const pageSize =
+      Number.isFinite(pageSizeRaw) && pageSizeRaw > 0
+        ? Math.min(Math.floor(pageSizeRaw), 200)
+        : 25;
 
-    if (estadoParam !== null) {
-      const estadoBool = String(estadoParam).toLowerCase() === 'true';
-      whereClauses.push(`u.estado = $${idx}`);
-      params.push(estadoBool);
-      idx++;
-    }
+    const result = await pool.query(
+      `SELECT fn_listar_usuarios_paginado_json($1, $2, $3, $4, $5, $6) AS payload`,
+      [
+        roleParam,
+        rolesParam && rolesParam.length > 0 ? rolesParam : null,
+        estadoParam,
+        qParam || null,
+        page,
+        pageSize,
+      ]
+    );
 
-    // En gestión de usuarios del dashboard solo se visualizan usuarios y promotores
-    whereClauses.push(`u.id_rol IN (1, 2)`)
+    const payload = result.rows?.[0]?.payload || {
+      usuarios: [],
+      pagination: {
+        page,
+        pageSize,
+        total: 0,
+        totalPages: 1,
+        hasPrev: false,
+        hasNext: false,
+      },
+    };
 
-    const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
-
-    const res = await pool.query(`
-      SELECT
-        u.id_usuario,
-        r.nombre_rol AS id_rol,
-        u.ig_google,
-        u.nombres,
-        u.apellidos,
-        u.telefono,
-        u.validacion_telefono,
-        u.correo,
-        u.validacion_correo,
-        u.terminos_condiciones,
-        u.estado
-      FROM tabla_usuarios u
-      LEFT JOIN tabla_roles r ON u.id_rol = r.id_rol
-      ${whereSql}
-      ORDER BY u.id_usuario DESC
-      LIMIT 500
-    `, params);
-
-    return NextResponse.json({ ok: true, usuarios: res.rows });
+    return NextResponse.json({ ok: true, ...payload });
   } catch (err) {
     console.error("/api/usuarios error:", err);
     return NextResponse.json({ ok: false, message: "Server error" }, { status: 500 });

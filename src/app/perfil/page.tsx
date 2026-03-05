@@ -33,7 +33,6 @@ interface UserData {
   nombre_pais?: string
   nombre_rol?: string
   telefono?: string
-  validacion_telefono?: boolean
   validacion_correo?: boolean
   fecha_registro?: string
 }
@@ -349,21 +348,6 @@ export default function PerfilPage() {
                         </p>
                       </div>
                     </div>
-                    {user.telefono && (
-                      <div className="flex-shrink-0 pt-2">
-                        {user.validacion_telefono ? (
-                          <div className="flex items-center gap-1 text-green-600">
-                            <CheckCircle className="h-5 w-5" />
-                            <span className="text-sm font-medium">Validado</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1 text-amber-600">
-                            <AlertCircle className="h-5 w-5" />
-                            <span className="text-sm font-medium">Pendiente</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>

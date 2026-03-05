@@ -50,7 +50,6 @@ export async function GET(req: Request) {
         u.id_rol, 
         p2.id_pais, 
         p2.telefono,
-        p2.validacion_telefono,
         c.validacion_correo,
         u.fecha_registro,
         p.nombre_pais,

@@ -68,6 +68,7 @@ export function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps) {
 
             const consent = readConsent()
             const name = data.name || "Usuario"
+            const userRole = data.id_rol !== undefined ? Number(data.id_rol) : undefined
 
             if (consent !== "rejected") {
               if (data.token) localStorage.setItem("token", data.token)
@@ -76,10 +77,14 @@ export function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps) {
                 localStorage.setItem("userPublicId", String(userPublicId))
               }
               localStorage.setItem("userName", name)
+              if (userRole !== undefined) {
+                localStorage.setItem("userRole", String(userRole))
+              }
             } else {
               localStorage.removeItem("token")
               localStorage.removeItem("userPublicId")
               localStorage.removeItem("userName")
+              localStorage.removeItem("userRole")
             }
 
             window.dispatchEvent(
@@ -89,6 +94,7 @@ export function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps) {
                   name,
                   expiresAt: data.expiresAt,
                   id_publico: data.id_publico,
+                  id_rol: userRole,
                 },
               })
             )

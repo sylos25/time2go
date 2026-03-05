@@ -104,6 +104,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 // Determinar nombre de usuario para mostrar (usar parte local del email si no se proporciona un nombre específico)      
       const consent = readConsent()
       const name = data.name || (email ? email.split("@")[0] : "Usuario")
+      const userRole = data.id_rol !== undefined ? Number(data.id_rol) : undefined
 
       if (consent !== 'rejected') {
         if (data.token) localStorage.setItem("token", data.token)
@@ -112,6 +113,9 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           localStorage.setItem("userPublicId", String(userPublicId))
         }
         localStorage.setItem("userName", name)
+        if (userRole !== undefined) {
+          localStorage.setItem("userRole", String(userRole))
+        }
         if (rememberMe) {
           localStorage.setItem("rememberedEmail", email)
         } else {
@@ -122,6 +126,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         localStorage.removeItem("token")
         localStorage.removeItem("userPublicId")
         localStorage.removeItem("userName")
+        localStorage.removeItem("userRole")
         localStorage.removeItem("rememberedEmail")
       }
 
@@ -133,6 +138,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             name,
             expiresAt: data.expiresAt,
             id_publico: data.id_publico,
+            id_rol: userRole,
           },
         })
       )

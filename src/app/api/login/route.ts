@@ -65,6 +65,7 @@ export async function POST(req: Request) {
         SELECT
           u.id_usuario,
           u.id_publico,
+          u.id_rol,
           c.correo,
           p.nombres,
           c.contrasena_hash,
@@ -86,6 +87,7 @@ export async function POST(req: Request) {
     const user = userResult.rows[0] as {
       id_usuario: string | number;
       id_publico: string;
+      id_rol: number;
       correo: string;
       nombres?: string | null;
       contrasena_hash?: string | null;
@@ -153,6 +155,7 @@ export async function POST(req: Request) {
         success: true,
         token,
         id_publico: user.id_publico,
+        id_rol: user.id_rol,
         expiresAt: Math.floor(Date.now() / 1000) + expiresIn,
         name: user.nombres || user.correo.split("@")[0],
       },

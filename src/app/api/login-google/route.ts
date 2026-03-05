@@ -68,6 +68,7 @@ export async function POST(req: Request) {
         SELECT
           u.id_usuario,
           u.id_publico,
+          u.id_rol,
           u.estado,
           c.correo,
           c.id_google,
@@ -86,6 +87,7 @@ export async function POST(req: Request) {
       | {
           id_usuario: string | number;
           id_publico?: string;
+          id_rol: number;
           correo: string;
           nombres?: string | null;
           estado?: boolean;
@@ -136,6 +138,7 @@ export async function POST(req: Request) {
           SELECT
             u.id_usuario,
             u.id_publico,
+            u.id_rol,
             c.correo,
             p.nombres
           FROM tabla_usuarios u
@@ -201,6 +204,7 @@ export async function POST(req: Request) {
             SELECT
               u.id_usuario,
               u.id_publico,
+              u.id_rol,
               c.correo,
               p.nombres
             FROM tabla_usuarios u
@@ -248,6 +252,7 @@ export async function POST(req: Request) {
         success: true,
         token,
         id_publico: user.id_publico,
+        id_rol: user.id_rol,
         expiresAt: Math.floor(Date.now() / 1000) + expiresIn,
         name: user.nombres || email.split("@")[0],
       },

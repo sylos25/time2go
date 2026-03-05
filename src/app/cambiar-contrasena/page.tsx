@@ -28,7 +28,6 @@ interface UserData {
   nombre_pais?: string
   nombre_rol?: string
   telefono?: string
-  validacion_telefono?: boolean
   validacion_correo?: boolean
   fecha_registro?: string
 }

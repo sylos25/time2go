@@ -104,6 +104,10 @@ export default function EventDashboard() {
   const [canManageEvents, setCanManageEvents] = useState(false)
   const [users, setUsers] = useState<any[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
+  const [usersPage, setUsersPage] = useState(1)
+  const [usersPageSize, setUsersPageSize] = useState(25)
+  const [usersTotal, setUsersTotal] = useState(0)
+  const [usersTotalPages, setUsersTotalPages] = useState(1)
   const [updatingUserId, setUpdatingUserId] = useState<number | null>(null)
   const [banModalOpen, setBanModalOpen] = useState(false)
   const [banSubmitting, setBanSubmitting] = useState(false)
@@ -233,7 +237,7 @@ export default function EventDashboard() {
           fetch('/api/categoria_evento', { headers, credentials: 'include' }),
           fetch(eventsUrl, { headers, credentials: 'include' }),
           fetch('/api/stats', { headers }),
-          fetch('/api/usuarios?roles=1,2', { headers }),
+          fetch('/api/usuarios?roles=1,2&estado=true&page=1&pageSize=1', { headers }),
         ]).then(async ([categoriesResult, eventsResult, statsResult, usersRolesResult]) => {
           if (!canceled && categoriesResult.status === 'fulfilled' && categoriesResult.value.ok) {
             const categoriesData = await categoriesResult.value.json()
@@ -278,16 +282,7 @@ export default function EventDashboard() {
 
           if (!canceled && usersRolesResult.status === 'fulfilled' && usersRolesResult.value.ok) {
             const usersRolesData = await usersRolesResult.value.json()
-            const usersList = Array.isArray(usersRolesData?.usuarios) ? usersRolesData.usuarios : []
-            const activeRolesOneAndTwo = usersList.filter((u: any) => {
-              const estado = u?.estado
-              return (
-                estado === true ||
-                estado === 1 ||
-                estado === "1" ||
-                String(estado).toLowerCase() === "true"
-              )
-            }).length
+            const activeRolesOneAndTwo = Number(usersRolesData?.pagination?.total || 0)
 
             setStats((prev) =>
               prev.map((s) => (s.title === 'Usuarios Activos' ? { ...s, value: activeRolesOneAndTwo } : s))
@@ -314,10 +309,21 @@ export default function EventDashboard() {
         const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
         const headers: any = {}
         if (token) headers['Authorization'] = `Bearer ${token}`
-        const res = await fetch('/api/usuarios?roles=1,2', { headers })
+        const params = new URLSearchParams({
+          roles: '1,2',
+          page: String(usersPage),
+          pageSize: String(usersPageSize),
+        })
+        if (searchUsers.trim()) params.set('q', searchUsers.trim())
+
+        const res = await fetch(`/api/usuarios?${params.toString()}`, { headers })
         if (res.ok) {
           const data = await res.json()
-          if (!cancelled) setUsers(data.usuarios || [])
+          if (!cancelled) {
+            setUsers(data.usuarios || [])
+            setUsersTotal(Number(data?.pagination?.total || 0))
+            setUsersTotalPages(Number(data?.pagination?.totalPages || 1))
+          }
         }
       } catch (err) {
         console.error('Error cargando usuarios', err)
@@ -327,7 +333,7 @@ export default function EventDashboard() {
     }
     loadUsers()
     return () => { cancelled = true }
-  }, [activeTab])
+  }, [activeTab, usersPage, usersPageSize, searchUsers])
 
   const refreshUsers = async () => {
     setLoadingUsers(true)
@@ -335,10 +341,19 @@ export default function EventDashboard() {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
       const headers: any = {}
       if (token) headers['Authorization'] = `Bearer ${token}`
-      const res = await fetch('/api/usuarios?roles=1,2', { headers })
+      const params = new URLSearchParams({
+        roles: '1,2',
+        page: String(usersPage),
+        pageSize: String(usersPageSize),
+      })
+      if (searchUsers.trim()) params.set('q', searchUsers.trim())
+
+      const res = await fetch(`/api/usuarios?${params.toString()}`, { headers })
       if (res.ok) {
         const data = await res.json()
         setUsers(data.usuarios || [])
+        setUsersTotal(Number(data?.pagination?.total || 0))
+        setUsersTotalPages(Number(data?.pagination?.totalPages || 1))
       }
     } catch (err) {
       console.error('Error fetching users', err)
@@ -1037,13 +1052,28 @@ export default function EventDashboard() {
                     type="text"
                     placeholder="Buscar usuarios..."
                     value={searchUsers}
-                    onChange={(e) => setSearchUsers(e.target.value)}
+                    onChange={(e) => {
+                      setSearchUsers(e.target.value)
+                      setUsersPage(1)
+                    }}
                     className="w-full pl-3 pr-30 py-1.5 bg-card border border-border rounded-lg placeholder:text-muted-foreground text-foreground focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
                   />
                 </div>
                 </CardContent>
                 <CardContent className="w-full pl-1 pr-30 py-1.5">
                 <div className="flex items-center gap-3">
+                  <select
+                    value={usersPageSize}
+                    onChange={(e) => {
+                      setUsersPageSize(Number(e.target.value))
+                      setUsersPage(1)
+                    }}
+                    className="px-3 py-1.5 bg-card border border-border rounded-lg text-foreground"
+                  >
+                    <option value={25}>25 / página</option>
+                    <option value={50}>50 / página</option>
+                    <option value={100}>100 / página</option>
+                  </select>
                   <button
                     onClick={refreshUsers}
                     className="px-4 py-1.5 bg-green-800 border rounded-lg shadow-sm hover:bg-lime-600 text-white cursor-pointer transition-colors"
@@ -1065,7 +1095,6 @@ export default function EventDashboard() {
                         <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Nombres</th>
                         <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Apellidos</th>
                         <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Teléfono</th>
-                        <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Tel. Validado</th>
                         <th className="w-80 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Correo</th>
                         <th className="w-45 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Correo Validado</th>
                         <th className="w-56 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Términos y Condiciones</th>
@@ -1075,20 +1104,14 @@ export default function EventDashboard() {
                     </thead>
                     <tbody className="divide-y divide-border">
                       {users
-                        .filter(u => {
-                          if (!searchUsers) return true
-                          const hay = `${u.id_usuario} ${u.id_rol} ${u.ig_google} ${u.nombres} ${u.apellidos} ${u.telefono} ${u.correo}`.toLowerCase()
-                          return hay.includes(searchUsers.toLowerCase())
-                        })
                         .map((u) => (
                           <tr key={u.id_usuario} className="hover:bg-accent transition-colors">
                             <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.id_usuario}</td>
                             <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.id_rol || '-'}</td>
-                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.ig_google ? 'Sí' : 'No'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.id_google ? 'Sí' : 'No'}</td>
                             <td className="px-6 py-4 text-center text-sm text-foreground">{u.nombres}</td>
                             <td className="px-6 py-4 text-center text-sm text-foreground">{u.apellidos}</td>
                             <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.telefono || '-'}</td>
-                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.validacion_telefono ? 'Sí' : 'No'}</td>
                             <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.correo}</td>
                             <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.validacion_correo ? 'Sí' : 'No'}</td>
                             <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.terminos_condiciones ? 'Sí' : 'No'}</td>
@@ -1116,6 +1139,33 @@ export default function EventDashboard() {
                     </tbody>
                   </table>
                 </div>
+
+                {usersTotal > 0 && (
+                  <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/20">
+                    <p className="text-sm text-muted-foreground">
+                      Mostrando {Math.min((usersPage - 1) * usersPageSize + 1, usersTotal)} - {Math.min(usersPage * usersPageSize, usersTotal)} de {usersTotal}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setUsersPage((prev) => Math.max(1, prev - 1))}
+                        disabled={usersPage <= 1 || loadingUsers}
+                        className="px-3 py-1.5 rounded-lg border border-border text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Anterior
+                      </button>
+                      <span className="text-sm text-muted-foreground">
+                        Página {usersPage} de {usersTotalPages}
+                      </span>
+                      <button
+                        onClick={() => setUsersPage((prev) => Math.min(usersTotalPages, prev + 1))}
+                        disabled={usersPage >= usersTotalPages || loadingUsers}
+                        className="px-3 py-1.5 rounded-lg border border-border text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Siguiente
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {(!users || users.length === 0) && (
                   <div className="text-center py-12">
