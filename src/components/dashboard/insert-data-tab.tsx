@@ -11,8 +11,6 @@ import { AlertCircle, CheckCircle, Loader } from "lucide-react"
 
 type DataTable =
   | "paises"
-  | "departamentos"
-  | "municipios"
   | "tipo_sitios"
   | "sitios"
   | "tipo_infraestructura_discapacitados"
@@ -43,22 +41,6 @@ const tableConfigs: Record<DataTable, { fields: FieldConfig[] }> = {
     fields: [
       { name: "id_pais", type: "number", required: true, label: "ID País", minValue: 1 },
       { name: "nombre_pais", type: "text", required: true, label: "Nombre del País", minLength: 3 },
-    ],
-  },
-  departamentos: {
-    fields: [
-      { name: "id_departamento", type: "number", required: true, label: "ID Departamento", minValue: 1 },
-      { name: "nombre_departamento", type: "text", required: true, label: "Nombre del Departamento", minLength: 4 },
-      { name: "id_pais", type: "number", required: true, label: "ID País", minValue: 1 },
-    ],
-  },
-  municipios: {
-    fields: [
-      { name: "id_municipio", type: "number", required: true, label: "ID Municipio", minValue: 1 },
-      { name: "nombre_municipio", type: "text", required: true, label: "Nombre del Municipio", minLength: 3 },
-      { name: "id_departamento", type: "number", required: true, label: "ID Departamento", minValue: 1 },
-      { name: "distrito", type: "checkbox", required: false, label: "¿Es Distrito?" },
-      { name: "area_metropolitana", type: "checkbox", required: false, label: "¿Área Metropolitana?" },
     ],
   },
   tipo_sitios: {
@@ -136,13 +118,13 @@ const isDataTable = (value: string): value is DataTable => {
 const LETTERS_ONLY_REGEX = /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]*$/
 
 const isStrictTable = (table: DataTable) =>
-  table === "paises" || table === "departamentos" || table === "municipios"
+  table === "paises"
 
 const isStrictIdField = (fieldName: string) =>
-  fieldName === "id_pais" || fieldName === "id_departamento" || fieldName === "id_municipio"
+  fieldName === "id_pais"
 
 const isStrictNameField = (fieldName: string) =>
-  fieldName === "nombre_pais" || fieldName === "nombre_departamento" || fieldName === "nombre_municipio"
+  fieldName === "nombre_pais"
 
 const isNumericField = (table: DataTable, fieldName: string): boolean => {
   const field = tableConfigs[table]?.fields.find((item) => item.name === fieldName)
@@ -334,8 +316,6 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="paises" className="cursor-pointer">Países</SelectItem>
-                <SelectItem value="departamentos" className="cursor-pointer">Departamentos</SelectItem>
-                <SelectItem value="municipios" className="cursor-pointer">Municipios</SelectItem>
                 <SelectItem value="tipo_sitios" className="cursor-pointer">Tipo de sitios</SelectItem>
                 <SelectItem value="sitios" className="cursor-pointer">Sitios</SelectItem>
                 <SelectItem value="tipo_infraestructura_discapacitados" className="cursor-pointer">Infraestructura discapacitados</SelectItem>

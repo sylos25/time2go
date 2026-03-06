@@ -164,15 +164,6 @@ CREATE TABLE IF NOT EXISTS tabla_usuarios_credenciales (
     FOREIGN KEY (id_usuario)                            REFERENCES       tabla_usuarios(id_usuario)
 );
 
-CREATE TABLE tabla_favoritos (
-    id_favorito    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    id_usuario     INT NOT NULL UNIQUE,
-    id_evento      INT NOT NULL UNIQUE,
-    fecha_creacion TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(id_usuario),
-    FOREIGN KEY (id_evento)  REFERENCES tabla_eventos(id_evento)
-);
-
 CREATE TABLE IF NOT EXISTS tabla_auditoria_bd (
     id_auditoria                            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     tabla                                   VARCHAR                      NOT NULL,
@@ -342,6 +333,15 @@ CREATE TABLE IF NOT EXISTS tabla_documentos_eventos (
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_evento)                 REFERENCES  tabla_eventos(id_evento)
+);
+
+CREATE TABLE tabla_favoritos (
+    id_favorito    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_usuario     INT NOT NULL UNIQUE,
+    id_evento      INT NOT NULL UNIQUE,
+    fecha_creacion TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(id_usuario),
+    FOREIGN KEY (id_evento)  REFERENCES tabla_eventos(id_evento)
 );
 
 CREATE TABLE IF NOT EXISTS tabla_documentos_usuarios (
@@ -587,14 +587,14 @@ INSERT INTO tabla_usuarios (id_rol, terminos_condiciones, estado, fecha_registro
 INSERT INTO tabla_usuarios (id_rol, terminos_condiciones, estado, fecha_registro, fecha_actualizacion, fecha_desactivacion)
     VALUES (4, TRUE, TRUE, NOW(), NOW(), NOW());
 
-INSERT INTO tabla_personas (id_usuario, nombres, apellidos, id_pais, telefono, validacion_telefono, fecha_creacion, fecha_actualizacion)
-    VALUES (1, 'Usuario', 'Prueba', 6, 3001234567, TRUE, NOW(), NOW());
-INSERT INTO tabla_personas (id_usuario, nombres, apellidos, id_pais, telefono, validacion_telefono, fecha_creacion, fecha_actualizacion)
-    VALUES (2, 'Promotor', 'Prueba', 6, 3007654321, TRUE, NOW(), NOW());
-INSERT INTO tabla_personas (id_usuario, nombres, apellidos, id_pais, telefono, validacion_telefono, fecha_creacion, fecha_actualizacion)
-    VALUES (3, 'Moderador', 'Prueba', 6, 3001122334, TRUE, NOW(), NOW());
-INSERT INTO tabla_personas (id_usuario, nombres, apellidos, id_pais, telefono, validacion_telefono, fecha_creacion, fecha_actualizacion)
-    VALUES (4, 'Administrador', 'Prueba', 6, 3009876543, TRUE, NOW(), NOW());
+INSERT INTO tabla_personas (id_usuario, nombres, apellidos, id_pais, telefono, fecha_creacion, fecha_actualizacion)
+    VALUES (1, 'Usuario', 'Prueba', 6, 3001234567, NOW(), NOW());
+INSERT INTO tabla_personas (id_usuario, nombres, apellidos, id_pais, telefono, fecha_creacion, fecha_actualizacion)
+    VALUES (2, 'Promotor', 'Prueba', 6, 3007654321, NOW(), NOW());
+INSERT INTO tabla_personas (id_usuario, nombres, apellidos, id_pais, telefono, fecha_creacion, fecha_actualizacion)
+    VALUES (3, 'Moderador', 'Prueba', 6, 3001122334, NOW(), NOW());
+INSERT INTO tabla_personas (id_usuario, nombres, apellidos, id_pais, telefono, fecha_creacion, fecha_actualizacion)
+    VALUES (4, 'Administrador', 'Prueba', 6, 3009876543, NOW(), NOW());
 
 INSERT INTO tabla_usuarios_credenciales (id_usuario, correo, contrasena_hash, id_google, validacion_correo, fecha_creacion, fecha_actualizacion)
     VALUES (1, 'usuario_prueba@correo.com', crypt('Usuario123.', gen_salt('bf', 12)), NULL, TRUE, NOW(), NOW());

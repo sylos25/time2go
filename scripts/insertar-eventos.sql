@@ -56,14 +56,24 @@ INSERT INTO tabla_sitios_discapacitados (id_sitios_discapacitados, id_sitio, id_
 -- Cargar en tabla_eventos. (No se pueden cargar las imagenes, toca desde la Dashboard (con el rol Administrador)) Solo se puede .
 
 -- Un evento que se debe validar.
-INSERT INTO tabla_eventos (pulep_evento, nombre_evento, responsable_evento, id_usuario, id_categoria_evento, id_tipo_evento, id_sitio, descripcion, telefono_1, telefono_2, fecha_inicio, fecha_fin, hora_inicio, hora_final, gratis_pago, cupo, reservar_anticipado, estado) VALUES 
-('JO8R78', 'Concierto Municipal de la Carranga', 'Asociación de Músicos Locales', 2, 1, 1, 4, 'Un concierto memorable para los amantes de la carranga.', 3112345678, NULL, '2026-11-20', '2026-11-20', '17:00:00', '22:00:00', FALSE, 250, FALSE, FALSE);
+INSERT INTO tabla_eventos (pulep_evento, nombre_evento, responsable_evento, id_usuario, id_categoria_evento, id_tipo_evento, id_sitio, descripcion, fecha_inicio, fecha_fin, hora_inicio, hora_final, gratis_pago, cupo, reservar_anticipado, estado) VALUES
+('JO8R78', 'Concierto Municipal de la Carranga', 'Asociación de Músicos Locales', 2, 1, 1, 4, 'Un concierto memorable para los amantes de la carranga.', '2026-11-20', '2026-11-20', '17:00:00', '22:00:00', FALSE, 250, FALSE, FALSE);
+
+INSERT INTO tabla_eventos_telefonos (id_evento, telefono, es_principal)
+SELECT id_evento, 3112345678, TRUE
+FROM tabla_eventos
+WHERE pulep_evento = 'JO8R78';
 
 INSERT INTO tabla_evento_informacion_importante (id_evento, detalle) VALUES
-(1,'1. Para toda la familia, sin limite de edad.
+((SELECT id_evento FROM tabla_eventos WHERE pulep_evento = 'JO8R78'),'1. Para toda la familia, sin limite de edad.
 	2. Espacio libre de alcohol.
 	3. Disfruta de la mejor música del departamento.');
 
 -- Un evento que esta validado.
-INSERT INTO tabla_eventos (pulep_evento, nombre_evento, responsable_evento, id_usuario, id_categoria_evento, id_tipo_evento, id_sitio, descripcion, telefono_1, telefono_2, fecha_inicio, fecha_fin, hora_inicio, hora_final, gratis_pago, cupo, reservar_anticipado, estado) VALUES 
-('X9T5K2', 'Festival de Danza Folclórica', 'Compañía de Danza Tradicional', 3, 2, 9, 5, 'Un festival que celebra la riqueza cultural a través de la danza folclórica.', 3123456789, NULL, '2026-12-05', '2026-12-05', '18:00:00', '21:00:00', FALSE, 300, TRUE, TRUE);
+INSERT INTO tabla_eventos (pulep_evento, nombre_evento, responsable_evento, id_usuario, id_categoria_evento, id_tipo_evento, id_sitio, descripcion, fecha_inicio, fecha_fin, hora_inicio, hora_final, gratis_pago, cupo, reservar_anticipado, estado) VALUES
+('X9T5K2', 'Festival de Danza Folclórica', 'Compañía de Danza Tradicional', 3, 2, 9, 5, 'Un festival que celebra la riqueza cultural a través de la danza folclórica.', '2026-12-05', '2026-12-05', '18:00:00', '21:00:00', FALSE, 300, TRUE, TRUE);
+
+INSERT INTO tabla_eventos_telefonos (id_evento, telefono, es_principal)
+SELECT id_evento, 3123456789, TRUE
+FROM tabla_eventos
+WHERE pulep_evento = 'X9T5K2';

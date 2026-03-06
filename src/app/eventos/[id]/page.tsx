@@ -287,20 +287,6 @@ export default function EventLanding() {
     event.hora_final ? " - " + formatTime(event.hora_final) : ""
   }`;
   
-  const diasArr: string[] = (() => {
-    try {
-      if (!event.dias_semana) return [];
-      if (Array.isArray(event.dias_semana)) return event.dias_semana;
-      return JSON.parse(event.dias_semana);
-    } catch {
-      return [];
-    }
-  })();
-  
-  const formattedDias = diasArr.length
-    ? diasArr.map((d) => formatDate(d)).join(", ")
-    : null;
-
   const tipoEventoNombre =
     event.tipo_evento?.nombre || event.tipo_nombre || "—";
 

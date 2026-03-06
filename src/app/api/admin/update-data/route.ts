@@ -62,8 +62,6 @@ const TABLE_CONFIG: Record<string, TableConfig> = {
       "nombre_evento",
       "responsable_evento",
       "descripcion",
-      "telefono_1",
-      "telefono_2",
       "fecha_inicio",
       "fecha_fin",
       "hora_inicio",
@@ -72,6 +70,11 @@ const TABLE_CONFIG: Record<string, TableConfig> = {
       "cupo",
       "reservar_anticipado",
       "estado",
+      "motivo_rechazo",
+      "rechazo_por",
+      "destacado",
+      "destacado_por",
+      "fecha_destacado",
     ],
   },
   eventos_informacion_importante: {
@@ -113,12 +116,13 @@ export async function PUT(req: NextRequest) {
     const setClauses = filteredEntries.map(([key], index) => `${key} = $${index + 1}`)
     const values = filteredEntries.map(([, value]) => value)
     values.push(id)
+    const returningColumns = [config.idColumn, ...config.editableColumns].join(", ")
 
     const query = `
       UPDATE ${config.tableName}
       SET ${setClauses.join(", ")}
       WHERE ${config.idColumn} = $${values.length}
-      RETURNING *
+      RETURNING ${returningColumns}
     `
 
     const result = await pool.query(query, values)

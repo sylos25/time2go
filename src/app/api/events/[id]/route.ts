@@ -130,7 +130,6 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     const telefono_1 = (formData.get("telefono_1") as string) || null;
     const telefono_2 = (formData.get("telefono_2") as string) || null;
     const cupo = parseInt((formData.get("cupo") as string) || "0") || 0;
-    const dias_semana = (formData.get("dias_semana") as string) || null;
     const costosRaw = formData.get("costos") as string | null;
     const tiposRaw = formData.get("tiposBoleteria") as string | null;
     const linksRaw = formData.get("linksBoleteria") as string | null;
@@ -158,146 +157,142 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       return NextResponse.json({ ok: false, message: "El responsable del evento es obligatorio y debe tener al menos 6 caracteres" }, { status: 400 });
     }
 
-    await client.query("BEGIN");
+    const eventPayload = {
+      nombre_evento,
+      pulep_evento,
+      responsable_evento,
+      descripcion,
+      fecha_inicio,
+      fecha_fin,
+      hora_inicio,
+      hora_final,
+      id_categoria_evento,
+      id_tipo_evento,
+      id_sitio,
+      cupo,
+      reservar_anticipado,
+      gratis_pago,
+    };
 
-    // Update event
-    await client.query(
-      `UPDATE tabla_eventos SET 
-        nombre_evento = $1,
-        pulep_evento = $2,
-        responsable_evento = $3,
-        descripcion = $4,
-        fecha_inicio = $5,
-        fecha_fin = $6,
-        hora_inicio = $7,
-        hora_final = $8,
-        id_categoria_evento = $9,
-        id_tipo_evento = $10,
-        id_sitio = $11,
-        telefono_1 = $12,
-        telefono_2 = $13,
-        cupo = $14,
-        reservar_anticipado = $15,
-        gratis_pago = $16,
-        fecha_actualizacion = CURRENT_TIMESTAMP
-      WHERE id_evento = $17`,
+    const phonesPayload = [
+      ...(telefono_1 ? [{ telefono: telefono_1, es_principal: true }] : []),
+      ...(telefono_2 ? [{ telefono: telefono_2, es_principal: false }] : []),
+    ];
+
+    const ticketsPayload = gratis_pago
+      ? (Array.isArray(boletas) && boletas.length > 0
+          ? boletas
+              .map((boleta) => {
+                const nombreBoleto = String(boleta?.nombre_boleto || "").trim();
+                const precioRaw = String(boleta?.precio_boleto ?? "");
+                const servicioRaw = String(boleta?.servicio ?? "");
+                const precioBoleto = parseFloat(precioRaw.replace(/[^0-9.,-]/g, "").replace(",", ".")) || 0;
+                const servicioBoleto = parseFloat(servicioRaw.replace(/[^0-9.,-]/g, "").replace(",", ".")) || 0;
+                return nombreBoleto ? { nombre_boleto: nombreBoleto, precio_boleto: precioBoleto, servicio: servicioBoleto } : null;
+              })
+              .filter(Boolean)
+          : tiposBoleteria.map((nombreBoleto, i) => {
+              const costoRaw = costos[i] || "";
+              const precioBoleto = parseFloat(costoRaw.replace(/[^0-9.,-]/g, "").replace(",", ".")) || 0;
+              return { nombre_boleto: nombreBoleto, precio_boleto: precioBoleto, servicio: 0 };
+            }))
+      : [];
+
+    const imagesPayload = uploadedImages.map((image) => ({
+      url_imagen_evento: image.url,
+      storage_provider: image.provider,
+      storage_key: image.storageKey,
+      mime_type: image.mimeType,
+      bytes: image.bytes,
+      original_filename: image.originalFileName,
+    }));
+
+    const updateResult = await client.query(
+      `SELECT app_api.fn_evento_actualizar(
+         $1,
+         $2,
+         $3::jsonb,
+         $4::jsonb,
+         $5::jsonb,
+         $6::jsonb,
+         $7::jsonb,
+         $8::jsonb,
+         $9::int[]
+       ) AS payload`,
       [
-        nombre_evento,
-        pulep_evento,
-        responsable_evento,
-        descripcion,
-        fecha_inicio,
-        fecha_fin,
-        hora_inicio,
-        hora_final,
-        id_categoria_evento,
-        id_tipo_evento,
-        id_sitio,
-        telefono_1,
-        telefono_2,
-        cupo,
-        reservar_anticipado,
-        gratis_pago,
         eventId,
+        Number(user.id_usuario),
+        JSON.stringify(eventPayload),
+        JSON.stringify(phonesPayload),
+        JSON.stringify(infoItems),
+        JSON.stringify(ticketsPayload),
+        JSON.stringify((linksBoleteria || []).filter(Boolean)),
+        JSON.stringify(imagesPayload),
+        imagesToDelete,
       ]
     );
 
-    const detalleInformacionImportante = infoItems
-      .map((item, index) => `${index + 1}. ${item.detalle}`)
-      .join("\n");
-    const obligatorioInformacionImportante = infoItems.some((item) => item.obligatorio);
-
-    await client.query("DELETE FROM tabla_evento_informacion_importante WHERE id_evento = $1", [eventId]);
-    if (detalleInformacionImportante.length >= 5) {
-      await client.query(
-        `INSERT INTO tabla_evento_informacion_importante (id_evento, detalle, obligatorio)
-         VALUES ($1,$2,$3)`,
-        [eventId, detalleInformacionImportante, obligatorioInformacionImportante]
-      );
+    const updatePayload = updateResult.rows?.[0]?.payload;
+    if (!updatePayload?.ok) {
+      return NextResponse.json({ ok: false, message: updatePayload?.error || "Error updating event" }, { status: 400 });
     }
-
-    // Delete images
-    for (const imageId of imagesToDelete) {
-      await client.query("DELETE FROM tabla_imagenes_eventos WHERE id_imagen_evento = $1 AND id_evento = $2", [imageId, eventId]);
-    }
-
-    // Add new images
-    for (const image of uploadedImages) {
-      await client.query(
-        `INSERT INTO tabla_imagenes_eventos (
-          url_imagen_evento,
-          id_evento,
-          storage_provider,
-          storage_key,
-          mime_type,
-          bytes,
-          original_filename
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-          image.url,
-          eventId,
-          image.provider,
-          image.storageKey,
-          image.mimeType,
-          image.bytes,
-          image.originalFileName,
-        ]
-      );
-    }
-
-    // Sync tickets (tabla_boleteria) and links (tabla_links)
-    // Delete existing rows and re-insert based on submitted arrays
-    await client.query("DELETE FROM tabla_boleteria WHERE id_evento = $1", [eventId]);
-    await client.query("DELETE FROM tabla_links WHERE id_evento = $1", [eventId]);
-
-    // Insert links
-    for (const link of (linksBoleteria || []).filter(Boolean)) {
-      await client.query(`INSERT INTO tabla_links (id_evento, link) VALUES ($1,$2)`, [eventId, link]);
-    }
-
-    // Insert ticket values if paid
-    if (gratis_pago) {
-      if (Array.isArray(boletas) && boletas.length > 0) {
-        for (const boleta of boletas) {
-          const nombreBoleto = String(boleta?.nombre_boleto || "").trim();
-          if (!nombreBoleto) continue;
-
-          const precioRaw = String(boleta?.precio_boleto ?? "");
-          const servicioRaw = String(boleta?.servicio ?? "");
-          const precioBoleto = parseFloat(precioRaw.replace(/[^0-9.,-]/g, "").replace(",", ".")) || 0;
-          const servicioBoleto = parseFloat(servicioRaw.replace(/[^0-9.,-]/g, "").replace(",", ".")) || 0;
-
-          await client.query(
-            `INSERT INTO tabla_boleteria (id_evento, nombre_boleto, precio_boleto, servicio) VALUES ($1,$2,$3,$4)`,
-            [eventId, nombreBoleto, precioBoleto, servicioBoleto]
-          );
-        }
-      } else {
-        for (let i = 0; i < tiposBoleteria.length; i++) {
-          const nombreBoleto = tiposBoleteria[i];
-          const costoRaw = costos[i] || '';
-
-          const precioBoleto = parseFloat(costoRaw.replace(/[^0-9.,-]/g, '').replace(',', '.')) || 0;
-
-          await client.query(`INSERT INTO tabla_boleteria (id_evento, nombre_boleto, precio_boleto, servicio) VALUES ($1,$2,$3,$4)`, [eventId, nombreBoleto, precioBoleto, 0]);
-        }
-      }
-    }
-
-    await client.query("COMMIT");
 
     // Return updated event
     const result = await client.query(
-      `SELECT e.*, 
-              u.nombres, u.apellidos,
-              s.nombre_sitio, m.nombre_municipio,
-              ce.nombre as categoria_nombre, te.nombre as tipo_nombre
+          `SELECT e.id_evento,
+            e.id_publico_evento,
+            e.pulep_evento,
+            e.nombre_evento,
+            e.responsable_evento,
+            e.id_usuario,
+            e.id_categoria_evento,
+            e.id_tipo_evento,
+            e.id_sitio,
+            e.descripcion,
+            e.fecha_inicio,
+            e.fecha_fin,
+            e.hora_inicio,
+            e.hora_final,
+            e.gratis_pago,
+            e.cupo,
+            e.reservar_anticipado,
+            e.estado,
+            e.motivo_rechazo,
+            e.rechazo_por,
+            e.destacado,
+            e.destacado_por,
+            e.fecha_destacado,
+            e.fecha_creacion,
+            e.fecha_actualizacion,
+            e.fecha_desactivacion,
+            tel_principal.telefono AS telefono_1,
+            tel_secundario.telefono AS telefono_2,
+            u.nombres,
+            u.apellidos,
+            s.nombre_sitio,
+            m.nombre_municipio,
+            ce.nombre as categoria_nombre,
+            te.nombre as tipo_nombre
        FROM tabla_eventos e
       LEFT JOIN tabla_usuarios u ON e.id_usuario = u.id_usuario
        LEFT JOIN tabla_sitios s ON e.id_sitio = s.id_sitio
       LEFT JOIN tabla_municipios m ON s.id_municipio = m.id_municipio
        LEFT JOIN tabla_categoria_eventos ce ON e.id_categoria_evento = ce.id_categoria_evento
        LEFT JOIN tabla_tipo_eventos te ON e.id_tipo_evento = te.id_tipo_evento
+       LEFT JOIN LATERAL (
+         SELECT telefono
+         FROM tabla_eventos_telefonos
+         WHERE id_evento = e.id_evento AND es_principal = TRUE
+         ORDER BY fecha_creacion ASC
+         LIMIT 1
+       ) tel_principal ON TRUE
+       LEFT JOIN LATERAL (
+         SELECT telefono
+         FROM tabla_eventos_telefonos
+         WHERE id_evento = e.id_evento AND es_principal = FALSE
+         ORDER BY fecha_creacion ASC
+         LIMIT 1
+       ) tel_secundario ON TRUE
        WHERE e.id_evento = $1`,
       [eventId]
     );
@@ -309,7 +304,6 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     const updatedEvent = result.rows[0];
     return NextResponse.json({ ok: true, event: updatedEvent });
   } catch (err) {
-    await client.query("ROLLBACK");
     console.error(err);
     return NextResponse.json({ ok: false, message: "Error updating event" }, { status: 500 });
   } finally {
@@ -335,27 +329,19 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
       return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
     }
 
-    await client.query("BEGIN");
+    const deleteResult = await client.query(
+      `SELECT app_api.fn_evento_eliminar($1, $2) AS payload`,
+      [eventId, Number(user.id_usuario)]
+    );
 
-    const exists = await client.query("SELECT id_evento FROM tabla_eventos WHERE id_evento = $1 LIMIT 1", [eventId]);
-    if (!exists.rows || exists.rows.length === 0) {
-      await client.query("ROLLBACK");
-      return NextResponse.json({ ok: false, message: "Event not found" }, { status: 404 });
+    const payload = deleteResult.rows?.[0]?.payload;
+    if (!payload?.ok) {
+      const status = payload?.error === "Event not found" ? 404 : 400;
+      return NextResponse.json({ ok: false, message: payload?.error || "Error deleting event" }, { status });
     }
 
-    await client.query("DELETE FROM tabla_reserva_eventos WHERE id_evento = $1", [eventId]);
-    await client.query("DELETE FROM tabla_valoraciones WHERE id_evento = $1", [eventId]);
-    await client.query("DELETE FROM tabla_links WHERE id_evento = $1", [eventId]);
-    await client.query("DELETE FROM tabla_boleteria WHERE id_evento = $1", [eventId]);
-    await client.query("DELETE FROM tabla_documentos_eventos WHERE id_evento = $1", [eventId]);
-    await client.query("DELETE FROM tabla_imagenes_eventos WHERE id_evento = $1", [eventId]);
-    await client.query("DELETE FROM tabla_evento_informacion_importante WHERE id_evento = $1", [eventId]);
-    await client.query("DELETE FROM tabla_eventos WHERE id_evento = $1", [eventId]);
-
-    await client.query("COMMIT");
     return NextResponse.json({ ok: true, message: "Evento eliminado correctamente" });
   } catch (err) {
-    await client.query("ROLLBACK");
     console.error(err);
     return NextResponse.json({ ok: false, message: "Error deleting event" }, { status: 500 });
   } finally {

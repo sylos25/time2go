@@ -24,6 +24,16 @@ const allowed: Record<string, string> = {
 
 // Define queries with JOINs for foreign key relationships
 const queryMap: Record<string, string> = {
+  paises: `
+    SELECT
+      id_pais,
+      nombre_pais,
+      fecha_creacion,
+      fecha_actualizacion
+    FROM tabla_paises
+    ORDER BY fecha_creacion DESC
+    LIMIT $1
+  `,
   departamentos: `
     SELECT
       d.id_departamento,
@@ -64,8 +74,8 @@ const queryMap: Record<string, string> = {
       s.direccion,
       s.latitud,
       s.longitud,
-      s.telefono_1,
-      s.telefono_2,
+      tel_principal.telefono AS telefono_1,
+      tel_secundario.telefono AS telefono_2,
       s.sitio_web,
       s.fecha_creacion,
       s.fecha_actualizacion
@@ -74,6 +84,20 @@ const queryMap: Record<string, string> = {
     LEFT JOIN tabla_municipios m ON s.id_municipio = m.id_municipio
     LEFT JOIN tabla_departamentos d ON m.id_departamento = d.id_departamento
     LEFT JOIN tabla_paises p ON d.id_pais = p.id_pais
+    LEFT JOIN LATERAL (
+      SELECT telefono
+      FROM tabla_sitios_telefonos
+      WHERE id_sitio = s.id_sitio AND es_principal = TRUE
+      ORDER BY fecha_creacion ASC
+      LIMIT 1
+    ) tel_principal ON TRUE
+    LEFT JOIN LATERAL (
+      SELECT telefono
+      FROM tabla_sitios_telefonos
+      WHERE id_sitio = s.id_sitio AND es_principal = FALSE
+      ORDER BY fecha_creacion ASC
+      LIMIT 1
+    ) tel_secundario ON TRUE
     ORDER BY s.fecha_creacion DESC
     LIMIT $1
   `,
@@ -125,8 +149,8 @@ const queryMap: Record<string, string> = {
       te.nombre AS tipo_evento,
       s.nombre_sitio,
       e.descripcion,
-      e.telefono_1,
-      e.telefono_2,
+      tel_principal.telefono AS telefono_1,
+      tel_secundario.telefono AS telefono_2,
       e.fecha_inicio,
       e.fecha_fin,
       e.hora_inicio,
@@ -135,6 +159,11 @@ const queryMap: Record<string, string> = {
       e.cupo,
       e.reservar_anticipado,
       e.estado,
+      e.motivo_rechazo,
+      e.rechazo_por,
+      e.destacado,
+      e.destacado_por,
+      e.fecha_destacado,
       e.fecha_creacion,
       e.fecha_actualizacion,
       e.fecha_desactivacion
@@ -143,6 +172,20 @@ const queryMap: Record<string, string> = {
     LEFT JOIN tabla_categoria_eventos ce ON e.id_categoria_evento = ce.id_categoria_evento
     LEFT JOIN tabla_tipo_eventos te ON e.id_tipo_evento = te.id_tipo_evento
     LEFT JOIN tabla_sitios s ON e.id_sitio = s.id_sitio
+    LEFT JOIN LATERAL (
+      SELECT telefono
+      FROM tabla_eventos_telefonos
+      WHERE id_evento = e.id_evento AND es_principal = TRUE
+      ORDER BY fecha_creacion ASC
+      LIMIT 1
+    ) tel_principal ON TRUE
+    LEFT JOIN LATERAL (
+      SELECT telefono
+      FROM tabla_eventos_telefonos
+      WHERE id_evento = e.id_evento AND es_principal = FALSE
+      ORDER BY fecha_creacion ASC
+      LIMIT 1
+    ) tel_secundario ON TRUE
     ORDER BY e.fecha_creacion DESC
     LIMIT $1
   `,
@@ -186,6 +229,37 @@ const queryMap: Record<string, string> = {
     LIMIT $1
   `,
 
+  tipo_sitios: `
+    SELECT
+      id_tipo_sitio,
+      nombre_tipo_sitio,
+      fecha_creacion,
+      fecha_actualizacion
+    FROM tabla_tipo_sitios
+    ORDER BY fecha_creacion DESC
+    LIMIT $1
+  `,
+  categoria_eventos: `
+    SELECT
+      id_categoria_evento,
+      nombre,
+      fecha_creacion,
+      fecha_actualizacion
+    FROM tabla_categoria_eventos
+    ORDER BY fecha_creacion DESC
+    LIMIT $1
+  `,
+  categoria_boletos: `
+    SELECT
+      id_categoria_boleto,
+      nombre_categoria_boleto,
+      fecha_creacion,
+      fecha_actualizacion
+    FROM tabla_categoria_boletos
+    ORDER BY fecha_creacion DESC
+    LIMIT $1
+  `,
+
   // Compatibilidad con claves antiguas
   tipo_infraest_disc: `
     SELECT
@@ -222,16 +296,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Tabla desconocida" }, { status: 400 })
     }
 
-    const tableName = allowed[table]
     const limit = 200
 
-    let query: string
-
-    // Use custom query with JOINs if available, otherwise use simple SELECT
-    if (queryMap[table]) {
-      query = queryMap[table]
-    } else {
-      query = `SELECT * FROM ${tableName} ORDER BY fecha_creacion DESC LIMIT $1`
+    const query = queryMap[table]
+    if (!query) {
+      return NextResponse.json(
+        { error: "Consulta no definida para la tabla solicitada" },
+        { status: 400 }
+      )
     }
 
     const result = await pool.query(query, [limit])

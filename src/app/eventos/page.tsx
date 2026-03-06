@@ -30,7 +30,6 @@ interface Event {
   fecha_fin: string;                // corregido: antes tenías fecha_final
   hora_inicio: string;
   hora_final: string;
-  dias_semana?: string;             // opcional si no lo usas en BD
   id_usuario?: string;
   id_categoria_evento: number;
   id_tipo_evento: number;

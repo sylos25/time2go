@@ -44,10 +44,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
     }
 
-    const eventsActiveRes = await pool.query(`SELECT COUNT(*)::int AS count FROM tabla_eventos WHERE estado = TRUE`);
-    const eventsInactiveRes = await pool.query(`SELECT COUNT(*)::int AS count FROM tabla_eventos WHERE estado = FALSE`);
-    const usersRole1ActiveRes = await pool.query(`SELECT COUNT(*)::int AS count FROM tabla_usuarios WHERE estado = TRUE AND id_rol = 1`);
-    const usersBannedRes = await pool.query(`SELECT COUNT(*)::int AS count FROM tabla_usuarios WHERE estado = FALSE`);
+    const eventsActiveRes = await pool.query(`SELECT COUNT(1)::int AS count FROM tabla_eventos WHERE estado = TRUE`);
+    const eventsInactiveRes = await pool.query(`SELECT COUNT(1)::int AS count FROM tabla_eventos WHERE estado = FALSE`);
+    const usersRole1ActiveRes = await pool.query(`SELECT COUNT(1)::int AS count FROM tabla_usuarios WHERE estado = TRUE AND id_rol = 1`);
+    const usersBannedRes = await pool.query(`SELECT COUNT(1)::int AS count FROM tabla_usuarios WHERE estado = FALSE`);
 
     const eventsActive = eventsActiveRes.rows && eventsActiveRes.rows[0] ? eventsActiveRes.rows[0].count : 0;
     const eventsInactive = eventsInactiveRes.rows && eventsInactiveRes.rows[0] ? eventsInactiveRes.rows[0].count : 0;

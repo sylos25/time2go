@@ -458,9 +458,6 @@ export default function CrearEventoPage() {
       formData.append("hora_inicio", newEvent.hora_inicio || "");
       formData.append("hora_final", newEvent.hora_final || "");
       
-      const diasStrings = (newEvent.diasSeleccionados || []).map((d: Date) => d.toISOString().split('T')[0]);
-      formData.append("dias_semana", JSON.stringify(diasStrings));
-      
       const storedUserId = localStorage.getItem('userId') || "";
       formData.append("id_usuario", String(newEvent.id_usuario || storedUserId));
       formData.append("id_categoria_evento", String(newEvent.id_categoria_evento || 0));

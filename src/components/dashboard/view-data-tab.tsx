@@ -18,8 +18,6 @@ type TableKey =
   | "sitios_discapacitados"
   | "categoria_eventos"
   | "tipo_eventos"
-  | "eventos"
-  | "eventos_informacion_importante"
   | "boleteria"
   | "links"
 
@@ -90,8 +88,6 @@ const TABLE_ID_COLUMN: Record<TableKey, string> = {
   sitios_discapacitados: "id_sitios_discapacitados",
   categoria_eventos: "id_categoria_evento",
   tipo_eventos: "id_tipo_evento",
-  eventos: "id_evento",
-  eventos_informacion_importante: "id_evento_info_item",
   boleteria: "id_boleto",
   links: "id_link",
 }
@@ -106,24 +102,6 @@ const TABLE_EDITABLE_FIELDS: Record<TableKey, string[]> = {
   sitios_discapacitados: ["descripcion"],
   categoria_eventos: ["nombre"],
   tipo_eventos: ["nombre"],
-  eventos: [
-    "id_publico_evento",
-    "pulep_evento",
-    "nombre_evento",
-    "responsable_evento",
-    "descripcion",
-    "telefono_1",
-    "telefono_2",
-    "fecha_inicio",
-    "fecha_fin",
-    "hora_inicio",
-    "hora_final",
-    "gratis_pago",
-    "cupo",
-    "reservar_anticipado",
-    "estado",
-  ],
-  eventos_informacion_importante: ["detalle", "obligatorio"],
   boleteria: ["nombre_boleto", "precio_boleto", "servicio"],
   links: ["link"],
 }
@@ -283,8 +261,6 @@ export function ViewDataTab() {
                 <SelectItem value="sitios_discapacitados" className="cursor-pointer">Sitios con acceso inclusivo</SelectItem>
                 <SelectItem value="categoria_eventos" className="cursor-pointer">Categorías de los eventos</SelectItem>
                 <SelectItem value="tipo_eventos" className="cursor-pointer">Tipos de eventos</SelectItem>
-                <SelectItem value="eventos" className="cursor-pointer">Eventos</SelectItem>
-                <SelectItem value="eventos_informacion_importante" className="cursor-pointer">Eventos - Información importante</SelectItem>
                 <SelectItem value="boleteria" className="cursor-pointer">Boletería</SelectItem>
                 <SelectItem value="links" className="cursor-pointer">Links</SelectItem>
               </SelectContent>

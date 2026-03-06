@@ -58,7 +58,17 @@ total_cte AS (
   FROM filtered
 ),
 paged AS (
-  SELECT *
+  SELECT
+    id_usuario,
+    id_rol,
+    id_google,
+    nombres,
+    apellidos,
+    telefono,
+    correo,
+    validacion_correo,
+    terminos_condiciones,
+    estado
   FROM filtered
   ORDER BY id_usuario DESC
   LIMIT (SELECT page_size FROM cfg)

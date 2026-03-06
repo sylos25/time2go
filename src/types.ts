@@ -22,8 +22,7 @@
         descripcion: string;
         telefono: string;
         fecha_inicio: string;
-        fecha_final: string;
-        dias_semana: string;
+        fecha_fin: string;
         hora_inicio: string;
         hora_final: string;
         costo: number;
