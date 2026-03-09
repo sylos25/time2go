@@ -31,6 +31,7 @@ const ALLOWED_EMAIL_DOMAINS = [
 
 const MAX_NAME_LENGTH = 50
 const PHONE_LENGTH = 10
+const PASSWORD_LENGTH = 8
 
 const isAllowedEmail = (email: string): boolean => {
   const domain = email.split("@")[1]?.toLowerCase()
@@ -155,7 +156,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
 
   const validatePassword = (password: string): { isValid: boolean; errors: string[] } => {
     const errors: string[] = []
-    if (password.length > 12) errors.push("Máximo 12 caracteres")
+    if (password.length !== PASSWORD_LENGTH) errors.push("Debe tener exactamente 8 caracteres")
     if (!/[a-zA-Z]/.test(password)) errors.push("Al menos una letra")
     if (!/[0-9]/.test(password)) errors.push("Al menos un número")
     if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) errors.push("Al menos un carácter especial")
@@ -313,7 +314,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               id="password" type={showPassword ? "text" : "password"} placeholder="••••••••"
-              value={formData.password} maxLength={12} onBlur={() => handleBlur("password")}
+              value={formData.password} maxLength={PASSWORD_LENGTH} onBlur={() => handleBlur("password")}
               onChange={(e) => {
                 const value = e.target.value
                 handleInputChange("password", value)
@@ -335,7 +336,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               <li className={`flex items-center gap-2 ${/[a-zA-Z]/.test(formData.password) ? "text-green-600" : "text-red-600"}`}>{/[a-zA-Z]/.test(formData.password) ? "✓" : "✗"} Al menos una letra</li>
               <li className={`flex items-center gap-2 ${/[0-9]/.test(formData.password) ? "text-green-600" : "text-red-600"}`}>{/[0-9]/.test(formData.password) ? "✓" : "✗"} Al menos un número</li>
               <li className={`flex items-center gap-2 ${/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? "text-green-600" : "text-red-600"}`}>{/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? "✓" : "✗"} Al menos un carácter especial</li>
-              <li className={`flex items-center gap-2 ${formData.password.length > 0 && formData.password.length <= 12 ? "text-green-600" : "text-red-600"}`}>{formData.password.length > 0 && formData.password.length <= 12 ? "✓" : "✗"} Máximo 12 caracteres ({formData.password.length}/12)</li>
+              <li className={`flex items-center gap-2 ${formData.password.length === PASSWORD_LENGTH ? "text-green-600" : "text-red-600"}`}>{formData.password.length === PASSWORD_LENGTH ? "✓" : "✗"} Exactamente 8 caracteres ({formData.password.length}/{PASSWORD_LENGTH})</li>
             </ul>
           </div>
         </div>
@@ -347,7 +348,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               id="confirmPassword" type={showConfirmPassword ? "text" : "password"} placeholder="••••••••"
-              value={confirmPassword} maxLength={12}
+              value={confirmPassword} maxLength={PASSWORD_LENGTH}
               onChange={(e) => setConfirmPassword(e.target.value)} onBlur={() => setTouchedConfirmPassword(true)}
               className={`pl-10 pr-10 w-full border rounded-md py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 formData.password && confirmPassword && formData.password !== confirmPassword ? "border-red-500 ring-red-500"

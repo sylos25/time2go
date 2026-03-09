@@ -132,7 +132,8 @@ export async function POST(req: Request) {
 
 
     const nombre_evento = (formData.get("nombre_evento") as string) || "";
-    const pulep_evento = ((formData.get("pulep_evento") as string) || "").trim() || null;
+    const pulepRaw = ((formData.get("pulep_evento") as string) || "").trim();
+    const pulep_evento = pulepRaw ? pulepRaw.toUpperCase() : null;
     const responsable_evento = ((formData.get("responsable_evento") as string) || "").trim();
     const descripcion = (formData.get("descripcion") as string) || "";
     const infoItemsRaw = (formData.get("informacion_adicional_items") as string) || "[]";
@@ -172,6 +173,13 @@ export async function POST(req: Request) {
 
     if (!responsable_evento || responsable_evento.length < 6) {
       return NextResponse.json({ ok: false, message: "El responsable del evento es obligatorio y debe tener al menos 6 caracteres" }, { status: 400 });
+    }
+
+    if (pulep_evento && !/^[A-Z0-9]{6,8}$/.test(pulep_evento)) {
+      return NextResponse.json(
+        { ok: false, message: "El código PULEP debe tener entre 6 y 8 caracteres y solo usar letras mayúsculas y números" },
+        { status: 400 }
+      );
     }
 
     if (docFile && documentoStorageKey && !documentoOriginalFilename) {

@@ -32,23 +32,53 @@ export async function POST(req: NextRequest) {
         break
 
       case "sitios":
-        query = `INSERT INTO tabla_sitios (id_sitio, nombre_sitio, id_tipo_sitio, acceso_discapacidad,
-                 id_municipio, direccion, latitud, longitud, telefono_1, telefono_2, sitio_web)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id_sitio, nombre_sitio, id_tipo_sitio, acceso_discapacidad, id_municipio, direccion, latitud, longitud, telefono_1, telefono_2, sitio_web`
-        values = [
-          data.id_sitio,
-          data.nombre_sitio,
-          data.id_tipo_sitio,
-          data.acceso_discapacidad || false,
-          data.id_municipio,
-          data.direccion,
-          data.latitud,
-          data.longitud,
-          data.telefono_1,
-          data.telefono_2 || null,
-          data.sitio_web || null,
-        ]
-        break
+        result = await pool.query(
+          `INSERT INTO tabla_sitios (id_sitio, nombre_sitio, id_tipo_sitio, id_municipio, direccion, latitud, longitud, sitio_web)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           RETURNING id_sitio, nombre_sitio, id_tipo_sitio, id_municipio, direccion, latitud, longitud, sitio_web`,
+          [
+            data.id_sitio,
+            data.nombre_sitio,
+            data.id_tipo_sitio,
+            data.id_municipio,
+            data.direccion,
+            data.latitud,
+            data.longitud,
+            data.sitio_web || null,
+          ]
+        )
+
+        if (data.telefono_1) {
+          await pool.query(
+            `INSERT INTO tabla_sitios_telefonos (id_sitio, telefono, es_principal)
+             VALUES ($1, $2, TRUE)
+             ON CONFLICT (telefono) DO NOTHING`,
+            [data.id_sitio, data.telefono_1]
+          )
+        }
+
+        if (data.telefono_2) {
+          await pool.query(
+            `INSERT INTO tabla_sitios_telefonos (id_sitio, telefono, es_principal)
+             VALUES ($1, $2, FALSE)
+             ON CONFLICT (telefono) DO NOTHING`,
+            [data.id_sitio, data.telefono_2]
+          )
+        }
+
+        return NextResponse.json(
+          {
+            success: true,
+            message: `Datos insertados exitosamente en ${table}`,
+            data: {
+              ...result.rows[0],
+              telefono_1: data.telefono_1 || null,
+              telefono_2: data.telefono_2 || null,
+              acceso_discapacidad: false,
+            },
+          },
+          { status: 201 }
+        )
 
       case "tipo_infraestructura_discapacitados":
       case "tipo_infraest_disc":

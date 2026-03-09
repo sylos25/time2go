@@ -493,6 +493,24 @@ export default function EventLanding() {
                     <p className="text-sm text-muted-foreground">
                       {event.sitio?.direccion} — {event.municipio?.nombre_municipio}
                     </p>
+                    <div className="mt-3 space-y-2">
+                      <p className="text-sm font-medium">Accesibilidad</p>
+                      <p className="text-sm text-muted-foreground">
+                        {event.sitio?.acceso_discapacidad ? "Este sitio reporta acceso para personas con discapacidad." : "Este sitio no reporta acceso para personas con discapacidad."}
+                      </p>
+                      {Array.isArray(event.sitio?.infraestructura_discapacitados) && event.sitio.infraestructura_discapacitados.length > 0 && (
+                        <div className="space-y-1">
+                          {event.sitio.infraestructura_discapacitados.map((infra: any) => (
+                            <div key={infra.id_sitios_discapacitados} className="rounded-md border border-border/60 bg-muted/40 p-2 text-sm">
+                              <p className="font-medium">
+                                {infra.nombre_infraestructura_discapacitados || "Infraestructura de accesibilidad"}
+                              </p>
+                              <p className="text-muted-foreground">{infra.descripcion}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
               </Card>

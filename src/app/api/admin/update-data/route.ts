@@ -31,7 +31,7 @@ const TABLE_CONFIG: Record<string, TableConfig> = {
   sitios: {
     tableName: "tabla_sitios",
     idColumn: "id_sitio",
-    editableColumns: ["nombre_sitio", "acceso_discapacidad", "direccion", "latitud", "longitud", "telefono_1", "telefono_2", "sitio_web"],
+    editableColumns: ["nombre_sitio", "direccion", "latitud", "longitud", "telefono_1", "telefono_2", "sitio_web"],
   },
   tipo_infraestructura_discapacitados: {
     tableName: "tabla_tipo_infraestructura_discapacitados",

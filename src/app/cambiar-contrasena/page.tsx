@@ -32,6 +32,17 @@ interface UserData {
   fecha_registro?: string
 }
 
+const PASSWORD_LENGTH = 8
+
+const validatePassword = (password: string): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = []
+  if (password.length !== PASSWORD_LENGTH) errors.push("La contraseña debe tener exactamente 8 caracteres")
+  if (!/[a-zA-Z]/.test(password)) errors.push("Debe incluir al menos una letra")
+  if (!/[0-9]/.test(password)) errors.push("Debe incluir al menos un número")
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) errors.push("Debe incluir al menos un carácter especial")
+  return { isValid: errors.length === 0, errors }
+}
+
 export default function CambiarContrasenaPage() {
   const router = useRouter()
   const [user, setUser] = useState<UserData | null>(null)
@@ -117,8 +128,9 @@ export default function CambiarContrasenaPage() {
       return
     }
 
-    if (newPassword.length < 8) {
-      setPasswordError("La contraseña debe tener al menos 8 caracteres")
+    const passwordValidation = validatePassword(newPassword)
+    if (!passwordValidation.isValid) {
+      setPasswordError(passwordValidation.errors.join(". "))
       return
     }
 
@@ -277,6 +289,7 @@ export default function CambiarContrasenaPage() {
                       <Input
                         type={showPasswords.current ? "text" : "password"}
                         value={currentPassword}
+                        maxLength={PASSWORD_LENGTH}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                         className="border-input text-foreground pr-10"
                         placeholder="Ingresa tu contraseña actual"
@@ -300,6 +313,7 @@ export default function CambiarContrasenaPage() {
                       <Input
                         type={showPasswords.new ? "text" : "password"}
                         value={newPassword}
+                        maxLength={PASSWORD_LENGTH}
                         onChange={(e) => setNewPassword(e.target.value)}
                         className="border-input text-foreground pr-10"
                         placeholder="Ingresa tu nueva contraseña"
@@ -323,6 +337,7 @@ export default function CambiarContrasenaPage() {
                       <Input
                         type={showPasswords.confirm ? "text" : "password"}
                         value={confirmPassword}
+                        maxLength={PASSWORD_LENGTH}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         className="border-input text-foreground pr-10"
                         placeholder="Confirma tu nueva contraseña"
@@ -373,8 +388,8 @@ export default function CambiarContrasenaPage() {
                 <div className="bg-muted/40 border border-border rounded-lg p-4 mt-6">
                   <h3 className="font-semibold text-foreground mb-2">Recomendaciones de Seguridad:</h3>
                   <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li>• Usa una contraseña con al menos 8 caracteres</li>
-                    <li>• Incluye mayúsculas, minúsculas y números</li>
+                    <li>• Usa exactamente 8 caracteres</li>
+                    <li>• Incluye al menos una letra, un número y un carácter especial</li>
                     <li>• Evita usar información personal (nombre, fecha de nacimiento)</li>
                     <li>• No compartas tu contraseña con nadie</li>
                   </ul>

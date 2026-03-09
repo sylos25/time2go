@@ -72,9 +72,6 @@ FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_imagenes_eventos
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
-CREATE TRIGGER trig_update_municipios BEFORE UPDATE ON tabla_documentos_eventos
-FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
-
 CREATE TRIGGER trig_update_documentos_usuarios BEFORE UPDATE ON tabla_documentos_usuarios
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 

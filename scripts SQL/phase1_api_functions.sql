@@ -114,6 +114,12 @@ BEGIN
     hora_inicio,
     hora_final,
     gratis_pago,
+    url_documento_evento,
+    documento_storage_provider,
+    documento_storage_key,
+    documento_mime_type,
+    documento_bytes,
+    documento_original_filename,
     cupo,
     reservar_anticipado,
     estado
@@ -131,6 +137,36 @@ BEGIN
     (p_evento->>'hora_inicio')::TIME,
     (p_evento->>'hora_final')::TIME,
     COALESCE((p_evento->>'gratis_pago')::BOOLEAN, FALSE),
+    CASE
+      WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
+        THEN NULLIF(BTRIM(p_documento->>'url_documento_evento'), '')
+      ELSE NULL
+    END,
+    CASE
+      WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
+        THEN COALESCE(NULLIF(BTRIM(p_documento->>'storage_provider'), ''), 'legacy_url')
+      ELSE 'legacy_url'
+    END,
+    CASE
+      WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
+        THEN NULLIF(BTRIM(p_documento->>'storage_key'), '')
+      ELSE NULL
+    END,
+    CASE
+      WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
+        THEN COALESCE(NULLIF(BTRIM(p_documento->>'mime_type'), ''), 'application/pdf')
+      ELSE 'application/pdf'
+    END,
+    CASE
+      WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
+        THEN NULLIF(p_documento->>'bytes', '')::BIGINT
+      ELSE NULL
+    END,
+    CASE
+      WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
+        THEN NULLIF(BTRIM(p_documento->>'original_filename'), '')
+      ELSE NULL
+    END,
     COALESCE((p_evento->>'cupo')::INT, 0),
     COALESCE((p_evento->>'reservar_anticipado')::BOOLEAN, FALSE),
     COALESCE((p_evento->>'estado')::BOOLEAN, FALSE)
@@ -245,29 +281,6 @@ BEGIN
         );
       END IF;
     END LOOP;
-  END IF;
-
-  -- Document metadata row
-  IF p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object' THEN
-    IF char_length(COALESCE(BTRIM(p_documento->>'url_documento_evento'), '')) > 0 THEN
-      INSERT INTO tabla_documentos_eventos (
-        id_evento,
-        url_documento_evento,
-        storage_provider,
-        storage_key,
-        mime_type,
-        bytes,
-        original_filename
-      ) VALUES (
-        v_id_evento,
-        p_documento->>'url_documento_evento',
-        COALESCE(NULLIF(BTRIM(p_documento->>'storage_provider'), ''), 'legacy_url'),
-        NULLIF(BTRIM(p_documento->>'storage_key'), ''),
-        COALESCE(NULLIF(BTRIM(p_documento->>'mime_type'), ''), 'application/pdf'),
-        NULLIF(p_documento->>'bytes', '')::BIGINT,
-        NULLIF(BTRIM(p_documento->>'original_filename'), '')
-      );
-    END IF;
   END IF;
 
   RETURN jsonb_build_object(
@@ -536,7 +549,6 @@ BEGIN
   DELETE FROM tabla_valoraciones WHERE id_evento = p_id_evento;
   DELETE FROM tabla_links WHERE id_evento = p_id_evento;
   DELETE FROM tabla_boleteria WHERE id_evento = p_id_evento;
-  DELETE FROM tabla_documentos_eventos WHERE id_evento = p_id_evento;
   DELETE FROM tabla_imagenes_eventos WHERE id_evento = p_id_evento;
   DELETE FROM tabla_evento_informacion_importante WHERE id_evento = p_id_evento;
   DELETE FROM tabla_eventos_telefonos WHERE id_evento = p_id_evento;
@@ -589,6 +601,12 @@ BEGIN
       e.destacado,
       e.destacado_por,
       e.fecha_destacado,
+      e.url_documento_evento,
+      e.documento_storage_provider,
+      e.documento_storage_key,
+      e.documento_mime_type,
+      e.documento_bytes,
+      e.documento_original_filename,
       e.fecha_creacion,
       e.fecha_actualizacion,
       e.fecha_desactivacion,
@@ -721,8 +739,25 @@ BEGIN
             'id_sitio', eb.id_sitio,
             'nombre_sitio', eb.nombre_sitio,
             'direccion', eb.sitio_direccion,
+            'acceso_discapacidad', EXISTS (
+              SELECT 1
+              FROM tabla_sitios_discapacitados sdx
+              WHERE sdx.id_sitio = eb.id_sitio
+            ),
             'telefono_1', eb.sitio_telefono_1,
-            'telefono_2', eb.sitio_telefono_2
+            'telefono_2', eb.sitio_telefono_2,
+            'infraestructura_discapacitados', COALESCE((
+              SELECT jsonb_agg(jsonb_build_object(
+                'id_sitios_discapacitados', sd.id_sitios_discapacitados,
+                'id_infraestructura_discapacitados', sd.id_infraestructura_discapacitados,
+                'nombre_infraestructura_discapacitados', tid.nombre_infraestructura_discapacitados,
+                'descripcion', sd.descripcion
+              ) ORDER BY sd.id_sitios_discapacitados)
+              FROM tabla_sitios_discapacitados sd
+              LEFT JOIN tabla_tipo_infraestructura_discapacitados tid
+                ON sd.id_infraestructura_discapacitados = tid.id_infraestructura_discapacitados
+              WHERE sd.id_sitio = eb.id_sitio
+            ), '[]'::jsonb)
           )
         END,
         'municipio', CASE
@@ -760,17 +795,18 @@ BEGIN
           WHERE i.id_evento = eb.id_evento
         ), '[]'::jsonb),
         'documentos', COALESCE((
-          SELECT jsonb_agg(jsonb_build_object(
-            'id_documento_evento', d.id_documento_evento,
-            'url_documento_evento', d.url_documento_evento,
-            'storage_provider', d.storage_provider,
-            'storage_key', d.storage_key,
-            'mime_type', d.mime_type,
-            'bytes', d.bytes,
-            'original_filename', d.original_filename
-          ) ORDER BY d.id_documento_evento)
-          FROM tabla_documentos_eventos d
-          WHERE d.id_evento = eb.id_evento
+          SELECT CASE
+            WHEN eb.url_documento_evento IS NULL AND eb.documento_storage_key IS NULL THEN '[]'::jsonb
+            ELSE jsonb_build_array(jsonb_build_object(
+              'id_documento_evento', eb.id_evento,
+              'url_documento_evento', eb.url_documento_evento,
+              'storage_provider', eb.documento_storage_provider,
+              'storage_key', eb.documento_storage_key,
+              'mime_type', eb.documento_mime_type,
+              'bytes', eb.documento_bytes,
+              'original_filename', eb.documento_original_filename
+            ))
+          END
         ), '[]'::jsonb),
         'valores', COALESCE((
           SELECT jsonb_agg(jsonb_build_object(

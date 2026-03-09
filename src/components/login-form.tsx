@@ -23,6 +23,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   const [resetPasswordOpen, setResetPasswordOpen] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const [turnstileError, setTurnstileError] = useState("")
+  const [turnstileKey, setTurnstileKey] = useState(0)
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({
     email: false,
     password: false,
@@ -79,6 +80,11 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       
       if (!res.ok) {
         console.error("Login failed:", data)
+
+        // El token de Turnstile es de un solo uso: en cualquier error se solicita uno nuevo.
+        setTurnstileToken(null)
+        setTurnstileKey((prev) => prev + 1)
+        setTurnstileError("")
         
         // Si es error de email no validado (status 403)
         if (res.status === 403 && data.requiresEmailValidation) {
@@ -146,6 +152,9 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       onSuccess()
     } catch (err) {
       console.error("Login error:", err)
+      setTurnstileToken(null)
+      setTurnstileKey((prev) => prev + 1)
+      setTurnstileError("")
       setError("Error de red. Intenta nuevamente.")
     }
   }
@@ -232,6 +241,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       {/* Turnstile Captcha */}
       <div className="flex justify-center">
         <Turnstile
+          key={turnstileKey}
           siteKey={process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY || ""}
           onSuccess={(token) => {
             setTurnstileToken(token)

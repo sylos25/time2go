@@ -95,18 +95,18 @@ INSERT INTO tabla_tipo_sitios (id_tipo_sitio, nombre_tipo_sitio)
 				   (7, 'Parque Recreativo');
 
 -- Cargar en tabla_sitios.
-INSERT INTO tabla_sitios (id_sitio, nombre_sitio, id_tipo_sitio, acceso_discapacidad, id_municipio, direccion, latitud, longitud, sitio_web) 
-			VALUES (1, 'Teatro Santander', 1, TRUE, 68001, 'Calle 33 #18-60.', '7,12116°', '-73,12401°', 'https://www.teatrosantanderbga.com/'),
-				   (2, 'Neomundo - Centro de convenciones y eventos', 2, TRUE, 68001, 'Calle 89 Transversal Oriental Metropolitana-69, Barrio, Cl. 100.', '7,10215°', '-73,10619°', 'https://neomundo.co/'),
-				   (3, 'Museo de Arte Moderno de Bucaramanga MAMB', 3, FALSE, 68001, 'Calle 37 #26-16.', '7,11996°', '-73,11686°', NULL),
-				   (4, 'Cancha de tierra del barrio La Cumbre', 4, FALSE, 68276, 'Calle 34 con Carrera 8e.', '7,07904°', '-73,08879°', NULL),
-				   (5, 'Parque de Morrorico', 5, FALSE, 68001, 'Comuna 14 Morrorico.', '7,13288°', '-73,10624°', NULL),
-				   (6, 'Parque Temático', 5, TRUE, 68547, 'Cl. 2a #8-22.', '6,99446°', '-73,05165°', NULL),
-				   (7, 'Estadio municipal villa Concha', 6, FALSE, 68547, 'I-45A #9-43, La Castallena.', '6,99533°', '-73,05006°', NULL),
-				   (8, 'Parque recrear Juan Pablo II', 7, FALSE, 68307, 'a 37-60,, Cra. 22b #37-2', '7,0732°', '-73,1689°', NULL);
+INSERT INTO tabla_sitios (id_sitio, nombre_sitio, id_tipo_sitio, id_municipio, direccion, latitud, longitud, sitio_web) 
+			VALUES (1, 'Teatro Santander', 1, 68001, 'Calle 33 #18-60.', '7,12116°', '-73,12401°', 'https://www.teatrosantanderbga.com/'),
+				   (2, 'Neomundo - Centro de convenciones y eventos', 2, 68001, 'Calle 89 Transversal Oriental Metropolitana-69, Barrio, Cl. 100.', '7,10215°', '-73,10619°', 'https://neomundo.co/'),
+				   (3, 'Museo de Arte Moderno de Bucaramanga MAMB', 3, 68001, 'Calle 37 #26-16.', '7,11996°', '-73,11686°', NULL),
+				   (4, 'Cancha de tierra del barrio La Cumbre', 4, 68276, 'Calle 34 con Carrera 8e.', '7,07904°', '-73,08879°', NULL),
+				   (5, 'Parque de Morrorico', 5, 68001, 'Comuna 14 Morrorico.', '7,13288°', '-73,10624°', NULL),
+				   (6, 'Parque Temático', 5, 68547, 'Cl. 2a #8-22.', '6,99446°', '-73,05165°', NULL),
+				   (7, 'Estadio municipal villa Concha', 6, 68547, 'I-45A #9-43, La Castallena.', '6,99533°', '-73,05006°', NULL),
+				   (8, 'Parque recrear Juan Pablo II', 7, 68307, 'a 37-60,, Cra. 22b #37-2', '7,0732°', '-73,1689°', NULL);
 
 -- Cargar en tabla_sitios_telefonos.
-INSERT INTO tabla_sitios_telefonos (id_sitio, telefeno, es_principal) 
+INSERT INTO tabla_sitios_telefonos (id_sitio, telefono, es_principal) 
 			VALUES (1, 6076424232, TRUE),
 				   (1, 3245670437, FALSE),
 				   (2, 6077000260, TRUE),

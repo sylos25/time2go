@@ -54,14 +54,15 @@ export async function GET(req: NextRequest) {
       }
 
       const docRes = await pool.query(
-        `SELECT id_documento_evento,
+        `SELECT id_evento AS id_documento_evento,
                 url_documento_evento,
-                storage_provider,
-                storage_key,
-                mime_type,
-                original_filename
-         FROM tabla_documentos_eventos
-         WHERE id_documento_evento = $1
+                documento_storage_provider AS storage_provider,
+                documento_storage_key AS storage_key,
+                documento_mime_type AS mime_type,
+                documento_original_filename AS original_filename
+         FROM tabla_eventos
+         WHERE id_evento = $1
+           AND (url_documento_evento IS NOT NULL OR documento_storage_key IS NOT NULL)
          LIMIT 1`,
         [documentId]
       )

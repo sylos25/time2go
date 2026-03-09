@@ -323,8 +323,13 @@ export default function CrearEventoPage() {
       }
 
       // Validación opcional para pulep_evento: si se proporciona, debe tener al menos 6 caracteres
-      if (newEvent.pulep_evento && newEvent.pulep_evento.length < 6) {
-        setFieldError("pulep_evento", "Si proporcionas el código, debe tener al menos 6 caracteres.");
+      if (newEvent.pulep_evento && (newEvent.pulep_evento.length < 6 || newEvent.pulep_evento.length > 8)) {
+        setFieldError("pulep_evento", "Si proporcionas el código PULEP, debe tener entre 6 y 8 caracteres.");
+        return;
+      }
+
+      if (newEvent.pulep_evento && !/^[A-Z0-9]+$/.test(newEvent.pulep_evento)) {
+        setFieldError("pulep_evento", "El código PULEP solo permite letras mayúsculas y números.");
         return;
       }
 
@@ -583,11 +588,13 @@ export default function CrearEventoPage() {
                     id="pulep_evento"
                     value={newEvent.pulep_evento}
                     onChange={(e) => {
+                      const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
                       clearFieldError("pulep_evento");
-                      setNewEvent({ ...newEvent, pulep_evento: e.target.value });
+                      setNewEvent({ ...newEvent, pulep_evento: value });
                     }}
                     placeholder="Código del Portal Único de Espectáculos Públicos de las Artes Escénicas"
                     className="rounded-xl"
+                    maxLength={8}
                   />
                   <p className="text-xs text-muted-foreground">Este código identifica públicamente tu evento</p>
                   {formErrors.pulep_evento && (

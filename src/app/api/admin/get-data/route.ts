@@ -67,13 +67,14 @@ const queryMap: Record<string, string> = {
       s.id_sitio,
       s.nombre_sitio,
       ts.nombre_tipo_sitio,
-      s.acceso_discapacidad,
+      COALESCE(infra.has_acceso_discapacidad, FALSE) AS acceso_discapacidad,
       m.nombre_municipio,
       d.nombre_departamento,
       p.nombre_pais,
       s.direccion,
       s.latitud,
       s.longitud,
+      infra.infraestructura_discapacitados,
       tel_principal.telefono AS telefono_1,
       tel_secundario.telefono AS telefono_2,
       s.sitio_web,
@@ -84,6 +85,15 @@ const queryMap: Record<string, string> = {
     LEFT JOIN tabla_municipios m ON s.id_municipio = m.id_municipio
     LEFT JOIN tabla_departamentos d ON m.id_departamento = d.id_departamento
     LEFT JOIN tabla_paises p ON d.id_pais = p.id_pais
+    LEFT JOIN LATERAL (
+      SELECT
+        COUNT(sd.id_sitios_discapacitados) > 0 AS has_acceso_discapacidad,
+        string_agg(tid.nombre_infraestructura_discapacitados, ', ' ORDER BY tid.nombre_infraestructura_discapacitados) AS infraestructura_discapacitados
+      FROM tabla_sitios_discapacitados sd
+      LEFT JOIN tabla_tipo_infraestructura_discapacitados tid
+        ON sd.id_infraestructura_discapacitados = tid.id_infraestructura_discapacitados
+      WHERE sd.id_sitio = s.id_sitio
+    ) infra ON TRUE
     LEFT JOIN LATERAL (
       SELECT telefono
       FROM tabla_sitios_telefonos

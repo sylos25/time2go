@@ -6,6 +6,17 @@ import {
   sendEmailValidationEmail,
 } from "@/lib/email";
 
+const PASSWORD_LENGTH = 8;
+
+function validatePassword(password: string): string[] {
+  const errors: string[] = [];
+  if (password.length !== PASSWORD_LENGTH) errors.push("La contraseña debe tener exactamente 8 caracteres");
+  if (!/[a-zA-Z]/.test(password)) errors.push("Debe incluir al menos una letra");
+  if (!/[0-9]/.test(password)) errors.push("Debe incluir al menos un número");
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) errors.push("Debe incluir al menos un carácter especial");
+  return errors;
+}
+
 export async function POST(req: Request) {
   const {
     firstName,
@@ -26,6 +37,14 @@ export async function POST(req: Request) {
   };
 
   try {
+    const passwordErrors = validatePassword(password);
+    if (passwordErrors.length > 0) {
+      return NextResponse.json(
+        { error: `Contraseña inválida: ${passwordErrors.join(", ")}` },
+        { status: 400 }
+      );
+    }
+
     const client = await pool.connect();
     try {
     const emailExists = await client.query(

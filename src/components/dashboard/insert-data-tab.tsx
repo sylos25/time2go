@@ -54,7 +54,6 @@ const tableConfigs: Record<DataTable, { fields: FieldConfig[] }> = {
       { name: "id_sitio", type: "number", required: true, label: "ID Sitio", minValue: 1 },
       { name: "nombre_sitio", type: "text", required: true, label: "Nombre del Sitio", minLength: 3 },
       { name: "id_tipo_sitio", type: "number", required: true, label: "ID Tipo de Sitio", minValue: 1 },
-      { name: "acceso_discapacidad", type: "checkbox", required: false, label: "¿Acceso para Discapacitados?" },
       { name: "id_municipio", type: "number", required: true, label: "ID Municipio", minValue: 1 },
       { name: "direccion", type: "text", required: true, label: "Dirección", minLength: 6 },
       { name: "latitud", type: "text", required: true, label: "Latitud" },

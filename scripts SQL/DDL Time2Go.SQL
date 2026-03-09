@@ -21,7 +21,6 @@ DROP TABLE IF EXISTS tabla_valores;
 DROP TABLE IF EXISTS tabla_categoria_boletos;
 DROP TABLE IF EXISTS tabla_valoraciones;
 DROP TABLE IF EXISTS tabla_imagenes_eventos;
-DROP TABLE IF EXISTS tabla_documentos_eventos;
 DROP TABLE IF EXISTS tabla_eventos_x_dias;
 DROP TABLE IF EXISTS tabla_eventos;
 DROP TABLE IF EXISTS tabla_tipo_eventos;
@@ -84,7 +83,6 @@ CREATE TABLE IF NOT EXISTS tabla_sitios (
     id_sitio                                 INT                          PRIMARY KEY,   
     nombre_sitio                             VARCHAR                      NOT NULL                CHECK (char_length(nombre_sitio) >= 3),
     id_tipo_sitio                            INT                          NOT NULL,
-    acceso_discapacidad                      BOOLEAN                      NOT NULL       DEFAULT  FALSE,
     id_municipio                             INT                          NOT NULL,
     direccion                                VARCHAR                      NOT NULL       UNIQUE   CHECK (char_length(direccion) >= 6),
     latitud                                  VARCHAR                      NOT NULL       UNIQUE,
@@ -119,6 +117,7 @@ CREATE TABLE IF NOT EXISTS tabla_sitios_discapacitados (
     descripcion                             TEXT                         NOT NULL       CHECK (char_length(descripcion) >= 10),
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_sitio) REFERENCES tabla_sitios(id_sitio),
     FOREIGN KEY (id_infraestructura_discapacitados) REFERENCES tabla_tipo_infraestructura_discapacitados(id_infraestructura_discapacitados)
 );
 
@@ -274,6 +273,12 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
     destacado                               BOOLEAN                      NOT NULL       DEFAULT FALSE,                              -- FALSE: No destacado and TRUE: Destacado.
     destacado_por                           INT,                                                                                    -- ID del usuario que destaca el evento. Debe ser un moderador o administrador.
     fecha_destacado                         TIMESTAMP   WITH TIME ZONE,                                                             -- Fecha en la que se destacó el evento.
+    url_documento_evento                    VARCHAR                                     UNIQUE,
+    documento_storage_provider              VARCHAR                      NOT NULL       DEFAULT 'legacy_url',
+    documento_storage_key                   TEXT,
+    documento_mime_type                     VARCHAR                      NOT NULL       DEFAULT 'application/pdf',
+    documento_bytes                         BIGINT,
+    documento_original_filename             VARCHAR,
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     fecha_desactivacion                     TIMESTAMP   WITH TIME ZONE,
@@ -321,25 +326,12 @@ CREATE TABLE IF NOT EXISTS tabla_imagenes_eventos (
     FOREIGN KEY (id_evento)                 REFERENCES  tabla_eventos(id_evento)
 );
 
-CREATE TABLE IF NOT EXISTS tabla_documentos_eventos (
-    id_documento_evento                     INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    url_documento_evento                    VARCHAR                      NOT NULL       UNIQUE,
-    id_evento                               INT                          NOT NULL       UNIQUE,
-    storage_provider                        VARCHAR                      NOT NULL       DEFAULT 'legacy_url',
-    storage_key                             TEXT,
-    mime_type                               VARCHAR                      NOT NULL       DEFAULT 'application/pdf',
-    bytes                                   BIGINT,
-    original_filename                       VARCHAR,
-    fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_evento)                 REFERENCES  tabla_eventos(id_evento)
-);
-
 CREATE TABLE tabla_favoritos (
     id_favorito    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    id_usuario     INT NOT NULL UNIQUE,
-    id_evento      INT NOT NULL UNIQUE,
+    id_usuario     INT NOT NULL,
+    id_evento      INT NOT NULL,
     fecha_creacion TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_favorito_usuario_evento UNIQUE (id_usuario, id_evento),
     FOREIGN KEY (id_usuario) REFERENCES tabla_usuarios(id_usuario),
     FOREIGN KEY (id_evento)  REFERENCES tabla_eventos(id_evento)
 );
@@ -355,12 +347,13 @@ CREATE TABLE IF NOT EXISTS tabla_documentos_usuarios (
 
 CREATE TABLE IF NOT EXISTS tabla_valoraciones (
     id_valoracion                           INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    id_usuario                              INT                       	 NOT NULL      UNIQUE,
-    id_evento                               INT                          NOT NULL      UNIQUE,
+    id_usuario                              INT                        	 NOT NULL,
+    id_evento                               INT                          NOT NULL,
     valoracion                              INT                          NOT NULL       CHECK (valoracion BETWEEN 1 AND 5),
     comentario                              VARCHAR,
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_valoracion_usuario_evento UNIQUE (id_usuario, id_evento),
     FOREIGN KEY (id_usuario)                REFERENCES  tabla_usuarios(id_usuario),
     FOREIGN KEY (id_evento)                 REFERENCES  tabla_eventos(id_evento)
 );
