@@ -107,6 +107,7 @@ export default function CrearEventoPage() {
   const sanitizeTextWithPunct = (value: string) =>
     value.replace(/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]/g, "");
 
+<<<<<<< HEAD
   // Handler para el campo `cupo`
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -121,6 +122,28 @@ export default function CrearEventoPage() {
       if (num >= 20 && num <= 5000) setNewEvent({ ...newEvent, cupo: num });
 >>>>>>> f369c2cd84a8ff894e61bc6846f7892c7fff991c
     }
+=======
+  // Handler para el campo `cupo` (aforo)
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+
+    // Permitir borrar el campo
+    if (value === "") {
+      setNewEvent({ ...newEvent, cupo: "" });
+      return;
+    }
+
+    // Solo permitir dígitos mientras se escribe
+    if (!/^\d*$/.test(value)) return;
+
+    const num = Number(value);
+
+    // Restringir a máximo 5000 mientras se escribe
+    if (num > 5000) return;
+
+    // Guardar siempre el valor tal cual (como string)
+    setNewEvent({ ...newEvent, cupo: value });
+>>>>>>> rm_branch
   };
 
   // Generar rango de fechas entre fecha_inicio y fecha_final
@@ -454,11 +477,14 @@ export default function CrearEventoPage() {
         return;
       }
 
+<<<<<<< HEAD
       if (!newEvent.documento) {
         setFieldError("documento", "Debes cargar un documento PDF del evento.");
         return;
       }
 
+=======
+>>>>>>> rm_branch
       // Validaciones para eventos de pago
       if (newEvent.pago) {
         const boletasValidas = newEvent.boletas.filter((b: any) => b.nombre_boleto && b.precio_boleto);
@@ -1166,9 +1192,17 @@ export default function CrearEventoPage() {
                 </label>
                 <input
                   id="attendees"
+<<<<<<< HEAD
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
+=======
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  min={21}
+                  max={4999}
+>>>>>>> rm_branch
                   value={newEvent.cupo === "" ? "" : newEvent.cupo}
                   onChange={(e) => {
                     clearFieldError("cupo");
@@ -1247,12 +1281,19 @@ export default function CrearEventoPage() {
                 </div>
 
                 <div className="space-y-2">
+<<<<<<< HEAD
                   <Label htmlFor="documento_evento">Documento del evento</Label>
+=======
+                  <Label htmlFor="documento_evento">Documento del evento (opcional)</Label>
+>>>>>>> rm_branch
                   <Input
                     id="documento_evento"
                     type="file"
                     accept="application/pdf,.pdf"
+<<<<<<< HEAD
                     required
+=======
+>>>>>>> rm_branch
                     onChange={(e) => {
                       const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
                       if (!file) {

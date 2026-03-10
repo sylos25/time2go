@@ -1404,6 +1404,59 @@ export default function EventDashboard() {
           </DialogContent>
         </Dialog>
 
+<<<<<<< HEAD
+=======
+                {/* Modal Rechazo de Evento */}
+        <Dialog open={rejectModalOpen} onOpenChange={setRejectModalOpen}>
+          <DialogContent className="max-w-lg w-full">
+            <DialogHeader>
+              <DialogTitle>Rechazar Evento</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Motivo del rechazo
+                </label>
+                <textarea
+                  value={rejectForm.motivo_rechazo}
+                  onChange={(e) =>
+                    setRejectForm((prev) => ({ ...prev, motivo_rechazo: e.target.value }))
+                  }
+                  className="w-full border border-border bg-card text-foreground rounded-md px-3 py-2 min-h-28 resize-none"
+                  placeholder="Describe el motivo del rechazo (mínimo 10 caracteres)"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {rejectForm.motivo_rechazo.length} caracteres
+                  {rejectForm.motivo_rechazo.length < 10 && (
+                    <span className="text-red-500 ml-1">
+                      (mínimo {10 - rejectForm.motivo_rechazo.length} más)
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setRejectModalOpen(false)}
+                disabled={rejectSubmitting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700 text-white"
+                onClick={submitReject}
+                disabled={rejectSubmitting || rejectForm.motivo_rechazo.trim().length < 10}
+              >
+                {rejectSubmitting ? "Rechazando..." : "Confirmar Rechazo"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+>>>>>>> rm_branch
         {/* Modales */}
         {editingEvent && (
           <EditEventModal

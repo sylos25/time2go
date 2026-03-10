@@ -28,6 +28,7 @@ function formatRelativeTime(dateInput: string | Date) {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 export default function Valoraciones({ eventId }: { eventId: number }) {
   const TEXT_WITH_PUNCT_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]+$/;
   const sanitizeTextWithPunct = (value: string) =>
@@ -42,6 +43,8 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [editingValoracionId, setEditingValoracionId] = useState<number | null>(null);
 =======
+=======
+>>>>>>> rm_branch
 // ── Selector de estrellas interactivo ─────────────────────────────────────────
 function StarSelector({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const [hover, setHover] = useState(0);
@@ -62,9 +65,17 @@ function StarSelector({ value, onChange }: { value: number; onChange: (v: number
     </div>
   );
 }
+<<<<<<< HEAD
 >>>>>>> f369c2cd84a8ff894e61bc6846f7892c7fff991c
 
 export default function Valoraciones({ eventId }: { eventId: number }) {
+=======
+export default function Valoraciones({ eventId }: { eventId: number }) {
+  const TEXT_WITH_PUNCT_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]+$/;
+  const sanitizeTextWithPunct = (value: string) =>
+    value.replace(/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]/g, "");
+
+>>>>>>> rm_branch
   const [valoraciones,  setValoraciones]  = useState<any[]>([]);
   const [rating,        setRating]        = useState<number>(5);
   const [comment,       setComment]       = useState("");
@@ -123,6 +134,7 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
 
   useEffect(() => { fetchValoraciones(); }, [eventId]);
 
+<<<<<<< HEAD
 <<<<<<< HEAD
   useEffect(() => {
     const fetchMe = async () => {
@@ -212,6 +224,9 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
 =======
   // ── Enviar nueva valoración ───────────────────────────────────────────────
 >>>>>>> f369c2cd84a8ff894e61bc6846f7892c7fff991c
+=======
+  // ── Enviar nueva valoración ───────────────────────────────────────────────
+>>>>>>> rm_branch
   const submit = async () => {
     setErrorMessage("");
     setSuccessMessage("");
@@ -220,14 +235,20 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
       return;
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> rm_branch
 
     if (comment && !TEXT_WITH_PUNCT_REGEX.test(comment)) {
       setErrorMessage("El comentario solo permite letras, números y signos de puntuación permitidos.");
       return;
     }
+<<<<<<< HEAD
 
 =======
 >>>>>>> f369c2cd84a8ff894e61bc6846f7892c7fff991c
+=======
+>>>>>>> rm_branch
     setLoading(true);
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -356,6 +377,7 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
         />
         <div className="flex gap-2">
 <<<<<<< HEAD
+<<<<<<< HEAD
           <button onClick={submit} className="px-3 py-1 bg-gradient-to-tr from-green-600 to-lime-500 text-white rounded-md cursor-pointer" disabled={loading}>
             {editingValoracionId ? "Actualizar" : "Enviar"}
           </button>
@@ -366,6 +388,8 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
               setEditingValoracionId(null);
             }}
 =======
+=======
+>>>>>>> rm_branch
           <button
             onClick={submit}
             disabled={loading}
@@ -375,7 +399,10 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
           </button>
           <button
             onClick={() => { setComment(""); setRating(5); }}
+<<<<<<< HEAD
 >>>>>>> f369c2cd84a8ff894e61bc6846f7892c7fff991c
+=======
+>>>>>>> rm_branch
             className="px-3 py-1 border rounded-md cursor-pointer"
           >
             Limpiar
@@ -394,6 +421,7 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
           </span>{" "}
           ({totalValoraciones} valoración{totalValoraciones === 1 ? "" : "es"})
         </div>
+<<<<<<< HEAD
 <<<<<<< HEAD
         {valoraciones.length === 0 && <div className="text-sm text-muted-foreground">Sé el primero en valorar este evento.</div>}
         {valoraciones.map((valoracionItem) => (
@@ -426,6 +454,8 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
                 <div title={new Date(valoracionItem.fecha_creacion).toLocaleString("es-CO")}>
                   {formatRelativeTime(valoracionItem.fecha_creacion)}
 =======
+=======
+>>>>>>> rm_branch
 
         {valoraciones.length === 0 && (
           <div className="text-sm text-muted-foreground">Sé el primero en valorar este evento.</div>
@@ -476,7 +506,10 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
                       </button>
                     </div>
                   )}
+<<<<<<< HEAD
 >>>>>>> f369c2cd84a8ff894e61bc6846f7892c7fff991c
+=======
+>>>>>>> rm_branch
                 </div>
               </div>
 
