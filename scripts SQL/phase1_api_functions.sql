@@ -610,8 +610,8 @@ BEGIN
       e.fecha_creacion,
       e.fecha_actualizacion,
       e.fecha_desactivacion,
-      u.nombres AS creador_nombres,
-      u.apellidos AS creador_apellidos,
+      p.nombres AS creador_nombres,
+      p.apellidos AS creador_apellidos,
       s.nombre_sitio,
       s.direccion AS sitio_direccion,
       m.id_municipio,
@@ -631,6 +631,7 @@ BEGIN
       iinfo.obligatorio AS info_importante_obligatorio
     FROM tabla_eventos e
     LEFT JOIN tabla_usuarios u ON e.id_usuario = u.id_usuario
+    LEFT JOIN tabla_personas p ON e.id_usuario = p.id_usuario
     LEFT JOIN tabla_sitios s ON e.id_sitio = s.id_sitio
     LEFT JOIN tabla_municipios m ON s.id_municipio = m.id_municipio
     LEFT JOIN tabla_categoria_eventos ce ON e.id_categoria_evento = ce.id_categoria_evento

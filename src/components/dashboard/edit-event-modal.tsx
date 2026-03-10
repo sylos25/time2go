@@ -22,6 +22,15 @@ interface EventoInfoItem {
 }
 
 export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModalProps) {
+  const ALPHANUM_SPACE_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ ]+$/
+  const TEXT_WITH_PUNCT_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]+$/
+
+  const sanitizeAlphanumSpace = (value: string) =>
+    value.replace(/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ ]/g, "")
+
+  const sanitizeTextWithPunct = (value: string) =>
+    value.replace(/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]/g, "")
+
   const [formData, setFormData] = useState({
     nombre_evento: "",
     pulep_evento: "",
@@ -58,6 +67,33 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
   ])
   const [loading, setLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [formErrors, setFormErrors] = useState<{
+    nombre_evento?: string
+    pulep_evento?: string
+    responsable_evento?: string
+    descripcion?: string
+    informacion_adicional_items?: string
+    telefono_1?: string
+    telefono_2?: string
+    fecha_inicio?: string
+    fecha_fin?: string
+    hora_inicio?: string
+    hora_final?: string
+    cupo?: string
+    id_categoria_evento?: string
+    id_tipo_evento?: string
+    id_sitio?: string
+    boletas?: string
+    general?: string
+  }>({})
+
+  const setFieldError = (field: keyof typeof formErrors, message: string) => {
+    setFormErrors((prev) => ({ ...prev, [field]: message }))
+  }
+
+  const clearFieldError = (field: keyof typeof formErrors) => {
+    setFormErrors((prev) => ({ ...prev, [field]: undefined, general: undefined }))
+  }
 
   useEffect(() => {
     if (isOpen && event) {
@@ -284,9 +320,27 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target as any
+    let nextValue = value
+
+    if (name === "nombre_evento" || name === "responsable_evento") {
+      nextValue = sanitizeAlphanumSpace(value)
+      clearFieldError(name)
+    } else if (name === "descripcion") {
+      nextValue = sanitizeTextWithPunct(value)
+      clearFieldError("descripcion")
+    } else if (name === "telefono_1" || name === "telefono_2") {
+      nextValue = String(value || "").replace(/[^0-9]/g, "").slice(0, 10)
+      clearFieldError(name)
+    } else if (name === "cupo") {
+      nextValue = String(value || "").replace(/[^0-9]/g, "")
+      clearFieldError("cupo")
+    } else {
+      clearFieldError(name as keyof typeof formErrors)
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+      [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : nextValue,
     }))
   }
 
@@ -309,7 +363,14 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
   const updateBoleta = (index: number, field: "nombre_boleto" | "precio_boleto" | "servicio", value: string) => {
     setBoletas((prev) => {
       const copy = [...prev]
-      copy[index] = { ...copy[index], [field]: value }
+      let nextValue = value
+      if (field === "nombre_boleto") {
+        nextValue = sanitizeAlphanumSpace(value)
+      } else {
+        nextValue = String(value || "").replace(/[^0-9]/g, "")
+      }
+      clearFieldError("boletas")
+      copy[index] = { ...copy[index], [field]: nextValue }
       return copy
     })
   }
@@ -329,13 +390,18 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
 
   const addInfoItem = () => {
     if (informacionAdicionalItems.length >= 20) return
+    clearFieldError("informacion_adicional_items")
     setInformacionAdicionalItems((prev) => [...prev, { detalle: "", obligatorio: false }])
   }
 
   const updateInfoItem = (index: number, field: keyof EventoInfoItem, value: string | boolean) => {
     setInformacionAdicionalItems((prev) => {
       const updated = [...prev]
-      updated[index] = { ...updated[index], [field]: value }
+      updated[index] = {
+        ...updated[index],
+        [field]: field === "detalle" ? sanitizeTextWithPunct(String(value || "")) : value,
+      }
+      clearFieldError("informacion_adicional_items")
       return updated
     })
   }
@@ -350,17 +416,138 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
   const handleSave = async () => {
     setIsSaving(true)
     try {
+      setFormErrors({})
+
+      const nombreEvento = String(formData.nombre_evento || "").trim()
+      const responsable = String(formData.responsable_evento || "").trim()
+      const descripcion = String(formData.descripcion || "").trim()
+      const cupoValue = Number(String(formData.cupo || ""))
+      const infoValidItems = (informacionAdicionalItems || []).filter((item) => item.detalle?.trim())
+
+      if (!nombreEvento || nombreEvento.length < 6 || !ALPHANUM_SPACE_REGEX.test(nombreEvento)) {
+        setFieldError("nombre_evento", "El nombre del evento debe tener al menos 6 caracteres y solo usar letras y números.")
+        return
+      }
+
+      if (formData.pulep_evento && !/^[A-Z0-9]{6,8}$/.test(String(formData.pulep_evento).toUpperCase())) {
+        setFieldError("pulep_evento", "El código PULEP debe tener entre 6 y 8 caracteres y solo usar letras mayúsculas y números.")
+        return
+      }
+
+      if (!responsable || responsable.length < 6 || !ALPHANUM_SPACE_REGEX.test(responsable)) {
+        setFieldError("responsable_evento", "El responsable debe tener al menos 6 caracteres y solo usar letras y números.")
+        return
+      }
+
+      if (!descripcion || descripcion.length < 10 || !TEXT_WITH_PUNCT_REGEX.test(descripcion)) {
+        setFieldError("descripcion", "La descripción debe tener mínimo 10 caracteres y solo usar letras, números y signos de puntuación permitidos.")
+        return
+      }
+
+      if (!formData.id_categoria_evento) {
+        setFieldError("id_categoria_evento", "Debes seleccionar una categoría.")
+        return
+      }
+
+      if (!formData.id_tipo_evento) {
+        setFieldError("id_tipo_evento", "Debes seleccionar un tipo de evento.")
+        return
+      }
+
+      if (!formData.id_sitio) {
+        setFieldError("id_sitio", "Debes seleccionar un sitio.")
+        return
+      }
+
+      if (!formData.telefono_1 || String(formData.telefono_1).length !== 10 || Number(formData.telefono_1) <= 2999999999) {
+        setFieldError("telefono_1", "El teléfono debe tener 10 dígitos y ser válido.")
+        return
+      }
+
+      if (formData.telefono_2 && (String(formData.telefono_2).length !== 10 || Number(formData.telefono_2) <= 2999999999)) {
+        setFieldError("telefono_2", "El teléfono 2 debe tener 10 dígitos y ser válido.")
+        return
+      }
+
+      if (!formData.fecha_inicio) {
+        setFieldError("fecha_inicio", "Debes seleccionar una fecha de inicio.")
+        return
+      }
+
+      if (!formData.fecha_fin) {
+        setFieldError("fecha_fin", "Debes seleccionar una fecha final.")
+        return
+      }
+
+      if (!formData.hora_inicio) {
+        setFieldError("hora_inicio", "Debes seleccionar una hora de inicio.")
+        return
+      }
+
+      if (!formData.hora_final) {
+        setFieldError("hora_final", "Debes seleccionar una hora final.")
+        return
+      }
+
+      if (infoValidItems.length === 0) {
+        setFieldError("informacion_adicional_items", "Debes registrar al menos un ítem de información adicional.")
+        return
+      }
+
+      for (const infoItem of infoValidItems) {
+        const detalle = String(infoItem.detalle || "").trim()
+        if (detalle.length < 5 || !TEXT_WITH_PUNCT_REGEX.test(detalle)) {
+          setFieldError("informacion_adicional_items", "Cada ítem debe tener mínimo 5 caracteres y solo usar caracteres permitidos.")
+          return
+        }
+      }
+
+      if (!Number.isInteger(cupoValue) || cupoValue <= 20 || cupoValue >= 5000) {
+        setFieldError("cupo", "El aforo debe ser un número entero mayor a 20 y menor a 5000.")
+        return
+      }
+
+      if (Boolean(formData.gratis_pago)) {
+        const boletasValidas = (boletas || []).filter(
+          (b) => String(b.nombre_boleto || "").trim() || String(b.precio_boleto || "").trim() || String(b.servicio || "").trim()
+        )
+
+        if (boletasValidas.length === 0) {
+          setFieldError("boletas", "Debes definir al menos una boleta para eventos de pago.")
+          return
+        }
+
+        for (const boleta of boletasValidas) {
+          const nombreBoleto = String(boleta.nombre_boleto || "").trim()
+          const precio = Number(String(boleta.precio_boleto || ""))
+          const servicio = String(boleta.servicio || "").trim() ? Number(String(boleta.servicio || "")) : 0
+
+          if (nombreBoleto.length < 3 || !ALPHANUM_SPACE_REGEX.test(nombreBoleto)) {
+            setFieldError("boletas", "El nombre de la boleta debe tener mínimo 3 caracteres y solo usar letras y números.")
+            return
+          }
+          if (!Number.isInteger(precio) || precio <= 0 || precio > 500000000) {
+            setFieldError("boletas", "El precio debe ser un entero positivo y no mayor a 500.000.000.")
+            return
+          }
+          if (!Number.isInteger(servicio) || servicio < 0 || servicio > 500000000) {
+            setFieldError("boletas", "El cargo por servicio debe ser un entero entre 0 y 500.000.000.")
+            return
+          }
+        }
+      }
+
       const submitFormData = new FormData()
 
-      submitFormData.append("nombre_evento", formData.nombre_evento || "")
-      submitFormData.append("pulep_evento", formData.pulep_evento || "")
-      submitFormData.append("responsable_evento", formData.responsable_evento || "")
-      submitFormData.append("descripcion", formData.descripcion || "")
+      submitFormData.append("nombre_evento", nombreEvento)
+      submitFormData.append("pulep_evento", String(formData.pulep_evento || "").toUpperCase())
+      submitFormData.append("responsable_evento", responsable)
+      submitFormData.append("descripcion", descripcion)
       submitFormData.append("fecha_inicio", formData.fecha_inicio || "")
       submitFormData.append("fecha_fin", formData.fecha_fin || "")
       submitFormData.append("hora_inicio", formData.hora_inicio || "")
       submitFormData.append("hora_final", formData.hora_final || "")
-      submitFormData.append("cupo", String(formData.cupo || 0))
+      submitFormData.append("cupo", String(cupoValue || 0))
       submitFormData.append("id_categoria_evento", String(formData.id_categoria_evento || 0))
       submitFormData.append("id_tipo_evento", String(formData.id_tipo_evento || 0))
       submitFormData.append("id_sitio", String(formData.id_sitio || 0))
@@ -383,7 +570,16 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
         submitFormData.append("additionalImages", img)
       })
 
-      submitFormData.append("boletas", JSON.stringify(boletas || []))
+      submitFormData.append(
+        "boletas",
+        JSON.stringify(
+          (boletas || []).map((b) => ({
+            nombre_boleto: String(b.nombre_boleto || "").trim(),
+            precio_boleto: String(b.precio_boleto || "").replace(/[^0-9]/g, ""),
+            servicio: String(b.servicio || "").replace(/[^0-9]/g, ""),
+          }))
+        )
+      )
 
       // Add images to delete
       submitFormData.append("imagesToDelete", JSON.stringify(imagesToDelete))
@@ -400,7 +596,10 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
       })
 
       if (!response.ok) {
-        throw new Error("Failed to save event")
+        const payload = await response.json().catch(() => ({}))
+        const message = String(payload?.message || "Error al guardar los cambios del evento")
+        setFormErrors((prev) => ({ ...prev, general: message }))
+        return
       }
 
       const updatedData = await response.json()
@@ -408,7 +607,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
       onClose()
     } catch (err) {
       console.error("Error saving event", err)
-      alert("Error al guardar los cambios del evento")
+      setFormErrors((prev) => ({ ...prev, general: "Error al guardar los cambios del evento" }))
     } finally {
       setIsSaving(false)
     }
@@ -432,6 +631,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
               onChange={handleInputChange}
               placeholder="Nombre del evento"
             />
+            {formErrors.nombre_evento && <p className="text-xs text-red-600 mt-1">{formErrors.nombre_evento}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -444,6 +644,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                 onChange={handleInputChange}
                 placeholder="Código PULEP"
               />
+              {formErrors.pulep_evento && <p className="text-xs text-red-600 mt-1">{formErrors.pulep_evento}</p>}
             </div>
             <div>
               <Label htmlFor="responsable_evento">Entidad responsable</Label>
@@ -454,6 +655,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                 onChange={handleInputChange}
                 placeholder="Nombre de la entidad responsable"
               />
+              {formErrors.responsable_evento && <p className="text-xs text-red-600 mt-1">{formErrors.responsable_evento}</p>}
             </div>
           </div>
 
@@ -475,6 +677,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                   </option>
                 ))}
               </select>
+              {formErrors.id_categoria_evento && <p className="text-xs text-red-600 mt-1">{formErrors.id_categoria_evento}</p>}
             </div>
             <div>
               <Label htmlFor="id_tipo_evento">Tipo de Evento</Label>
@@ -490,6 +693,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                   <option key={t.id_tipo_evento || t.id} value={t.id_tipo_evento || t.id}>{t.nombre}</option>
                 ))}
               </select>
+              {formErrors.id_tipo_evento && <p className="text-xs text-red-600 mt-1">{formErrors.id_tipo_evento}</p>}
             </div>
           </div>
 
@@ -501,12 +705,14 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                 id="sitio"
                 value={busquedaSitio}
                 onChange={(e) => {
+                  clearFieldError("id_sitio")
                   setBusquedaSitio(e.target.value)
                   setFormData((prev) => ({ ...prev, id_sitio: "" }))
                 }}
                 placeholder="Escribe el nombre del sitio donde será el evento"
                 className="rounded-lg"
               />
+              {formErrors.id_sitio && <p className="text-xs text-red-600 mt-1">{formErrors.id_sitio}</p>}
               {sites.length > 0 && (
                 <ul className="absolute z-10 bg-card border border-border rounded-lg mt-1 w-full max-h-60 overflow-y-auto shadow-lg">
                   {sites.map((sitio) => (
@@ -607,6 +813,9 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
               </button>
               <span className="text-sm text-muted-foreground">{informacionAdicionalItems.length}/20 ítems</span>
             </div>
+            {formErrors.informacion_adicional_items && (
+              <p className="text-xs text-red-600">{formErrors.informacion_adicional_items}</p>
+            )}
           </div>
 
           {/* Telefonos */}
@@ -624,6 +833,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                 maxLength={10}
                 inputMode="numeric"
               />
+              {formErrors.telefono_1 && <p className="text-xs text-red-600 mt-1">{formErrors.telefono_1}</p>}
             </div>
             <div>
               <Label htmlFor="telefono_2">Teléfono 2 (opcional)</Label>
@@ -638,6 +848,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                 maxLength={10}
                 inputMode="numeric"
               />
+              {formErrors.telefono_2 && <p className="text-xs text-red-600 mt-1">{formErrors.telefono_2}</p>}
             </div>
           </div>
 
@@ -653,6 +864,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                 onChange={handleInputChange}
                 className="cursor-pointer w-full rounded-xl border-border bg-card text-foreground shadow-sm p-2"
               />
+              {formErrors.fecha_inicio && <p className="text-xs text-red-600 mt-1">{formErrors.fecha_inicio}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="fecha_fin">Fecha final del evento</Label>
@@ -664,6 +876,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                 onChange={handleInputChange}
                 className="cursor-pointer w-full rounded-xl border-border bg-card text-foreground shadow-sm p-2"
               />
+              {formErrors.fecha_fin && <p className="text-xs text-red-600 mt-1">{formErrors.fecha_fin}</p>}
             </div>
           </div>
 
@@ -679,6 +892,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                 onChange={handleInputChange}
                 className="w-full rounded-xl"
               />
+              {formErrors.hora_inicio && <p className="text-xs text-red-600 mt-1">{formErrors.hora_inicio}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="hora_final">Hora final</Label>
@@ -690,6 +904,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                 onChange={handleInputChange}
                 className="w-full rounded-xl"
               />
+              {formErrors.hora_final && <p className="text-xs text-red-600 mt-1">{formErrors.hora_final}</p>}
             </div>
           </div>
 
@@ -730,6 +945,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
               <p className="text-xs text-muted-foreground italic -translate-y-2">
                 Define los diferentes tipos de boletas disponibles para tu evento con sus precios.
               </p>
+              {formErrors.boletas && <p className="text-xs text-red-600">{formErrors.boletas}</p>}
 
               {boletas.map((boleta, index) => (
                 <div key={index} className="space-y-3 p-3 bg-muted/40 border border-border rounded-lg">
@@ -748,7 +964,9 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                     <div className="space-y-2">
                       <Label className="text-xs">Precio</Label>
                       <Input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={boleta.precio_boleto}
                         onChange={(e) => updateBoleta(index, "precio_boleto", e.target.value)}
                         placeholder="0"
@@ -758,7 +976,9 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                     <div className="space-y-2">
                       <Label className="text-xs">Cargo por servicio (opcional)</Label>
                       <Input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={boleta.servicio}
                         onChange={(e) => updateBoleta(index, "servicio", e.target.value)}
                         placeholder="0"
@@ -814,16 +1034,21 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
             <Input
               id="cupo"
               name="cupo"
-              type="number"
-              min={1}
-              max={5000}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={formData.cupo}
               onChange={handleInputChange}
               placeholder="100"
               className="rounded-xl"
             />
-            <p className="text-sm text-muted-foreground">Ingresa un número entre 1 y 5000</p>
+            <p className="text-sm text-muted-foreground">Ingresa un número entero mayor a 20 y menor a 5000</p>
+            {formErrors.cupo && <p className="text-xs text-red-600 mt-1">{formErrors.cupo}</p>}
           </div>
+
+          {formErrors.general && (
+            <p className="text-sm text-red-600">{formErrors.general}</p>
+          )}
 
           {/* Imágenes existentes */}
           {existingImages.length > 0 && (

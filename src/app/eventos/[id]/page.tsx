@@ -295,8 +295,14 @@ export default function EventLanding() {
   const informacionImportante =
     event.informacion_importante?.detalle || null;
 
+  const diasArr = Array.isArray(event.dias_evento)
+    ? event.dias_evento
+    : Array.isArray(event.dias)
+      ? event.dias
+      : [];
+
   const minPrice = event.valores?.length
-    ? Math.min(...event.valores.map((v: any) => Number(v.valor || 0)))
+    ? Math.min(...event.valores.map((v: any) => Number(v.precio_boleto ?? v.valor ?? 0)))
     : 0;
   
   const priceLabel = event.gratis_pago
@@ -568,7 +574,7 @@ export default function EventLanding() {
                   <div className="grid gap-3">
                     {event.valores.map((v: any) => (
                       <div
-                        key={v.id_valor}
+                        key={v.id_boleto ?? v.id_valor}
                         className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
                       >
                         <div className="flex items-center gap-3">
@@ -576,11 +582,11 @@ export default function EventLanding() {
                             <Ticket className="h-5 w-5 text-lime-600" />
                           </div>
                           <span className="font-medium">
-                            {v.nombre_categoria_boleto}
+                            {v.nombre_boleto ?? v.nombre_categoria_boleto ?? "Boleto"}
                           </span>
                         </div>
                         <span className="font-bold text-lg">
-                          ${Number(v.valor).toLocaleString()}
+                          ${Number(v.precio_boleto ?? v.valor ?? 0).toLocaleString()}
                         </span>
                       </div>
                     ))}

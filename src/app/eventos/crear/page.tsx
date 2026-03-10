@@ -98,13 +98,23 @@ export default function CrearEventoPage() {
     additionalImages: [],
   });
 
+  const ALPHANUM_SPACE_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ ]+$/;
+  const TEXT_WITH_PUNCT_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]+$/;
+
+  const sanitizeAlphanumSpace = (value: string) =>
+    value.replace(/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ ]/g, "");
+
+  const sanitizeTextWithPunct = (value: string) =>
+    value.replace(/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]/g, "");
+
   // Handler para el campo `cupo`
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (value === "") return setNewEvent({ ...newEvent, cupo: "" });
+    if (!/^\d+$/.test(value)) return;
     const num = Number(value);
-    if (!Number.isNaN(num)) {
-      if (num >= 1 && num <= 5000) setNewEvent({ ...newEvent, cupo: num });
+    if (!Number.isNaN(num) && Number.isInteger(num)) {
+      if (num >= 0 && num < 5000) setNewEvent({ ...newEvent, cupo: num });
     }
   };
 
@@ -154,7 +164,13 @@ export default function CrearEventoPage() {
 
   const updateBoleta = (index: number, field: string, value: string) => {
     const updatedBoletas = [...newEvent.boletas];
-    updatedBoletas[index][field] = value;
+    if (field === "nombre_boleto") {
+      updatedBoletas[index][field] = sanitizeAlphanumSpace(value);
+    } else if (field === "precio_boleto" || field === "servicio") {
+      updatedBoletas[index][field] = String(value || "").replace(/[^0-9]/g, "");
+    } else {
+      updatedBoletas[index][field] = value;
+    }
     setNewEvent({ ...newEvent, boletas: updatedBoletas });
   };
 
@@ -322,6 +338,11 @@ export default function CrearEventoPage() {
         return;
       }
 
+      if (!ALPHANUM_SPACE_REGEX.test(newEvent.nombre_evento)) {
+        setFieldError("nombre_evento", "El nombre del evento solo permite letras y números.");
+        return;
+      }
+
       // Validación opcional para pulep_evento: si se proporciona, debe tener al menos 6 caracteres
       if (newEvent.pulep_evento && (newEvent.pulep_evento.length < 6 || newEvent.pulep_evento.length > 8)) {
         setFieldError("pulep_evento", "Si proporcionas el código PULEP, debe tener entre 6 y 8 caracteres.");
@@ -338,8 +359,18 @@ export default function CrearEventoPage() {
         return;
       }
 
+      if (!ALPHANUM_SPACE_REGEX.test(newEvent.responsable_evento)) {
+        setFieldError("responsable_evento", "El responsable solo permite letras y números.");
+        return;
+      }
+
       if (!newEvent.descripcion || newEvent.descripcion.length < 10) {
         setFieldError("descripcion", "La descripción debe tener al menos 10 caracteres.");
+        return;
+      }
+
+      if (!TEXT_WITH_PUNCT_REGEX.test(newEvent.descripcion)) {
+        setFieldError("descripcion", "La descripción solo permite letras, números y signos de puntuación permitidos.");
         return;
       }
 
@@ -355,6 +386,10 @@ export default function CrearEventoPage() {
       for (const item of infoItems) {
         if (item.detalle.trim().length < 5) {
           setFieldError("informacion_adicional_items", "Cada detalle debe tener al menos 5 caracteres.");
+          return;
+        }
+        if (!TEXT_WITH_PUNCT_REGEX.test(item.detalle)) {
+          setFieldError("informacion_adicional_items", "La información adicional solo permite letras, números y signos de puntuación permitidos.");
           return;
         }
       }
@@ -409,8 +444,13 @@ export default function CrearEventoPage() {
         return;
       }
 
-      if (!newEvent.cupo || Number(newEvent.cupo) < 1 || Number(newEvent.cupo) > 5000) {
-        setFieldError("cupo", "El aforo debe estar entre 1 y 5000.");
+      if (!newEvent.cupo || !Number.isInteger(Number(newEvent.cupo)) || Number(newEvent.cupo) <= 20 || Number(newEvent.cupo) >= 5000) {
+        setFieldError("cupo", "El aforo debe ser un número entero mayor a 20 y menor a 5000.");
+        return;
+      }
+
+      if (!newEvent.documento) {
+        setFieldError("documento", "Debes cargar un documento PDF del evento.");
         return;
       }
 
@@ -427,12 +467,18 @@ export default function CrearEventoPage() {
             setFieldError("boletas", "Cada nombre de boleta debe tener al menos 3 caracteres.");
             return;
           }
-          if (Number(boleta.precio_boleto) < 0) {
-            setFieldError("boletas", "El precio de la boleta no puede ser negativo.");
+          if (!ALPHANUM_SPACE_REGEX.test(String(boleta.nombre_boleto || ""))) {
+            setFieldError("boletas", "El nombre de la boleta solo permite letras y números.");
             return;
           }
-          if (boleta.servicio && Number(boleta.servicio) < 0) {
-            setFieldError("boletas", "El cargo por servicio no puede ser negativo.");
+          const precio = Number(boleta.precio_boleto);
+          const servicio = boleta.servicio === "" ? 0 : Number(boleta.servicio);
+          if (!Number.isFinite(precio) || !Number.isInteger(precio) || precio <= 0 || precio > 500000000) {
+            setFieldError("boletas", "El precio de la boleta debe ser un entero positivo y no mayor a 500.000.000.");
+            return;
+          }
+          if (!Number.isFinite(servicio) || !Number.isInteger(servicio) || servicio < 0 || servicio > 500000000) {
+            setFieldError("boletas", "El cargo por servicio debe ser un entero entre 0 y 500.000.000.");
             return;
           }
         }
@@ -485,9 +531,7 @@ export default function CrearEventoPage() {
         formData.append("additionalImages", file);
       });
 
-      if (newEvent.documento) {
-        formData.append("documento", newEvent.documento);
-      }
+      formData.append("documento", newEvent.documento);
 
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const headers: Record<string, string> = {};
@@ -506,7 +550,7 @@ export default function CrearEventoPage() {
         const message = String(payload?.message || "Error al crear el evento");
         if (message.toLowerCase().includes("imagen")) {
           setFormErrors({ imagenes: message });
-        } else if (message.toLowerCase().includes("document")) {
+        } else if (message.toLowerCase().includes("document") || message.toLowerCase().includes("documento")) {
           setFormErrors({ documento: message });
         } else {
           setFormErrors({ general: message });
@@ -571,8 +615,9 @@ export default function CrearEventoPage() {
                     id="title"
                     value={newEvent.nombre_evento}
                     onChange={(e) => {
+                      const value = sanitizeAlphanumSpace(e.target.value);
                       clearFieldError("nombre_evento");
-                      setNewEvent({ ...newEvent, nombre_evento: e.target.value });
+                      setNewEvent({ ...newEvent, nombre_evento: value });
                     }}
                     placeholder="Nombre completo del evento"
                     className="rounded-xl"
@@ -608,8 +653,9 @@ export default function CrearEventoPage() {
                     id="responsable_evento"
                     value={newEvent.responsable_evento}
                     onChange={(e) => {
+                      const value = sanitizeAlphanumSpace(e.target.value);
                       clearFieldError("responsable_evento");
-                      setNewEvent({ ...newEvent, responsable_evento: e.target.value });
+                      setNewEvent({ ...newEvent, responsable_evento: value });
                     }}
                     placeholder="Nombre completo de la entidad responsable del evento"
                     className="rounded-xl"
@@ -723,8 +769,9 @@ export default function CrearEventoPage() {
                   id="description"
                   value={newEvent.descripcion}
                   onChange={(e) => {
+                    const value = sanitizeTextWithPunct(e.target.value);
                     clearFieldError("descripcion");
-                    setNewEvent({ ...newEvent, descripcion: e.target.value });
+                    setNewEvent({ ...newEvent, descripcion: value });
                   }}
                   placeholder="Descripción breve del evento"
                   className="rounded-xl min-h-[100px]"
@@ -752,8 +799,9 @@ export default function CrearEventoPage() {
                       <Textarea
                         value={item.detalle}
                         onChange={(e) => {
+                          const value = sanitizeTextWithPunct(e.target.value);
                           clearFieldError("informacion_adicional_items");
-                          updateInfoItem(index, "detalle", e.target.value);
+                          updateInfoItem(index, "detalle", value);
                         }}
                         placeholder="Ej: Ingreso desde las 7:00 PM, no se permite reingreso"
                         className="rounded-xl min-h-[90px]"
@@ -1033,6 +1081,9 @@ export default function CrearEventoPage() {
                               prefix="$"
                               thousandSeparator="."
                               decimalSeparator=","
+                              allowNegative={false}
+                              decimalScale={0}
+                              isAllowed={(values) => values.floatValue === undefined || values.floatValue <= 500000000}
                               onValueChange={(values) => updateBoleta(index, "precio_boleto", values.value)}
                               placeholder="$0"
                               className="rounded-xl border px-2 py-1 w-full text-sm"
@@ -1045,6 +1096,9 @@ export default function CrearEventoPage() {
                               prefix="$"
                               thousandSeparator="."
                               decimalSeparator=","
+                              allowNegative={false}
+                              decimalScale={0}
+                              isAllowed={(values) => values.floatValue === undefined || values.floatValue <= 500000000}
                               onValueChange={(values) => updateBoleta(index, "servicio", values.value)}
                               placeholder="$0"
                               className="rounded-xl border px-2 py-1 w-full text-sm"
@@ -1104,9 +1158,9 @@ export default function CrearEventoPage() {
                 </label>
                 <input
                   id="attendees"
-                  type="number"
-                  min={1}
-                  max={5000}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={newEvent.cupo === "" ? "" : newEvent.cupo}
                   onChange={(e) => {
                     clearFieldError("cupo");
@@ -1116,7 +1170,7 @@ export default function CrearEventoPage() {
                   className="rounded-xl border px-2 py-1 w-full"
                 />
                 <p className="text-sm text-muted-foreground">
-                  Ingrese un número entre 1 y 5000
+                  Ingrese un número entero mayor a 20 y menor a 5000
                 </p>
                 {formErrors.cupo && (
                   <p className="text-xs text-red-600">{formErrors.cupo}</p>
@@ -1190,6 +1244,7 @@ export default function CrearEventoPage() {
                     id="documento_evento"
                     type="file"
                     accept="application/pdf,.pdf"
+                    required
                     onChange={(e) => {
                       const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
                       if (!file) {

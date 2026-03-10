@@ -118,9 +118,27 @@ export default function ReservaDetallePage() {
                   <div>
                     <span className="font-medium">Asistentes:</span> {Number(reserva.cuantos_asistiran || 0)}
                   </div>
-                  <div>
-                    <span className="font-medium">Quiénes asistirán:</span> {reserva.quienes_asistiran || "—"}
-                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="font-medium text-foreground">Listado de asistentes</p>
+
+                  {Array.isArray(reserva.asistentes) && reserva.asistentes.length > 0 ? (
+                    <div className="space-y-2">
+                      {reserva.asistentes.map((asistente: any, idx: number) => (
+                        <div key={asistente.id_reserva_asistente || idx} className="rounded-md border p-3 text-sm">
+                          <p className="font-medium">{asistente.nombre_asistente || "Sin nombre"}</p>
+                          <p className="text-muted-foreground">
+                            {asistente.tipo_documento || "Documento"}: {asistente.numero_documento || "—"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {reserva.quienes_asistiran || "No hay asistentes registrados."}
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>

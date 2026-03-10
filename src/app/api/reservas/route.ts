@@ -40,7 +40,18 @@ async function getAuthenticatedUser(req: Request) {
   if (!userId) return null;
 
   const userRes = await pool.query(
-    "SELECT id_usuario, id_rol, nombres, apellidos FROM tabla_usuarios WHERE id_usuario = $1 LIMIT 1",
+    `SELECT
+       u.id_usuario,
+       u.id_rol,
+       p.nombres,
+       p.apellidos,
+       p.telefono,
+       c.correo
+     FROM tabla_usuarios u
+     LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
+     LEFT JOIN tabla_usuarios_credenciales c ON c.id_usuario = u.id_usuario
+     WHERE u.id_usuario = $1
+     LIMIT 1`,
     [userId]
   );
 
@@ -83,11 +94,13 @@ export async function GET(req: Request) {
                 r.quienes_asistiran,
                 r.fecha_reserva,
                 r.estado,
-                u.nombres,
-                u.apellidos,
-                u.correo
+                p.nombres,
+                p.apellidos,
+                c.correo
          FROM tabla_reserva_eventos r
          INNER JOIN tabla_usuarios u ON r.id_usuario = u.id_usuario
+         LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
+         LEFT JOIN tabla_usuarios_credenciales c ON c.id_usuario = u.id_usuario
          WHERE r.id_evento = $1
            AND r.estado = TRUE
          ORDER BY r.fecha_reserva DESC`,
@@ -159,8 +172,18 @@ export async function POST(req: Request) {
     const id_evento = Number(body?.id_evento || 0);
     const tipo_documento = String(body?.tipo_documento || "") as TipoDocumento;
     const numero_documento = String(body?.numero_documento || "").trim();
-    const cuantos_asistiran = Number(body?.cuantos_asistiran || 0);
-    const quienes_asistiran = String(body?.quienes_asistiran || "").trim();
+    const asistentesRaw = Array.isArray(body?.asistentes) ? body.asistentes : [];
+
+    const asistentes = asistentesRaw
+      .map((item: any) => ({
+        tipo_documento: String(item?.tipo_documento || "").trim() as TipoDocumento,
+        numero_documento: String(item?.numero_documento || "").trim(),
+        nombre_asistente: String(item?.nombre_asistente || "").trim(),
+      }))
+      .filter((item: any) => item.tipo_documento || item.numero_documento || item.nombre_asistente);
+
+    const cuantos_asistiran = asistentes.length;
+    const quienes_asistiran = asistentes.map((a: any) => a.nombre_asistente).join(", ");
 
     if (!id_evento) {
       return NextResponse.json({ ok: false, message: "Evento inválido" }, { status: 400 });
@@ -174,15 +197,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, message: "Número de documento requerido" }, { status: 400 });
     }
 
-    if (!Number.isFinite(cuantos_asistiran) || cuantos_asistiran < 1 || cuantos_asistiran > 4) {
-      return NextResponse.json({ ok: false, message: "La cantidad de asistentes debe estar entre 1 y 4" }, { status: 400 });
+    if (!Number.isFinite(cuantos_asistiran) || cuantos_asistiran < 1 || cuantos_asistiran > 3) {
+      return NextResponse.json({ ok: false, message: "La cantidad de asistentes debe estar entre 1 y 3" }, { status: 400 });
     }
 
-    if (!quienes_asistiran || quienes_asistiran.length < 3) {
-      return NextResponse.json(
-        { ok: false, message: "Debes indicar quiénes asistirán (mínimo 3 caracteres)" },
-        { status: 400 }
-      );
+    for (const asistente of asistentes) {
+      if (!TIPOS_DOCUMENTO_VALIDOS.includes(asistente.tipo_documento)) {
+        return NextResponse.json({ ok: false, message: "Tipo de documento de asistente inválido" }, { status: 400 });
+      }
+      if (!asistente.numero_documento) {
+        return NextResponse.json({ ok: false, message: "Número de documento de asistente requerido" }, { status: 400 });
+      }
+      if (!asistente.nombre_asistente || asistente.nombre_asistente.length < 3) {
+        return NextResponse.json({ ok: false, message: "El nombre del asistente debe tener mínimo 3 caracteres" }, { status: 400 });
+      }
     }
 
     await client.query("BEGIN");
@@ -214,6 +242,25 @@ export async function POST(req: Request) {
     if (!insertRes.rows || insertRes.rows.length === 0) {
       await client.query("ROLLBACK");
       return NextResponse.json({ ok: false, message: "Ya tienes una reserva para este evento" }, { status: 409 });
+    }
+
+    const idReservaEvento = insertRes.rows[0].id_reserva_evento;
+
+    for (const asistente of asistentes) {
+      await client.query(
+        `INSERT INTO tabla_reserva_asistentes (
+          id_reserva_evento,
+          nombre_asistente,
+          tipo_documento,
+          numero_documento
+        ) VALUES ($1, $2, $3, $4)`,
+        [
+          idReservaEvento,
+          asistente.nombre_asistente,
+          asistente.tipo_documento,
+          asistente.numero_documento,
+        ]
+      );
     }
 
     await client.query("COMMIT");

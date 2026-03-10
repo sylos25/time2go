@@ -81,7 +81,24 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
       return NextResponse.json({ ok: false, message: "Reserva no encontrada" }, { status: 404 });
     }
 
-    return NextResponse.json({ ok: true, reserva: result.rows[0] });
+    const asistentesRes = await pool.query(
+      `SELECT id_reserva_asistente,
+              nombre_asistente,
+              tipo_documento,
+              numero_documento
+       FROM tabla_reserva_asistentes
+       WHERE id_reserva_evento = $1
+       ORDER BY id_reserva_asistente ASC`,
+      [reservaId]
+    );
+
+    return NextResponse.json({
+      ok: true,
+      reserva: {
+        ...result.rows[0],
+        asistentes: asistentesRes.rows || [],
+      },
+    });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ ok: false, message: "Error obteniendo reserva" }, { status: 500 });

@@ -3,6 +3,8 @@ import pool from "@/lib/db";
 import { verifyToken } from "@/lib/jwt";
 import { parseCookies } from "@/lib/cookies";
 
+const TEXT_WITH_PUNCT_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]+$/;
+
 async function getAuthenticatedUser(req: Request) {
   const authHeader = (req.headers.get("authorization") || "").trim();
   let userId: string | null = null;
@@ -39,7 +41,11 @@ async function getAuthenticatedUser(req: Request) {
   if (!userId) return null;
 
   const userQuery = await pool.query(
-    "SELECT id_usuario, nombres, apellidos FROM tabla_usuarios WHERE id_usuario = $1 LIMIT 1",
+    `SELECT u.id_usuario, p.nombres, p.apellidos
+     FROM tabla_usuarios u
+     LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
+     WHERE u.id_usuario = $1
+     LIMIT 1`,
     [userId]
   );
 
@@ -63,10 +69,11 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
         v.valoracion,
         v.comentario,
         v.fecha_creacion,
-        u.nombres,
-        u.apellidos
+        p.nombres,
+        p.apellidos
       FROM tabla_valoraciones v
       INNER JOIN tabla_usuarios u ON u.id_usuario = v.id_usuario
+      LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
       WHERE v.id_evento = $1
       ORDER BY v.fecha_creacion DESC`,
       [eventId]
@@ -118,6 +125,13 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
       );
     }
 
+    if (comentario && !TEXT_WITH_PUNCT_REGEX.test(comentario)) {
+      return NextResponse.json(
+        { ok: false, message: "El comentario solo permite letras, números y signos de puntuación permitidos" },
+        { status: 400 }
+      );
+    }
+
     const existing = await pool.query(
       `SELECT id_valoracion
        FROM tabla_valoraciones
@@ -152,5 +166,51 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
   } catch (err) {
     console.error(err);
     return NextResponse.json({ ok: false, message: "Error creating valoracion" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await context.params;
+    const eventId = Number(id);
+    if (!eventId || !Number.isFinite(eventId)) {
+      return NextResponse.json({ ok: false, message: "Invalid id" }, { status: 400 });
+    }
+
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
+      return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const idValoracion = Number(body?.id_valoracion);
+    if (!idValoracion || !Number.isFinite(idValoracion)) {
+      return NextResponse.json({ ok: false, message: "id_valoracion inválido" }, { status: 400 });
+    }
+
+    const ownership = await pool.query(
+      `SELECT id_valoracion
+       FROM tabla_valoraciones
+       WHERE id_valoracion = $1
+         AND id_evento = $2
+         AND id_usuario = $3
+       LIMIT 1`,
+      [idValoracion, eventId, user.id_usuario]
+    );
+
+    if (!ownership.rows || ownership.rows.length === 0) {
+      return NextResponse.json({ ok: false, message: "No autorizado para eliminar esta valoración" }, { status: 403 });
+    }
+
+    await pool.query(
+      `DELETE FROM tabla_valoraciones
+       WHERE id_valoracion = $1`,
+      [idValoracion]
+    );
+
+    return NextResponse.json({ ok: true, deleted: true });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ ok: false, message: "Error deleting valoracion" }, { status: 500 });
   }
 }

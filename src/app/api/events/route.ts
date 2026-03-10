@@ -7,6 +7,9 @@ import { PERMISSION_IDS } from "@/lib/permissions";
 
 export const runtime = "nodejs";
 
+const ALPHANUM_SPACE_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ ]+$/;
+const TEXT_WITH_PUNCT_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]+$/;
+
 
 export async function POST(req: Request) {
   const client = await pool.connect();
@@ -105,6 +108,10 @@ export async function POST(req: Request) {
     let documentoMimeType: string | null = null;
     let documentoBytes: number | null = null;
     let documentoOriginalFilename: string | null = null;
+    if (!docFile || !(docFile as unknown as any).size) {
+      return NextResponse.json({ ok: false, message: "Debes cargar un documento PDF para crear el evento" }, { status: 400 });
+    }
+
     if (docFile && (docFile as unknown as any).size) {
       const fileName = String((docFile as any).name || "").toLowerCase();
       const fileType = String((docFile as any).type || "").toLowerCase();
@@ -131,11 +138,11 @@ export async function POST(req: Request) {
     }
 
 
-    const nombre_evento = (formData.get("nombre_evento") as string) || "";
+    const nombre_evento = ((formData.get("nombre_evento") as string) || "").trim();
     const pulepRaw = ((formData.get("pulep_evento") as string) || "").trim();
     const pulep_evento = pulepRaw ? pulepRaw.toUpperCase() : null;
     const responsable_evento = ((formData.get("responsable_evento") as string) || "").trim();
-    const descripcion = (formData.get("descripcion") as string) || "";
+    const descripcion = ((formData.get("descripcion") as string) || "").trim();
     const infoItemsRaw = (formData.get("informacion_adicional_items") as string) || "[]";
     const fecha_inicio = (formData.get("fecha_inicio") as string) || null;
     const fecha_fin = (formData.get("fecha_fin") as string) || null;
@@ -148,16 +155,20 @@ export async function POST(req: Request) {
     const id_sitio = Number(formData.get("id_sitio") || 0);
     const telefono_1 = (formData.get("telefono_1") as string) || null;
     const telefono_2 = (formData.get("telefono_2") as string) || null;
-    const cupo = parseInt((formData.get("cupo") as string) || "0") || 0;
+    const cupoRaw = String(formData.get("cupo") || "").trim();
+    const cupo = /^\d+$/.test(cupoRaw) ? Number(cupoRaw) : NaN;
     const estado = String(formData.get("estado") || "true") === "true";
     const reservar_anticipado = String(formData.get("reservar_anticipado") || "false") === "true";
 
     const gratis_pago = String(formData.get("gratis_pago") || "false") === "true"; // TRUE => PAGO
 
 
+    const boletasRaw = formData.get("boletas") as string | null;
     const costosRaw = formData.get("costos") as string | null;
     const tiposRaw = formData.get("tiposBoleteria") as string | null;
     const linksRaw = formData.get("linksBoleteria") as string | null;
+    const boletasParsed: Array<{ nombre_boleto?: string; precio_boleto?: string | number; servicio?: string | number }> =
+      boletasRaw ? JSON.parse(boletasRaw) : [];
     const costos: string[] = costosRaw ? JSON.parse(costosRaw) : [];
     const tiposBoleteria: string[] = tiposRaw ? JSON.parse(tiposRaw) : [];
     const linksBoleteria: string[] = linksRaw ? JSON.parse(linksRaw) : [];
@@ -171,8 +182,38 @@ export async function POST(req: Request) {
       .filter((item) => item.detalle.length >= 5)
       .slice(0, 20);
 
+    if (!nombre_evento || nombre_evento.length < 6) {
+      return NextResponse.json({ ok: false, message: "El nombre del evento debe tener al menos 6 caracteres" }, { status: 400 });
+    }
+
+    if (!ALPHANUM_SPACE_REGEX.test(nombre_evento)) {
+      return NextResponse.json({ ok: false, message: "El nombre del evento solo permite letras y números" }, { status: 400 });
+    }
+
     if (!responsable_evento || responsable_evento.length < 6) {
       return NextResponse.json({ ok: false, message: "El responsable del evento es obligatorio y debe tener al menos 6 caracteres" }, { status: 400 });
+    }
+
+    if (!ALPHANUM_SPACE_REGEX.test(responsable_evento)) {
+      return NextResponse.json({ ok: false, message: "El responsable del evento solo permite letras y números" }, { status: 400 });
+    }
+
+    if (!descripcion || descripcion.length < 10) {
+      return NextResponse.json({ ok: false, message: "La descripción del evento debe tener al menos 10 caracteres" }, { status: 400 });
+    }
+
+    if (!TEXT_WITH_PUNCT_REGEX.test(descripcion)) {
+      return NextResponse.json({ ok: false, message: "La descripción del evento contiene caracteres no permitidos" }, { status: 400 });
+    }
+
+    if (!Number.isInteger(cupo) || cupo <= 20 || cupo >= 5000) {
+      return NextResponse.json({ ok: false, message: "El aforo debe ser un número entero mayor a 20 y menor a 5000" }, { status: 400 });
+    }
+
+    for (const infoItem of infoItems) {
+      if (!TEXT_WITH_PUNCT_REGEX.test(infoItem.detalle)) {
+        return NextResponse.json({ ok: false, message: "La información adicional contiene caracteres no permitidos" }, { status: 400 });
+      }
     }
 
     if (pulep_evento && !/^[A-Z0-9]{6,8}$/.test(pulep_evento)) {
@@ -209,16 +250,50 @@ export async function POST(req: Request) {
       ...(telefono_2 ? [{ telefono: telefono_2, es_principal: false }] : []),
     ];
 
+    const normalizedBoletas = (Array.isArray(boletasParsed) ? boletasParsed : [])
+      .map((boleta) => ({
+        nombre_boleto: String(boleta?.nombre_boleto || "").trim(),
+        precio_boleto: String(boleta?.precio_boleto ?? "").replace(/[^0-9]/g, ""),
+        servicio: String(boleta?.servicio ?? "").replace(/[^0-9]/g, ""),
+      }))
+      .filter((boleta) => boleta.nombre_boleto.length > 0 || boleta.precio_boleto.length > 0 || boleta.servicio.length > 0);
+
+    if (gratis_pago) {
+      if (normalizedBoletas.length === 0) {
+        return NextResponse.json({ ok: false, message: "Debes definir al menos una boleta para eventos de pago" }, { status: 400 });
+      }
+
+      for (const boleta of normalizedBoletas) {
+        if (boleta.nombre_boleto.length < 3 || !ALPHANUM_SPACE_REGEX.test(boleta.nombre_boleto)) {
+          return NextResponse.json({ ok: false, message: "El nombre de la boleta solo permite letras y números y mínimo 3 caracteres" }, { status: 400 });
+        }
+        const precio = Number(boleta.precio_boleto);
+        const servicio = boleta.servicio.length ? Number(boleta.servicio) : 0;
+        if (!Number.isInteger(precio) || precio <= 0 || precio > 500000000) {
+          return NextResponse.json({ ok: false, message: "El precio de la boleta debe ser un entero positivo y no mayor a 500.000.000" }, { status: 400 });
+        }
+        if (!Number.isInteger(servicio) || servicio < 0 || servicio > 500000000) {
+          return NextResponse.json({ ok: false, message: "El cargo por servicio debe ser un entero entre 0 y 500.000.000" }, { status: 400 });
+        }
+      }
+    }
+
     const ticketsPayload = gratis_pago
-      ? tiposBoleteria.map((nombreBoleto, i) => {
-          const costoRaw = costos[i] || "";
-          const precioBoleto = parseFloat(costoRaw.replace(/[^0-9.,-]/g, "").replace(",", ".")) || 0;
-          return {
-            nombre_boleto: nombreBoleto,
-            precio_boleto: precioBoleto,
-            servicio: 0,
-          };
-        })
+      ? normalizedBoletas.length > 0
+        ? normalizedBoletas.map((boleta) => ({
+            nombre_boleto: boleta.nombre_boleto,
+            precio_boleto: Number(boleta.precio_boleto),
+            servicio: boleta.servicio.length ? Number(boleta.servicio) : 0,
+          }))
+        : tiposBoleteria.map((nombreBoleto, i) => {
+            const costoRaw = costos[i] || "";
+            const precioBoleto = parseFloat(costoRaw.replace(/[^0-9.,-]/g, "").replace(",", ".")) || 0;
+            return {
+              nombre_boleto: nombreBoleto,
+              precio_boleto: precioBoleto,
+              servicio: 0,
+            };
+          })
       : [];
 
     const imagesPayload = uploadedImages.map((image) => ({
