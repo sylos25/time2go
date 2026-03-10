@@ -74,6 +74,7 @@ interface Event {
   image: string
   promoter: string
   documentos?: any[]
+  destacado?: boolean
 }
 
 interface EventCategory {
@@ -123,6 +124,14 @@ export default function EventDashboard() {
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [pdfModalOpen, setPdfModalOpen] = useState(false)
   const [pdfModalUrl, setPdfModalUrl] = useState<string | null>(null)
+  const [rejectModalOpen, setRejectModalOpen] = useState(false)
+  const [rejectSubmitting, setRejectSubmitting] = useState(false)
+  const [rejectForm, setRejectForm] = useState({
+    id_evento: 0,
+    motivo_rechazo: "",
+    rechazado_por: "",
+  })
+  const [togglingDestacado, setTogglingDestacado] = useState<number | null>(null)
   const router = useRouter()
   const [authorized, setAuthorized] = useState<boolean | null>(null)
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([
@@ -166,6 +175,7 @@ export default function EventDashboard() {
           promoter: ev.creador?.nombres || '',
           creatorId: ev.creador?.id_usuario || null,
           documentos: ev.documentos || [],
+          destacado: !!ev.destacado,
         }))
         setEvents(mapped)
       }
@@ -264,6 +274,7 @@ export default function EventDashboard() {
               promoter: ev.creador?.nombres || '',
               creatorId: ev.creador?.id_usuario || null,
               documentos: ev.documentos || [],
+              destacado: !!ev.destacado,
             }))
             setEvents(mapped)
           }
@@ -465,6 +476,86 @@ export default function EventDashboard() {
       setUpdatingUserId(null)
     }
   }
+
+  const openRejectModal = (eventId: number) => {
+    setRejectForm({
+      id_evento: eventId,
+      motivo_rechazo: "",
+      rechazado_por: String(meUser?.id_usuario || ""),
+    })
+    setRejectModalOpen(true)
+  }
+
+  const submitReject = async () => {
+    if (!rejectForm.motivo_rechazo || rejectForm.motivo_rechazo.trim().length < 10) {
+      alert("El motivo debe tener mínimo 10 caracteres")
+      return
+    }
+    setRejectSubmitting(true)
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+      const headers: any = { "Content-Type": "application/json" }
+      if (token) headers["Authorization"] = `Bearer ${token}`
+
+      const res = await fetch(`/api/events/${rejectForm.id_evento}/toggle-status`, {
+        method: "PUT",
+        headers,
+        credentials: "include",
+        body: JSON.stringify({
+          estado: false,
+          motivo_rechazo: rejectForm.motivo_rechazo.trim(),
+          rechazado_por: Number(rejectForm.rechazado_por),
+        }),
+      })
+
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data?.ok) {
+        alert(data?.message || "No se pudo rechazar el evento")
+        return
+      }
+
+      setRejectModalOpen(false)
+      await refreshEvents()
+    } catch (err) {
+      console.error("Error rechazando evento", err)
+      alert("No se pudo rechazar el evento")
+    } finally {
+      setRejectSubmitting(false)
+    }
+  }
+
+  const toggleDestacado = async (id: number, currentValue: boolean) => {
+    setTogglingDestacado(id)
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+      const headers: any = { "Content-Type": "application/json" }
+      if (token) headers["Authorization"] = `Bearer ${token}`
+
+      const res = await fetch(`/api/events/${id}/toggle-status`, {
+        method: "PUT",
+        headers,
+        credentials: "include",
+        body: JSON.stringify({ destacado: !currentValue }),
+      })
+
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data?.ok) {
+        alert(data?.message || "No se pudo actualizar el estado destacado")
+        return
+      }
+
+      // Actualizar estado local sin refetch
+      setEvents((prev) =>
+        prev.map((ev) => (ev.id === id ? { ...ev, destacado: !currentValue } : ev))
+      )
+    } catch (err) {
+      console.error("Error toggling destacado", err)
+      alert("Error al cambiar el estado destacado")
+    } finally {
+      setTogglingDestacado(null)
+    }
+  }
+
 
   if (authorized === null) {
     return (
@@ -893,6 +984,9 @@ export default function EventDashboard() {
                         <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">
                           Estado
                         </th>
+                        <th className="px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">
+                         Destacado
+                        </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                           Acciones
                         </th>
@@ -948,28 +1042,61 @@ export default function EventDashboard() {
                               {getStatusText(event.status)}
                             </span>
                           </td>
+                          {/* Columna Destacado */}
+                          <td className="px-6 py-4 text-center border-r border-border">
+                            <button
+                              role="switch"
+                              aria-checked={!!event.destacado}
+                              onClick={() => toggleDestacado(event.id, !!event.destacado)}
+                              disabled={togglingDestacado === event.id}
+                              title={event.destacado ? "Quitar de destacados" : "Marcar como destacado"}
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none
+                                disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer
+                                ${event.destacado ? "bg-yellow-400" : "bg-muted"}`}
+                            >
+                              <span
+                                className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform
+                                  ${event.destacado ? "translate-x-6" : "translate-x-1"}`}
+                              />
+                            </button>
+                          </td>
+
+                          {/* Columna Acciones */}
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
+                              {/* Aprobar */}
                               <button
                                 onClick={() => approveEvent(event.id)}
                                 className="p-2 text-green-600 hover:bg-accent rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                title={event.visibility ? 'Evento validado' : 'Validar evento'}
+                                title={event.visibility ? "Evento validado" : "Validar evento"}
                                 disabled={Boolean(event.visibility)}
                               >
                                 <CheckCircle className="w-4 h-4" />
                               </button>
+
+                              {/* Rechazar */}
+                              <button
+                                onClick={() => openRejectModal(event.id)}
+                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Rechazar evento"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+
+                              {/* Ver documento */}
                               <button
                                 onClick={() => {
-                                  if (!hasDocuments) return
+                                  const documents = event.documentos ?? []
+                                  if (!documents.length) return
                                   if (documents.length === 1) {
                                     const proxied = `/api/events/document?id=${encodeURIComponent(String(documents[0].id_documento_evento))}`
                                     setPdfModalUrl(proxied)
                                     setPdfModalOpen(true)
                                   } else {
-                                    const listText = documents.map((d: any, i: number) => `${i + 1}. Documento ${i + 1}`).join('\n')
+                                    const listText = documents.map((d: any, i: number) => `${i + 1}. Documento ${i + 1}`).join("\n")
                                     const docNum = prompt(
-                                      `Hay ${documents.length} documentos. Ingresa el número (1-${documents.length}) del documento que deseas ver:\n\n${listText}`,
-                                      '1'
+                                      `Hay ${documents.length} documentos. Ingresa el número (1-${documents.length}):\n\n${listText}`,
+                                      "1"
                                     )
                                     if (docNum && !isNaN(parseInt(docNum))) {
                                       const idx = parseInt(docNum) - 1
@@ -982,12 +1109,14 @@ export default function EventDashboard() {
                                   }
                                 }}
                                 className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                title={hasDocuments ? "Ver documento/PDF del evento" : "Sin documento"}
-                                disabled={!hasDocuments}
+                                title={(event.documentos ?? []).length > 0 ? "Ver documento PDF" : "Sin documento"}
+                                disabled={(event.documentos ?? []).length === 0}
                               >
                                 <Download className="w-4 h-4" />
                               </button>
-                              <button 
+
+                              {/* Editar */}
+                              <button
                                 onClick={() => {
                                   setEditingEvent(event)
                                   setEditModalOpen(true)
@@ -997,9 +1126,12 @@ export default function EventDashboard() {
                               >
                                 <Edit className="w-4 h-4" />
                               </button>
+
+                              {/* Eliminar */}
                               <button
                                 onClick={() => deleteEvent(event.id)}
                                 className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Eliminar evento"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -1215,7 +1347,7 @@ export default function EventDashboard() {
                   value={banForm.motivo_ban}
                   onChange={(e) => setBanForm((prev) => ({ ...prev, motivo_ban: e.target.value }))}
                   className="w-full border border-border bg-card text-foreground rounded-md px-3 py-2 min-h-24"
-                  placeholder="Describe el motivo (mínimo 10 caracteres)"
+                  placeholder="Escribe el motivo del ban (obligatorio, mínimo 10 caracteres)"
                 />
               </div>
 

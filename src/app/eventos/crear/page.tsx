@@ -113,8 +113,13 @@ export default function CrearEventoPage() {
     if (value === "") return setNewEvent({ ...newEvent, cupo: "" });
     if (!/^\d+$/.test(value)) return;
     const num = Number(value);
+<<<<<<< HEAD
     if (!Number.isNaN(num) && Number.isInteger(num)) {
       if (num >= 0 && num < 5000) setNewEvent({ ...newEvent, cupo: num });
+=======
+    if (!Number.isNaN(num)) {
+      if (num >= 20 && num <= 5000) setNewEvent({ ...newEvent, cupo: num });
+>>>>>>> f369c2cd84a8ff894e61bc6846f7892c7fff991c
     }
   };
 
@@ -1067,7 +1072,10 @@ export default function CrearEventoPage() {
                           <Input
                             type="text"
                             value={boleta.nombre_boleto}
-                            onChange={(e) => updateBoleta(index, "nombre_boleto", e.target.value)}
+                            onChange={(e) => {
+                              const valor = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, "");
+                              updateBoleta(index, "nombre_boleto", valor);
+                            }}
                             placeholder="Ej: General, VIP, Early Bird, etc."
                             className="rounded-xl text-sm"
                           />
