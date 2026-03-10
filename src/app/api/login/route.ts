@@ -4,12 +4,12 @@ import jwt from "jsonwebtoken";
 import pool from "@/lib/db";
 import { serializeCookie } from "@/lib/cookies";
 
+
 export async function POST(req: Request) {
   try {
-    const { email, password, turnstileToken } = (await req.json()) as {
+    const { email, password } = (await req.json()) as {
       email?: string;
       password?: string;
-      turnstileToken?: string;
     };
 
     if (!email || !password) {
@@ -19,46 +19,47 @@ export async function POST(req: Request) {
       );
     }
 
-    const turnstileSecret = process.env.CLOUDFLARE_TURNSTILE_SECRET;
-    if (!turnstileSecret) {
-      console.warn("Turnstile secret no configurado; omitiendo captcha");
-    } else {
-      if (!turnstileToken) {
-        return NextResponse.json(
-          { message: "Captcha requerido" },
-          { status: 400 }
-        );
-      }
-
-      const params = new URLSearchParams();
-      params.append("secret", turnstileSecret);
-      params.append("response", String(turnstileToken));
-
-      const verifyRes = await fetch(
-        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: params.toString(),
-        }
-      );
-
-      const verifyJson = (await verifyRes.json()) as {
-        success?: boolean;
-        [key: string]: unknown;
-      };
-
-      if (!verifyJson.success) {
-        return NextResponse.json(
-          {
-            message: "Falló la verificación del captcha",
-            error: "turnstile_failed",
-            details: verifyJson["error-codes"],
-          },
-          { status: 403 }
-        );
-      }
-    }
+    // Eliminar toda esta sección de verificación de Turnstile (líneas 22-61):
+    // const turnstileSecret = process.env.CLOUDFLARE_TURNSTILE_SECRET;
+    // if (!turnstileSecret) {
+    //   console.warn("Turnstile secret no configurado; omitiendo captcha");
+    // } else {
+    //   if (!turnstileToken) {
+    //     return NextResponse.json(
+    //       { message: "Captcha requerido" },
+    //       { status: 400 }
+    //     );
+    //   }
+    //
+    //   const params = new URLSearchParams();
+    //   params.append("secret", turnstileSecret);
+    //   params.append("response", String(turnstileToken));
+    //
+    //   const verifyRes = await fetch(
+    //     "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+    //     {
+    //       method: "POST",
+    //       headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    //       body: params.toString(),
+    //     }
+    //   );
+    //
+    //   const verifyJson = (await verifyRes.json()) as {
+    //     success?: boolean;
+    //     [key: string]: unknown;
+    //   };
+    //
+    //   if (!verifyJson.success) {
+    //     return NextResponse.json(
+    //       {
+    //         message: "Falló la verificación del captcha",
+    //         error: "turnstile_failed",
+    //         details: verifyJson["error-codes"],
+    //       },
+    //       { status: 403 }
+    //     );
+    //   }
+    // }
 
     const userResult = await pool.query(
       `
