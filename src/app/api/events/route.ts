@@ -108,15 +108,8 @@ export async function POST(req: Request) {
     let documentoMimeType: string | null = null;
     let documentoBytes: number | null = null;
     let documentoOriginalFilename: string | null = null;
-<<<<<<< HEAD
-    if (!docFile || !(docFile as unknown as any).size) {
-      return NextResponse.json({ ok: false, message: "Debes cargar un documento PDF para crear el evento" }, { status: 400 });
-    }
-
-=======
 
     // Documento PDF opcional: solo validamos/subimos si viene en el formData
->>>>>>> rm_branch
     if (docFile && (docFile as unknown as any).size) {
       const fileName = String((docFile as any).name || "").toLowerCase();
       const fileType = String((docFile as any).type || "").toLowerCase();

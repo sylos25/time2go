@@ -509,13 +509,6 @@ export function Header({
                   </button>
                 )}
                 <button
-                  onClick={() => navigateTo("/configuracion")}
-                  className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
-                >
-                  <Settings className="h-5 w-5 text-lime-600" />
-                  <span>Configuración</span>
-                </button>
-                <button
                   onClick={handleLogout}
                   className="flex items-center space-x-3 text-red-600 hover:text-red-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-red-50 transition-all w-full text-left mt-4"
                 >

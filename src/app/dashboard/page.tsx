@@ -1404,9 +1404,7 @@ export default function EventDashboard() {
           </DialogContent>
         </Dialog>
 
-<<<<<<< HEAD
-=======
-                {/* Modal Rechazo de Evento */}
+        {/* Modal Rechazo de Evento */}
         <Dialog open={rejectModalOpen} onOpenChange={setRejectModalOpen}>
           <DialogContent className="max-w-lg w-full">
             <DialogHeader>
@@ -1455,8 +1453,6 @@ export default function EventDashboard() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
->>>>>>> rm_branch
         {/* Modales */}
         {editingEvent && (
           <EditEventModal

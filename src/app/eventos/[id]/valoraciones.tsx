@@ -27,24 +27,6 @@ function formatRelativeTime(dateInput: string | Date) {
   return relativeFormatter.format(diffYears, "year");
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-export default function Valoraciones({ eventId }: { eventId: number }) {
-  const TEXT_WITH_PUNCT_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]+$/;
-  const sanitizeTextWithPunct = (value: string) =>
-    value.replace(/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]/g, "");
-
-  const [valoraciones, setValoraciones] = useState<any[]>([]);
-  const [rating, setRating] = useState<number>(5);
-  const [comment, setComment] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
-  const [editingValoracionId, setEditingValoracionId] = useState<number | null>(null);
-=======
-=======
->>>>>>> rm_branch
 // ── Selector de estrellas interactivo ─────────────────────────────────────────
 function StarSelector({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const [hover, setHover] = useState(0);
@@ -59,43 +41,38 @@ function StarSelector({ value, onChange }: { value: number; onChange: (v: number
           onMouseLeave={() => setHover(0)}
           className="text-lg leading-none focus:outline-none"
         >
-          <span className={(s <= (hover || value)) ? "text-yellow-400" : "text-gray-300"}>★</span>
+          <span className={s <= (hover || value) ? "text-yellow-400" : "text-gray-300"}>★</span>
         </button>
       ))}
     </div>
   );
 }
-<<<<<<< HEAD
->>>>>>> f369c2cd84a8ff894e61bc6846f7892c7fff991c
 
-export default function Valoraciones({ eventId }: { eventId: number }) {
-=======
 export default function Valoraciones({ eventId }: { eventId: number }) {
   const TEXT_WITH_PUNCT_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]+$/;
   const sanitizeTextWithPunct = (value: string) =>
     value.replace(/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]/g, "");
 
->>>>>>> rm_branch
-  const [valoraciones,  setValoraciones]  = useState<any[]>([]);
-  const [rating,        setRating]        = useState<number>(5);
-  const [comment,       setComment]       = useState("");
-  const [loading,       setLoading]       = useState(false);
-  const [errorMessage,  setErrorMessage]  = useState("");
-  const [successMessage,setSuccessMessage]= useState("");
+  const [valoraciones, setValoraciones] = useState<any[]>([]);
+  const [rating, setRating] = useState<number>(5);
+  const [comment, setComment] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   // ID del usuario autenticado actual
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
   // Estado de edición inline
-  const [editingId,      setEditingId]      = useState<number | null>(null);
-  const [editRating,     setEditRating]     = useState(5);
-  const [editComment,    setEditComment]    = useState("");
-  const [savingEdit,     setSavingEdit]     = useState(false);
-  const [editError,      setEditError]      = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editRating, setEditRating] = useState(5);
+  const [editComment, setEditComment] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState("");
 
   // Estado de eliminación
-  const [deletingId,     setDeletingId]     = useState<number | null>(null);
-  const [confirmDeleteId,setConfirmDeleteId]= useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   // ── Obtener usuario actual ────────────────────────────────────────────────
   useEffect(() => {
@@ -132,101 +109,10 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
     }
   };
 
+  // ── Enviar nueva valoración ───────────────────────────────────────────────
   useEffect(() => { fetchValoraciones(); }, [eventId]);
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-  useEffect(() => {
-    const fetchMe = async () => {
-      try {
-        const localUserId = typeof window !== "undefined" ? Number(localStorage.getItem("userId") || 0) : 0;
-        if (Number.isFinite(localUserId) && localUserId > 0) {
-          setCurrentUserId(localUserId);
-        }
-
-        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-        const res = await fetch("/api/me", {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          credentials: "include",
-        });
-        if (!res.ok) {
-          setCurrentUserId(null);
-          return;
-        }
-        const json = await res.json().catch(() => ({}));
-        const id = Number(json?.user?.id_usuario || 0);
-        setCurrentUserId(Number.isFinite(id) && id > 0 ? id : null);
-      } catch {
-        setCurrentUserId(null);
-      }
-    };
-
-    fetchMe();
-  }, []);
-
-  const handleEdit = (valoracionItem: any) => {
-    if (!currentUserId || Number(valoracionItem?.id_usuario) !== Number(currentUserId)) return;
-    setRating(Number(valoracionItem?.valoracion || 5));
-    setComment(String(valoracionItem?.comentario || ""));
-    setEditingValoracionId(Number(valoracionItem?.id_valoracion || 0) || null);
-    setErrorMessage("");
-    setSuccessMessage("");
-    if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
-
-  const handleDelete = async (valoracionItem: any) => {
-    if (!currentUserId || Number(valoracionItem?.id_usuario) !== Number(currentUserId)) return;
-    const idValoracion = Number(valoracionItem?.id_valoracion || 0);
-    if (!idValoracion) return;
-
-    const confirmed = typeof window === "undefined" ? true : window.confirm("¿Deseas eliminar tu valoración?");
-    if (!confirmed) return;
-
-    setErrorMessage("");
-    setSuccessMessage("");
-    setLoading(true);
-    try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch(`/api/events/${eventId}/valoraciones`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        credentials: "include",
-        body: JSON.stringify({ id_valoracion: idValoracion }),
-      });
-
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json?.ok) {
-        setErrorMessage(String(json?.message || "No se pudo eliminar la valoración"));
-        return;
-      }
-
-      if (editingValoracionId && editingValoracionId === idValoracion) {
-        setEditingValoracionId(null);
-        setComment("");
-        setRating(5);
-      }
-
-      setSuccessMessage("Valoración eliminada correctamente.");
-      fetchValoraciones();
-    } catch (err) {
-      console.error(err);
-      setErrorMessage("No se pudo eliminar la valoración");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-=======
   // ── Enviar nueva valoración ───────────────────────────────────────────────
->>>>>>> f369c2cd84a8ff894e61bc6846f7892c7fff991c
-=======
-  // ── Enviar nueva valoración ───────────────────────────────────────────────
->>>>>>> rm_branch
   const submit = async () => {
     setErrorMessage("");
     setSuccessMessage("");
@@ -234,21 +120,11 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
       setErrorMessage("Selecciona una calificación entre 1 y 5.");
       return;
     }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> rm_branch
 
     if (comment && !TEXT_WITH_PUNCT_REGEX.test(comment)) {
       setErrorMessage("El comentario solo permite letras, números y signos de puntuación permitidos.");
       return;
     }
-<<<<<<< HEAD
-
-=======
->>>>>>> f369c2cd84a8ff894e61bc6846f7892c7fff991c
-=======
->>>>>>> rm_branch
     setLoading(true);
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -265,7 +141,6 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
       if (json.ok) {
         setComment("");
         setRating(5);
-        setEditingValoracionId(null);
         setSuccessMessage(json.updated ? "Tu valoración fue actualizada." : "Valoración enviada correctamente.");
         fetchValoraciones();
       } else {
@@ -376,20 +251,6 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
           maxLength={1000}
         />
         <div className="flex gap-2">
-<<<<<<< HEAD
-<<<<<<< HEAD
-          <button onClick={submit} className="px-3 py-1 bg-gradient-to-tr from-green-600 to-lime-500 text-white rounded-md cursor-pointer" disabled={loading}>
-            {editingValoracionId ? "Actualizar" : "Enviar"}
-          </button>
-          <button
-            onClick={() => {
-              setComment("");
-              setRating(5);
-              setEditingValoracionId(null);
-            }}
-=======
-=======
->>>>>>> rm_branch
           <button
             onClick={submit}
             disabled={loading}
@@ -398,11 +259,10 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
             {loading ? "Enviando..." : "Enviar"}
           </button>
           <button
-            onClick={() => { setComment(""); setRating(5); }}
-<<<<<<< HEAD
->>>>>>> f369c2cd84a8ff894e61bc6846f7892c7fff991c
-=======
->>>>>>> rm_branch
+            onClick={() => {
+              setComment("");
+              setRating(5);
+            }}
             className="px-3 py-1 border rounded-md cursor-pointer"
           >
             Limpiar
@@ -421,41 +281,6 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
           </span>{" "}
           ({totalValoraciones} valoración{totalValoraciones === 1 ? "" : "es"})
         </div>
-<<<<<<< HEAD
-<<<<<<< HEAD
-        {valoraciones.length === 0 && <div className="text-sm text-muted-foreground">Sé el primero en valorar este evento.</div>}
-        {valoraciones.map((valoracionItem) => (
-          <div key={valoracionItem.id_valoracion} className="border p-3 rounded-md">
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <div>
-                <strong>
-                  {`${valoracionItem.nombres || ""} ${valoracionItem.apellidos || ""}`.trim() || `Usuario #${valoracionItem.id_usuario}`}
-                </strong>
-              </div>
-              <div className="flex items-center gap-2">
-                {currentUserId && Number(valoracionItem.id_usuario) === Number(currentUserId) && (
-                  <>
-                    <button
-                      onClick={() => handleEdit(valoracionItem)}
-                      className="px-2 py-0.5 text-xs border rounded-md hover:bg-muted cursor-pointer"
-                      title="Editar mi valoración"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => handleDelete(valoracionItem)}
-                      className="px-2 py-0.5 text-xs border border-red-300 text-red-600 rounded-md hover:bg-red-50 cursor-pointer"
-                      title="Eliminar mi valoración"
-                    >
-                      Eliminar
-                    </button>
-                  </>
-                )}
-                <div title={new Date(valoracionItem.fecha_creacion).toLocaleString("es-CO")}>
-                  {formatRelativeTime(valoracionItem.fecha_creacion)}
-=======
-=======
->>>>>>> rm_branch
 
         {valoraciones.length === 0 && (
           <div className="text-sm text-muted-foreground">Sé el primero en valorar este evento.</div>
@@ -506,10 +331,6 @@ export default function Valoraciones({ eventId }: { eventId: number }) {
                       </button>
                     </div>
                   )}
-<<<<<<< HEAD
->>>>>>> f369c2cd84a8ff894e61bc6846f7892c7fff991c
-=======
->>>>>>> rm_branch
                 </div>
               </div>
 
