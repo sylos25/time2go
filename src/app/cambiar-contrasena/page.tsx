@@ -1,0 +1,404 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Header } from "@/components/header"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  AlertCircle,
+  Lock,
+  Loader2,
+  CheckCircle,
+  Eye,
+  EyeOff,
+  ArrowLeft,
+  Rat,
+} from "lucide-react"
+
+interface UserData {
+  id_usuario: string
+  nombres: string
+  apellidos: string
+  correo: string
+  id_rol: number
+  id_pais: number
+  nombre_pais?: string
+  nombre_rol?: string
+  telefono?: string
+  validacion_correo?: boolean
+  fecha_registro?: string
+}
+
+const PASSWORD_LENGTH = 8
+
+const validatePassword = (password: string): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = []
+  if (password.length !== PASSWORD_LENGTH) errors.push("La contraseña debe tener exactamente 8 caracteres")
+  if (!/[a-zA-Z]/.test(password)) errors.push("Debe incluir al menos una letra")
+  if (!/[0-9]/.test(password)) errors.push("Debe incluir al menos un número")
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) errors.push("Debe incluir al menos un carácter especial")
+  return { isValid: errors.length === 0, errors }
+}
+
+export default function CambiarContrasenaPage() {
+  const router = useRouter()
+  const [user, setUser] = useState<UserData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false })
+  const [saving, setSaving] = useState(false)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+
+  const getRoleBadgeClass = (roleName?: string) => {
+    const role = roleName?.toLowerCase().trim() || "usuario"
+
+    if (role === "admin" || role === "administrador") {
+      return "bg-gradient-to-tr from-red-400 to-rose-500"
+    }
+
+    if (role === "moderador") {
+      return "bg-gradient-to-tr from-red-600 to-fuchsia-700"
+    }
+
+    if (role === "promotor") {
+      return "bg-gradient-to-tr from-emerald-600 to-lime-500"
+    }
+
+    if (role === "cliente") {
+      return "bg-gradient-to-tr from-blue-600 to-sky-400"
+    }
+
+    return "bg-gradient-to-tr from-amber-500 to-yellow-400"
+  }
+
+  useEffect(() => {
+    fetchUserData()
+  }, [])
+
+  const fetchUserData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const token = localStorage.getItem("token")
+
+      const res = await fetch("/api/me", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          router.push("/auth")
+          return
+        }
+        throw new Error("No se pudo cargar los datos del usuario")
+      }
+
+      const data = await res.json()
+      if (data.ok && data.user) {
+        setUser(data.user)
+      } else {
+        setError("Error al cargar los datos")
+      }
+    } catch (err) {
+      console.error("Error fetching user data:", err)
+      setError(err instanceof Error ? err.message : "Error desconocido")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setPasswordError(null)
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError("Todos los campos son requeridos")
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Las contraseñas nuevas no coinciden")
+      return
+    }
+
+    const passwordValidation = validatePassword(newPassword)
+    if (!passwordValidation.isValid) {
+      setPasswordError(passwordValidation.errors.join(". "))
+      return
+    }
+
+    try {
+      setSaving(true)
+      const token = localStorage.getItem("token")
+
+      const res = await fetch("/api/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+          confirmPassword,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setPasswordError(data.message || "Error al cambiar la contraseña")
+        return
+      }
+
+      setSuccessMessage("Contraseña actualizada correctamente")
+      setCurrentPassword("")
+      setNewPassword("")
+      setConfirmPassword("")
+
+      setTimeout(() => {
+        setSuccessMessage(null)
+      }, 3000)
+    } catch (err) {
+      console.error("Error changing password:", err)
+      setPasswordError("Error al cambiar la contraseña")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header isLoggedIn={true} userName="Usuario" />
+        <div className="pt-32 pb-12 px-4 flex items-center justify-center h-96">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 text-purple-600 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground text-lg">Cargando...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header isLoggedIn={true} userName="Usuario" />
+        <div className="pt-32 pb-12 px-4">
+          <div className="max-w-2xl mx-auto bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+            <p className="text-foreground text-lg font-medium mb-4">
+              {error || "Error al cargar los datos"}
+            </p>
+            <Button
+              onClick={() => router.push("/")}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              Ir al Inicio
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header isLoggedIn={true} userName={user.nombres} />
+
+      <div className="pt-32 pb-12 px-4">
+        <div className="max-w-3xl mx-auto">
+          {/* Botón Atrás */}
+          <button
+            onClick={() => router.push("/perfil")}
+            className="flex items-center gap-2 text-green-700 hover:text-lime-500 mb-6 transition-colors font-medium cursor-pointer"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Volver al perfil</span>
+          </button>
+
+          {/* Success Message */}
+          {successMessage && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center gap-3">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <p className="text-green-700">{successMessage}</p>
+            </div>
+          )}
+
+          {/* Contenedor Principal */}
+          <Card className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+            {/* Encabezado */}
+            <div 
+              className="h-32 bg-cover bg-center bg-no-repeat" 
+              style={{
+                backgroundImage: 'url(/images/banner_perfil.jpg)'
+              }}
+            />
+
+            <div className="px-8 pb-8">
+              {/* Avatar y Nombre */}
+              <div className="flex items-end gap-6 mb-8 relative -mt-12">
+                <div className="w-32 h-32 rounded-lg bg-card flex items-center justify-center border-4 border-green-700 shadow-lg">
+                  <Rat className="h-16 w-16 text-lime-500" />
+                </div>
+                <div className="flex-1 pb-4">
+                  <h1 className="text-4xl font-bold bg-gradient-to-tr from-green-600 to-lime-400 text-transparent bg-clip-text">
+                    {user.nombres} {user.apellidos}
+                  </h1>
+                  <div className="flex items-center gap-4 mt-2">
+                    {user.fecha_registro && (
+                      <span className="text-muted-foreground text-sm">
+                        Registrado el {new Date(user.fecha_registro).toLocaleDateString("es-ES")}
+                      </span>
+                    )}
+                    <span
+                      className={`inline-block px-3 py-1 ${getRoleBadgeClass(
+                        user.nombre_rol
+                      )} text-white text-sm font-medium rounded-full`}
+                    >
+                      {user.nombre_rol || "Usuario"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Formulario de Cambio de Contraseña */}
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-lime-500">Cambiar Contraseña</h2>
+
+                {passwordError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+                    <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                    <p className="text-red-700">{passwordError}</p>
+                  </div>
+                )}
+
+                <form onSubmit={handleChangePassword} className="space-y-5">
+                  {/* Contraseña Actual */}
+                  <div className="space-y-2">
+                    <Label className="text-green-700 font-medium">Contraseña Actual</Label>
+                    <div className="relative">
+                      <Input
+                        type={showPasswords.current ? "text" : "password"}
+                        value={currentPassword}
+                        maxLength={PASSWORD_LENGTH}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        className="border-input text-foreground pr-10"
+                        placeholder="Ingresa tu contraseña actual"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowPasswords((prev) => ({ ...prev, current: !prev.current }))
+                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Contraseña Nueva */}
+                  <div className="space-y-2">
+                    <Label className="text-green-700 font-medium">Contraseña Nueva</Label>
+                    <div className="relative">
+                      <Input
+                        type={showPasswords.new ? "text" : "password"}
+                        value={newPassword}
+                        maxLength={PASSWORD_LENGTH}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="border-input text-foreground pr-10"
+                        placeholder="Ingresa tu nueva contraseña"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowPasswords((prev) => ({ ...prev, new: !prev.new }))
+                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Confirmar Contraseña */}
+                  <div className="space-y-2">
+                    <Label className="text-green-700 font-medium">Confirmar Contraseña</Label>
+                    <div className="relative">
+                      <Input
+                        type={showPasswords.confirm ? "text" : "password"}
+                        value={confirmPassword}
+                        maxLength={PASSWORD_LENGTH}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="border-input text-foreground pr-10"
+                        placeholder="Confirma tu nueva contraseña"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowPasswords((prev) => ({ ...prev, confirm: !prev.confirm }))
+                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Botones */}
+                  <div className="mt-8 grid grid-cols-2 gap-50">
+                    <Button
+                      type="submit"
+                      disabled={saving}
+                      className="flex-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 hover:from-fuchsia-600 hover:to-red-500 hover:scale-102 text-white font-medium flex items-center justify-center gap-2"
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Guardando...
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="h-4 w-4" />
+                          Cambiar Contraseña
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => router.push("/perfil")}
+                      variant="outline"
+                      className="flex-1 border-border text-foreground hover:bg-accent hover:scale-102 font-medium"
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </form>
+
+                {/* Información adicional */}
+                <div className="bg-muted/40 border border-border rounded-lg p-4 mt-6">
+                  <h3 className="font-semibold text-foreground mb-2">Recomendaciones de Seguridad:</h3>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    <li>• Usa exactamente 8 caracteres</li>
+                    <li>• Incluye al menos una letra, un número y un carácter especial</li>
+                    <li>• Evita usar información personal (nombre, fecha de nacimiento)</li>
+                    <li>• No compartas tu contraseña con nadie</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
+}

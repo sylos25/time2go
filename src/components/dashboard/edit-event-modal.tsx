@@ -1,0 +1,1141 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { X, Upload, Loader } from "lucide-react"
+
+interface EditEventModalProps {
+  isOpen: boolean
+  onClose: () => void
+  event: any
+  onSave: (updatedEvent: any) => Promise<void>
+}
+
+interface EventoInfoItem {
+  detalle: string
+  obligatorio: boolean
+}
+
+export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModalProps) {
+  const ALPHANUM_SPACE_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ ]+$/
+  const TEXT_WITH_PUNCT_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]+$/
+
+  const sanitizeAlphanumSpace = (value: string) =>
+    value.replace(/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ ]/g, "")
+
+  const sanitizeTextWithPunct = (value: string) =>
+    value.replace(/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]/g, "")
+
+  const [formData, setFormData] = useState({
+    nombre_evento: "",
+    pulep_evento: "",
+    responsable_evento: "",
+    descripcion: "",
+    fecha_inicio: "",
+    fecha_fin: "",
+    hora_inicio: "",
+    hora_final: "",
+    cupo: "",
+    id_categoria_evento: "",
+    id_tipo_evento: "",
+    id_sitio: "",
+    telefono_1: "",
+    telefono_2: "",
+    gratis_pago: false,
+    reservar_anticipado: false,
+  })
+
+  const [images, setImages] = useState<File[]>([])
+  const [existingImages, setExistingImages] = useState<any[]>([])
+  const [imagesToDelete, setImagesToDelete] = useState<number[]>([])
+  const [categories, setCategories] = useState<any[]>([])
+  const [eventTypes, setEventTypes] = useState<any[]>([])
+  const [sites, setSites] = useState<any[]>([])
+  const [busquedaSitio, setBusquedaSitio] = useState<string>("")
+  const [busquedaMunicipio, setBusquedaMunicipio] = useState<string>("")
+  const [municipalities, setMunicipalities] = useState<any[]>([])
+  const [boletas, setBoletas] = useState<Array<{ nombre_boleto: string; precio_boleto: string; servicio: string }>>([
+    { nombre_boleto: "", precio_boleto: "", servicio: "" },
+  ])
+  const [informacionAdicionalItems, setInformacionAdicionalItems] = useState<EventoInfoItem[]>([
+    { detalle: "", obligatorio: true },
+  ])
+  const [loading, setLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [formErrors, setFormErrors] = useState<{
+    nombre_evento?: string
+    pulep_evento?: string
+    responsable_evento?: string
+    descripcion?: string
+    informacion_adicional_items?: string
+    telefono_1?: string
+    telefono_2?: string
+    fecha_inicio?: string
+    fecha_fin?: string
+    hora_inicio?: string
+    hora_final?: string
+    cupo?: string
+    id_categoria_evento?: string
+    id_tipo_evento?: string
+    id_sitio?: string
+    boletas?: string
+    general?: string
+  }>({})
+
+  const setFieldError = (field: keyof typeof formErrors, message: string) => {
+    setFormErrors((prev) => ({ ...prev, [field]: message }))
+  }
+
+  const clearFieldError = (field: keyof typeof formErrors) => {
+    setFormErrors((prev) => ({ ...prev, [field]: undefined, general: undefined }))
+  }
+
+  useEffect(() => {
+    if (isOpen && event) {
+      loadEventData()
+      loadDropdownData()
+    }
+  }, [isOpen, event])
+
+  // Fetch sitios as user types (like crear page)
+  useEffect(() => {
+    const fetchSitios = async () => {
+      if (!busquedaSitio || busquedaSitio.length < 2 || formData.id_sitio) return;
+      try {
+        const res = await fetch(`/api/llamar_sitio?nombre_sitio=${encodeURIComponent(busquedaSitio)}`)
+        const data = await res.json()
+        setSites(Array.isArray(data) ? data : [])
+      } catch (e) {
+        setSites([])
+      }
+    }
+    fetchSitios()
+  }, [busquedaSitio, formData.id_sitio])
+
+  // When id_sitio changes, try to load municipios (like crear page)
+  useEffect(() => {
+    const fetchMunicipios = async () => {
+      if (!formData.id_sitio) {
+        setBusquedaMunicipio("")
+        setMunicipalities([])
+        return
+      }
+      try {
+        const res = await fetch(`/api/municipios?sitioId=${formData.id_sitio}`)
+        const data = await res.json()
+        if (Array.isArray(data) && data.length > 0) {
+          setBusquedaMunicipio(data[0].nombre_municipio || "")
+          setMunicipalities(data)
+        } else {
+          setBusquedaMunicipio("")
+          setMunicipalities([])
+        }
+      } catch (e) {
+        console.error('Error cargando municipios:', e)
+        setBusquedaMunicipio("")
+        setMunicipalities([])
+      }
+    }
+    fetchMunicipios()
+  }, [formData.id_sitio])
+
+  const loadEventData = async () => {
+    setLoading(true)
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+      const headers: any = {}
+      if (token) headers["Authorization"] = `Bearer ${token}`
+
+      // Fetch the full event data from API
+      const response = await fetch(`/api/events?id=${event.id}&includeAll=true`, {
+        headers,
+        credentials: "include",
+      })
+      if (response.ok) {
+        const data = await response.json()
+        const fullEvent = data.event || event
+
+        setFormData({
+          nombre_evento: fullEvent.nombre_evento || event.name || "",
+          pulep_evento: fullEvent.pulep_evento || "",
+          responsable_evento: fullEvent.responsable_evento || "",
+          descripcion: fullEvent.descripcion || "",
+          fecha_inicio: fullEvent.fecha_inicio ? String(fullEvent.fecha_inicio).slice(0, 10) : (event.date || ""),
+          fecha_fin: fullEvent.fecha_fin ? String(fullEvent.fecha_fin).slice(0, 10) : "",
+          hora_inicio: fullEvent.hora_inicio || event.time || "",
+          hora_final: fullEvent.hora_final || "",
+          cupo: fullEvent.cupo?.toString() || event.capacity?.toString() || "",
+          id_categoria_evento: String(fullEvent.id_categoria_evento || fullEvent.evento_categoria_id || "") || "",
+          id_tipo_evento: String(fullEvent.id_tipo_evento || fullEvent.evento_tipo_id || "") || "",
+          id_sitio: String(fullEvent.id_sitio) || "",
+          telefono_1: fullEvent.telefono_1 || "",
+          telefono_2: fullEvent.telefono_2 || "",
+          gratis_pago: fullEvent.gratis_pago || false,
+          reservar_anticipado: fullEvent.reservar_anticipado || false,
+        })
+
+        setExistingImages(fullEvent.imagenes || [])
+        // set search strings for sitio/municipio to show in inputs
+        setBusquedaSitio(fullEvent.nombre_sitio || fullEvent.nombre || "")
+        setBusquedaMunicipio(fullEvent.nombre_municipio || "")
+        if (fullEvent.valores && Array.isArray(fullEvent.valores) && fullEvent.valores.length > 0) {
+          setBoletas(
+            fullEvent.valores.map((v: any) => ({
+              nombre_boleto: v.nombre_boleto || v.nombre_categoria_boleto || "",
+              precio_boleto: String(v.precio_boleto ?? v.valor ?? ""),
+              servicio: String(v.servicio ?? ""),
+            }))
+          )
+        } else {
+          setBoletas([{ nombre_boleto: "", precio_boleto: "", servicio: "" }])
+        }
+
+        if (fullEvent.informacion_importante?.detalle) {
+          const detalleBruto = String(fullEvent.informacion_importante.detalle)
+          const parsedItems = detalleBruto
+            .split("\n")
+            .map((line: string) => line.replace(/^\s*\d+\.\s*/, "").trim())
+            .filter(Boolean)
+            .map((detalle: string) => ({
+              detalle,
+              obligatorio: Boolean(fullEvent.informacion_importante?.obligatorio),
+            }))
+          setInformacionAdicionalItems(parsedItems.length > 0 ? parsedItems : [{ detalle: "", obligatorio: true }])
+        } else {
+          setInformacionAdicionalItems([{ detalle: "", obligatorio: true }])
+        }
+      } else {
+        // Use the event data passed as prop if API call fails
+        setFormData({
+          nombre_evento: event.name || "",
+          pulep_evento: event.pulep_evento || "",
+          responsable_evento: event.responsable_evento || "",
+          descripcion: event.descripcion || "",
+          fecha_inicio: event.date ? String(event.date).slice(0, 10) : "",
+          fecha_fin: event.fecha_fin ? String(event.fecha_fin).slice(0, 10) : "",
+          hora_inicio: event.time || "",
+          hora_final: event.hora_final || "",
+          cupo: event.capacity?.toString() || "",
+          id_categoria_evento: String(event.id_categoria_evento || event.evento_categoria_id || "") || "",
+          id_tipo_evento: String(event.id_tipo_evento || event.evento_tipo_id || "") || "",
+          id_sitio: String(event.id_sitio) || "",
+          telefono_1: event.telefono_1 || "",
+          telefono_2: event.telefono_2 || "",
+          gratis_pago: event.gratis_pago || false,
+          reservar_anticipado: event.reservar_anticipado || false,
+        })
+
+        setExistingImages(event.imagenes || [])
+        setBusquedaSitio(event.nombre_sitio || event.nombre || "")
+        setBusquedaMunicipio(event.nombre_municipio || "")
+        setBoletas(
+          event.valores && Array.isArray(event.valores) && event.valores.length > 0
+            ? event.valores.map((v: any) => ({
+                nombre_boleto: v.nombre_boleto || v.nombre_categoria_boleto || "",
+                precio_boleto: String(v.precio_boleto ?? v.valor ?? ""),
+                servicio: String(v.servicio ?? ""),
+              }))
+            : [{ nombre_boleto: "", precio_boleto: "", servicio: "" }]
+        )
+
+        if (event.informacion_importante?.detalle) {
+          const detalleBruto = String(event.informacion_importante.detalle)
+          const parsedItems = detalleBruto
+            .split("\n")
+            .map((line: string) => line.replace(/^\s*\d+\.\s*/, "").trim())
+            .filter(Boolean)
+            .map((detalle: string) => ({
+              detalle,
+              obligatorio: Boolean(event.informacion_importante?.obligatorio),
+            }))
+          setInformacionAdicionalItems(parsedItems.length > 0 ? parsedItems : [{ detalle: "", obligatorio: true }])
+        } else {
+          setInformacionAdicionalItems([{ detalle: "", obligatorio: true }])
+        }
+      }
+
+      setImages([])
+      setImagesToDelete([])
+    } catch (err) {
+      console.error("Error loading event data", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadDropdownData = async () => {
+    setLoading(true)
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+      const headers: any = {}
+      if (token) headers["Authorization"] = `Bearer ${token}`
+
+      // Load categories (event categories)
+      const catRes = await fetch("/api/categoria_evento", { headers })
+      if (catRes.ok) {
+        const data = await catRes.json()
+        setCategories(data || [])
+      }
+
+      // Load sites
+      const sitesRes = await fetch("/api/llamar_sitio?nombre_sitio=", { headers })
+      if (sitesRes.ok) {
+        const data = await sitesRes.json()
+        setSites(Array.isArray(data) ? data : [])
+      }
+
+      // Load municipalities (fallback to all)
+      const municipalitiesRes = await fetch("/api/municipios", { headers })
+      if (municipalitiesRes.ok) {
+        const data = await municipalitiesRes.json()
+        setMunicipalities(Array.isArray(data) ? data : [])
+      }
+    } catch (err) {
+      console.error("Error loading dropdown data", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Fetch event types when category changes
+  useEffect(() => {
+    const fetchTypes = async () => {
+      try {
+        const catId = formData.id_categoria_evento
+        if (!catId) return setEventTypes([])
+        const res = await fetch(`/api/tipo_evento?categoriaId=${catId}`)
+        const data = await res.json()
+        setEventTypes(Array.isArray(data) ? data : [])
+      } catch (e) {
+        setEventTypes([])
+      }
+    }
+    fetchTypes()
+  }, [formData.id_categoria_evento])
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target as any
+    let nextValue = value
+
+    if (name === "nombre_evento" || name === "responsable_evento") {
+      nextValue = sanitizeAlphanumSpace(value)
+      clearFieldError(name)
+    } else if (name === "descripcion") {
+      nextValue = sanitizeTextWithPunct(value)
+      clearFieldError("descripcion")
+    } else if (name === "telefono_1" || name === "telefono_2") {
+      nextValue = String(value || "").replace(/[^0-9]/g, "").slice(0, 10)
+      clearFieldError(name)
+    } else if (name === "cupo") {
+      nextValue = String(value || "").replace(/[^0-9]/g, "")
+      clearFieldError("cupo")
+    } else {
+      clearFieldError(name as keyof typeof formErrors)
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : nextValue,
+    }))
+  }
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (files) {
+      setImages((prev) => [...prev, ...Array.from(files)])
+    }
+  }
+
+  const removeNewImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const removeExistingImage = (imageId: number) => {
+    setImagesToDelete((prev) => [...prev, imageId])
+    setExistingImages((prev) => prev.filter((img) => img.id_imagen_evento !== imageId))
+  }
+
+  const updateBoleta = (index: number, field: "nombre_boleto" | "precio_boleto" | "servicio", value: string) => {
+    setBoletas((prev) => {
+      const copy = [...prev]
+      let nextValue = value
+      if (field === "nombre_boleto") {
+        nextValue = sanitizeAlphanumSpace(value)
+      } else {
+        nextValue = String(value || "").replace(/[^0-9]/g, "")
+      }
+      clearFieldError("boletas")
+      copy[index] = { ...copy[index], [field]: nextValue }
+      return copy
+    })
+  }
+
+  const addBoletaField = () => {
+    if (boletas.length >= 12) return
+    setBoletas((prev) => [...prev, { nombre_boleto: "", precio_boleto: "", servicio: "" }])
+  }
+
+  const removeBoletaField = (index: number) => {
+    setBoletas((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const removeAllBoletas = () => {
+    setBoletas([{ nombre_boleto: "", precio_boleto: "", servicio: "" }])
+  }
+
+  const addInfoItem = () => {
+    if (informacionAdicionalItems.length >= 20) return
+    clearFieldError("informacion_adicional_items")
+    setInformacionAdicionalItems((prev) => [...prev, { detalle: "", obligatorio: false }])
+  }
+
+  const updateInfoItem = (index: number, field: keyof EventoInfoItem, value: string | boolean) => {
+    setInformacionAdicionalItems((prev) => {
+      const updated = [...prev]
+      updated[index] = {
+        ...updated[index],
+        [field]: field === "detalle" ? sanitizeTextWithPunct(String(value || "")) : value,
+      }
+      clearFieldError("informacion_adicional_items")
+      return updated
+    })
+  }
+
+  const removeInfoItem = (index: number) => {
+    setInformacionAdicionalItems((prev) => {
+      const updated = prev.filter((_, i) => i !== index)
+      return updated.length > 0 ? updated : [{ detalle: "", obligatorio: true }]
+    })
+  }
+
+  const handleSave = async () => {
+    setIsSaving(true)
+    try {
+      setFormErrors({})
+
+      const nombreEvento = String(formData.nombre_evento || "").trim()
+      const responsable = String(formData.responsable_evento || "").trim()
+      const descripcion = String(formData.descripcion || "").trim()
+      const cupoValue = Number(String(formData.cupo || ""))
+      const infoValidItems = (informacionAdicionalItems || []).filter((item) => item.detalle?.trim())
+
+      if (!nombreEvento || nombreEvento.length < 6 || !ALPHANUM_SPACE_REGEX.test(nombreEvento)) {
+        setFieldError("nombre_evento", "El nombre del evento debe tener al menos 6 caracteres y solo usar letras y números.")
+        return
+      }
+
+      if (formData.pulep_evento && !/^[A-Z0-9]{6,8}$/.test(String(formData.pulep_evento).toUpperCase())) {
+        setFieldError("pulep_evento", "El código PULEP debe tener entre 6 y 8 caracteres y solo usar letras mayúsculas y números.")
+        return
+      }
+
+      if (!responsable || responsable.length < 6 || !ALPHANUM_SPACE_REGEX.test(responsable)) {
+        setFieldError("responsable_evento", "El responsable debe tener al menos 6 caracteres y solo usar letras y números.")
+        return
+      }
+
+      if (!descripcion || descripcion.length < 10 || !TEXT_WITH_PUNCT_REGEX.test(descripcion)) {
+        setFieldError("descripcion", "La descripción debe tener mínimo 10 caracteres y solo usar letras, números y signos de puntuación permitidos.")
+        return
+      }
+
+      if (!formData.id_categoria_evento) {
+        setFieldError("id_categoria_evento", "Debes seleccionar una categoría.")
+        return
+      }
+
+      if (!formData.id_tipo_evento) {
+        setFieldError("id_tipo_evento", "Debes seleccionar un tipo de evento.")
+        return
+      }
+
+      if (!formData.id_sitio) {
+        setFieldError("id_sitio", "Debes seleccionar un sitio.")
+        return
+      }
+
+      if (!formData.telefono_1 || String(formData.telefono_1).length !== 10 || Number(formData.telefono_1) <= 2999999999) {
+        setFieldError("telefono_1", "El teléfono debe tener 10 dígitos y ser válido.")
+        return
+      }
+
+      if (formData.telefono_2 && (String(formData.telefono_2).length !== 10 || Number(formData.telefono_2) <= 2999999999)) {
+        setFieldError("telefono_2", "El teléfono 2 debe tener 10 dígitos y ser válido.")
+        return
+      }
+
+      if (!formData.fecha_inicio) {
+        setFieldError("fecha_inicio", "Debes seleccionar una fecha de inicio.")
+        return
+      }
+
+      if (!formData.fecha_fin) {
+        setFieldError("fecha_fin", "Debes seleccionar una fecha final.")
+        return
+      }
+
+      if (!formData.hora_inicio) {
+        setFieldError("hora_inicio", "Debes seleccionar una hora de inicio.")
+        return
+      }
+
+      if (!formData.hora_final) {
+        setFieldError("hora_final", "Debes seleccionar una hora final.")
+        return
+      }
+
+      if (infoValidItems.length === 0) {
+        setFieldError("informacion_adicional_items", "Debes registrar al menos un ítem de información adicional.")
+        return
+      }
+
+      for (const infoItem of infoValidItems) {
+        const detalle = String(infoItem.detalle || "").trim()
+        if (detalle.length < 5 || !TEXT_WITH_PUNCT_REGEX.test(detalle)) {
+          setFieldError("informacion_adicional_items", "Cada ítem debe tener mínimo 5 caracteres y solo usar caracteres permitidos.")
+          return
+        }
+      }
+
+      if (!Number.isInteger(cupoValue) || cupoValue <= 20 || cupoValue >= 5000) {
+        setFieldError("cupo", "El aforo debe ser un número entero mayor a 20 y menor a 5000.")
+        return
+      }
+
+      if (Boolean(formData.gratis_pago)) {
+        const boletasValidas = (boletas || []).filter(
+          (b) => String(b.nombre_boleto || "").trim() || String(b.precio_boleto || "").trim() || String(b.servicio || "").trim()
+        )
+
+        if (boletasValidas.length === 0) {
+          setFieldError("boletas", "Debes definir al menos una boleta para eventos de pago.")
+          return
+        }
+
+        for (const boleta of boletasValidas) {
+          const nombreBoleto = String(boleta.nombre_boleto || "").trim()
+          const precio = Number(String(boleta.precio_boleto || ""))
+          const servicio = String(boleta.servicio || "").trim() ? Number(String(boleta.servicio || "")) : 0
+
+          if (nombreBoleto.length < 3 || !ALPHANUM_SPACE_REGEX.test(nombreBoleto)) {
+            setFieldError("boletas", "El nombre de la boleta debe tener mínimo 3 caracteres y solo usar letras y números.")
+            return
+          }
+          if (!Number.isInteger(precio) || precio <= 0 || precio > 500000000) {
+            setFieldError("boletas", "El precio debe ser un entero positivo y no mayor a 500.000.000.")
+            return
+          }
+          if (!Number.isInteger(servicio) || servicio < 0 || servicio > 500000000) {
+            setFieldError("boletas", "El cargo por servicio debe ser un entero entre 0 y 500.000.000.")
+            return
+          }
+        }
+      }
+
+      const submitFormData = new FormData()
+
+      submitFormData.append("nombre_evento", nombreEvento)
+      submitFormData.append("pulep_evento", String(formData.pulep_evento || "").toUpperCase())
+      submitFormData.append("responsable_evento", responsable)
+      submitFormData.append("descripcion", descripcion)
+      submitFormData.append("fecha_inicio", formData.fecha_inicio || "")
+      submitFormData.append("fecha_fin", formData.fecha_fin || "")
+      submitFormData.append("hora_inicio", formData.hora_inicio || "")
+      submitFormData.append("hora_final", formData.hora_final || "")
+      submitFormData.append("cupo", String(cupoValue || 0))
+      submitFormData.append("id_categoria_evento", String(formData.id_categoria_evento || 0))
+      submitFormData.append("id_tipo_evento", String(formData.id_tipo_evento || 0))
+      submitFormData.append("id_sitio", String(formData.id_sitio || 0))
+      submitFormData.append("telefono_1", formData.telefono_1 || "")
+      submitFormData.append("telefono_2", formData.telefono_2 || "")
+      submitFormData.append("gratis_pago", String(Boolean(formData.gratis_pago)))
+      submitFormData.append("reservar_anticipado", String(Boolean(formData.reservar_anticipado)))
+
+      submitFormData.append(
+        "informacion_adicional_items",
+        JSON.stringify(
+          (informacionAdicionalItems || [])
+            .filter((item) => item.detalle?.trim())
+            .map((item) => ({ detalle: item.detalle.trim(), obligatorio: Boolean(item.obligatorio) }))
+        )
+      )
+
+      // Add new images
+      images.forEach((img) => {
+        submitFormData.append("additionalImages", img)
+      })
+
+      submitFormData.append(
+        "boletas",
+        JSON.stringify(
+          (boletas || []).map((b) => ({
+            nombre_boleto: String(b.nombre_boleto || "").trim(),
+            precio_boleto: String(b.precio_boleto || "").replace(/[^0-9]/g, ""),
+            servicio: String(b.servicio || "").replace(/[^0-9]/g, ""),
+          }))
+        )
+      )
+
+      // Add images to delete
+      submitFormData.append("imagesToDelete", JSON.stringify(imagesToDelete))
+
+      // Call the API
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+      const headers: any = {}
+      if (token) headers["Authorization"] = `Bearer ${token}`
+
+      const response = await fetch(`/api/events/${event.id}`, {
+        method: "PUT",
+        headers,
+        body: submitFormData,
+      })
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        const message = String(payload?.message || "Error al guardar los cambios del evento")
+        setFormErrors((prev) => ({ ...prev, general: message }))
+        return
+      }
+
+      const updatedData = await response.json()
+      await onSave(updatedData)
+      onClose()
+    } catch (err) {
+      console.error("Error saving event", err)
+      setFormErrors((prev) => ({ ...prev, general: "Error al guardar los cambios del evento" }))
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Editar Evento: {formData.nombre_evento}</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          {/* Nombre del evento */}
+          <div>
+            <Label htmlFor="nombre_evento">Nombre del Evento</Label>
+            <Input
+              id="nombre_evento"
+              name="nombre_evento"
+              value={formData.nombre_evento}
+              onChange={handleInputChange}
+              placeholder="Nombre del evento"
+            />
+            {formErrors.nombre_evento && <p className="text-xs text-red-600 mt-1">{formErrors.nombre_evento}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="pulep_evento">PULEP del evento</Label>
+              <Input
+                id="pulep_evento"
+                name="pulep_evento"
+                value={formData.pulep_evento}
+                onChange={handleInputChange}
+                placeholder="Código PULEP"
+              />
+              {formErrors.pulep_evento && <p className="text-xs text-red-600 mt-1">{formErrors.pulep_evento}</p>}
+            </div>
+            <div>
+              <Label htmlFor="responsable_evento">Entidad responsable</Label>
+              <Input
+                id="responsable_evento"
+                name="responsable_evento"
+                value={formData.responsable_evento}
+                onChange={handleInputChange}
+                placeholder="Nombre de la entidad responsable"
+              />
+              {formErrors.responsable_evento && <p className="text-xs text-red-600 mt-1">{formErrors.responsable_evento}</p>}
+            </div>
+          </div>
+
+          {/* Categoría y tipo de evento */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="id_categoria_evento">Categoría</Label>
+              <select
+                id="id_categoria_evento"
+                name="id_categoria_evento"
+                value={formData.id_categoria_evento}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Selecciona una categoría</option>
+                {categories.map((cat) => (
+                  <option key={cat.id_categoria_evento || cat.id} value={cat.id_categoria_evento || cat.id}>
+                    {cat.nombre}
+                  </option>
+                ))}
+              </select>
+              {formErrors.id_categoria_evento && <p className="text-xs text-red-600 mt-1">{formErrors.id_categoria_evento}</p>}
+            </div>
+            <div>
+              <Label htmlFor="id_tipo_evento">Tipo de Evento</Label>
+              <select
+                id="id_tipo_evento"
+                name="id_tipo_evento"
+                value={formData.id_tipo_evento}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Selecciona un tipo</option>
+                {eventTypes.map((t) => (
+                  <option key={t.id_tipo_evento || t.id} value={t.id_tipo_evento || t.id}>{t.nombre}</option>
+                ))}
+              </select>
+              {formErrors.id_tipo_evento && <p className="text-xs text-red-600 mt-1">{formErrors.id_tipo_evento}</p>}
+            </div>
+          </div>
+
+          {/* Sitio / Municipio */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2 relative">
+              <Label htmlFor="sitio">Sitio</Label>
+              <Input
+                id="sitio"
+                value={busquedaSitio}
+                onChange={(e) => {
+                  clearFieldError("id_sitio")
+                  setBusquedaSitio(e.target.value)
+                  setFormData((prev) => ({ ...prev, id_sitio: "" }))
+                }}
+                placeholder="Escribe el nombre del sitio donde será el evento"
+                className="rounded-lg"
+              />
+              {formErrors.id_sitio && <p className="text-xs text-red-600 mt-1">{formErrors.id_sitio}</p>}
+              {sites.length > 0 && (
+                <ul className="absolute z-10 bg-card border border-border rounded-lg mt-1 w-full max-h-60 overflow-y-auto shadow-lg">
+                  {sites.map((sitio) => (
+                    <li
+                      key={sitio.id_sitio || sitio.id}
+                      onClick={() => {
+                        setBusquedaSitio(sitio.nombre_sitio || sitio.nombre)
+                        setFormData((prev) => ({ ...prev, id_sitio: sitio.id_sitio || sitio.id }))
+                        setSites([])
+                      }}
+                      className="px-4 py-2 hover:bg-accent cursor-pointer"
+                    >
+                      {sitio.nombre_sitio || sitio.nombre}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="municipio">Municipio</Label>
+              <Input
+                id="municipio"
+                value={busquedaMunicipio}
+                onChange={(e) => setBusquedaMunicipio(e.target.value)}
+                readOnly={!!formData.id_sitio}
+                placeholder="Ciudad del lugar donde se hará el evento."
+                className="rounded-lg cursor-default"
+              />
+            </div>
+          </div>
+
+          {/* Descripción */}
+          <div className="space-y-2">
+            <Label htmlFor="fullDescription">Descripción del evento</Label>
+            <Textarea
+              id="fullDescription"
+              value={formData.descripcion}
+              onChange={(e) => setFormData((prev) => ({ ...prev, descripcion: e.target.value }))}
+              placeholder="Descripción detallada del evento"
+              className="rounded-xl min-h-[100px]"
+            />
+          </div>
+
+          <div className="space-y-4 p-4 border border-border bg-muted/20 rounded-lg shadow-md">
+            <div>
+              <Label>Información adicional del evento</Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Registra los datos clave del evento por ítems para mantener una descripción detallada.
+              </p>
+            </div>
+
+            {informacionAdicionalItems.map((item, index) => (
+              <div key={index} className="space-y-3 p-3 bg-muted/40 rounded-lg border border-border">
+                <div className="space-y-2">
+                  <Label className="text-xs">Detalle importante</Label>
+                  <Textarea
+                    value={item.detalle}
+                    onChange={(e) => updateInfoItem(index, "detalle", e.target.value)}
+                    placeholder="Ej: Ingreso desde las 7:00 PM, no se permite reingreso"
+                    className="rounded-xl min-h-[90px]"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={item.obligatorio}
+                      onChange={(e) => updateInfoItem(index, "obligatorio", e.target.checked)}
+                      className="w-4 h-4"
+                    />
+                    Marcado como obligatorio para asistentes
+                  </label>
+
+                  {informacionAdicionalItems.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeInfoItem(index)}
+                      className="px-3 py-1 bg-red-500 text-white rounded-md text-sm hover:bg-red-600"
+                    >
+                      Quitar
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            <div className="flex justify-between items-center gap-3">
+              <button
+                type="button"
+                onClick={addInfoItem}
+                disabled={informacionAdicionalItems.length >= 20}
+                className={`px-3 py-1.5 rounded-md text-white text-sm ${
+                  informacionAdicionalItems.length >= 20 ? "bg-gray-300 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
+                }`}
+              >
+                + Añadir ítem
+              </button>
+              <span className="text-sm text-muted-foreground">{informacionAdicionalItems.length}/20 ítems</span>
+            </div>
+            {formErrors.informacion_adicional_items && (
+              <p className="text-xs text-red-600">{formErrors.informacion_adicional_items}</p>
+            )}
+          </div>
+
+          {/* Telefonos */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="telefono_1">Teléfono del organizador del evento</Label>
+              <Input
+                id="telefono_1"
+                name="telefono_1"
+                type="tel"
+                value={formData.telefono_1}
+                onChange={handleInputChange}
+                placeholder="Teléfono 1"
+                className="rounded-xl"
+                maxLength={10}
+                inputMode="numeric"
+              />
+              {formErrors.telefono_1 && <p className="text-xs text-red-600 mt-1">{formErrors.telefono_1}</p>}
+            </div>
+            <div>
+              <Label htmlFor="telefono_2">Teléfono 2 (opcional)</Label>
+              <Input
+                id="telefono_2"
+                name="telefono_2"
+                type="tel"
+                value={formData.telefono_2}
+                onChange={handleInputChange}
+                placeholder="Teléfono 2"
+                className="rounded-xl"
+                maxLength={10}
+                inputMode="numeric"
+              />
+              {formErrors.telefono_2 && <p className="text-xs text-red-600 mt-1">{formErrors.telefono_2}</p>}
+            </div>
+          </div>
+
+          {/* Fechas */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="fecha_inicio">Fecha de inicio del evento</Label>
+              <Input
+                id="fecha_inicio"
+                name="fecha_inicio"
+                type="date"
+                value={formData.fecha_inicio}
+                onChange={handleInputChange}
+                className="cursor-pointer w-full rounded-xl border-border bg-card text-foreground shadow-sm p-2"
+              />
+              {formErrors.fecha_inicio && <p className="text-xs text-red-600 mt-1">{formErrors.fecha_inicio}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="fecha_fin">Fecha final del evento</Label>
+              <Input
+                id="fecha_fin"
+                name="fecha_fin"
+                type="date"
+                value={formData.fecha_fin}
+                onChange={handleInputChange}
+                className="cursor-pointer w-full rounded-xl border-border bg-card text-foreground shadow-sm p-2"
+              />
+              {formErrors.fecha_fin && <p className="text-xs text-red-600 mt-1">{formErrors.fecha_fin}</p>}
+            </div>
+          </div>
+
+          {/* Horas */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="hora_inicio">Hora de inicio</Label>
+              <Input
+                id="hora_inicio"
+                name="hora_inicio"
+                type="time"
+                value={formData.hora_inicio}
+                onChange={handleInputChange}
+                className="w-full rounded-xl"
+              />
+              {formErrors.hora_inicio && <p className="text-xs text-red-600 mt-1">{formErrors.hora_inicio}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="hora_final">Hora final</Label>
+              <Input
+                id="hora_final"
+                name="hora_final"
+                type="time"
+                value={formData.hora_final}
+                onChange={handleInputChange}
+                className="w-full rounded-xl"
+              />
+              {formErrors.hora_final && <p className="text-xs text-red-600 mt-1">{formErrors.hora_final}</p>}
+            </div>
+          </div>
+
+          {/* Gratis o Pago */}
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="gratis_pago"
+                checked={formData.gratis_pago}
+                onChange={handleInputChange}
+                className="rounded border-border"
+              />
+              <span className="text-sm font-medium">Evento de Pago</span>
+            </label>
+          </div>
+
+          {!formData.gratis_pago && (
+            <div className="flex items-center gap-2 p-3 bg-muted/40 rounded-lg border border-border">
+              <input
+                id="reservar_anticipado"
+                name="reservar_anticipado"
+                type="checkbox"
+                checked={formData.reservar_anticipado}
+                onChange={handleInputChange}
+                className="w-4 h-4 cursor-pointer"
+              />
+              <label htmlFor="reservar_anticipado" className="cursor-pointer text-sm font-medium">
+                ¿Asistencia únicamente con reserva anticipada?
+              </label>
+            </div>
+          )}
+
+          {/* Boletas (modelo actual del crear) */}
+          {formData.gratis_pago && (
+            <div className="space-y-4 p-4 border rounded-lg shadow-md">
+              <h2 className="text-lg font-semibold">Tipos de Boletas y Precios</h2>
+              <p className="text-xs text-muted-foreground italic -translate-y-2">
+                Define los diferentes tipos de boletas disponibles para tu evento con sus precios.
+              </p>
+              {formErrors.boletas && <p className="text-xs text-red-600">{formErrors.boletas}</p>}
+
+              {boletas.map((boleta, index) => (
+                <div key={index} className="space-y-3 p-3 bg-muted/40 border border-border rounded-lg">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Nombre de la boleta</Label>
+                    <Input
+                      type="text"
+                      value={boleta.nombre_boleto}
+                      onChange={(e) => updateBoleta(index, "nombre_boleto", e.target.value)}
+                      placeholder="Ej: General, VIP, Early Bird, etc."
+                      className="rounded-xl text-sm"
+                    />
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Precio</Label>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={boleta.precio_boleto}
+                        onChange={(e) => updateBoleta(index, "precio_boleto", e.target.value)}
+                        placeholder="0"
+                        className="rounded-xl text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Cargo por servicio (opcional)</Label>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={boleta.servicio}
+                        onChange={(e) => updateBoleta(index, "servicio", e.target.value)}
+                        placeholder="0"
+                        className="rounded-xl text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {boletas.length > 1 && (
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => removeBoletaField(index)}
+                        className="px-3 py-1 bg-red-500 text-white rounded-md text-sm hover:bg-red-600"
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <div className="flex justify-between items-center gap-3">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={addBoletaField}
+                    disabled={boletas.length >= 12}
+                    className={`px-3 py-1.5 rounded-md text-white text-sm ${
+                      boletas.length >= 12 ? "bg-gray-300 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
+                    }`}
+                  >
+                    + Añadir tipo de boleta
+                  </button>
+                  {boletas.length >= 2 && (
+                    <button
+                      type="button"
+                      onClick={removeAllBoletas}
+                      className="px-3 py-1.5 bg-red-500 text-white rounded-md text-sm hover:bg-red-600"
+                    >
+                      Eliminar todas
+                    </button>
+                  )}
+                </div>
+                <span className="text-sm text-muted-foreground">{boletas.length}/12 tipos de boletas</span>
+              </div>
+            </div>
+          )}
+
+          {/* Aforo */}
+          <div className="space-y-2">
+            <Label htmlFor="cupo">Aforo del evento</Label>
+            <Input
+              id="cupo"
+              name="cupo"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={formData.cupo}
+              onChange={handleInputChange}
+              placeholder="100"
+              className="rounded-xl"
+            />
+            <p className="text-sm text-muted-foreground">Ingresa un número entero mayor a 20 y menor a 5000</p>
+            {formErrors.cupo && <p className="text-xs text-red-600 mt-1">{formErrors.cupo}</p>}
+          </div>
+
+          {formErrors.general && (
+            <p className="text-sm text-red-600">{formErrors.general}</p>
+          )}
+
+          {/* Imágenes existentes */}
+          {existingImages.length > 0 && (
+            <div>
+              <Label>Imágenes Actuales</Label>
+              <div className="grid grid-cols-3 gap-2 mt-2">
+                {existingImages.map((img) => (
+                  <div key={img.id_imagen_evento} className="relative group">
+                    <img
+                      src={img.url_imagen_evento}
+                      alt="Evento"
+                      className="w-full h-24 object-cover rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeExistingImage(img.id_imagen_evento)}
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Nuevas imágenes */}
+          <div>
+            <Label htmlFor="images">Agregar Nuevas Imágenes</Label>
+            <div className="mt-2 flex items-center justify-center border-2 border-dashed border-border rounded-lg p-6 cursor-pointer hover:border-blue-500 transition-colors">
+              <input
+                id="images"
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+              <label htmlFor="images" className="flex flex-col items-center cursor-pointer">
+                <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                <span className="text-sm font-medium text-muted-foreground">Haz clic para seleccionar imágenes</span>
+              </label>
+            </div>
+
+            {images.length > 0 && (
+              <div className="grid grid-cols-3 gap-2 mt-4">
+                {images.map((img, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={URL.createObjectURL(img)}
+                      alt={`Nueva ${index}`}
+                      className="w-full h-24 object-cover rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeNewImage(index)}
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            {isSaving ? (
+              <>
+                <Loader className="w-4 h-4 mr-2 animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              "Guardar Cambios"
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
