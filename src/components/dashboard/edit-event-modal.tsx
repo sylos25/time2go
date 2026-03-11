@@ -502,8 +502,8 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
         }
       }
 
-      if (!Number.isInteger(cupoValue) || cupoValue <= 20 || cupoValue >= 5000) {
-        setFieldError("cupo", "El aforo debe ser un número entero mayor a 20 y menor a 5000.")
+      if (!Number.isInteger(cupoValue) || cupoValue < 20 || cupoValue > 5000) {
+        setFieldError("cupo", "El aforo debe ser un número entero entre 20 y 5000.")
         return
       }
 
@@ -1042,7 +1042,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
               placeholder="100"
               className="rounded-xl"
             />
-            <p className="text-sm text-muted-foreground">Ingresa un número entero mayor a 20 y menor a 5000</p>
+            <p className="text-sm text-muted-foreground">Ingresa un número entero entre 20 y 5000</p>
             {formErrors.cupo && <p className="text-xs text-red-600 mt-1">{formErrors.cupo}</p>}
           </div>
 

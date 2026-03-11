@@ -182,8 +182,8 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       return NextResponse.json({ ok: false, message: "La descripción del evento contiene caracteres no permitidos" }, { status: 400 });
     }
 
-    if (!Number.isInteger(cupo) || cupo <= 20 || cupo >= 5000) {
-      return NextResponse.json({ ok: false, message: "El aforo debe ser un número entero mayor a 20 y menor a 5000" }, { status: 400 });
+    if (!Number.isInteger(cupo) || cupo < 20 || cupo > 5000) {
+      return NextResponse.json({ ok: false, message: "El aforo debe ser un número entero entre 20 y 5000" }, { status: 400 });
     }
 
     for (const infoItem of infoItems) {

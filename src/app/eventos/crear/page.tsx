@@ -8,7 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, X } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ArrowLeft, CircleCheckBig } from "lucide-react";
 import { NumericFormat } from "react-number-format";
 // imageCompression removed — file upload UI simplified
 import DatePicker from "react-datepicker";
@@ -35,6 +43,7 @@ export default function CrearEventoPage() {
   const [busquedaMunicipio, setBusquedaMunicipio] = useState("");
   const [municipios, setMunicipios] = useState([]);
   const [showTelefono2, setShowTelefono2] = useState(false);
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   // image preview state removed (no image upload in simplified form)
   const [isLoading, setIsLoading] = useState(false);
   const [formErrors, setFormErrors] = useState<{
@@ -455,8 +464,8 @@ export default function CrearEventoPage() {
         return;
       }
 
-      if (!newEvent.cupo || !Number.isInteger(Number(newEvent.cupo)) || Number(newEvent.cupo) <= 20 || Number(newEvent.cupo) >= 5000) {
-        setFieldError("cupo", "El aforo debe ser un número entero mayor a 20 y menor a 5000.");
+      if (!newEvent.cupo || !Number.isInteger(Number(newEvent.cupo)) || Number(newEvent.cupo) < 20 || Number(newEvent.cupo) > 5000) {
+        setFieldError("cupo", "El aforo debe ser un número entero entre 20 y 5000.");
         return;
       }
 
@@ -564,8 +573,7 @@ export default function CrearEventoPage() {
         return;
       }
 
-      alert("¡Evento creado exitosamente!");
-      router.push("/eventos");
+      setSuccessDialogOpen(true);
     } catch (error) {
       console.error("Error al guardar el evento:", error);
       setFormErrors({ general: "Error al crear el evento. Intenta nuevamente." });
@@ -758,7 +766,7 @@ export default function CrearEventoPage() {
                             setNewEvent({ ...newEvent, id_sitio: sitio.id_sitio });
                             setSitios([]);
                           }}
-                          className="px-4 py-2 hover:bg-sky-50 cursor-pointer"
+                          className="px-4 py-2 cursor-pointer transition-colors hover:bg-accent hover:text-accent-foreground"
                         >
                           {sitio.nombre_sitio}
                         </li>
@@ -1179,7 +1187,7 @@ export default function CrearEventoPage() {
                   className="rounded-xl border px-2 py-1 w-full"
                 />
                 <p className="text-sm text-muted-foreground">
-                  Ingrese un número entero mayor a 20 y menor a 5000
+                  Ingrese un número entero entre 20 y 5000
                 </p>
                 {formErrors.cupo && (
                   <p className="text-xs text-red-600">{formErrors.cupo}</p>
@@ -1331,6 +1339,34 @@ export default function CrearEventoPage() {
           ) : null}
         </div>
       </main>
+
+      <Dialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-emerald-600">
+              Evento creado exitosamente
+            </DialogTitle>
+            <DialogDescription>
+              Tu evento se registró correctamente. Puedes ir al listado de eventos o quedarte en este formulario.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSuccessDialogOpen(false)}>
+              Quedarme aquí
+            </Button>
+            <Button
+              className="bg-gradient-to-tr from-green-700 to-lime-500 text-white"
+              onClick={() => {
+                setSuccessDialogOpen(false);
+                router.push("/eventos");
+              }}
+            >
+              Ir a eventos
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Footer />
     </div>
     );
