@@ -667,12 +667,13 @@ BEGIN
     ) tel_sitio_secundario ON TRUE
     LEFT JOIN (
       SELECT
-        id_evento,
-        COUNT(1)::INT AS reservas_count,
-        COALESCE(SUM(cuantos_asistiran), 0)::INT AS reservas_asistentes
-      FROM tabla_reserva_eventos
-      WHERE estado = TRUE
-      GROUP BY id_evento
+        r.id_evento,
+        COUNT(DISTINCT r.id_reserva_evento)::INT AS reservas_count,
+        COALESCE(COUNT(ra.id_reserva_asistente), 0)::INT AS reservas_asistentes
+      FROM tabla_reserva_eventos r
+      LEFT JOIN tabla_reserva_asistentes ra ON ra.id_reserva_evento = r.id_reserva_evento
+      WHERE r.estado = TRUE
+      GROUP BY r.id_evento
     ) rv ON e.id_evento = rv.id_evento
     WHERE
       (

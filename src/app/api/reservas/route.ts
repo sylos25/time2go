@@ -90,14 +90,20 @@ export async function GET(req: Request) {
                 r.id_evento,
                 r.tipo_documento,
                 r.numero_documento,
-                r.cuantos_asistiran,
-                r.quienes_asistiran,
+                COALESCE(asistentes.cuantos_asistiran, 0) AS cuantos_asistiran,
+                COALESCE(asistentes.quienes_asistiran, '') AS quienes_asistiran,
                 r.fecha_reserva,
                 r.estado,
                 p.nombres,
                 p.apellidos,
                 c.correo
          FROM tabla_reserva_eventos r
+         LEFT JOIN LATERAL (
+           SELECT COUNT(1)::INT AS cuantos_asistiran,
+                  STRING_AGG(ra.nombre_asistente, ', ' ORDER BY ra.id_reserva_asistente) AS quienes_asistiran
+           FROM tabla_reserva_asistentes ra
+           WHERE ra.id_reserva_evento = r.id_reserva_evento
+         ) asistentes ON TRUE
          INNER JOIN tabla_usuarios u ON r.id_usuario = u.id_usuario
          LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
          LEFT JOIN tabla_usuarios_credenciales c ON c.id_usuario = u.id_usuario
@@ -115,8 +121,8 @@ export async function GET(req: Request) {
               r.id_evento,
               r.tipo_documento,
               r.numero_documento,
-              r.cuantos_asistiran,
-              r.quienes_asistiran,
+              COALESCE(asistentes.cuantos_asistiran, 0) AS cuantos_asistiran,
+              COALESCE(asistentes.quienes_asistiran, '') AS quienes_asistiran,
               r.fecha_reserva,
               r.estado,
               e.nombre_evento,
@@ -130,6 +136,12 @@ export async function GET(req: Request) {
               img.url_imagen_evento
        FROM tabla_reserva_eventos r
        INNER JOIN tabla_eventos e ON r.id_evento = e.id_evento
+            LEFT JOIN LATERAL (
+              SELECT COUNT(1)::INT AS cuantos_asistiran,
+                     STRING_AGG(ra.nombre_asistente, ', ' ORDER BY ra.id_reserva_asistente) AS quienes_asistiran
+              FROM tabla_reserva_asistentes ra
+              WHERE ra.id_reserva_evento = r.id_reserva_evento
+            ) asistentes ON TRUE
        LEFT JOIN tabla_sitios s ON e.id_sitio = s.id_sitio
        LEFT JOIN tabla_municipios m ON s.id_municipio = m.id_municipio
        LEFT JOIN LATERAL (
@@ -182,8 +194,7 @@ export async function POST(req: Request) {
       }))
       .filter((item: any) => item.tipo_documento || item.numero_documento || item.nombre_asistente);
 
-    const cuantos_asistiran = asistentes.length;
-    const quienes_asistiran = asistentes.map((a: any) => a.nombre_asistente).join(", ");
+    const totalInvitados = asistentes.length;
 
     if (!id_evento) {
       return NextResponse.json({ ok: false, message: "Evento inválido" }, { status: 400 });
@@ -197,7 +208,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, message: "Número de documento requerido" }, { status: 400 });
     }
 
-    if (!Number.isFinite(cuantos_asistiran) || cuantos_asistiran < 1 || cuantos_asistiran > 3) {
+    if (!Number.isFinite(totalInvitados) || totalInvitados < 1 || totalInvitados > 3) {
       return NextResponse.json({ ok: false, message: "La cantidad de asistentes debe estar entre 1 y 3" }, { status: 400 });
     }
 
@@ -230,13 +241,11 @@ export async function POST(req: Request) {
         id_usuario,
         id_evento,
         tipo_documento,
-        numero_documento,
-        cuantos_asistiran,
-        quienes_asistiran
-      ) VALUES ($1,$2,$3,$4,$5,$6)
+        numero_documento
+      ) VALUES ($1,$2,$3,$4)
       ON CONFLICT (id_usuario, id_evento) DO NOTHING
       RETURNING id_reserva_evento, fecha_reserva`,
-      [user.id_usuario, id_evento, tipo_documento, numero_documento, cuantos_asistiran, quienes_asistiran]
+      [user.id_usuario, id_evento, tipo_documento, numero_documento]
     );
 
     if (!insertRes.rows || insertRes.rows.length === 0) {

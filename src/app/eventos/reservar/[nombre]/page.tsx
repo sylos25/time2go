@@ -15,6 +15,9 @@ const TIPOS_DOCUMENTO = [
   "Pasaporte",
 ];
 
+const onlyNumbers = (value: string) => value.replace(/\D+/g, "");
+const onlyLetters = (value: string) => value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, "");
+
 export default function ReservarEventoPorNombrePage() {
   const router = useRouter();
   const searchParams = useSearchParams() ?? new URLSearchParams();
@@ -99,8 +102,8 @@ export default function ReservarEventoPorNombrePage() {
       const asistentesLimpios = asistentes
         .map((item) => ({
           tipo_documento: String(item?.tipo_documento || "").trim(),
-          numero_documento: String(item?.numero_documento || "").trim(),
-          nombre_asistente: String(item?.nombre_asistente || "").trim(),
+          numero_documento: onlyNumbers(String(item?.numero_documento || "").trim()),
+          nombre_asistente: onlyLetters(String(item?.nombre_asistente || "").trim()),
         }))
         .filter((item) => item.tipo_documento || item.numero_documento || item.nombre_asistente);
 
@@ -186,6 +189,43 @@ export default function ReservarEventoPorNombrePage() {
     });
   };
 
+  const categoriaEvento =
+    event?.categoria?.nombre || event?.categoria_nombre || "No registrado";
+  const tipoEvento =
+    event?.tipo_evento?.nombre || event?.tipo_nombre || "No registrado";
+  const pulepEvento = event?.pulep_evento || "No registrado";
+  const nombreSitio = event?.sitio?.nombre_sitio || event?.nombre_sitio || "No registrado";
+  const direccionSitio = event?.sitio?.direccion || event?.sitio_direccion || "No registrada";
+  const ciudadSitio =
+    event?.municipio?.nombre_municipio || event?.nombre_municipio || "No registrada";
+  const aforo = Number(event?.cupo ?? 0);
+  const aforoTexto = aforo > 0 ? aforo.toLocaleString("es-CO") : "No registrado";
+  const organizadores = [
+    String(event?.responsable_evento || "").trim(),
+    `${String(event?.creador?.nombres || "").trim()} ${String(event?.creador?.apellidos || "").trim()}`.trim(),
+  ]
+    .filter((value, index, arr) => value.length > 0 && arr.indexOf(value) === index)
+    .join(" / ") || "No registrado";
+  const telefonosOrganizador = [
+    event?.telefono_1,
+    event?.telefono_2,
+    event?.event_telefono_1,
+    event?.event_telefono_2,
+  ]
+    .map((value) => String(value || "").trim())
+    .filter((value, index, arr) => value.length > 0 && arr.indexOf(value) === index)
+    .join(" / ") || "No registrado";
+  const esPago =
+    event?.gratis_pago === true ||
+    event?.gratis_pago === 1 ||
+    String(event?.gratis_pago || "").toLowerCase() === "true";
+  const fechaEvento = event?.fecha_inicio
+    ? new Date(event.fecha_inicio).toLocaleDateString("es-ES")
+    : "No registrada";
+  const horaEvento = event?.hora_inicio
+    ? String(event.hora_inicio).slice(0, 5)
+    : "No registrada";
+
   return (
     <main className="min-h-screen bg-background">
       <Header onAuthClick={() => {}} />
@@ -196,10 +236,68 @@ export default function ReservarEventoPorNombrePage() {
           {event && (
             <div className="rounded-lg bg-muted/50 p-4 text-sm">
               <p className="font-semibold text-foreground">{event.nombre_evento}</p>
-              <p className="text-muted-foreground">
-                {event.fecha_inicio ? new Date(event.fecha_inicio).toLocaleDateString("es-ES") : ""}
-                {event.hora_inicio ? ` · ${String(event.hora_inicio).slice(0, 5)}` : ""}
-              </p>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">Fecha</p>
+                  <p className="font-medium text-foreground">{fechaEvento}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-muted-foreground">Hora</p>
+                  <p className="font-medium text-foreground">{horaEvento}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-muted-foreground">Categoría</p>
+                  <p className="font-medium text-foreground">{categoriaEvento}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-muted-foreground">Tipo de evento</p>
+                  <p className="font-medium text-foreground">{tipoEvento}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-muted-foreground">PULEP</p>
+                  <p className="font-medium text-foreground">{pulepEvento}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-muted-foreground">Modalidad</p>
+                  <p className="font-medium text-foreground">{esPago ? "Pago" : "Gratis"}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-muted-foreground">Aforo</p>
+                  <p className="font-medium text-foreground">{aforoTexto}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-muted-foreground">Lugar</p>
+                  <p className="font-medium text-foreground">{nombreSitio}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-muted-foreground">Dirección</p>
+                  <p className="font-medium text-foreground">{direccionSitio}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-muted-foreground">Ciudad</p>
+                  <p className="font-medium text-foreground">{ciudadSitio}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-muted-foreground">Organizadores</p>
+                  <p className="font-medium text-foreground">{organizadores}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-muted-foreground">Teléfonos organizador</p>
+                  <p className="font-medium text-foreground">{telefonosOrganizador}</p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -230,8 +328,9 @@ export default function ReservarEventoPorNombrePage() {
               <Label>Número de documento del titular</Label>
               <Input
                 value={form.numero_documento}
-                onChange={(e) => setForm((p) => ({ ...p, numero_documento: e.target.value }))}
+                onChange={(e) => setForm((p) => ({ ...p, numero_documento: onlyNumbers(e.target.value) }))}
                 placeholder="Ingresa tu número de documento"
+                inputMode="numeric"
               />
             </div>
 
@@ -282,25 +381,28 @@ export default function ReservarEventoPorNombrePage() {
                     </Select>
                   </div>
 
-                  <div className="sm:col-span-3 space-y-2">
+                  <div className="sm:col-span-3 space-y-2 pt-1 sm:pt2">
                     <Label>Número</Label>
                     <Input
                       value={asistente.numero_documento}
-                      onChange={(e) => updateAsistente(index, "numero_documento", e.target.value)}
+                      onChange={(e) => updateAsistente(index, "numero_documento", onlyNumbers(e.target.value))}
                       placeholder="Documento"
+                      inputMode="numeric"
                     />
                   </div>
 
-                  <div className="sm:col-span-4 space-y-2">
+                  <div className="sm:col-span-4 space-y-2 pt-1 sm:pt2">
                     <Label>Nombre completo</Label>
                     <Input
                       value={asistente.nombre_asistente}
-                      onChange={(e) => updateAsistente(index, "nombre_asistente", e.target.value)}
+                      onChange={(e) =>
+                        updateAsistente(index, "nombre_asistente", onlyLetters(e.target.value))
+                      }
                       placeholder="Nombre del invitado"
                     />
                   </div>
 
-                  <div className="sm:col-span-1 flex items-end">
+                  <div className="sm:col-span-12 flex justify-end">
                     <Button
                       type="button"
                       variant="destructive"
@@ -315,7 +417,7 @@ export default function ReservarEventoPorNombrePage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 pt-2">
+          <div className="flex items-center gap-3 pt-2 bg-gradient-tr to-green-700 from-lime-500">
             <Button onClick={submit} disabled={saving || loading}>
               {saving ? "Reservando..." : "Confirmar reserva"}
             </Button>

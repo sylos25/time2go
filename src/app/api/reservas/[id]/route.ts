@@ -46,25 +46,58 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
               r.id_evento,
               r.tipo_documento,
               r.numero_documento,
-              r.cuantos_asistiran,
-              r.quienes_asistiran,
+              COALESCE(asistentes.cuantos_asistiran, 0) AS cuantos_asistiran,
+              COALESCE(asistentes.quienes_asistiran, '') AS quienes_asistiran,
               r.fecha_reserva,
               r.estado,
               r.fecha_actualizacion,
               e.nombre_evento,
               e.id_publico_evento,
+              e.pulep_evento,
+              e.responsable_evento,
+              e.cupo,
               e.fecha_inicio,
               e.fecha_fin,
               e.hora_inicio,
               e.hora_final,
               e.gratis_pago,
               s.nombre_sitio,
+              s.direccion AS sitio_direccion,
               m.nombre_municipio,
+              ce.nombre AS categoria_nombre,
+              te.nombre AS tipo_nombre,
+              tel_evento_principal.telefono AS telefono_1,
+              tel_evento_secundario.telefono AS telefono_2,
+              pc.nombres AS creador_nombres,
+              pc.apellidos AS creador_apellidos,
               img.url_imagen_evento
        FROM tabla_reserva_eventos r
        INNER JOIN tabla_eventos e ON r.id_evento = e.id_evento
+       LEFT JOIN tabla_categoria_eventos ce ON e.id_categoria_evento = ce.id_categoria_evento
+       LEFT JOIN tabla_tipo_eventos te ON e.id_tipo_evento = te.id_tipo_evento
+            LEFT JOIN LATERAL (
+              SELECT COUNT(1)::INT AS cuantos_asistiran,
+                     STRING_AGG(ra.nombre_asistente, ', ' ORDER BY ra.id_reserva_asistente) AS quienes_asistiran
+              FROM tabla_reserva_asistentes ra
+              WHERE ra.id_reserva_evento = r.id_reserva_evento
+            ) asistentes ON TRUE
+       LEFT JOIN LATERAL (
+         SELECT telefono
+         FROM tabla_eventos_telefonos
+         WHERE id_evento = e.id_evento AND es_principal = TRUE
+         ORDER BY fecha_creacion ASC
+         LIMIT 1
+       ) tel_evento_principal ON TRUE
+       LEFT JOIN LATERAL (
+         SELECT telefono
+         FROM tabla_eventos_telefonos
+         WHERE id_evento = e.id_evento AND es_principal = FALSE
+         ORDER BY fecha_creacion ASC
+         LIMIT 1
+       ) tel_evento_secundario ON TRUE
        LEFT JOIN tabla_sitios s ON e.id_sitio = s.id_sitio
        LEFT JOIN tabla_municipios m ON s.id_municipio = m.id_municipio
+       LEFT JOIN tabla_personas pc ON pc.id_usuario = e.id_usuario
        LEFT JOIN LATERAL (
          SELECT i.url_imagen_evento
          FROM tabla_imagenes_eventos i
