@@ -213,3 +213,61 @@ export async function sendContactMessageEmail({
     return false
   }
 }
+
+export async function sendBanNotificationEmail(
+  email: string,
+  motivo: string
+): Promise<boolean> {
+  try {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      console.error("Email no configurado: falta EMAIL_USER o EMAIL_PASSWORD")
+      return false
+    }
+ 
+    const bannerUrl =
+      "https://res.cloudinary.com/dljthy97e/image/upload/v1770842202/banner_top_azaedp.jpg"
+ 
+    const sanitizedMotivo = motivo
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\n/g, "<br/>")
+ 
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Time2Go - Tu cuenta ha sido suspendida",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <img src="${bannerUrl}" alt="Banner" style="width: 100%; border-radius: 8px 8px 0 0; display: block;" />
+          <div style="background: linear-gradient(to bottom left, #a21caf, #dc2626); padding: 20px; border-radius: 0 0 0 0; color: white; text-align: center;">
+            <h2 style="margin: 0;">Cuenta Suspendida</h2>
+          </div>
+          <div style="padding: 20px; background: #FBFEFF; border-radius: 0 0 8px 8px;">
+            <p>Hola,</p>
+            <p>Te informamos que tu cuenta en <strong>Time2Go</strong> ha sido <strong>suspendida</strong> por el siguiente motivo:</p>
+            <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #dc2626; margin: 20px 0;">
+              <p style="margin: 0; color: #111827;">
+                ${sanitizedMotivo}
+              </p>
+            </div>
+            <p style="color: #666;">
+              Si crees que esto es un error o deseas apelar esta decisión, por favor contacta a nuestro equipo de soporte.
+            </p>
+            <hr style="border: none; border-top: 1px solid #F7FCFF; margin: 20px 0;">
+            <p style="font-size: 12px; color: #999;">
+              Este es un correo automático, por favor no respondas directamente a este mensaje.
+            </p>
+          </div>
+        </div>
+      `,
+    }
+ 
+    const info = await transporter.sendMail(mailOptions)
+    console.log("Correo de baneo enviado:", info.response)
+    return true
+  } catch (error) {
+    console.error("Error enviando correo de baneo:", error)
+    return false
+  }
+}

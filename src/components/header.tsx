@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Menu, X, User, LogOut, Settings, LayoutDashboard, Calendar, Ticket } from "lucide-react"
+import { Menu, X, User, LogOut, Settings, LayoutDashboard, Calendar, Ticket, Star } from "lucide-react"
 import { usePermission, PERMISSIONS } from "@/hooks/use-permissions"
 import type { JSX } from "react"
 
@@ -411,6 +411,10 @@ export function Header({
                             Mis Eventos
                           </DropdownMenuItem>
                         )}
+                        <DropdownMenuItem onClick={() => navigateTo("/mis-valoraciones")} className="cursor-pointer">
+                          <Star className="h-4 w-4 mr-2" />
+                          Mis valoraciones
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
                           <LogOut className="h-4 w-4 mr-2" />

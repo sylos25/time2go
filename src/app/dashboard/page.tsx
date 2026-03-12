@@ -821,10 +821,6 @@ export default function EventDashboard() {
                       <h3 className="text-lg font-bold text-foreground">Evolución de Vistas y Asistentes</h3>
                       <p className="text-sm text-muted-foreground mt-1">Últimos 6 meses</p>
                     </div>
-                    <button className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors">
-                      <Download className="w-4 h-4" />
-                      Exportar
-                    </button>
                   </div>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={eventData}>
