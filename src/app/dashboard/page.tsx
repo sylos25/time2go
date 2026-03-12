@@ -19,41 +19,33 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
 } from "recharts"
 import {
   Calendar,
   Users,
-  TrendingUp,
   Settings,
-  Bell,
   Search,
   Menu,
   X,
+  ChevronLeft,
+  ChevronRight,
   CheckCircle,
   Edit,
   Trash2,
   EyeOff,
   MapPin,
-  Clock,
   Download,
   Home,
-  LogOut,
   Activity,
-  MoreVertical,
-  Target,
-  Loader2,
+  UserX,
+  UserCheck,
 } from "lucide-react"
 import { InsertDataTab } from "@/components/dashboard/insert-data-tab"
 import ViewDataTab from "@/components/dashboard/view-data-tab"
 import { EditEventModal } from "@/components/dashboard/edit-event-modal"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+
 
 const PDFViewer = dynamic(
   () => import("@/components/pdf-viewer").then((module) => module.PDFViewer),
@@ -346,33 +338,6 @@ export default function EventDashboard() {
     return () => { cancelled = true }
   }, [activeTab, usersPage, usersPageSize, searchUsers])
 
-  const refreshUsers = async () => {
-    setLoadingUsers(true)
-    try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-      const headers: any = {}
-      if (token) headers['Authorization'] = `Bearer ${token}`
-      const params = new URLSearchParams({
-        roles: '1,2',
-        page: String(usersPage),
-        pageSize: String(usersPageSize),
-      })
-      if (searchUsers.trim()) params.set('q', searchUsers.trim())
-
-      const res = await fetch(`/api/usuarios?${params.toString()}`, { headers })
-      if (res.ok) {
-        const data = await res.json()
-        setUsers(data.usuarios || [])
-        setUsersTotal(Number(data?.pagination?.total || 0))
-        setUsersTotalPages(Number(data?.pagination?.totalPages || 1))
-      }
-    } catch (err) {
-      console.error('Error fetching users', err)
-    } finally {
-      setLoadingUsers(false)
-    }
-  }
-
   const formatDateTimeLocal = (date: Date) => {
     const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
     return local.toISOString().slice(0, 16)
@@ -613,10 +578,6 @@ export default function EventDashboard() {
     { id: "users", name: "Usuarios", icon: Users },
   ]
 
-  const toggleVisibility = (id: number) => {
-    setEvents(events.map((event) => (event.id === id ? { ...event, visibility: !event.visibility } : event)))
-  }
-
   const deleteEvent = async (id: number) => {
     if (!confirm("¿Estás seguro de eliminar este evento?")) return
     try {
@@ -667,15 +628,34 @@ export default function EventDashboard() {
     }
   }
 
-  const toggleChecklistItem = (id: number) => {
-    setChecklistItems(checklistItems.map((item) => (item.id === id ? { ...item, completed: !item.completed } : item)))
-  }
-
   const filteredEvents = events.filter((event) => {
     const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = filterCategory === "all" || event.category === filterCategory
     return matchesSearch && matchesCategory
   })
+
+  const eventCategoryTabs = [
+    { value: "all", label: "Todas las categorias" },
+    ...eventCategories.map((category) => ({
+      value: category.nombre,
+      label: category.nombre,
+    })),
+  ]
+
+  const activeEventCategoryIndex = Math.max(
+    0,
+    eventCategoryTabs.findIndex((item) => item.value === filterCategory)
+  )
+
+  const goToPreviousEventCategory = () => {
+    if (activeEventCategoryIndex <= 0) return
+    setFilterCategory(eventCategoryTabs[activeEventCategoryIndex - 1].value)
+  }
+
+  const goToNextEventCategory = () => {
+    if (activeEventCategoryIndex >= eventCategoryTabs.length - 1) return
+    setFilterCategory(eventCategoryTabs[activeEventCategoryIndex + 1].value)
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -935,96 +915,143 @@ export default function EventDashboard() {
 
           {activeTab === "events" && canManageEvents && (
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lime-600 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Buscar eventos..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg placeholder:text-muted-foreground text-foreground focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
-                  />
-                </div>
+              <div className="relative overflow-hidden rounded-2xl border border-green-700/30 bg-green-600 px-3 py-5 shadow-sm dark:border-emerald-700/60 dark:bg-emerald-900 sm:px-6 sm:py-8">
+                <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-lime-300/30 blur-2xl dark:bg-lime-500/20" />
+                <div className="pointer-events-none absolute -left-8 bottom-0 h-24 w-24 rounded-full bg-teal-300/25 blur-2xl dark:bg-emerald-500/20" />
 
-                <div className="flex items-center gap-3">
-                  <select
-                    value={filterCategory}
-                    onChange={(e) => setFilterCategory(e.target.value)}
-                    className="px-4 py-2.5 border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
-                  >
-                    <option value="all">Todas las categorías</option>
-                    {eventCategories.map((category) => (
-                      <option key={category.id_categoria_evento} value={category.nombre}>
-                        {category.nombre}
-                      </option>
-                    ))}
-                  </select>
+                <div className="relative space-y-4">
+                  <h3 className="mb-4 text-center text-3xl font-semibold tracking-tight text-white dark:text-lime-200 sm:mb-6 sm:text-5xl">
+                    <span style={{ fontFamily: "Futura, Trebuchet MS, Helvetica, Arial, sans-serif" }}>Gestion de Eventos</span>
+                  </h3>
 
+                  <p className="text-center text-sm font-medium text-lime-100/95">
+                    {eventCategoryTabs[activeEventCategoryIndex]?.label || "Todas las categorias"}
+                  </p>
+
+                  <div className="flex items-center justify-center gap-1.5 sm:gap-2" role="tablist" aria-label="Navegacion de categorias de eventos">
+                    <button
+                      type="button"
+                      onClick={goToPreviousEventCategory}
+                      disabled={activeEventCategoryIndex <= 0}
+                      aria-label="Categoria anterior"
+                      title="Categoria anterior"
+                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-lime-200 bg-white/95 text-green-700 transition-colors hover:border-lime-500 hover:bg-lime-100 disabled:cursor-not-allowed disabled:opacity-45 dark:border-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-200 dark:hover:border-teal-400 dark:hover:bg-teal-800/40 cursor-pointer"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+
+                    <div className="w-full max-w-[calc(100vw-10rem)] overflow-x-auto sm:max-w-[72vw]">
+                      <div className="flex w-max items-center gap-2 px-1 py-1">
+                        {eventCategoryTabs.map((item) => {
+                          const isActive = item.value === filterCategory
+                          return (
+                            <button
+                              key={item.value}
+                              type="button"
+                              role="tab"
+                              aria-selected={isActive}
+                              aria-label={`Mostrar categoria: ${item.label}`}
+                              title={`Mostrar categoria: ${item.label}`}
+                              onClick={() => setFilterCategory(item.value)}
+                              className={`rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors sm:text-sm cursor-pointer ${
+                                isActive
+                                  ? "bg-green-700 text-white shadow-sm hover:bg-emerald-400 hover:text-green-900 dark:bg-emerald-500 dark:text-emerald-950 dark:hover:bg-lime-400"
+                                  : "bg-white/90 text-green-700 hover:bg-lime-200 hover:text-green-800 dark:bg-emerald-950/55 dark:text-emerald-200 dark:hover:bg-teal-800/45"
+                              }`}
+                            >
+                              {item.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={goToNextEventCategory}
+                      disabled={activeEventCategoryIndex >= eventCategoryTabs.length - 1}
+                      aria-label="Categoria siguiente"
+                      title="Categoria siguiente"
+                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-lime-200 bg-white/95 text-green-700 transition-colors hover:border-lime-500 hover:bg-lime-100 disabled:cursor-not-allowed disabled:opacity-45 dark:border-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-200 dark:hover:border-teal-400 dark:hover:bg-teal-800/40 cursor-pointer"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-card rounded-sm shadow-sm border border-border overflow-hidden">
+              <div className="relative w-full max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lime-600 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Buscar eventos..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-white/95 border border-green-600 rounded-lg placeholder:text-muted-foreground text-green-900 focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+                />
+              </div>
+
+              <div className="overflow-x-auto rounded-xl border border-lime-200/70 bg-white/85 shadow-sm dark:border-emerald-700/60 dark:bg-emerald-950/35">
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse border border-border">
-                    <thead className="bg-muted/40 border-b border-border">
+                  <table className="w-full border-collapse">
+                    <thead className="bg-green-500 dark:bg-emerald-700">
                       <tr>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-white/95 uppercase tracking-wider border-r border-lime-200/35 dark:border-emerald-300/20">
                           Evento
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-white/95 uppercase tracking-wider border-r border-lime-200/35 dark:border-emerald-300/20">
                           Fecha y Hora
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-white/95 uppercase tracking-wider border-r border-lime-200/35 dark:border-emerald-300/20">
                           Ubicación
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-white/95 uppercase tracking-wider border-r border-lime-200/35 dark:border-emerald-300/20">
                           Tickets
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-white/95 uppercase tracking-wider border-r border-lime-200/35 dark:border-emerald-300/20">
                           Estado
                         </th>
-                        <th className="px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">
+                        <th className="px-6 py-4 text-center text-xs font-semibold text-white/95 uppercase tracking-wider border-r border-lime-200/35 dark:border-emerald-300/20">
                          Destacado
                         </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-white/95 uppercase tracking-wider">
                           Acciones
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-border">
+                    <tbody className="divide-y divide-lime-200/80 dark:divide-emerald-700/60">
                       {filteredEvents.map((event) => {
                         const documents = event.documentos ?? []
                         const hasDocuments = documents.length > 0
 
                         return (
-                        <tr key={event.id} className="hover:bg-accent transition-colors">
-                          <td className="px-6 py-4">
+                        <tr key={event.id} className="bg-white/95 hover:bg-lime-50/90 dark:bg-emerald-950/25 dark:hover:bg-emerald-900/35 transition-colors">
+                          <td className="px-6 py-4 border-r border-lime-200/70 dark:border-emerald-700/45">
                             <div className="flex items-center gap-3">
                               <div>
-                                <p className="font-semibold text-foreground">{event.name}</p>
-                                <p className="text-sm text-muted-foreground">{event.category}</p>
+                                <p className="font-semibold text-green-900 dark:text-emerald-100/90">{event.name}</p>
+                                <p className="text-sm text-green-700/80 dark:text-emerald-200/80">{event.category}</p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 border-r border-lime-200/70 dark:border-emerald-700/45">
                             <div className="flex flex-col gap-1">
-                              <div className="flex items-center gap-1.5 text-sm text-foreground">
+                              <div className="flex items-center gap-1.5 text-sm text-green-900 dark:text-emerald-100/90">
                                 {formatEventDate(event.date)}
                               </div>
-                              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1.5 text-sm text-green-700/80 dark:text-emerald-200/80">
                                 {formatEventTime(event.time)}
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-1.5 text-sm text-foreground">
+                          <td className="px-6 py-4 border-r border-lime-200/70 dark:border-emerald-700/45">
+                            <div className="flex items-center gap-1.5 text-sm text-green-900 dark:text-emerald-100/90">
                               {event.location}
                             </div>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 border-r border-lime-200/70 dark:border-emerald-700/45">
                             <div className="flex flex-col gap-1">
-                              <span className="text-sm font-semibold text-foreground">
+                              <span className="text-sm font-semibold text-green-900 dark:text-emerald-100/90">
                                 {event.ticketsSold} / {event.capacity}
                               </span>
                               <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
@@ -1035,7 +1062,7 @@ export default function EventDashboard() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 border-r border-lime-200/70 dark:border-emerald-700/45">
                             <span
                               className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(event.status)}`}
                             >
@@ -1043,7 +1070,7 @@ export default function EventDashboard() {
                             </span>
                           </td>
                           {/* Columna Destacado */}
-                          <td className="px-6 py-4 text-center border-r border-border">
+                          <td className="px-6 py-4 text-center border-r border-lime-200/70 dark:border-emerald-700/45">
                             <button
                               role="switch"
                               aria-checked={!!event.destacado}
@@ -1175,11 +1202,21 @@ export default function EventDashboard() {
           )}
 
           {activeTab === "users" && (
-            <Card className="border-border bg-card">
             <div className="space-y-6">
-              <div className="flex items-center justify-between gap-4">
-                <CardContent>
-                <div className="relative flex-1 max-w-md">
+              <div className="relative overflow-hidden rounded-2xl border border-green-700/30 bg-green-600 px-3 py-5 shadow-sm dark:border-emerald-700/60 dark:bg-emerald-900 sm:px-6 sm:py-8">
+                <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-lime-300/30 blur-2xl dark:bg-lime-500/20" />
+                <div className="pointer-events-none absolute -left-8 bottom-0 h-24 w-24 rounded-full bg-teal-300/25 blur-2xl dark:bg-emerald-500/20" />
+
+                <div className="relative space-y-4">
+                  <h3 className="mb-4 text-center text-3xl font-semibold tracking-tight text-white dark:text-lime-200 sm:mb-6 sm:text-5xl">
+                    <span style={{ fontFamily: "Futura, Trebuchet MS, Helvetica, Arial, sans-serif" }}>Usuarios</span>
+                  </h3>
+                </div>
+              </div>
+
+              <div className="flex justify-start">
+                <div className="relative w-full sm:max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lime-600 w-5 h-5" />
                   <input
                     type="text"
                     placeholder="Buscar usuarios..."
@@ -1188,81 +1225,70 @@ export default function EventDashboard() {
                       setSearchUsers(e.target.value)
                       setUsersPage(1)
                     }}
-                    className="w-full pl-3 pr-30 py-1.5 bg-card border border-border rounded-lg placeholder:text-muted-foreground text-foreground focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2.5 bg-white/95 border border-lime-200 rounded-lg placeholder:text-muted-foreground text-green-900 focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
                   />
                 </div>
-                </CardContent>
-                <CardContent className="w-full pl-1 pr-30 py-1.5">
-                <div className="flex items-center gap-3">
-                  <select
-                    value={usersPageSize}
-                    onChange={(e) => {
-                      setUsersPageSize(Number(e.target.value))
-                      setUsersPage(1)
-                    }}
-                    className="px-3 py-1.5 bg-card border border-border rounded-lg text-foreground"
-                  >
-                    <option value={25}>25 / página</option>
-                    <option value={50}>50 / página</option>
-                    <option value={100}>100 / página</option>
-                  </select>
-                  <button
-                    onClick={refreshUsers}
-                    className="px-4 py-1.5 bg-green-800 border rounded-lg shadow-sm hover:bg-lime-600 text-white cursor-pointer transition-colors"
-                  >
-                    Actualizar
-                  </button>
-                </div>
-                </CardContent>
               </div>
-            <CardContent>
-              <div className="bg-card rounded-sm shadow-sm border border-border overflow-hidden">
+
+              <div className="overflow-x-auto rounded-xl border border-lime-200/70 bg-white/85 shadow-sm dark:border-emerald-700/60 dark:bg-emerald-950/35">
                 <div className="overflow-x-auto">
-                  <table className="table-fixed w-full border-collapse border border-border">
-                    <thead className="bg-muted/40 border-b border-border">
+                  <table className="table-fixed w-full border-collapse">
+                    <thead className="bg-green-500 dark:bg-emerald-700">
                       <tr>
-                        <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">ID Usuario</th>
-                        <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">ID Rol</th>
-                        <th className="w-36 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">IG Google</th>
-                        <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Nombres</th>
-                        <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Apellidos</th>
-                        <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Teléfono</th>
-                        <th className="w-80 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Correo</th>
-                        <th className="w-45 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Correo Validado</th>
-                        <th className="w-56 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Términos y Condiciones</th>
-                        <th className="w-26 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border">Estado</th>
-                        <th className="w-56 px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">Acciones</th>
+                        <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-white/95 uppercase tracking-wider border-r border-lime-200/35 dark:border-emerald-300/20">ID Usuario</th>
+                        <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-white/95 uppercase tracking-wider border-r border-lime-200/35 dark:border-emerald-300/20">ID Rol</th>
+                        <th className="w-36 px-6 py-4 text-center text-xs font-semibold text-white/95 uppercase tracking-wider border-r border-lime-200/35 dark:border-emerald-300/20">IG Google</th>
+                        <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-white/95 uppercase tracking-wider border-r border-lime-200/35 dark:border-emerald-300/20">Nombres</th>
+                        <th className="w-40 px-6 py-4 text-center text-xs font-semibold text-white/95 uppercase tracking-wider border-r border-lime-200/35 dark:border-emerald-300/20">Apellidos</th>
+                        <th className="w-32 px-6 py-4 text-center text-xs font-semibold text-white/95 uppercase tracking-wider border-r border-lime-200/35 dark:border-emerald-300/20">Teléfono</th>
+                        <th className="w-80 px-6 py-4 text-center text-xs font-semibold text-white/95 uppercase tracking-wider border-r border-lime-200/35 dark:border-emerald-300/20">Correo</th>
+                        <th className="w-45 px-6 py-4 text-center text-xs font-semibold text-white/95 uppercase tracking-wider border-r border-lime-200/35 dark:border-emerald-300/20">Correo Validado</th>
+                        <th className="w-56 px-6 py-4 text-center text-xs font-semibold text-white/95 uppercase tracking-wider border-r border-lime-200/35 dark:border-emerald-300/20">Términos y Condiciones</th>
+                        <th className="w-26 px-6 py-4 text-center text-xs font-semibold text-white/95 uppercase tracking-wider border-r border-lime-200/35 dark:border-emerald-300/20">Estado</th>
+                        <th className="w-56 px-6 py-4 text-center text-xs font-semibold text-white/95 uppercase tracking-wider">Acciones</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-border">
+                    <tbody className="divide-y divide-lime-200/80 dark:divide-emerald-700/60">
                       {users
-                        .map((u) => (
-                          <tr key={u.id_usuario} className="hover:bg-accent transition-colors">
-                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.id_usuario}</td>
-                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.id_rol || '-'}</td>
-                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.id_google ? 'Sí' : 'No'}</td>
-                            <td className="px-6 py-4 text-center text-sm text-foreground">{u.nombres}</td>
-                            <td className="px-6 py-4 text-center text-sm text-foreground">{u.apellidos}</td>
-                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.telefono || '-'}</td>
-                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.correo}</td>
-                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.validacion_correo ? 'Sí' : 'No'}</td>
-                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.terminos_condiciones ? 'Sí' : 'No'}</td>
-                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">{u.estado ? 'Activo' : 'Inactivo'}</td>
+                        .map((u, index) => (
+                          <tr key={u.id_usuario} className={`transition-colors ${index % 2 === 0 ? 'bg-white/95 hover:bg-lime-50/90 dark:bg-emerald-950/25 dark:hover:bg-emerald-900/35' : 'bg-lime-50/45 hover:bg-lime-100/75 dark:bg-teal-950/25 dark:hover:bg-teal-900/35'}`}>
+                            <td className="px-6 py-4 text-center text-sm text-green-900 dark:text-emerald-100/90">{u.id_usuario}</td>
+                            <td className="px-6 py-4 text-center text-sm text-green-900 dark:text-emerald-100/90">{u.id_rol || '-'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-green-900 dark:text-emerald-100/90">{u.id_google ? 'Sí' : 'No'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-green-900 dark:text-emerald-100/90">{u.nombres}</td>
+                            <td className="px-6 py-4 text-center text-sm text-green-900 dark:text-emerald-100/90">{u.apellidos}</td>
+                            <td className="px-6 py-4 text-center text-sm text-green-900 dark:text-emerald-100/90">{u.telefono || '-'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-green-900 dark:text-emerald-100/90">{u.correo}</td>
+                            <td className="px-6 py-4 text-center text-sm text-green-900 dark:text-emerald-100/90">{u.validacion_correo ? 'Sí' : 'No'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-green-900 dark:text-emerald-100/90">{u.terminos_condiciones ? 'Sí' : 'No'}</td>
+                            <td className="px-6 py-4 text-center text-sm text-green-900 dark:text-emerald-100/90">{u.estado ? 'Activo' : 'Inactivo'}</td>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => openBanModal(u.id_usuario)}
                                   disabled={updatingUserId === u.id_usuario || !u.estado}
-                                  className="px-3 py-1 rounded-lg text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Bannear usuario"
+                                  aria-label="Bannear usuario"
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                  {updatingUserId === u.id_usuario ? 'Procesando...' : 'Bannear'}
+                                  {updatingUserId === u.id_usuario ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <UserX className="h-4 w-4" />
+                                  )}
                                 </button>
                                 <button
                                   onClick={() => unbanUser(u.id_usuario)}
                                   disabled={updatingUserId === u.id_usuario || u.estado}
-                                  className="px-3 py-1 rounded-lg text-white bg-green-700 hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Quitar ban a usuario"
+                                  aria-label="Quitar ban a usuario"
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white bg-green-700 hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                  {updatingUserId === u.id_usuario ? 'Procesando...' : 'Desbannear'}
+                                  {updatingUserId === u.id_usuario ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <UserCheck className="h-4 w-4" />
+                                  )}
                                 </button>
                               </div>
                             </td>
@@ -1273,25 +1299,25 @@ export default function EventDashboard() {
                 </div>
 
                 {usersTotal > 0 && (
-                  <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/20">
-                    <p className="text-sm text-muted-foreground">
+                  <div className="flex items-center justify-between px-4 py-3 border-t border-lime-200/80 bg-lime-50/50 dark:border-emerald-700/60 dark:bg-emerald-900/20">
+                    <p className="text-sm text-green-800 dark:text-emerald-200/90">
                       Mostrando {Math.min((usersPage - 1) * usersPageSize + 1, usersTotal)} - {Math.min(usersPage * usersPageSize, usersTotal)} de {usersTotal}
                     </p>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setUsersPage((prev) => Math.max(1, prev - 1))}
                         disabled={usersPage <= 1 || loadingUsers}
-                        className="px-3 py-1.5 rounded-lg border border-border text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-1.5 rounded-lg border border-lime-200 text-green-900 dark:text-emerald-200 dark:border-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Anterior
                       </button>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-green-800 dark:text-emerald-200/90">
                         Página {usersPage} de {usersTotalPages}
                       </span>
                       <button
                         onClick={() => setUsersPage((prev) => Math.min(usersTotalPages, prev + 1))}
                         disabled={usersPage >= usersTotalPages || loadingUsers}
-                        className="px-3 py-1.5 rounded-lg border border-border text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-1.5 rounded-lg border border-lime-200 text-green-900 dark:text-emerald-200 dark:border-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Siguiente
                       </button>
@@ -1302,14 +1328,13 @@ export default function EventDashboard() {
                 {(!users || users.length === 0) && (
                   <div className="text-center py-12">
                     <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground font-medium">No se encontraron usuarios</p>
-                    <p className="text-sm text-muted-foreground mt-1">Pulsa "Actualizar" para cargar la lista</p>
+                    <p className="text-green-800 dark:text-emerald-200 font-medium">No se encontraron usuarios</p>
+                    <p className="text-sm text-green-700/80 dark:text-emerald-200/80 mt-1">Ajusta la búsqueda o intenta nuevamente en unos segundos</p>
                   </div>
                 )}
               </div>
-              </CardContent>
             </div>
-          </Card>)}
+          )}
 
           {activeTab === "insert-data" && <InsertDataTab />}
 

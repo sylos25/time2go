@@ -225,8 +225,8 @@ export function Header({
   const loggedIn = Boolean(user) || isLoggedIn;
   const displayName = (user?.name || user?.firstName || user?.name || user?.firstName || userName) as string;
 
-  // determine role (1 = usuario regular per DB) — prefer in-memory user, fallback to localStorage
-  const userRole = user?.role !== undefined ? Number(user.role) : Number(typeof window !== 'undefined' ? localStorage.getItem('userRole') || 0 : 0);
+  // Determine role only from deterministic sources during render.
+  const userRole = user?.role !== undefined ? Number(user.role) : isAdmin ? 2 : 0;
   const isRegularUser = userRole === 1;
   
   // Verificar permisos usando el sistema de accesibilidad

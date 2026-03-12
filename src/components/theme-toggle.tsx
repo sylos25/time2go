@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Moon, Sun } from "lucide-react"
 
 const THEME_KEY = "theme"
+const THEME_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
 type ThemeMode = "light" | "dark"
 
@@ -22,6 +23,11 @@ const applyTheme = (theme: ThemeMode) => {
   root.style.colorScheme = theme
 }
 
+const persistTheme = (theme: ThemeMode) => {
+  localStorage.setItem(THEME_KEY, theme)
+  document.cookie = `${THEME_KEY}=${theme}; Path=/; Max-Age=${THEME_COOKIE_MAX_AGE}; SameSite=Lax`
+}
+
 export function ThemeToggle() {
   const [theme, setTheme] = useState<ThemeMode>("light")
   const [mounted, setMounted] = useState(false)
@@ -30,6 +36,7 @@ export function ThemeToggle() {
     const initialTheme = getInitialTheme()
     setTheme(initialTheme)
     applyTheme(initialTheme)
+    persistTheme(initialTheme)
     setMounted(true)
   }, [])
 
@@ -50,7 +57,7 @@ export function ThemeToggle() {
   const toggleTheme = () => {
     const nextTheme: ThemeMode = theme === "dark" ? "light" : "dark"
     setTheme(nextTheme)
-    localStorage.setItem(THEME_KEY, nextTheme)
+    persistTheme(nextTheme)
     applyTheme(nextTheme)
   }
 

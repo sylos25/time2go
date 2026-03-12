@@ -1,20 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
 import DeferredGlobalUI from "@/components/deferred-global-ui"
 import SecurityProvider from "@/components/shared/SecurityProvider"
-
-const themeInitializerScript = `(() => {
-  try {
-    const themeKey = "theme";
-    const storedTheme = localStorage.getItem(themeKey);
-    const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const shouldUseDark = storedTheme ? storedTheme === "dark" : systemPrefersDark;
-    const root = document.documentElement;
-    root.classList.toggle("dark", shouldUseDark);
-    root.style.colorScheme = shouldUseDark ? "dark" : "light";
-  } catch (_) {}
-})();`
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,16 +26,18 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies()
+  const rawTheme = cookieStore.get("theme")?.value
+  const initialTheme = rawTheme === "dark" || rawTheme === "light" ? rawTheme : "light"
+  const htmlClassName = initialTheme === "dark" ? "dark" : undefined
+
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitializerScript }} />
-      </head>
+    <html lang="en" className={htmlClassName} style={{ colorScheme: initialTheme }}>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <SecurityProvider>
           {children}
