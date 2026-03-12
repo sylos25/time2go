@@ -431,6 +431,18 @@ export async function GET(req: Request) {
       }
     }
 
+    const functionExistsResult = await pool.query(
+      `SELECT to_regprocedure('app_api.fn_eventos_listar_json(integer,text,boolean,boolean,integer)') IS NOT NULL AS exists`
+    );
+
+    const functionExists = Boolean(functionExistsResult.rows?.[0]?.exists);
+    if (!functionExists) {
+      return NextResponse.json(
+        { ok: false, message: "La función app_api.fn_eventos_listar_json no existe en la base de datos" },
+        { status: 500 }
+      );
+    }
+
     const dbResult = await pool.query(
       `SELECT app_api.fn_eventos_listar_json($1, $2, $3, $4, $5) AS payload`,
       [
@@ -456,8 +468,21 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({ ok: true, eventos: payload.eventos || [] });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
+
+    const dbMessage = String(err?.message || "");
+    if (err?.code === "42703" && dbMessage.toLowerCase().includes("cuantos_asistiran")) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "La función fn_eventos_listar_json en PostgreSQL está desactualizada y referencia la columna cuantos_asistiran. Reemplázala por la versión actual del script scripts SQL/funciones/fn_eventos_listar_json.sql.",
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({ ok: false, message: "Error obteniendo eventos" }, { status: 500 });
   }
 }

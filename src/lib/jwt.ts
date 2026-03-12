@@ -18,7 +18,7 @@ export function verifyToken(token: string): JwtPayload | null {
   }
 }
 
-export function signToken(payload: object, expiresIn: string | number = '30m') {
+export function signToken(payload: object, expiresIn: string | number = '12h') {
   // Tip: cast to any to avoid TS overload mismatches from @types/jsonwebtoken
   return jwt.sign(payload as any, SECRET as any, { expiresIn: expiresIn as any } as any) as string;
 }

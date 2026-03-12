@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ResetPasswordDialog } from "@/components/reset-password-dialog"
+import { EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, sanitizeEmail, sanitizePassword } from "@/lib/auth-form-validation"
 
 interface LoginFormProps {
   onSuccess: () => void
@@ -44,8 +45,12 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
 // Manejo de cambios en el campo de email
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.toLowerCase()
-    setEmail(value)
+    setEmail(sanitizeEmail(e.target.value))
+  }
+
+  // Manejo de cambios en el campo de contraseña
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(sanitizePassword(e.target.value))
   }
 
 // Manejo de submit del formulario  
@@ -55,10 +60,16 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     setEmailValidationError(false)
     setTurnstileError("")
 
+    const sanitizedEmail = sanitizeEmail(email)
+    const sanitizedPassword = sanitizePassword(password)
+
+    if (sanitizedEmail !== email) setEmail(sanitizedEmail)
+    if (sanitizedPassword !== password) setPassword(sanitizedPassword)
+
     // Validar campos requeridos
-    if (!email || !password) {
-      if (!email) setTouchedFields((prev) => ({ ...prev, email: true }))
-      if (!password) setTouchedFields((prev) => ({ ...prev, password: true }))
+    if (!sanitizedEmail || !sanitizedPassword) {
+      if (!sanitizedEmail) setTouchedFields((prev) => ({ ...prev, email: true }))
+      if (!sanitizedPassword) setTouchedFields((prev) => ({ ...prev, password: true }))
       return
     }
 
@@ -74,7 +85,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         method: "POST",
         credentials: 'include',
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, turnstileToken }),
+        body: JSON.stringify({ email: sanitizedEmail, password: sanitizedPassword, turnstileToken }),
       })
       const data = await res.json()
       
@@ -109,7 +120,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
 // Determinar nombre de usuario para mostrar (usar parte local del email si no se proporciona un nombre específico)      
       const consent = readConsent()
-      const name = data.name || (email ? email.split("@")[0] : "Usuario")
+      const name = data.name || (sanitizedEmail ? sanitizedEmail.split("@")[0] : "Usuario")
       const userRole = data.id_rol !== undefined ? Number(data.id_rol) : undefined
 
       if (consent !== 'rejected') {
@@ -123,7 +134,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           localStorage.setItem("userRole", String(userRole))
         }
         if (rememberMe) {
-          localStorage.setItem("rememberedEmail", email)
+          localStorage.setItem("rememberedEmail", sanitizedEmail)
         } else {
           localStorage.removeItem("rememberedEmail")
         }
@@ -172,6 +183,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           onChange={handleEmailChange}
           onBlur={() => handleBlur("email")}
           autoCapitalize="none"
+          maxLength={EMAIL_MAX_LENGTH}
           className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             touchedFields.email && !email ? "border-red-500 ring-red-500" : "border-gray-300"
           }`}
@@ -193,8 +205,9 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             type={showPassword ? "text" : "password"}
             placeholder="••••••••"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={handlePasswordChange}
             onBlur={() => handleBlur("password")}
+            maxLength={PASSWORD_MAX_LENGTH}
             className={`pl-10 pr-10 w-full border rounded-md py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               touchedFields.password && !password ? "border-red-500 ring-red-500" : "border-gray-300"
             }`}

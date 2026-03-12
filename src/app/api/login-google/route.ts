@@ -229,7 +229,7 @@ export async function POST(req: Request) {
     }
 
     const secret = process.env.BETTER_AUTH_SECRET || process.env.JWT_SECRET || "dev-secret";
-    const expiresIn = 60 * 30;
+    const expiresIn = 60 * 60 * 12;
     const userId = String(user.id_usuario);
     const token = jwt.sign(
       { id_usuario: userId, name: user.nombres || email.split("@")[0] },

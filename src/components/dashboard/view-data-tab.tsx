@@ -98,7 +98,7 @@ const TABLE_EDITABLE_FIELDS: Record<TableKey, string[]> = {
   departamentos: ["nombre_departamento"],
   municipios: ["nombre_municipio", "distrito", "area_metropolitana"],
   tipo_sitios: ["nombre_tipo_sitio"],
-  sitios: ["nombre_sitio", "direccion", "latitud", "longitud", "telefono_1", "telefono_2", "sitio_web"],
+  sitios: ["nombre_sitio", "direccion", "telefono_1", "telefono_2", "sitio_web"],
   tipo_infraestructura_discapacitados: ["nombre_infraestructura_discapacitados"],
   sitios_discapacitados: ["descripcion"],
   categoria_eventos: ["nombre"],
@@ -107,12 +107,58 @@ const TABLE_EDITABLE_FIELDS: Record<TableKey, string[]> = {
   links: ["link"],
 }
 
+const TABLE_HIDDEN_COLUMNS: Partial<Record<TableKey, string[]>> = {
+  sitios: ["infraestructura_discapacitados", "latitud", "longitud"],
+}
+
 const getColumnLabel = (column: string): string => {
   if (COLUMN_LABELS[column]) return COLUMN_LABELS[column]
   return column
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ")
+}
+
+const isIdColumn = (column: string): boolean => {
+  const normalized = column.toLowerCase()
+  return normalized.startsWith("id_") || normalized.endsWith("_id")
+}
+
+const isDateLikeColumn = (column: string): boolean => {
+  const normalized = column.toLowerCase()
+  return normalized.includes("fecha") || normalized.includes("date")
+}
+
+const formatDateTimeReadable = (value: unknown): string => {
+  if (value === null || value === undefined || value === "") return ""
+
+  const raw = String(value).trim()
+  const parsed = new Date(raw)
+  if (Number.isNaN(parsed.getTime())) return raw
+
+  const day = String(parsed.getDate()).padStart(2, "0")
+  const month = String(parsed.getMonth() + 1).padStart(2, "0")
+  const year = parsed.getFullYear()
+  const hours = String(parsed.getHours()).padStart(2, "0")
+  const minutes = String(parsed.getMinutes()).padStart(2, "0")
+
+  return `${day}/${month}/${year} - ${hours}:${minutes}`
+}
+
+const formatCellValue = (column: string, value: unknown): string => {
+  if (typeof value === "boolean") {
+    return value ? "Sí" : "No"
+  }
+
+  if (isDateLikeColumn(column)) {
+    return formatDateTimeReadable(value)
+  }
+
+  const normalized = String(value ?? "").trim().toLowerCase()
+  if (normalized === "true") return "Sí"
+  if (normalized === "false") return "No"
+
+  return String(value ?? "")
 }
 
 export function ViewDataTab() {
@@ -136,6 +182,10 @@ export function ViewDataTab() {
     : rows
 
   const editableFieldsForTable = TABLE_EDITABLE_FIELDS[table] || []
+  const hiddenColumnsForTable = TABLE_HIDDEN_COLUMNS[table] || []
+  const visibleColumns = filteredRows.length > 0
+    ? Object.keys(filteredRows[0]).filter((col) => !isIdColumn(col) && !hiddenColumnsForTable.includes(col))
+    : []
 
   const openEditModal = (row: Record<string, any>) => {
     const initialData: Record<string, any> = {}
@@ -299,7 +349,7 @@ export function ViewDataTab() {
                 <table className="w-full min-w-max text-sm table-auto border-collapse border border-border">
                   <thead className="bg-muted/40 border-b border-border">
                     <tr>
-                      {Object.keys(filteredRows[0]).map((col) => (
+                      {visibleColumns.map((col) => (
                         <th
                           key={col}
                           className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider border-r border-border last:border-r-0"
@@ -315,9 +365,9 @@ export function ViewDataTab() {
                   <tbody className="divide-y divide-border">
                     {filteredRows.map((r, i) => (
                       <tr key={i} className="hover:bg-accent transition-colors">
-                        {Object.keys(filteredRows[0]).map((col) => (
+                        {visibleColumns.map((col) => (
                           <td key={col} className="px-4 py-3 align-top text-center text-sm text-foreground">
-                            {String((r as any)[col] ?? "")}
+                            {formatCellValue(col, (r as any)[col])}
                           </td>
                         ))}
                         <td className="px-4 py-3 text-center">

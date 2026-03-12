@@ -1,3 +1,5 @@
+DROP FUNCTION IF EXISTS app_api.fn_eventos_listar_json(INT, TEXT, BOOLEAN, BOOLEAN, INT);
+
 CREATE OR REPLACE FUNCTION app_api.fn_eventos_listar_json(
   p_id_evento INT DEFAULT NULL,
   p_id_publico_evento TEXT DEFAULT NULL,

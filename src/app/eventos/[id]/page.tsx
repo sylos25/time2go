@@ -30,6 +30,8 @@ export default function EventLanding() {
   const rawId = params?.id;
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const mineView = (searchParams?.get("mine") || "").toLowerCase() === "true";
+  const returnToParam = searchParams?.get("returnTo") || "";
+  const backPath = returnToParam.startsWith("/eventos") ? returnToParam : "/eventos#eventos-disponibles";
   const [event, setEvent] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [creatorMode, setCreatorMode] = useState(false);
@@ -333,8 +335,6 @@ export default function EventLanding() {
       : alreadyReserved
         ? "Ya reservado"
         : "Reservar";
-  const backPath = "/eventos";
-
   return (
     <main className="min-h-screen bg-background">
       <Header onAuthClick={() => {}} />

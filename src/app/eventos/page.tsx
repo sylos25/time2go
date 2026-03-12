@@ -533,7 +533,7 @@ const handleAddEvent = async () => {
       )}
 
       {/* Tarjetas de presentación de los eventos */}
-      <section className="pb-20">
+      <section id="eventos-disponibles" className="pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl lg:text-4xl font-bold text-foreground">
@@ -635,7 +635,11 @@ const handleAddEvent = async () => {
                   <div className="flex items-center justify-between">
                     <div className="text-2xl font-bold text-lime-500">{typeof event.price === 'number' ? `$${event.price}` : event.price}</div>
                     <Button
-                      onClick={() => (window.location.href = `/eventos/${event.id_evento ?? event.id}`)}
+                      onClick={() =>
+                        router.push(
+                          `/eventos/${event.id_evento ?? event.id}?returnTo=${encodeURIComponent("/eventos#eventos-disponibles")}`
+                        )
+                      }
                       className="bg-gradient-to-tr from-fuchsia-500 to-red-600 hover:from-fuchsia-600 hover:to-red-700 rounded-xl px-6"
                     >
                       Detalles

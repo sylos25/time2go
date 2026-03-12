@@ -6,6 +6,18 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  EMAIL_MAX_LENGTH,
+  PASSWORD_MAX_LENGTH,
+  REGISTER_PASSWORD_LENGTH,
+  getEmailError,
+  hasPasswordLetter,
+  hasPasswordNumber,
+  hasPasswordSpecial,
+  sanitizeEmail,
+  sanitizePassword,
+  validateRegisterPassword,
+} from "@/lib/auth-form-validation"
 
 interface RegisterFormProps {
   onSuccess: () => void
@@ -20,23 +32,13 @@ interface FormFields {
   password: string
 }
 
-const ALLOWED_EMAIL_DOMAINS = [
-  "gmail.com",
-  "outlook.com",
-  "yahoo.com",
-  "icloud.com",
-  "proton.me",
-  "protonmail.com",
-]
-
 const MAX_NAME_LENGTH = 50
 const PHONE_LENGTH = 10
-const PASSWORD_LENGTH = 8
+const PASSWORD_LENGTH = REGISTER_PASSWORD_LENGTH
 
-const isAllowedEmail = (email: string): boolean => {
-  const domain = email.split("@")[1]?.toLowerCase()
-  return ALLOWED_EMAIL_DOMAINS.includes(domain || "")
-}
+const NAME_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/
+const DIGITS_REGEX = /^\d+$/
+const DIGITS_PARTIAL_REGEX = /^\d*$/
 
 export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const [showPassword, setShowPassword] = useState(false)
@@ -123,48 +125,45 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
     setTouchedFields((prev) => ({ ...prev, [field]: true }))
   }
 
-  const handleInputChange = (field: keyof FormFields, value: string | boolean | number) => {
-    setFormData((prev: FormFields) => ({ ...prev, [field]: value } as FormFields))
+  const handleInputChange = <K extends keyof FormFields>(field: K, value: FormFields[K]) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleFirstnameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(value) && value.length <= MAX_NAME_LENGTH) handleInputChange("firstName", value)
+  const touchField = (field: keyof FormFields) => {
+    setTouchedFields((prev) => ({ ...prev, [field]: true }))
   }
 
-  const handleLastnameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const touchMultipleFields = (fields: (keyof FormFields)[]) => {
+    setTouchedFields((prev) => ({ ...prev, ...Object.fromEntries(fields.map((field) => [field, true])) }))
+  }
+
+  const handleNameChange = (field: "firstName" | "lastName", e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
-    if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(value) && value.length <= MAX_NAME_LENGTH) handleInputChange("lastName", value)
+    if (NAME_REGEX.test(value) && value.length <= MAX_NAME_LENGTH) {
+      handleInputChange(field, value)
+    }
   }
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
-    if (/^[0-9]*$/.test(value) && value.length <= PHONE_LENGTH) {
+    if (DIGITS_PARTIAL_REGEX.test(value) && value.length <= PHONE_LENGTH) {
       handleInputChange("telefono", value)
       if (phoneError) setPhoneError("")
     }
   }
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.toLowerCase()
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const value = sanitizeEmail(e.target.value)
     handleInputChange("email", value)
-    if (!emailRegex.test(value)) { setEmailError("Formato de correo inválido"); return }
-    if (!isAllowedEmail(value)) { setEmailError("Solo se permiten dominios: gmail.com, outlook.com, yahoo.com, icloud.com, proton.me, protonmail.com."); return }
-    setEmailError("")
+    setEmailError(getEmailError(value))
   }
 
   const validatePassword = (password: string): { isValid: boolean; errors: string[] } => {
-    const errors: string[] = []
-    if (password.length !== PASSWORD_LENGTH) errors.push("Debe tener exactamente 8 caracteres")
-    if (!/[a-zA-Z]/.test(password)) errors.push("Al menos una letra")
-    if (!/[0-9]/.test(password)) errors.push("Al menos un número")
-    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) errors.push("Al menos un carácter especial")
-    return { isValid: errors.length === 0, errors }
+    return validateRegisterPassword(password, PASSWORD_LENGTH)
   }
 
   const validatePhone = (phone: string): boolean => {
-    if (!/^\d+$/.test(phone)) return false
+    if (!DIGITS_REGEX.test(phone)) return false
     if (phone.length !== PHONE_LENGTH) return false
     return Number(phone) > 2999999999
   }
@@ -187,31 +186,54 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setRegistroError("")
+    setEmailError("")
+    const sanitizedEmail = sanitizeEmail(formData.email)
+    const sanitizedPassword = sanitizePassword(formData.password)
+    const sanitizedConfirmPassword = sanitizePassword(confirmPassword)
+
+    if (sanitizedEmail !== formData.email || sanitizedPassword !== formData.password) {
+      setFormData((prev) => ({
+        ...prev,
+        email: sanitizedEmail,
+        password: sanitizedPassword,
+      }))
+    }
+    if (sanitizedConfirmPassword !== confirmPassword) setConfirmPassword(sanitizedConfirmPassword)
+
     const requiredFields: (keyof FormFields)[] = ["firstName", "lastName", "pais", "telefono", "email", "password"]
-    const missing = requiredFields.filter((f) => !formData[f] || String(formData[f]).trim() === "")
+    const normalizedFormData: FormFields = {
+      ...formData,
+      email: sanitizedEmail,
+      password: sanitizedPassword,
+    }
+    const missing = requiredFields.filter((f) => !normalizedFormData[f] || String(normalizedFormData[f]).trim() === "")
     if (missing.length > 0) {
-      setTouchedFields((prev) => ({ ...prev, ...Object.fromEntries(missing.map((k) => [k, true])) }))
+      touchMultipleFields(missing)
       setRegistroError("Por favor completa los campos obligatorios.")
       return
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!validatePhone(formData.telefono)) {
-      setTouchedFields((prev) => ({ ...prev, telefono: true }))
+    if (!validatePhone(normalizedFormData.telefono)) {
+      touchField("telefono")
       setPhoneError("El número de teléfono debe tener 10 dígitos válidos.")
       setRegistroError("El número de teléfono no es válido.")
       return
     }
-    if (!emailRegex.test(formData.email)) { setTouchedFields((prev) => ({ ...prev, email: true })); setRegistroError("Formato de correo inválido."); return }
-    if (!isAllowedEmail(formData.email)) { setTouchedFields((prev) => ({ ...prev, email: true })); setRegistroError("Solo se permiten dominios: gmail.com, outlook.com, yahoo.com, icloud.com, proton.me, protonmail.com."); return }
+    const normalizedEmailError = getEmailError(normalizedFormData.email)
+    if (normalizedEmailError) {
+      touchField("email")
+      setEmailError(normalizedEmailError)
+      setRegistroError(normalizedEmailError)
+      return
+    }
     if (!terminosCondiciones) { setTouchedTerminosCondiciones(true); setRegistroError("Debe aceptar los términos y condiciones."); return }
-    if (!formData.password || formData.password !== confirmPassword) { setTouchedFields((prev) => ({ ...prev, password: true })); setTouchedConfirmPassword(true); setRegistroError("Las contraseñas no coinciden."); return }
-    const passwordValidation = validatePassword(formData.password)
-    if (!passwordValidation.isValid) { setTouchedFields((prev) => ({ ...prev, password: true })); setRegistroError(`Contraseña inválida: ${passwordValidation.errors.join(", ")}`); return }
+    if (!normalizedFormData.password || normalizedFormData.password !== sanitizedConfirmPassword) { touchField("password"); setTouchedConfirmPassword(true); setRegistroError("Las contraseñas no coinciden."); return }
+    const currentPasswordValidation = validatePassword(normalizedFormData.password)
+    if (!currentPasswordValidation.isValid) { touchField("password"); setRegistroError(`Contraseña inválida: ${currentPasswordValidation.errors.join(", ")}`); return }
     try {
       const res = await fetch("/api/usuario_formulario", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName: formData.firstName, lastName: formData.lastName, pais: formData.pais, telefono: formData.telefono, email: formData.email, password: formData.password, terminosCondiciones }),
+        body: JSON.stringify({ firstName: normalizedFormData.firstName, lastName: normalizedFormData.lastName, pais: normalizedFormData.pais, telefono: normalizedFormData.telefono, email: normalizedFormData.email, password: normalizedFormData.password, terminosCondiciones }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -239,7 +261,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             <Label htmlFor="firstname" className="text-sm font-medium">Nombres</Label>
             <input
               id="firstname" type="text" value={formData.firstName}
-              onChange={handleFirstnameChange} onBlur={() => handleBlur("firstName")}
+              onChange={(e) => handleNameChange("firstName", e)} onBlur={() => handleBlur("firstName")}
               maxLength={MAX_NAME_LENGTH}
               className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${touchedFields.firstName && !formData.firstName ? "border-red-500 ring-red-500" : "border-gray-300"}`}
               placeholder="Ingrese sus nombres"
@@ -250,7 +272,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             <Label htmlFor="lastname" className="text-sm font-medium">Apellidos</Label>
             <input
               id="lastName" type="text" value={formData.lastName}
-              onChange={handleLastnameChange} onBlur={() => handleBlur("lastName")}
+              onChange={(e) => handleNameChange("lastName", e)} onBlur={() => handleBlur("lastName")}
               maxLength={MAX_NAME_LENGTH}
               className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${touchedFields.lastName && !formData.lastName ? "border-red-500 ring-red-500" : "border-gray-300"}`}
               placeholder="Ingrese sus apellidos"
@@ -300,6 +322,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             id="email" type="text" value={formData.email}
             onChange={handleEmailChange} onBlur={() => handleBlur("email")}
             autoCapitalize="none"
+            maxLength={EMAIL_MAX_LENGTH}
             className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${(touchedFields.email && !formData.email) || emailError ? "border-red-500 ring-red-500" : "border-gray-300"}`}
             placeholder="ejemplo@correo.com"
           />
@@ -314,9 +337,9 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               id="password" type={showPassword ? "text" : "password"} placeholder="••••••••"
-              value={formData.password} maxLength={PASSWORD_LENGTH} onBlur={() => handleBlur("password")}
+              value={formData.password} maxLength={PASSWORD_MAX_LENGTH} onBlur={() => handleBlur("password")}
               onChange={(e) => {
-                const value = e.target.value
+                const value = sanitizePassword(e.target.value)
                 handleInputChange("password", value)
                 if (value) setPasswordValidation(validatePassword(value))
                 else setPasswordValidation({ isValid: false, errors: [] })
@@ -333,9 +356,9 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               Requisitos de contraseña:
             </p>
             <ul className="space-y-1 text-xs">
-              <li className={`flex items-center gap-2 ${/[a-zA-Z]/.test(formData.password) ? "text-green-600" : "text-red-600"}`}>{/[a-zA-Z]/.test(formData.password) ? "✓" : "✗"} Al menos una letra</li>
-              <li className={`flex items-center gap-2 ${/[0-9]/.test(formData.password) ? "text-green-600" : "text-red-600"}`}>{/[0-9]/.test(formData.password) ? "✓" : "✗"} Al menos un número</li>
-              <li className={`flex items-center gap-2 ${/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? "text-green-600" : "text-red-600"}`}>{/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? "✓" : "✗"} Al menos un carácter especial</li>
+              <li className={`flex items-center gap-2 ${hasPasswordLetter(formData.password) ? "text-green-600" : "text-red-600"}`}>{hasPasswordLetter(formData.password) ? "✓" : "✗"} Al menos una letra</li>
+              <li className={`flex items-center gap-2 ${hasPasswordNumber(formData.password) ? "text-green-600" : "text-red-600"}`}>{hasPasswordNumber(formData.password) ? "✓" : "✗"} Al menos un número</li>
+              <li className={`flex items-center gap-2 ${hasPasswordSpecial(formData.password) ? "text-green-600" : "text-red-600"}`}>{hasPasswordSpecial(formData.password) ? "✓" : "✗"} Al menos un carácter especial</li>
               <li className={`flex items-center gap-2 ${formData.password.length === PASSWORD_LENGTH ? "text-green-600" : "text-red-600"}`}>{formData.password.length === PASSWORD_LENGTH ? "✓" : "✗"} Exactamente 8 caracteres ({formData.password.length}/{PASSWORD_LENGTH})</li>
             </ul>
           </div>
@@ -348,8 +371,8 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               id="confirmPassword" type={showConfirmPassword ? "text" : "password"} placeholder="••••••••"
-              value={confirmPassword} maxLength={PASSWORD_LENGTH}
-              onChange={(e) => setConfirmPassword(e.target.value)} onBlur={() => setTouchedConfirmPassword(true)}
+              value={confirmPassword} maxLength={PASSWORD_MAX_LENGTH}
+              onChange={(e) => setConfirmPassword(sanitizePassword(e.target.value))} onBlur={() => setTouchedConfirmPassword(true)}
               className={`pl-10 pr-10 w-full border rounded-md py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 formData.password && confirmPassword && formData.password !== confirmPassword ? "border-red-500 ring-red-500"
                 : formData.password && confirmPassword && formData.password === confirmPassword ? "border-green-500 ring-green-500"
