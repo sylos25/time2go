@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -116,6 +117,11 @@ const TABLE_NAV_ITEMS: Array<{ key: TableKey; label: string }> = [
   { key: "tipo_eventos", label: "Tipos de eventos" },
 ]
 
+const isTableKey = (value: string | null): value is TableKey => {
+  if (!value) return false
+  return TABLE_NAV_ITEMS.some((item) => item.key === value)
+}
+
 const getColumnLabel = (column: string): string => {
   if (COLUMN_LABELS[column]) return COLUMN_LABELS[column]
   return column
@@ -166,8 +172,15 @@ const formatCellValue = (column: string, value: unknown): string => {
   return String(value ?? "")
 }
 
-export function ViewDataTab() {
-  const [table, setTable] = useState<TableKey>("sitios")
+export default function DashboardViewDataPage() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  const [table, setTable] = useState<TableKey>(() => {
+    const fromUrl = searchParams.get("tabla")
+    return isTableKey(fromUrl) ? fromUrl : "sitios"
+  })
   const [rows, setRows] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -193,6 +206,13 @@ export function ViewDataTab() {
   const visibleColumns = filteredRows.length > 0
     ? Object.keys(filteredRows[0]).filter((col) => !isIdColumn(col) && !hiddenColumnsForTable.includes(col))
     : []
+
+  const setTableAndUrl = (nextTable: TableKey) => {
+    setTable(nextTable)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("tabla", nextTable)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }
 
   const openEditModal = (row: Record<string, any>) => {
     const initialData: Record<string, any> = {}
@@ -271,6 +291,18 @@ export function ViewDataTab() {
   }
 
   useEffect(() => {
+    const tableFromUrl = searchParams.get("tabla")
+    if (!isTableKey(tableFromUrl)) {
+      const params = new URLSearchParams(searchParams.toString())
+      params.set("tabla", table)
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+      return
+    }
+
+    setTable((prev) => (prev === tableFromUrl ? prev : tableFromUrl))
+  }, [searchParams, pathname, router, table])
+
+  useEffect(() => {
     let cancelled = false
     const load = async () => {
       setLoading(true)
@@ -294,12 +326,12 @@ export function ViewDataTab() {
 
   const goToPreviousTable = () => {
     if (activeTableIndex <= 0) return
-    setTable(TABLE_NAV_ITEMS[activeTableIndex - 1].key)
+    setTableAndUrl(TABLE_NAV_ITEMS[activeTableIndex - 1].key)
   }
 
   const goToNextTable = () => {
     if (activeTableIndex >= TABLE_NAV_ITEMS.length - 1) return
-    setTable(TABLE_NAV_ITEMS[activeTableIndex + 1].key)
+    setTableAndUrl(TABLE_NAV_ITEMS[activeTableIndex + 1].key)
   }
 
   return (
@@ -337,7 +369,7 @@ export function ViewDataTab() {
                       aria-selected={isActive}
                       aria-label={`Mostrar tabla: ${item.label}`}
                       title={`Mostrar tabla: ${item.label}`}
-                      onClick={() => setTable(item.key)}
+                      onClick={() => setTableAndUrl(item.key)}
                       className={`rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors sm:text-sm cursor-pointer ${
                         isActive
                           ? "bg-green-700 text-white shadow-sm hover:bg-emerald-400 hover:text-green-900 dark:bg-emerald-500 dark:text-emerald-950 dark:hover:bg-lime-400"
@@ -507,5 +539,3 @@ export function ViewDataTab() {
     </div>
   )
 }
-
-export default ViewDataTab

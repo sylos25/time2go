@@ -154,7 +154,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       })
     }
 
-    if (action === "unban") {
+    if (action === "unban" || action === "validate") {
       const result = await client.query(
         `UPDATE tabla_usuarios
          SET estado = TRUE,
@@ -167,12 +167,12 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 
       return NextResponse.json({
         ok: true,
-        message: "Usuario desbanneado correctamente",
+        message: action === "validate" ? "Usuario validado correctamente" : "Usuario desbanneado correctamente",
         user: result.rows[0],
       })
     }
 
-    return NextResponse.json({ ok: false, message: "Acción inválida. Usa action=ban o action=unban" }, { status: 400 })
+    return NextResponse.json({ ok: false, message: "Acción inválida. Usa action=ban, action=unban o action=validate" }, { status: 400 })
   } catch (error) {
     try {
       await client.query("ROLLBACK")

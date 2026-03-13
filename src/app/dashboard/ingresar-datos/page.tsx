@@ -16,7 +16,7 @@ type DataTable =
   | "sitios_discapacitados"
   | "tipo_eventos"
 
-const DEFAULT_TABLE: DataTable = "paises"
+const DEFAULT_TABLE: DataTable = "sitios"
 
 interface FormState {
   [key: string]: string | number | boolean
@@ -118,30 +118,19 @@ const TABLE_NAV_ITEMS: Array<{ key: DataTable; label: string }> = [
   { key: "tipo_eventos", label: "Tipo de eventos" },
 ]
 
-const isDataTable = (value: string): value is DataTable => {
-  return value in tableConfigs
-}
-
 const LETTERS_ONLY_REGEX = /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]*$/
 
-const isStrictTable = (table: DataTable) =>
-  table === "paises"
-
-const isStrictIdField = (fieldName: string) =>
-  fieldName === "id_pais"
-
-const isStrictNameField = (fieldName: string) =>
-  fieldName === "nombre_pais"
+const isStrictTable = (table: DataTable) => table === "paises"
+const isStrictIdField = (fieldName: string) => fieldName === "id_pais"
+const isStrictNameField = (fieldName: string) => fieldName === "nombre_pais"
 
 const isNumericField = (table: DataTable, fieldName: string): boolean => {
   const field = tableConfigs[table]?.fields.find((item) => item.name === fieldName)
   return field?.type === "number"
 }
 
-export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {}) {
-  const [selectedTable, setSelectedTable] = useState<DataTable>(
-    initialTable && isDataTable(initialTable) ? initialTable : DEFAULT_TABLE
-  )
+export default function DashboardInsertDataPage() {
+  const [selectedTable, setSelectedTable] = useState<DataTable>(DEFAULT_TABLE)
   const [formData, setFormData] = useState<FormState>({})
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
@@ -154,7 +143,6 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
   const secondaryFields = currentConfig.fields.slice(splitIndex)
 
   useEffect(() => {
-    // Reset form when table changes
     setFormData({})
     setMessage(null)
   }, [selectedTable])
@@ -179,13 +167,10 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
     }
 
     const needsStrictValidation = isStrictTable(selectedTable)
-
     if (needsStrictValidation) {
       const isIdField = isStrictIdField(name)
       const isNameField = isStrictNameField(name)
-
       if (isIdField) return
-
       if (isNameField && !LETTERS_ONLY_REGEX.test(String(rawValue))) {
         return
       }
@@ -209,7 +194,6 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
     if (field.required && field.type !== "checkbox" && isEmpty) {
       return `El campo ${field.label} es obligatorio`
     }
-
     if (!field.required && isEmpty) {
       return null
     }
@@ -220,28 +204,22 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
       if (!/^\d+$/.test(valueAsString)) {
         return `${field.label} solo permite números`
       }
-
       if (field.minLength && valueAsString.length < field.minLength) {
         return `${field.label} debe tener mínimo ${field.minLength} caracteres`
       }
-
       if (field.maxLength && valueAsString.length > field.maxLength) {
         return `${field.label} debe tener máximo ${field.maxLength} caracteres`
       }
-
       const numericValue = Number(valueAsString)
       if (field.minValue !== undefined && numericValue < field.minValue) {
         return `${field.label} debe ser mayor o igual a ${field.minValue}`
       }
-
       if (field.maxValue !== undefined && numericValue > field.maxValue) {
         return `${field.label} debe ser menor o igual a ${field.maxValue}`
       }
-
       if (field.pattern && !new RegExp(field.pattern).test(valueAsString)) {
         return field.validationMessage || `${field.label} tiene un formato inválido`
       }
-
       return null
     }
 
@@ -249,11 +227,9 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
       if (field.minLength && valueAsString.length < field.minLength) {
         return `${field.label} debe tener mínimo ${field.minLength} caracteres`
       }
-
       if (field.maxLength && valueAsString.length > field.maxLength) {
         return `${field.label} debe tener máximo ${field.maxLength} caracteres`
       }
-
       if (field.pattern && !new RegExp(field.pattern).test(valueAsString)) {
         return field.validationMessage || `${field.label} tiene un formato inválido`
       }
@@ -288,7 +264,6 @@ export function InsertDataTab({ initialTable }: { initialTable?: DataTable } = {
       })
 
       const result = await response.json()
-
       if (response.ok) {
         setMessage({ type: "success", text: `✓ Datos insertados exitosamente en ${selectedTable}` })
         setFormData({})
