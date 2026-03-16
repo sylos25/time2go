@@ -1,14 +1,15 @@
-DROP FUNCTION IF EXISTS app_api.fn_eventos_listar_json(INT, TEXT, BOOLEAN, BOOLEAN, INT);
+-- Funcion para listar eventos.
 
 CREATE OR REPLACE FUNCTION app_api.fn_eventos_listar_json(
-  p_id_evento INT DEFAULT NULL,
-  p_id_publico_evento TEXT DEFAULT NULL,
+  p_id_evento tabla_eventos.id_evento%TYPE DEFAULT NULL,
+  p_id_publico_evento tabla_eventos.id_publico_evento%TYPE DEFAULT NULL,
   p_only_mine BOOLEAN DEFAULT FALSE,
   p_include_all BOOLEAN DEFAULT FALSE,
-  p_id_usuario_solicitante INT DEFAULT NULL
+  p_id_usuario_solicitante tabla_usuarios.id_usuario%TYPE DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
+SET search_path = public, app_api, pg_temp
 AS $$
 DECLARE
   v_eventos JSONB;
@@ -277,7 +278,12 @@ BEGIN
     SELECT value INTO v_single FROM jsonb_array_elements(v_eventos) LIMIT 1;
 
     IF v_single IS NULL THEN
-      RETURN jsonb_build_object('ok', FALSE, 'error', 'Evento no encontrado');
+      RETURN jsonb_build_object(
+        'ok', FALSE,
+        'error_code', 'EVENT_NOT_FOUND',
+        'sqlstate', 'P0002',
+        'error', 'Evento no encontrado'
+      );
     END IF;
 
     RETURN jsonb_build_object('ok', TRUE, 'event', v_single);

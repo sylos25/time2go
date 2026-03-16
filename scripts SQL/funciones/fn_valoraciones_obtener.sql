@@ -1,9 +1,10 @@
 -- ── 1. OBTENER valoraciones del usuario ─────────────────────────────────────
 CREATE OR REPLACE FUNCTION app_api.fn_valoraciones_obtener(
-  p_id_usuario INT
+  p_id_usuario tabla_valoraciones.id_usuario%TYPE
 )
 RETURNS JSONB
 LANGUAGE plpgsql
+SET search_path = public, app_api, pg_temp
 AS $$
 DECLARE
   v_resultado JSONB;
@@ -39,40 +40,41 @@ BEGIN
     'ok',          TRUE,
     'valoraciones', COALESCE(v_resultado, '[]'::JSONB)
   );
+EXCEPTION
+  WHEN OTHERS THEN
+    RETURN jsonb_build_object(
+      'ok', FALSE,
+      'error_code', 'DB_ERROR',
+      'sqlstate', SQLSTATE,
+      'error', SQLERRM
+    );
 END;
 $$;
 
 
 -- ── 2. CREAR una valoración ──────────────────────────────────────────────────
+DROP FUNCTION IF EXISTS app_api.fn_valoraciones_crear(INT, INT, NUMERIC, TEXT);
+
 CREATE OR REPLACE FUNCTION app_api.fn_valoraciones_crear(
-  p_id_usuario INT,
-  p_id_evento  INT,
-  p_valoracion NUMERIC,   -- ej. 1–5
-  p_comentario TEXT DEFAULT NULL
+  p_id_usuario tabla_valoraciones.id_usuario%TYPE,
+  p_id_evento  tabla_valoraciones.id_evento%TYPE,
+  p_valoracion tabla_valoraciones.valoracion%TYPE,   -- ej. 1–5
+  p_comentario tabla_valoraciones.comentario%TYPE DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
+SET search_path = public, app_api, pg_temp
 AS $$
 DECLARE
-  v_id_valoracion INT;
+  v_id_valoracion tabla_valoraciones.id_valoracion%TYPE;
 BEGIN
   -- Validar rango de valoración
   IF p_valoracion < 1 OR p_valoracion > 5 THEN
     RETURN jsonb_build_object(
-      'ok',      FALSE,
-      'message', 'La valoración debe estar entre 1 y 5'
-    );
-  END IF;
-
-  -- Evitar duplicados por usuario + evento
-  IF EXISTS (
-    SELECT 1 FROM tabla_valoraciones
-    WHERE id_usuario = p_id_usuario
-      AND id_evento  = p_id_evento
-  ) THEN
-    RETURN jsonb_build_object(
-      'ok',      FALSE,
-      'message', 'Ya existe una valoración para este evento'
+      'ok', FALSE,
+      'error_code', 'VALORACION_INVALID_SCORE',
+      'sqlstate', '22023',
+      'error', 'La valoracion debe estar entre 1 y 5'
     );
   END IF;
 
@@ -97,27 +99,47 @@ BEGIN
     'ok',            TRUE,
     'id_valoracion', v_id_valoracion
   );
+EXCEPTION
+  WHEN unique_violation THEN
+    RETURN jsonb_build_object(
+      'ok', FALSE,
+      'error_code', 'VALORACION_ALREADY_EXISTS',
+      'sqlstate', SQLSTATE,
+      'error', 'Ya existe una valoracion para este evento'
+    );
+  WHEN OTHERS THEN
+    RETURN jsonb_build_object(
+      'ok', FALSE,
+      'error_code', 'DB_ERROR',
+      'sqlstate', SQLSTATE,
+      'error', SQLERRM
+    );
 END;
 $$;
 
 
 -- ── 3. ACTUALIZAR una valoración ─────────────────────────────────────────────
+DROP FUNCTION IF EXISTS app_api.fn_valoraciones_actualizar(INT, INT, NUMERIC, TEXT);
+
 CREATE OR REPLACE FUNCTION app_api.fn_valoraciones_actualizar(
-  p_id_valoracion INT,
-  p_id_usuario    INT,          -- para verificar propiedad
-  p_valoracion    NUMERIC DEFAULT NULL,
-  p_comentario    TEXT    DEFAULT NULL
+  p_id_valoracion tabla_valoraciones.id_valoracion%TYPE,
+  p_id_usuario    tabla_valoraciones.id_usuario%TYPE,          -- para verificar propiedad
+  p_valoracion    tabla_valoraciones.valoracion%TYPE DEFAULT NULL,
+  p_comentario    tabla_valoraciones.comentario%TYPE DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
+SET search_path = public, app_api, pg_temp
 AS $$
 DECLARE
   v_filas INT;
 BEGIN
   IF p_valoracion IS NOT NULL AND (p_valoracion < 1 OR p_valoracion > 5) THEN
     RETURN jsonb_build_object(
-      'ok',      FALSE,
-      'message', 'La valoración debe estar entre 1 y 5'
+      'ok', FALSE,
+      'error_code', 'VALORACION_INVALID_SCORE',
+      'sqlstate', '22023',
+      'error', 'La valoracion debe estar entre 1 y 5'
     );
   END IF;
 
@@ -137,25 +159,36 @@ BEGIN
 
   IF v_filas = 0 THEN
     RETURN jsonb_build_object(
-      'ok',      FALSE,
-      'message', 'Valoración no encontrada o sin permisos'
+      'ok', FALSE,
+      'error_code', 'VALORACION_NOT_FOUND_OR_FORBIDDEN',
+      'sqlstate', 'P0002',
+      'error', 'Valoracion no encontrada o sin permisos'
     );
   END IF;
 
   RETURN jsonb_build_object(
     'ok', TRUE
   );
+EXCEPTION
+  WHEN OTHERS THEN
+    RETURN jsonb_build_object(
+      'ok', FALSE,
+      'error_code', 'DB_ERROR',
+      'sqlstate', SQLSTATE,
+      'error', SQLERRM
+    );
 END;
 $$;
 
 
 -- ── 4. ELIMINAR una valoración ───────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION app_api.fn_valoraciones_eliminar(
-  p_id_valoracion INT,
-  p_id_usuario    INT           -- para verificar propiedad
+  p_id_valoracion tabla_valoraciones.id_valoracion%TYPE,
+  p_id_usuario    tabla_valoraciones.id_usuario%TYPE           -- para verificar propiedad
 )
 RETURNS JSONB
 LANGUAGE plpgsql
+SET search_path = public, app_api, pg_temp
 AS $$
 DECLARE
   v_filas INT;
@@ -168,13 +201,23 @@ BEGIN
 
   IF v_filas = 0 THEN
     RETURN jsonb_build_object(
-      'ok',      FALSE,
-      'message', 'Valoración no encontrada o sin permisos'
+      'ok', FALSE,
+      'error_code', 'VALORACION_NOT_FOUND_OR_FORBIDDEN',
+      'sqlstate', 'P0002',
+      'error', 'Valoracion no encontrada o sin permisos'
     );
   END IF;
 
   RETURN jsonb_build_object(
     'ok', TRUE
   );
+EXCEPTION
+  WHEN OTHERS THEN
+    RETURN jsonb_build_object(
+      'ok', FALSE,
+      'error_code', 'DB_ERROR',
+      'sqlstate', SQLSTATE,
+      'error', SQLERRM
+    );
 END;
 $$;

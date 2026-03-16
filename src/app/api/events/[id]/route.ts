@@ -3,6 +3,7 @@ import { uploadImageBuffer } from "@/lib/document-storage";
 import pool from "@/lib/db";
 import { verifyToken } from "@/lib/jwt";
 import { parseCookies } from "@/lib/cookies";
+import { dbErrorResponse } from "@/lib/api-error-response";
 
 export const runtime = "nodejs";
 
@@ -299,7 +300,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 
     const updatePayload = updateResult.rows?.[0]?.payload;
     if (!updatePayload?.ok) {
-      return NextResponse.json({ ok: false, message: updatePayload?.error || "Error updating event" }, { status: 400 });
+      return dbErrorResponse(updatePayload, "Error updating event");
     }
 
     // Return updated event
@@ -402,8 +403,7 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
 
     const payload = deleteResult.rows?.[0]?.payload;
     if (!payload?.ok) {
-      const status = payload?.error === "Event not found" ? 404 : 400;
-      return NextResponse.json({ ok: false, message: payload?.error || "Error deleting event" }, { status });
+      return dbErrorResponse(payload, "Error deleting event");
     }
 
     return NextResponse.json({ ok: true, message: "Evento eliminado correctamente" });

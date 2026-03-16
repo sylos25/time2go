@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { verifyToken } from "@/lib/jwt";
 import { parseCookies } from "@/lib/cookies";
+import { dbErrorResponse } from "@/lib/api-error-response";
 
 async function getAuthenticatedUser(req: Request) {
   // ... sin cambios
@@ -27,8 +28,8 @@ export async function GET(
     );
 
     const data = rows[0].result;
-    if (!data.ok)
-      return NextResponse.json(data, { status: 404 });
+    if (!data?.ok)
+      return dbErrorResponse(data, "Error obteniendo la valoracion");
 
     return NextResponse.json(data);
   } catch (err: any) {
@@ -64,8 +65,8 @@ export async function PUT(
     );
 
     const data = rows[0].result;
-    if (!data.ok)
-      return NextResponse.json(data, { status: 404 });
+    if (!data?.ok)
+      return dbErrorResponse(data, "Error actualizando la valoracion");
 
     return NextResponse.json({ ok: true, message: "Valoración actualizada" });
   } catch (err: any) {
@@ -94,8 +95,8 @@ export async function DELETE(
     );
 
     const data = rows[0].result;
-    if (!data.ok)
-      return NextResponse.json(data, { status: 404 });
+    if (!data?.ok)
+      return dbErrorResponse(data, "Error eliminando la valoracion");
 
     return NextResponse.json({ ok: true, message: "Valoración eliminada correctamente" });
   } catch (err: any) {

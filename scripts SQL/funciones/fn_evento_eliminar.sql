@@ -1,20 +1,40 @@
+-- Funcion para eliminar un evento existente, eliminando también todas sus relaciones.
+
 CREATE OR REPLACE FUNCTION app_api.fn_evento_eliminar(
-  p_id_evento INT,
-  p_id_usuario_editor INT
+  p_id_evento tabla_eventos.id_evento%TYPE,
+  p_id_usuario_editor tabla_usuarios.id_usuario%TYPE
 )
 RETURNS JSONB
 LANGUAGE plpgsql
+SET search_path = public, app_api, pg_temp
 AS $$
 DECLARE
   v_exists BOOLEAN;
 BEGIN
+  IF p_id_evento IS NULL THEN
+    RETURN jsonb_build_object(
+      'ok', FALSE,
+      'error_code', 'EVENT_ID_REQUIRED',
+      'sqlstate', '22023',
+      'error', 'El id_evento es obligatorio'
+    );
+  END IF;
+
   PERFORM set_config('app.id_usuario', p_id_usuario_editor::TEXT, TRUE);
 
-  SELECT EXISTS(SELECT 1 FROM tabla_eventos WHERE id_evento = p_id_evento)
-  INTO v_exists;
+  SELECT TRUE
+  INTO v_exists
+  FROM tabla_eventos
+  WHERE id_evento = p_id_evento
+  FOR UPDATE;
 
-  IF NOT v_exists THEN
-    RETURN jsonb_build_object('ok', FALSE, 'error', 'Event not found');
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object(
+      'ok', FALSE,
+      'error_code', 'EVENT_NOT_FOUND',
+      'sqlstate', 'P0002',
+      'error', 'Event not found'
+    );
   END IF;
 
   DELETE FROM tabla_reserva_asistentes
@@ -35,5 +55,13 @@ BEGIN
   DELETE FROM tabla_eventos WHERE id_evento = p_id_evento;
 
   RETURN jsonb_build_object('ok', TRUE, 'id_evento', p_id_evento);
+EXCEPTION
+  WHEN OTHERS THEN
+    RETURN jsonb_build_object(
+      'ok', FALSE,
+      'error_code', 'DB_ERROR',
+      'sqlstate', SQLSTATE,
+      'error', SQLERRM
+    );
 END;
 $$;

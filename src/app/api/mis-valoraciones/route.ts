@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { verifyToken } from "@/lib/jwt";
 import { parseCookies } from "@/lib/cookies";
+import { dbErrorResponse } from "@/lib/api-error-response";
 
 async function getAuthenticatedUser(req: Request) {
   // ... sin cambios
@@ -20,6 +21,9 @@ export async function GET(req: Request) {
     );
 
     const data = rows[0].result;
+    if (!data?.ok) {
+      return dbErrorResponse(data, "Error obteniendo valoraciones");
+    }
     return NextResponse.json(data);
   } catch (err: any) {
     console.error("[GET /api/mis-valoraciones]", err);
@@ -51,8 +55,8 @@ export async function POST(req: Request) {
     );
 
     const data = rows[0].result;
-    if (!data.ok)
-      return NextResponse.json(data, { status: 409 }); // duplicado u otro error de negocio
+    if (!data?.ok)
+      return dbErrorResponse(data, "Error creando la valoracion");
 
     return NextResponse.json(data, { status: 201 });
   } catch (err: any) {

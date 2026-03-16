@@ -39,7 +39,7 @@ DROP TABLE IF EXISTS tabla_departamentos;
 DROP TABLE IF EXISTS tabla_paises;
 
 -- CREACION DE TIPOS ENUM
-CREATE TYPE tip_doc AS ENUM ('Cédula de Ciudadanía', 'Cédula de Extranjería', 'Pasaporte');
+CREATE TYPE tip_doc AS ENUM ('Tarjeta de Identidad','Cédula de Ciudadanía', 'Cédula de Extranjería', 'Pasaporte');
 
 -- Primero cargar la extension de pgcrypto.
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -47,14 +47,14 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- CREACION DE TABLAS
 CREATE TABLE IF NOT EXISTS tabla_paises (
     id_pais                                  INT                          PRIMARY KEY,
-    nombre_pais                              VARCHAR                      NOT NULL       CHECK (char_length(nombre_pais) >= 3),
+    nombre_pais                              VARCHAR(47)                  NOT NULL       CHECK (char_length(nombre_pais) >= 4),
     fecha_creacion                           TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                      TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS tabla_departamentos (
     id_departamento                          INT                          PRIMARY KEY,
-    nombre_departamento                      VARCHAR                      NOT NULL       CHECK (char_length(nombre_departamento) >= 4),
+    nombre_departamento                      VARCHAR(30)                  NOT NULL       CHECK (char_length(nombre_departamento) >= 4),
     id_pais                                  INT                          NOT NULL,
     fecha_creacion                           TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                      TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS tabla_departamentos (
 CREATE TABLE IF NOT EXISTS tabla_municipios (
     id_departamento                          INT                          NOT NULL,
     id_municipio                             INT                          PRIMARY KEY,
-    nombre_municipio                         VARCHAR                      NOT NULL        CHECK (char_length(nombre_municipio) >= 3),
+    nombre_municipio                         VARCHAR(30)                  NOT NULL        CHECK (char_length(nombre_municipio) >= 3),
     distrito                                 BOOLEAN                      NOT NULL,
     area_metropolitana                       BOOLEAN                      NOT NULL,
     fecha_creacion                           TIMESTAMP   WITH TIME ZONE   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS tabla_municipios (
 
 CREATE TABLE IF NOT EXISTS tabla_tipo_sitios (
     id_tipo_sitio                            INT                          PRIMARY KEY,
-    nombre_tipo_sitio                        VARCHAR                      NOT NULL       UNIQUE  CHECK (char_length(nombre_tipo_sitio) >= 4),
+    nombre_tipo_sitio                        VARCHAR(30)                  NOT NULL       UNIQUE  CHECK (char_length(nombre_tipo_sitio) >= 4),
     fecha_creacion                           TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                      TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP
 );

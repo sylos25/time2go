@@ -1,7 +1,9 @@
+-- Función para listar usuarios con paginación y filtros, devolviendo resultados en formato JSON.
+
 CREATE OR REPLACE FUNCTION fn_listar_usuarios_paginado_json(
-  p_role INT DEFAULT NULL,
+  p_role tabla_usuarios.id_rol%TYPE DEFAULT NULL,
   p_roles INT[] DEFAULT NULL,
-  p_estado BOOLEAN DEFAULT NULL,
+  p_estado tabla_usuarios.estado%TYPE DEFAULT NULL,
   p_q TEXT DEFAULT NULL,
   p_page INT DEFAULT 1,
   p_page_size INT DEFAULT 25

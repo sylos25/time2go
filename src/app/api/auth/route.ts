@@ -1,4 +1,6 @@
 import pool from '@/lib/db';
+import { NextResponse } from 'next/server';
+import { dbErrorResponse, internalErrorResponse } from '@/lib/api-error-response';
 
 export async function POST(req: Request) {
   const { email, password, nombres, apellidos, id_pais, id_rol } = await req.json();
@@ -18,18 +20,12 @@ export async function POST(req: Request) {
 
     const payload = result.rows?.[0]?.payload;
     if (!payload?.ok) {
-      return new Response(
-        JSON.stringify({ error: payload?.error || 'Error al crear usuario' }),
-        { status: 400 }
-      );
+      return dbErrorResponse(payload, 'Error al crear usuario');
     }
 
-    return new Response(
-      JSON.stringify({ id_publico: payload.id_publico }),
-      { status: 200 }
-    );
+    return NextResponse.json({ id_publico: payload.id_publico }, { status: 200 });
   } catch (error) {
     console.error('Error creating user:', error);
-    return new Response(JSON.stringify({ error: 'Error al crear usuario' }), { status: 500 });
+    return internalErrorResponse('Error al crear usuario');
   }
 }

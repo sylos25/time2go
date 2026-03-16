@@ -4,6 +4,7 @@ import pool from "@/lib/db";
 import { verifyToken } from "@/lib/jwt";
 import { parseCookies } from "@/lib/cookies";
 import { PERMISSION_IDS } from "@/lib/permissions";
+import { dbErrorResponse } from "@/lib/api-error-response";
 
 export const runtime = "nodejs";
 
@@ -339,7 +340,7 @@ export async function POST(req: Request) {
 
     const payload = dbResult.rows?.[0]?.payload;
     if (!payload?.ok) {
-      return NextResponse.json({ ok: false, message: payload?.error || "Error creando evento" }, { status: 400 });
+      return dbErrorResponse(payload, "Error creando evento");
     }
 
     return NextResponse.json({ ok: true, eventId: payload.id_evento });

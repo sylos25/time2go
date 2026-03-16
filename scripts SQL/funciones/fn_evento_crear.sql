@@ -1,5 +1,7 @@
+--Funcion para crear un nuevo evento, con sus datos principales y relaciones.
+
 CREATE OR REPLACE FUNCTION app_api.fn_evento_crear(
-  p_id_usuario INT,
+  p_id_usuario tabla_eventos.id_usuario%TYPE,
   p_evento JSONB,
   p_telefonos JSONB DEFAULT '[]'::JSONB,
   p_info_importante JSONB DEFAULT '[]'::JSONB,
@@ -10,20 +12,39 @@ CREATE OR REPLACE FUNCTION app_api.fn_evento_crear(
 )
 RETURNS JSONB
 LANGUAGE plpgsql
+SET search_path = public, app_api, pg_temp
 AS $$
 DECLARE
-  v_id_evento INT;
-  v_id_publico_evento TEXT;
+  v_id_evento tabla_eventos.id_evento%TYPE;
+  v_id_publico_evento tabla_eventos.id_publico_evento%TYPE;
   v_tel JSONB;
   v_info JSONB;
   v_boleto JSONB;
   v_link JSONB;
   v_imagen JSONB;
-  v_info_detalle TEXT := '';
-  v_info_obligatorio BOOLEAN := FALSE;
+  v_info_detalle tabla_evento_informacion_importante.detalle%TYPE := '';
+  v_info_obligatorio tabla_evento_informacion_importante.obligatorio%TYPE := FALSE;
   v_line_no INT := 0;
-  v_raw_link TEXT;
+  v_raw_link tabla_links.link%TYPE;
+  v_links_sync tabla_links.link%TYPE[] := ARRAY[]::TEXT[];
+  v_img_url tabla_imagenes_eventos.url_imagen_evento%TYPE;
+  v_img_storage_key tabla_imagenes_eventos.storage_key%TYPE;
+  v_img_mime_type tabla_imagenes_eventos.mime_type%TYPE;
+  v_img_bytes tabla_imagenes_eventos.bytes%TYPE;
+  v_img_original_filename tabla_imagenes_eventos.original_filename%TYPE;
+  v_img_storage_provider tabla_imagenes_eventos.storage_provider%TYPE;
+  v_imagenes_sync TEXT[] := ARRAY[]::TEXT[];
+  v_img_key TEXT;
 BEGIN
+  IF p_evento IS NULL OR COALESCE(jsonb_typeof(p_evento), '') <> 'object' THEN
+    RETURN jsonb_build_object(
+      'ok', FALSE,
+      'error_code', 'EVENT_INVALID_PAYLOAD',
+      'sqlstate', '22023',
+      'error', 'El payload del evento debe ser un objeto JSON'
+    );
+  END IF;
+
   INSERT INTO tabla_eventos (
     nombre_evento,
     pulep_evento,
@@ -175,34 +196,70 @@ BEGIN
       END IF;
 
       IF char_length(COALESCE(BTRIM(v_raw_link), '')) > 0 THEN
-        INSERT INTO tabla_links (id_evento, link)
-        VALUES (v_id_evento, BTRIM(v_raw_link));
+        v_raw_link := BTRIM(v_raw_link);
+
+        IF NOT (v_raw_link = ANY(v_links_sync)) THEN
+          v_links_sync := array_append(v_links_sync, v_raw_link);
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1
+          FROM tabla_links
+          WHERE id_evento = v_id_evento
+            AND link = v_raw_link
+        ) THEN
+          INSERT INTO tabla_links (id_evento, link)
+          VALUES (v_id_evento, v_raw_link);
+        END IF;
       END IF;
     END LOOP;
   END IF;
 
-  -- Images metadata rows
+  -- Images metadata rows (dedupe payload + dedupe against current event)
   IF COALESCE(jsonb_typeof(p_imagenes), 'array') = 'array' THEN
     FOR v_imagen IN SELECT value FROM jsonb_array_elements(p_imagenes)
     LOOP
-      IF char_length(COALESCE(BTRIM(v_imagen->>'url_imagen_evento'), '')) > 0 THEN
-        INSERT INTO tabla_imagenes_eventos (
-          url_imagen_evento,
-          id_evento,
-          storage_provider,
-          storage_key,
-          mime_type,
-          bytes,
-          original_filename
-        ) VALUES (
-          v_imagen->>'url_imagen_evento',
-          v_id_evento,
-          COALESCE(NULLIF(BTRIM(v_imagen->>'storage_provider'), ''), 'legacy_url'),
-          NULLIF(BTRIM(v_imagen->>'storage_key'), ''),
-          COALESCE(NULLIF(BTRIM(v_imagen->>'mime_type'), ''), 'image/jpeg'),
-          NULLIF(v_imagen->>'bytes', '')::BIGINT,
-          NULLIF(BTRIM(v_imagen->>'original_filename'), '')
-        );
+      v_img_url := NULLIF(BTRIM(v_imagen->>'url_imagen_evento'), '');
+
+      IF v_img_url IS NOT NULL THEN
+        v_img_storage_provider := COALESCE(NULLIF(BTRIM(v_imagen->>'storage_provider'), ''), 'legacy_url');
+        v_img_storage_key := NULLIF(BTRIM(v_imagen->>'storage_key'), '');
+        v_img_mime_type := COALESCE(NULLIF(BTRIM(v_imagen->>'mime_type'), ''), 'image/jpeg');
+        v_img_bytes := NULLIF(v_imagen->>'bytes', '')::BIGINT;
+        v_img_original_filename := NULLIF(BTRIM(v_imagen->>'original_filename'), '');
+        v_img_key := COALESCE(v_img_storage_key, v_img_url);
+
+        IF NOT (v_img_key = ANY(v_imagenes_sync)) THEN
+          v_imagenes_sync := array_append(v_imagenes_sync, v_img_key);
+
+          IF NOT EXISTS (
+            SELECT 1
+            FROM tabla_imagenes_eventos i
+            WHERE i.id_evento = v_id_evento
+              AND (
+                (v_img_storage_key IS NOT NULL AND i.storage_key = v_img_storage_key)
+                OR i.url_imagen_evento = v_img_url
+              )
+          ) THEN
+            INSERT INTO tabla_imagenes_eventos (
+              url_imagen_evento,
+              id_evento,
+              storage_provider,
+              storage_key,
+              mime_type,
+              bytes,
+              original_filename
+            ) VALUES (
+              v_img_url,
+              v_id_evento,
+              v_img_storage_provider,
+              v_img_storage_key,
+              v_img_mime_type,
+              v_img_bytes,
+              v_img_original_filename
+            );
+          END IF;
+        END IF;
       END IF;
     END LOOP;
   END IF;
@@ -212,5 +269,20 @@ BEGIN
     'id_evento', v_id_evento,
     'id_publico_evento', v_id_publico_evento
   );
+EXCEPTION
+  WHEN unique_violation THEN
+    RETURN jsonb_build_object(
+      'ok', FALSE,
+      'error_code', 'EVENT_DUPLICATE_RESOURCE',
+      'sqlstate', SQLSTATE,
+      'error', SQLERRM
+    );
+  WHEN OTHERS THEN
+    RETURN jsonb_build_object(
+      'ok', FALSE,
+      'error_code', 'DB_ERROR',
+      'sqlstate', SQLSTATE,
+      'error', SQLERRM
+    );
 END;
 $$;
