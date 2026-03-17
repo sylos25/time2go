@@ -185,12 +185,14 @@ export default function DashboardViewDataPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
   const [reloadKey, setReloadKey] = useState(0)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingRow, setEditingRow] = useState<Record<string, any> | null>(null)
   const [editFormData, setEditFormData] = useState<Record<string, any>>({})
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const pageSize = 25
 
   const normalizedSearchTerm = searchTerm.trim().toLowerCase()
   const filteredRows = normalizedSearchTerm
@@ -199,16 +201,23 @@ export default function DashboardViewDataPage() {
       )
     : rows
 
+  const totalRows = filteredRows.length
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize))
+  const startIndex = (currentPage - 1) * pageSize
+  const endIndex = startIndex + pageSize
+  const paginatedRows = filteredRows.slice(startIndex, endIndex)
+
   const editableFieldsForTable = TABLE_EDITABLE_FIELDS[table] || []
   const hiddenColumnsForTable = TABLE_HIDDEN_COLUMNS[table] || []
   const activeTableIndex = TABLE_NAV_ITEMS.findIndex((item) => item.key === table)
   const activeTableLabel = TABLE_NAV_ITEMS[activeTableIndex]?.label || ""
-  const visibleColumns = filteredRows.length > 0
-    ? Object.keys(filteredRows[0]).filter((col) => !isIdColumn(col) && !hiddenColumnsForTable.includes(col))
+  const visibleColumns = paginatedRows.length > 0
+    ? Object.keys(paginatedRows[0]).filter((col) => !isIdColumn(col) && !hiddenColumnsForTable.includes(col))
     : []
 
   const setTableAndUrl = (nextTable: TableKey) => {
     setTable(nextTable)
+    setCurrentPage(1)
     const params = new URLSearchParams(searchParams.toString())
     params.set("tabla", nextTable)
     router.replace(`${pathname}?${params.toString()}`, { scroll: false })
@@ -324,6 +333,16 @@ export default function DashboardViewDataPage() {
     }
   }, [table, reloadKey])
 
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm])
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
+
   const goToPreviousTable = () => {
     if (activeTableIndex <= 0) return
     setTableAndUrl(TABLE_NAV_ITEMS[activeTableIndex - 1].key)
@@ -402,7 +421,10 @@ export default function DashboardViewDataPage() {
         <Input
           placeholder="Buscar registros..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => {
+            setSearchTerm(e.target.value)
+            setCurrentPage(1)
+          }}
           className="pl-10 border-green-600 placeholder-lime-600 focus-visible:ring-lime-400"
         />
       </div>
@@ -433,11 +455,11 @@ export default function DashboardViewDataPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-lime-200/80 dark:divide-emerald-700/60">
-                    {filteredRows.map((r, i) => (
+                    {paginatedRows.map((r, i) => (
                       <tr
-                        key={i}
+                        key={`${startIndex + i}-${String((r as any)[TABLE_ID_COLUMN[table]] ?? i)}`}
                         className={`transition-colors ${
-                          i % 2 === 0
+                          (startIndex + i) % 2 === 0
                             ? "bg-white/95 hover:bg-lime-50/90 dark:bg-emerald-950/25 dark:hover:bg-emerald-900/35"
                             : "bg-lime-50/45 hover:bg-lime-100/75 dark:bg-teal-950/25 dark:hover:bg-teal-900/35"
                         }`}
@@ -463,6 +485,31 @@ export default function DashboardViewDataPage() {
                     ))}
                   </tbody>
                 </table>
+
+                {totalRows > 0 && (
+                  <div className="flex items-center justify-between px-4 py-3 border-t border-lime-200/80 bg-lime-50/50 dark:border-emerald-700/60 dark:bg-emerald-900/20">
+                    <p className="text-sm text-green-800 dark:text-emerald-200/90">
+                      Mostrando {Math.min(startIndex + 1, totalRows)} - {Math.min(currentPage * pageSize, totalRows)} de {totalRows}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                        disabled={currentPage <= 1 || loading}
+                        className="px-3 py-1.5 rounded-lg border border-lime-200 text-green-900 dark:text-emerald-200 dark:border-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Anterior
+                      </button>
+                      <span className="text-sm text-green-800 dark:text-emerald-200/90">Página {currentPage} de {totalPages}</span>
+                      <button
+                        onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage >= totalPages || loading}
+                        className="px-3 py-1.5 rounded-lg border border-lime-200 text-green-900 dark:text-emerald-200 dark:border-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Siguiente
+                      </button>
+                    </div>
+                  </div>
+                )}
             </div>
           )}
         </>

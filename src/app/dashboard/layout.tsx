@@ -3,7 +3,7 @@
 import type React from "react"
 import { useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Calendar, Home, Loader2, MapPin, Menu, Search, Users } from "lucide-react"
+import { Calendar, Home, Loader2, MapPin, Menu, Search, ShieldCheck, Users } from "lucide-react"
 import { SessionMonitor } from "@/components/session-monitor"
 import { Button } from "@/components/ui/button"
 
@@ -26,6 +26,7 @@ export default function DashboardLayout({
   const [authorized, setAuthorized] = useState<boolean | null>(null)
   const [canManageEvents, setCanManageEvents] = useState(false)
   const [meUser, setMeUser] = useState<DashboardUser | null>(null)
+  const isAdmin = Number(meUser?.id_rol) === 4
 
   useEffect(() => {
     let canceled = false
@@ -107,8 +108,9 @@ export default function DashboardLayout({
       { href: "/dashboard/ingresar-datos", name: "Ingresar Datos", icon: MapPin },
       { href: "/dashboard/ver-datos", name: "Ver Datos", icon: Search },
       { href: "/dashboard/usuarios", name: "Usuarios", icon: Users },
+      ...(isAdmin ? [{ href: "/dashboard/administradro", name: "Administradro", icon: ShieldCheck }] : []),
     ],
-    [canManageEvents]
+    [canManageEvents, isAdmin]
   )
 
   if (loading || authorized === null) {

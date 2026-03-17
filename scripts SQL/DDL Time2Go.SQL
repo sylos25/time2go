@@ -44,6 +44,9 @@ CREATE TYPE tip_doc AS ENUM ('Tarjeta de Identidad','Cédula de Ciudadanía', 'C
 -- Primero cargar la extension de pgcrypto.
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+-- Para las funciones.
+CREATE SCHEMA IF NOT EXISTS app_api;
+
 -- CREACION DE TABLAS
 CREATE TABLE IF NOT EXISTS tabla_paises (
     id_pais                                  INT                          PRIMARY KEY,
