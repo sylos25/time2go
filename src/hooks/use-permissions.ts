@@ -109,9 +109,12 @@ export async function checkPermission(
 
 /**
  * Constantes para los IDs de accesibilidad
+ * Sincronizado con tabla_accesibilidad_menu:
+ *  1 Crear Evento | 2 Dashboard | 3 Resumen General | 4 Gestión de Eventos
  */
 export const PERMISSIONS = {
   CREAR_EVENTOS: 1,
-  VER_DASHBOARD: 4,
-  GESTIONAR_EVENTOS: 3,
+  VER_DASHBOARD: 2,
+  RESUMEN_GENERAL: 3,
+  GESTIONAR_EVENTOS: 4,
 } as const;

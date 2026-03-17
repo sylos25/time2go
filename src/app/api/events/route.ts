@@ -433,7 +433,13 @@ export async function GET(req: Request) {
     }
 
     const functionExistsResult = await pool.query(
-      `SELECT to_regprocedure('app_api.fn_eventos_listar_json(integer,text,boolean,boolean,integer)') IS NOT NULL AS exists`
+      `SELECT EXISTS (
+         SELECT 1
+         FROM pg_proc p
+         INNER JOIN pg_namespace n ON n.oid = p.pronamespace
+         WHERE n.nspname = 'app_api'
+           AND p.proname = 'fn_eventos_listar_json'
+       ) AS exists`
     );
 
     const functionExists = Boolean(functionExistsResult.rows?.[0]?.exists);

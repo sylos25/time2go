@@ -1,7 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
 import { Moon, Sun } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const THEME_KEY = "theme"
 const THEME_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
@@ -26,11 +28,17 @@ const applyTheme = (theme: ThemeMode) => {
 const persistTheme = (theme: ThemeMode) => {
   localStorage.setItem(THEME_KEY, theme)
   document.cookie = `${THEME_KEY}=${theme}; Path=/; Max-Age=${THEME_COOKIE_MAX_AGE}; SameSite=Lax`
+  document.documentElement.classList.toggle("dark", theme === "dark")
 }
 
-export function ThemeToggle() {
+type ThemeToggleProps = {
+  inline?: boolean
+}
+
+export function ThemeToggle({ inline = false }: ThemeToggleProps) {
   const [theme, setTheme] = useState<ThemeMode>("light")
   const [mounted, setMounted] = useState(false)
+  const pathname = usePathname()
 
   useEffect(() => {
     const initialTheme = getInitialTheme()
@@ -59,15 +67,25 @@ export function ThemeToggle() {
     setTheme(nextTheme)
     persistTheme(nextTheme)
     applyTheme(nextTheme)
+    window.dispatchEvent(new Event("themechange"))
   }
 
   if (!mounted) return null
+
+  if (!inline && pathname?.startsWith("/dashboard")) {
+    return null
+  }
 
   return (
     <button
       type="button"
       onClick={toggleTheme}
-      className="fixed bottom-4 right-4 z-[120] h-11 w-11 rounded-full border border-border bg-card text-card-foreground shadow-md transition hover:scale-105"
+      className={cn(
+        "h-11 w-11 rounded-full border transition hover:scale-105",
+        inline 
+          ? "border-white/40 bg-white/20 text-white hover:bg-white/30 dark:border-green-800 dark:bg-green-800/40 dark:text-green-100 dark:hover:bg-green-700/50"
+          : "fixed bottom-4 right-4 z-[120] border-border bg-card text-card-foreground shadow-md"
+      )}
       title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
       aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
     >

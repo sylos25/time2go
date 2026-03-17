@@ -91,20 +91,25 @@ export async function checkUserPermission(
 
 /**
  * IDs de accesibilidad del sistema
- * Mantener sincronizado con la tabla tabla_accesibilidad_menu
+ * Sincronizado con tabla_accesibilidad_menu:
+ *  1 Crear Evento | 2 Dashboard | 3 Resumen General | 4 Gestión de Eventos
+ *  5 Ingresar Datos | 6 Ver Datos | 7 Usuarios | 8 Mi Perfil
+ *  9 Mis Eventos | 10 Mis Reservas | 11 Mis Valoraciones
  */
 export const PERMISSION_IDS = {
   CREAR_EVENTOS: 1,
-  GESTIONAR_RESERVAS: 2,
-  GESTIONAR_EVENTOS: 3,
-  VER_DASHBOARD: 4,
-  AGREGAR_DATA: 5,
-  EDITAR_DATA: 6,
-  ELIMINAR_DATA: 7,
-  GESTIONAR_USUARIOS: 8,
-  GESTIONAR_ROLES: 9,
-  GESTIONAR_ACCESIBILIDAD_SISTEMA: 10,
-  GESTIONAR_BANEADOS: 11,
+  VER_DASHBOARD: 2,
+  RESUMEN_GENERAL: 3,
+  GESTIONAR_EVENTOS: 4,
+  INGRESAR_DATOS: 5,
+  VER_DATOS: 6,
+  GESTIONAR_USUARIOS: 7,
+  MI_PERFIL: 8,
+  MIS_EVENTOS: 9,
+  MIS_RESERVAS: 10,
+  MIS_VALORACIONES: 11,
+  /** Panel de administrador: se protege también con comprobación de rol=4 */
+  GESTIONAR_ROLES: 2,
 } as const;
 
 /**

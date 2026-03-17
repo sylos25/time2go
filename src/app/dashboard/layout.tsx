@@ -3,8 +3,9 @@
 import type React from "react"
 import { useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Calendar, Home, Loader2, MapPin, Menu, Search, ShieldCheck, Users } from "lucide-react"
+import { Calendar, Home, Loader2, LogOut, MapPin, Menu, Search, ShieldCheck, Users } from "lucide-react"
 import { SessionMonitor } from "@/components/session-monitor"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 
 type DashboardUser = {
@@ -26,7 +27,28 @@ export default function DashboardLayout({
   const [authorized, setAuthorized] = useState<boolean | null>(null)
   const [canManageEvents, setCanManageEvents] = useState(false)
   const [meUser, setMeUser] = useState<DashboardUser | null>(null)
+  const [isDarkMode, setIsDarkMode] = useState(false)
   const isAdmin = Number(meUser?.id_rol) === 4
+
+  useEffect(() => {
+    const syncTheme = () => {
+      const theme = localStorage.getItem("theme")
+      const isDark = theme === "dark" || (!theme && window.matchMedia("(prefers-color-scheme: dark)").matches)
+      setIsDarkMode(isDark)
+      if (isDark) {
+        document.documentElement.classList.add("dark")
+      } else {
+        document.documentElement.classList.remove("dark")
+      }
+    }
+    syncTheme()
+    window.addEventListener("storage", syncTheme)
+    window.addEventListener("themechange", syncTheme)
+    return () => {
+      window.removeEventListener("storage", syncTheme)
+      window.removeEventListener("themechange", syncTheme)
+    }
+  }, [])
 
   useEffect(() => {
     let canceled = false
@@ -54,11 +76,11 @@ export default function DashboardLayout({
         }
 
         const [dashboardPermRes, eventsPermRes] = await Promise.all([
-          fetch(`/api/permissions/check?id_accesibilidad=4&id_rol=${roleNum}`, {
+          fetch(`/api/permissions/check?id_accesibilidad=2&id_rol=${roleNum}`, {
             headers,
             credentials: "include",
           }),
-          fetch(`/api/permissions/check?id_accesibilidad=3&id_rol=${roleNum}`, {
+          fetch(`/api/permissions/check?id_accesibilidad=4&id_rol=${roleNum}`, {
             headers,
             credentials: "include",
           }),
@@ -101,6 +123,15 @@ export default function DashboardLayout({
     setSidebarOpen(false)
   }, [pathname])
 
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const isDark = document.documentElement.classList.contains("dark")
+      setIsDarkMode(isDark)
+    })
+    observer.observe(document.documentElement, { attributes: true })
+    return () => observer.disconnect()
+  }, [])
+
   const menuItems = useMemo(
     () => [
       { href: "/dashboard/resumen", name: "Resumen General", icon: Home },
@@ -108,7 +139,7 @@ export default function DashboardLayout({
       { href: "/dashboard/ingresar-datos", name: "Ingresar Datos", icon: MapPin },
       { href: "/dashboard/ver-datos", name: "Ver Datos", icon: Search },
       { href: "/dashboard/usuarios", name: "Usuarios", icon: Users },
-      ...(isAdmin ? [{ href: "/dashboard/administradro", name: "Administradro", icon: ShieldCheck }] : []),
+      ...(isAdmin ? [{ href: "/dashboard/administrador", name: "Administrador", icon: ShieldCheck }] : []),
     ],
     [canManageEvents, isAdmin]
   )
@@ -152,11 +183,11 @@ export default function DashboardLayout({
       )}
 
       <aside
-        className={`fixed top-0 left-0 z-40 w-72 h-screen bg-card border-r border-border transform transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed top-0 left-0 z-40 w-72 h-screen bg-green-700 dark:bg-green-900 border-r border-green-500/40 dark:border-green-800 transform transition-transform duration-300 lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-green-500/40 dark:border-green-800">
           <div className="flex items-center gap-3">
             <img src="/images/logo.png" alt="Logo" className="w-full h-full object-cover" />
           </div>
@@ -171,8 +202,8 @@ export default function DashboardLayout({
                 onClick={() => router.push(item.href)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all ${
                   isActive
-                    ? "bg-gradient-to-bl from-fuchsia-700 to-red-600 text-white shadow-md shadow-sky-600/25 cursor-pointer"
-                    : "text-foreground hover:bg-accent cursor-pointer"
+                    ? "bg-pink-700 text-white shadow-md shadow-sky-600/25 cursor-pointer"
+                    : "text-white dark:text-green-100 hover:bg-white/20 dark:hover:bg-green-800/40 cursor-pointer"
                 }`}
               >
                 <item.icon className="w-5 h-5" />
@@ -180,33 +211,36 @@ export default function DashboardLayout({
               </button>
             )
           })}
+
+          <button
+            onClick={() => router.push("/")}
+            className="mt-2 w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all text-white dark:text-green-100 hover:bg-white/20 dark:hover:bg-green-800/40 cursor-pointer"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="text-sm">Salir</span>
+          </button>
         </nav>
       </aside>
 
       <div className="lg:ml-72">
-        <header className="bg-card border-b border-border backdrop-blur-xl sticky top-0 z-20">
+        <header className="bg-green-700 dark:bg-green-900 border-b border-green-600/50 dark:border-green-800 backdrop-blur-xl sticky top-0 z-20">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-lg hover:bg-accent transition-colors"
+                className="lg:hidden p-2 rounded-lg hover:bg-white/20 dark:hover:bg-green-800 transition-colors"
               >
-                <Menu className="w-5 h-5 text-foreground" />
+                <Menu className="w-5 h-5 text-white dark:text-green-100" />
               </button>
               <div>
-                <p className="text-3xl text-foreground font-sans font-bold mt-0.5">
+                <p className="text-3xl font-sans font-bold mt-0.5 text-white dark:text-green-100">
                   Bienvenido, {meUser?.nombres || meUser?.name || "Usuario"}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 ">
-              <button
-                onClick={() => router.push("/")}
-                className="px-3 py-1 text-sm bg-card/90 text-foreground rounded-lg shadow-sm hover:bg-accent cursor-pointer border border-border"
-              >
-                Salir
-              </button>
+            <div className="flex items-center gap-3">
+              <ThemeToggle inline />
             </div>
           </div>
         </header>

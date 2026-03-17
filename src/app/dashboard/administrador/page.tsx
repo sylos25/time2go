@@ -41,7 +41,7 @@ type LoadPayload = {
 
 const PAGE_SIZE = 25
 
-export default function DashboardAdministradroPage() {
+export default function DashboardAdministradorPage() {
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -146,7 +146,7 @@ export default function DashboardAdministradroPage() {
         await loadData({ page: 1, q: "", roleId: 4 })
       } catch (err: any) {
         if (!cancelled) {
-          setError(err?.message || "Error cargando la sección Administradro")
+          setError(err?.message || "Error cargando la sección Administrador")
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -283,7 +283,7 @@ export default function DashboardAdministradroPage() {
         <div className="pointer-events-none absolute -left-8 bottom-0 h-24 w-24 rounded-full bg-teal-300/25 blur-2xl dark:bg-emerald-500/20" />
         <div className="relative">
           <h3 className="text-center text-3xl font-semibold tracking-tight text-white dark:text-lime-200 sm:text-5xl">
-            <span style={{ fontFamily: "Futura, Trebuchet MS, Helvetica, Arial, sans-serif" }}>Administradro</span>
+            <span style={{ fontFamily: "Futura, Trebuchet MS, Helvetica, Arial, sans-serif" }}>Administrador</span>
           </h3>
         </div>
       </div>
@@ -306,28 +306,30 @@ export default function DashboardAdministradroPage() {
           <h4 className="text-lg font-semibold text-green-900 dark:text-emerald-100">Administración de Roles de Usuario</h4>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative w-full sm:max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-lime-600" />
-            <input
-              type="text"
-              value={searchUsers}
-              onChange={(e) => {
-                setSearchUsers(e.target.value)
-                setUsersPage(1)
-              }}
-              placeholder="Buscar por nombre, correo o ID..."
-              className="w-full rounded-lg border border-green-600 bg-white px-3 py-2 pl-10 text-green-900 placeholder:text-lime-700 focus:outline-none focus:ring-2 focus:ring-lime-400"
-            />
-          </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="flex w-full items-center gap-2 sm:max-w-xl">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-lime-600" />
+              <input
+                type="text"
+                value={searchUsers}
+                onChange={(e) => {
+                  setSearchUsers(e.target.value)
+                  setUsersPage(1)
+                }}
+                placeholder="Buscar por nombre, correo o ID..."
+                className="w-full rounded-lg border border-green-600 bg-white px-3 py-2 pl-10 text-green-900 placeholder:text-lime-700 focus:outline-none focus:ring-2 focus:ring-lime-400"
+              />
+            </div>
 
-          <button
-            type="button"
-            onClick={() => refreshUsers(1, searchUsers)}
-            className="rounded-lg border border-lime-200 px-3 py-2 text-sm text-green-900 hover:bg-lime-50 dark:border-emerald-700 dark:text-emerald-100 dark:hover:bg-emerald-800/40"
-          >
-            Buscar
-          </button>
+            <button
+              type="button"
+              onClick={() => refreshUsers(1, searchUsers)}
+              className="rounded-lg border border-lime-200 px-3 py-2 text-sm text-green-900 hover:bg-lime-50 dark:border-emerald-700 dark:text-emerald-100 dark:hover:bg-emerald-800/40 cursor-pointer"
+            >
+              Buscar
+            </button>
+          </div>
         </div>
 
         <div className="overflow-x-auto rounded-xl border border-lime-200/70">
@@ -339,7 +341,6 @@ export default function DashboardAdministradroPage() {
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Correo</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Estado</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Rol</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/95">Acción</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-lime-200/80 dark:divide-emerald-700/60">
@@ -363,32 +364,33 @@ export default function DashboardAdministradroPage() {
                     <td className="px-4 py-3 text-green-900 dark:text-emerald-100/90">{user.correo || "-"}</td>
                     <td className="px-4 py-3 text-green-900 dark:text-emerald-100/90">{user.estado ? "Activo" : "Inactivo"}</td>
                     <td className="px-4 py-3">
-                      <select
-                        value={pendingRole}
-                        onChange={(e) =>
-                          setPendingRolesByUser((prev) => ({
-                            ...prev,
-                            [user.id_usuario]: Number(e.target.value),
-                          }))
-                        }
-                        className="w-full min-w-[170px] rounded-md border border-green-600 bg-white px-2 py-1.5 text-green-900 focus:outline-none focus:ring-2 focus:ring-lime-400"
-                      >
-                        {roles.map((role) => (
-                          <option key={role.id_rol} value={role.id_rol}>
-                            {role.nombre_rol}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        type="button"
-                        onClick={() => handleSaveUserRole(user)}
-                        disabled={!isDirty || isSaving}
-                        className="rounded-lg bg-green-700 px-3 py-1.5 text-white hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {isSaving ? "Guardando..." : "Guardar"}
-                      </button>
+                      <div className="flex items-center justify-start gap-2">
+                        <select
+                          value={pendingRole}
+                          onChange={(e) =>
+                            setPendingRolesByUser((prev) => ({
+                              ...prev,
+                              [user.id_usuario]: Number(e.target.value),
+                            }))
+                          }
+                          className="w-[190px] rounded-md border border-green-600 bg-white px-2 py-1.5 text-green-900 focus:outline-none focus:ring-2 focus:ring-lime-400"
+                        >
+                          {roles.map((role) => (
+                            <option key={role.id_rol} value={role.id_rol}>
+                              {role.nombre_rol}
+                            </option>
+                          ))}
+                        </select>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSaveUserRole(user)}
+                          disabled={!isDirty || isSaving}
+                          className="shrink-0 rounded-lg bg-green-700 px-3 py-1.5 text-white hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                        >
+                          {isSaving ? "Guardando..." : "Guardar cambios"}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )
@@ -396,7 +398,7 @@ export default function DashboardAdministradroPage() {
 
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                     No se encontraron usuarios para gestionar.
                   </td>
                 </tr>
@@ -472,7 +474,7 @@ export default function DashboardAdministradroPage() {
             type="button"
             onClick={handleSaveRoleAccess}
             disabled={savingAccess || selectedRoleId === 4}
-            className="rounded-lg bg-green-700 px-4 py-2 text-white hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-green-700 px-4 py-2 text-white hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
           >
             {savingAccess ? "Guardando permisos..." : "Guardar permisos"}
           </button>
@@ -497,7 +499,7 @@ export default function DashboardAdministradroPage() {
                   checked={checked}
                   disabled={selectedRoleId === 4}
                   onChange={(e) => handleToggleAccess(item.id_accesibilidad, e.target.checked)}
-                  className="h-4 w-4 rounded border-green-500 text-green-700 focus:ring-lime-400"
+                  className="h-4 w-4 rounded border-green-500 text-green-700 focus:ring-lime-400 cursor-pointer"
                 />
                 <span>
                   {item.id_accesibilidad}. {item.nombre_accesibilidad}

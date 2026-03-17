@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import dynamic from "next/dynamic"
 import {
   Calendar,
   CheckCircle,
@@ -17,8 +16,6 @@ import {
 import { EditEventModal } from "./edit-event-modal"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-
-const PDFViewer = dynamic(() => import("@/components/pdf-viewer").then((module) => module.PDFViewer), { ssr: false })
 
 interface Event {
   id: number
@@ -51,8 +48,6 @@ export default function DashboardEventsPage() {
   const [filterCategory, setFilterCategory] = useState("all")
   const [editingEvent, setEditingEvent] = useState<any>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
-  const [pdfModalOpen, setPdfModalOpen] = useState(false)
-  const [pdfModalUrl, setPdfModalUrl] = useState<string | null>(null)
   const [rejectModalOpen, setRejectModalOpen] = useState(false)
   const [rejectSubmitting, setRejectSubmitting] = useState(false)
   const [togglingDestacado, setTogglingDestacado] = useState<number | null>(null)
@@ -119,7 +114,7 @@ export default function DashboardEventsPage() {
           return
         }
 
-        const permRes = await fetch(`/api/permissions/check?id_accesibilidad=3&id_rol=${roleNum}`, {
+        const permRes = await fetch(`/api/permissions/check?id_accesibilidad=4&id_rol=${roleNum}`, {
           headers,
           credentials: "include",
         })
@@ -364,6 +359,11 @@ export default function DashboardEventsPage() {
     return clean || "-"
   }
 
+  const openDocumentInNewTab = (documentEventId: number) => {
+    const proxied = `/api/events/document?id=${encodeURIComponent(String(documentEventId))}`
+    window.open(proxied, "_blank", "noopener,noreferrer")
+  }
+
   if (loading || authorized === null) {
     return (
       <div className="min-h-[60vh] bg-background flex items-center justify-center px-4">
@@ -543,9 +543,7 @@ export default function DashboardEventsPage() {
                           if (!documents.length) return
 
                           if (documents.length === 1) {
-                            const proxied = `/api/events/document?id=${encodeURIComponent(String(documents[0].id_documento_evento))}`
-                            setPdfModalUrl(proxied)
-                            setPdfModalOpen(true)
+                            openDocumentInNewTab(Number(documents[0].id_documento_evento))
                             return
                           }
 
@@ -554,9 +552,7 @@ export default function DashboardEventsPage() {
                           if (docNum && !Number.isNaN(parseInt(docNum, 10))) {
                             const idx = parseInt(docNum, 10) - 1
                             if (idx >= 0 && idx < documents.length) {
-                              const proxied = `/api/events/document?id=${encodeURIComponent(String(documents[idx].id_documento_evento))}`
-                              setPdfModalUrl(proxied)
-                              setPdfModalOpen(true)
+                              openDocumentInNewTab(Number(documents[idx].id_documento_evento))
                             }
                           }
                         }}
@@ -652,18 +648,6 @@ export default function DashboardEventsPage() {
           }}
         />
       )}
-
-      <Dialog open={pdfModalOpen} onOpenChange={() => setPdfModalOpen(false)}>
-        <DialogContent className="max-w-5xl w-full max-h-[90vh] p-0 border-0">
-          {pdfModalUrl ? (
-            <PDFViewer pdfUrl={pdfModalUrl} fileName="documento.pdf" onClose={() => setPdfModalOpen(false)} />
-          ) : (
-            <div className="flex items-center justify-center h-96">
-              <p className="text-muted-foreground">No hay documento</p>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

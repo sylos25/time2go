@@ -8,25 +8,26 @@ INSERT INTO tabla_roles
 -- Cargar en tabla_accesibilidad_menu.
 INSERT INTO tabla_accesibilidad_menu 
 			VALUES (1, 'Crear Evento', NOW(), NOW()),
-				   (2, 'Gestionar Reservas', NOW(), NOW()),
-				   (3, 'Gestionar Eventos', NOW(), NOW()),
-				   (4, 'Ver Dashboard', NOW(), NOW()),
-				   (5, 'Agregar Data', NOW(), NOW()),
-				   (6, 'Editar Data', NOW(), NOW()),
-				   (7, 'Eliminar Data', NOW(), NOW()),
-				   (8, 'Gestionar Usuarios', NOW(), NOW()),
-				   (9, 'Gestionar Roles', NOW(), NOW()),
-				   (10, 'Gestionar Accesibilidad al Sistema', NOW(), NOW()),
-				   (11, 'Gestionar Baneados', NOW(), NOW());
+				   (2, 'Dashboard', NOW(), NOW()),
+				   (3, 'Resumen General', NOW(), NOW()),
+				   (4, 'Gestión de Eventos', NOW(), NOW()),
+				   (5, 'Ingresar Datos', NOW(), NOW()),
+				   (6, 'Ver Datos', NOW(), NOW()),
+				   (7, 'Usuarios', NOW(), NOW()),
+				   (8, 'Mi Perfil', NOW(), NOW()),
+				   (9, 'Mis Eventos', NOW(), NOW()),
+				   (10, 'Mis Reservas', NOW(), NOW()),
+				   (11, 'Mis Valoraciones', NOW(), NOW());
+
 
 -- Cargar en tabla_accesibilidad_menu_x_rol.
 INSERT INTO tabla_accesibilidad_menu_x_rol 
 			VALUES (1, 1, 2, NOW(), NOW()),
-				   (2, 1, 3, NOW(), NOW()),
-				   (3, 1, 4, NOW(), NOW()),
-				   (4, 2, 2, NOW(), NOW()),
-				   (5, 2, 3, NOW(), NOW()),
-				   (6, 2, 4, NOW(), NOW()),
+				   (2, 1, 4, NOW(), NOW()),
+				   (3, 2, 2, NOW(), NOW()),
+				   (4, 2, 3, NOW(), NOW()),
+				   (5, 2, 4, NOW(), NOW()),
+				   (6, 3, 3, NOW(), NOW()),
 				   (7, 3, 4, NOW(), NOW()),
 				   (8, 4, 3, NOW(), NOW()),
 				   (9, 4, 4, NOW(), NOW()),
@@ -34,11 +35,18 @@ INSERT INTO tabla_accesibilidad_menu_x_rol
 				   (11, 5, 4, NOW(), NOW()),
 				   (12, 6, 3, NOW(), NOW()),
 				   (13, 6, 4, NOW(), NOW()),
-				   (14, 7, 4, NOW(), NOW()),
-				   (15, 8, 4, NOW(), NOW()),
-				   (16, 9, 4, NOW(), NOW()),
-				   (17, 10, 4, NOW(), NOW()),
-				   (18, 11, 4, NOW(), NOW());
+				   (14, 7, 3, NOW(), NOW()),
+				   (15, 7, 4, NOW(), NOW()),
+				   (16, 8, 1, NOW(), NOW()),
+				   (17, 8, 2, NOW(), NOW()),
+				   (18, 8, 3, NOW(), NOW()),
+				   (19, 8, 4, NOW(), NOW()),
+				   (20, 9, 2, NOW(), NOW()),
+				   (21, 9, 4, NOW(), NOW()),
+				   (22, 10, 1, NOW(), NOW()),
+				   (23, 10, 4, NOW(), NOW()),
+				   (24, 11, 1, NOW(), NOW()),
+				   (25, 11, 4, NOW(), NOW());
 
 -- Cargar en tabla_usuarios.
 INSERT INTO tabla_usuarios (id_rol, terminos_condiciones, estado, fecha_registro, fecha_actualizacion, fecha_desactivacion)

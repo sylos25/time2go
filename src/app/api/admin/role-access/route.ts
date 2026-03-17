@@ -193,6 +193,11 @@ export async function PUT(req: Request) {
         }
 
         const currentRole = Number(userRes.rows[0].id_rol)
+        if (currentRole === newRoleId) {
+          await client.query("COMMIT")
+          return NextResponse.json({ ok: true, message: "El usuario ya tiene ese rol" })
+        }
+
         if (currentRole === 4 && newRoleId !== 4) {
           const adminCountRes = await client.query<{ count: string }>(
             "SELECT COUNT(1)::text AS count FROM tabla_usuarios WHERE id_rol = 4"
@@ -237,13 +242,14 @@ export async function PUT(req: Request) {
         )
       }
 
-      const dedupedAccessIds = Array.from(
+      const dedupedAccessIds: number[] = Array.from(
         new Set(
           accessIdsRaw
             .map((value: unknown) => Number(value))
             .filter((value: number) => Number.isFinite(value) && value > 0)
         )
-      )
+      ) as number[]
+      dedupedAccessIds.sort((a, b) => a - b)
 
       const client = await pool.connect()
       try {
@@ -274,9 +280,33 @@ export async function PUT(req: Request) {
           }
         }
 
-        await client.query("DELETE FROM tabla_accesibilidad_menu_x_rol WHERE id_rol = $1", [roleId])
+        const currentRoleAccessRes = await client.query<{ id_accesibilidad: number }>(
+          "SELECT id_accesibilidad FROM tabla_accesibilidad_menu_x_rol WHERE id_rol = $1",
+          [roleId]
+        )
 
-        if (dedupedAccessIds.length > 0) {
+        const currentAccessSet = new Set(
+          currentRoleAccessRes.rows.map((row) => Number(row.id_accesibilidad))
+        )
+        const desiredAccessSet = new Set(dedupedAccessIds)
+
+        const accessToDelete = Array.from(currentAccessSet).filter((id) => !desiredAccessSet.has(id))
+        const accessToInsert = dedupedAccessIds.filter((id) => !currentAccessSet.has(id))
+
+        if (accessToDelete.length === 0 && accessToInsert.length === 0) {
+          await client.query("COMMIT")
+          return NextResponse.json({ ok: true, message: "No hubo cambios en los permisos del rol" })
+        }
+
+        if (accessToDelete.length > 0) {
+          await client.query(
+            `DELETE FROM tabla_accesibilidad_menu_x_rol
+             WHERE id_rol = $1 AND id_accesibilidad = ANY($2::int[])`,
+            [roleId, accessToDelete]
+          )
+        }
+
+        if (accessToInsert.length > 0) {
           const baseIdRes = await client.query<{ next_id: number }>(
             "SELECT COALESCE(MAX(id_accesibilidad_menu_x_rol), 0) + 1 AS next_id FROM tabla_accesibilidad_menu_x_rol"
           )
@@ -285,7 +315,7 @@ export async function PUT(req: Request) {
           const valuesSql: string[] = []
           const params: Array<number> = []
 
-          dedupedAccessIds.forEach((accessId, index) => {
+          accessToInsert.forEach((accessId, index) => {
             const idValue = nextId + index
             const paramBase = index * 3
             valuesSql.push(`($${paramBase + 1}, $${paramBase + 2}, $${paramBase + 3}, NOW(), NOW())`)
