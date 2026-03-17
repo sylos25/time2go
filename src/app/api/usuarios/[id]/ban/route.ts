@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import pool from "@/lib/db"
 import { verifyToken } from "@/lib/jwt"
 import { parseCookies } from "@/lib/cookies"
+import { sendBanNotificationEmail } from "@/lib/email"
 
 async function getRequester(req: Request, client: any) {
   const authHeader = (req.headers.get("authorization") || "").trim()
@@ -146,6 +147,15 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       )
 
       await client.query("COMMIT")
+
+      const correoRes = await client.query(
+        "SELECT correo FROM tabla_usuarios WHERE id_usuario = $1 LIMIT 1",
+        [idUsuario]
+      )
+      const correo = correoRes.rows[0]?.correo
+      if (correo) {
+        await sendBanNotificationEmail(correo, motivoBan)
+      }
 
       return NextResponse.json({
         ok: true,
