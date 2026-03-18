@@ -32,11 +32,13 @@ interface UserData {
   fecha_registro?: string
 }
 
-const PASSWORD_LENGTH = 8
+const PASSWORD_MIN_LENGTH = 8
+const PASSWORD_MAX_LENGTH = 20
 
 const validatePassword = (password: string): { isValid: boolean; errors: string[] } => {
   const errors: string[] = []
-  if (password.length !== PASSWORD_LENGTH) errors.push("La contraseña debe tener exactamente 8 caracteres")
+  if (password.length < PASSWORD_MIN_LENGTH || password.length > PASSWORD_MAX_LENGTH)
+    errors.push(`La contraseña debe tener entre ${PASSWORD_MIN_LENGTH} y ${PASSWORD_MAX_LENGTH} caracteres`)
   if (!/[a-zA-Z]/.test(password)) errors.push("Debe incluir al menos una letra")
   if (!/[0-9]/.test(password)) errors.push("Debe incluir al menos un número")
   if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) errors.push("Debe incluir al menos un carácter especial")
@@ -289,7 +291,7 @@ export default function CambiarContrasenaPage() {
                       <Input
                         type={showPasswords.current ? "text" : "password"}
                         value={currentPassword}
-                        maxLength={PASSWORD_LENGTH}
+                        maxLength={PASSWORD_MAX_LENGTH}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                         className="border-input text-foreground pr-10"
                         placeholder="Ingresa tu contraseña actual"
@@ -313,7 +315,7 @@ export default function CambiarContrasenaPage() {
                       <Input
                         type={showPasswords.new ? "text" : "password"}
                         value={newPassword}
-                        maxLength={PASSWORD_LENGTH}
+                        maxLength={PASSWORD_MAX_LENGTH}
                         onChange={(e) => setNewPassword(e.target.value)}
                         className="border-input text-foreground pr-10"
                         placeholder="Ingresa tu nueva contraseña"
@@ -337,7 +339,7 @@ export default function CambiarContrasenaPage() {
                       <Input
                         type={showPasswords.confirm ? "text" : "password"}
                         value={confirmPassword}
-                        maxLength={PASSWORD_LENGTH}
+                        maxLength={PASSWORD_MAX_LENGTH}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         className="border-input text-foreground pr-10"
                         placeholder="Confirma tu nueva contraseña"

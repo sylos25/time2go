@@ -50,6 +50,7 @@ interface DocFile {
   color: string
   sizeLabel: string
   modifiedAt: string
+  relativePath: string
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

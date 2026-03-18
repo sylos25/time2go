@@ -8,7 +8,7 @@ export const ALLOWED_EMAIL_DOMAINS = [
 ]
 
 export const EMAIL_MAX_LENGTH = 50
-export const PASSWORD_MAX_LENGTH = 30
+export const PASSWORD_MAX_LENGTH = 20
 export const REGISTER_PASSWORD_LENGTH = 8
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -46,10 +46,11 @@ export const hasPasswordSpecial = (password: string): boolean => PASSWORD_SPECIA
 
 export const validateRegisterPassword = (
   password: string,
-  requiredLength = REGISTER_PASSWORD_LENGTH
+  minLength = REGISTER_PASSWORD_LENGTH,
+  maxLength = PASSWORD_MAX_LENGTH
 ): { isValid: boolean; errors: string[] } => {
   const errors: string[] = []
-  if (password.length !== requiredLength) errors.push(`Debe tener exactamente ${requiredLength} caracteres`)
+  if (password.length < minLength || password.length > maxLength) errors.push(`Debe tener entre ${minLength} y ${maxLength} caracteres`)
   if (!hasPasswordLetter(password)) errors.push("Al menos una letra")
   if (!hasPasswordNumber(password)) errors.push("Al menos un número")
   if (!hasPasswordSpecial(password)) errors.push("Al menos un carácter especial")

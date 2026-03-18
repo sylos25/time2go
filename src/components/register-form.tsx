@@ -34,7 +34,7 @@ interface FormFields {
 
 const MAX_NAME_LENGTH = 50
 const PHONE_LENGTH = 10
-const PASSWORD_LENGTH = REGISTER_PASSWORD_LENGTH
+const PASSWORD_MIN_LENGTH = REGISTER_PASSWORD_LENGTH
 
 const NAME_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/
 const DIGITS_REGEX = /^\d+$/
@@ -159,7 +159,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
   }
 
   const validatePassword = (password: string): { isValid: boolean; errors: string[] } => {
-    return validateRegisterPassword(password, PASSWORD_LENGTH)
+    return validateRegisterPassword(password, PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH)
   }
 
   const validatePhone = (phone: string): boolean => {
@@ -359,7 +359,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               <li className={`flex items-center gap-2 ${hasPasswordLetter(formData.password) ? "text-green-600" : "text-red-600"}`}>{hasPasswordLetter(formData.password) ? "✓" : "✗"} Al menos una letra</li>
               <li className={`flex items-center gap-2 ${hasPasswordNumber(formData.password) ? "text-green-600" : "text-red-600"}`}>{hasPasswordNumber(formData.password) ? "✓" : "✗"} Al menos un número</li>
               <li className={`flex items-center gap-2 ${hasPasswordSpecial(formData.password) ? "text-green-600" : "text-red-600"}`}>{hasPasswordSpecial(formData.password) ? "✓" : "✗"} Al menos un carácter especial</li>
-              <li className={`flex items-center gap-2 ${formData.password.length === PASSWORD_LENGTH ? "text-green-600" : "text-red-600"}`}>{formData.password.length === PASSWORD_LENGTH ? "✓" : "✗"} Exactamente 8 caracteres ({formData.password.length}/{PASSWORD_LENGTH})</li>
+              <li className={`flex items-center gap-2 ${formData.password.length >= PASSWORD_MIN_LENGTH && formData.password.length <= PASSWORD_MAX_LENGTH ? "text-green-600" : "text-red-600"}`}>{formData.password.length >= PASSWORD_MIN_LENGTH && formData.password.length <= PASSWORD_MAX_LENGTH ? "✓" : "✗"} Entre 8 y 20 caracteres ({formData.password.length})</li>
             </ul>
           </div>
         </div>
@@ -404,12 +404,12 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                 setTouchedTerminosCondiciones(true)
               }}
             />
-            <Label htmlFor="terminosCondiciones" className="text-sm text-muted-foreground">
+            <Label htmlFor="terminosCondiciones" className="text-sm text-muted-foreground cursor-pointer">
               Acepto los{" "}
-              <Button type="button" variant="link" className="text-green-600 hover:text-lime-500 p-0 h-auto cursor-pointer" onClick={() => setShowModal(true)}>
-                términos y condiciones de servicio
-              </Button>
             </Label>
+            <Button type="button" variant="link" className="text-green-600 hover:text-lime-500 p-0 h-auto cursor-pointer" onClick={() => setShowModal(true)}>
+              términos y condiciones de servicio
+            </Button>
           </div>
           {touchedTerminosCondiciones && !terminosCondiciones && <p className="text-red-500 text-xs">Debe aceptar los términos y condiciones</p>}
         </div>
