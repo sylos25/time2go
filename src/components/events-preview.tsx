@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar, MapPin, Users, ArrowRight, Star } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useEffect, useMemo, useState } from "react"
 import { Swiper, SwiperSlide } from "swiper/react"
 import { Navigation, Pagination, Autoplay } from "swiper/modules"
 
@@ -13,33 +14,19 @@ import "swiper/css"
 import "swiper/css/navigation"
 import "swiper/css/pagination"
 
-const featuredEvents = [
-  // Carrusel 1 - Música (6 eventos)
-  { id: 1,  title: "Festival de Jazz Internacional",  description: "Una noche mágica con los mejores artistas de jazz",          date: "15 Abril", location: "Teatro Nacional",      attendees: 1250, price: 45, image: "/images/img9.jpg",  category: "Música",      rating: 4.8 },
-  { id: 2,  title: "Concierto de Rock Alternativo",   description: "Las mejores bandas emergentes en un solo escenario",        date: "18 Abril", location: "Auditorio Central",    attendees: 2500, price: 35, image: "/images/img9.jpg",  category: "Música",      rating: 4.7 },
-  { id: 3,  title: "Festival Electrónica",            description: "Los mejores DJs internacionales",                           date: "22 Abril", location: "Plaza de Eventos",     attendees: 3000, price: 50, image: "/images/img9.jpg",  category: "Música",      rating: 4.9 },
-  { id: 4,  title: "Noche de Salsa",                  description: "Baile y música latina toda la noche",                       date: "25 Abril", location: "Club Latino",          attendees: 800,  price: 20, image: "/images/img9.jpg",  category: "Música",      rating: 4.6 },
-  { id: 13, title: "Concierto Sinfónico",             description: "La orquesta filarmónica presenta clásicos inmortales",      date: "28 Abril", location: "Palacio de la Música", attendees: 1800, price: 55, image: "/images/img9.jpg",  category: "Música",      rating: 4.9 },
-  { id: 14, title: "Festival de Reggaeton",           description: "Los artistas más populares del género urbano",              date: "1 Mayo",   location: "Estadio Nacional",     attendees: 5000, price: 65, image: "/images/img9.jpg",  category: "Música",      rating: 4.7 },
-  // Carrusel 2 - Arte y Cultura (6 eventos)
-  { id: 5,  title: "Exposición de Arte Moderno",      description: "Obras contemporáneas de artistas reconocidos",             date: "20 Abril", location: "Museo de Arte",        attendees: 800,  price: 15, image: "/images/img10.jpg", category: "Arte",        rating: 4.6 },
-  { id: 6,  title: "Festival de Cine Independiente",  description: "Cortometrajes y documentales exclusivos",                  date: "23 Abril", location: "Cinemateca Nacional",  attendees: 600,  price: 18, image: "/images/img10.jpg", category: "Cultura",     rating: 4.7 },
-  { id: 7,  title: "Arte y Cultura Urbana",           description: "Expresiones artísticas callejeras",                        date: "27 Abril", location: "Distrito Creativo",    attendees: 1500, price: 10, image: "/images/img10.jpg", category: "Arte",        rating: 4.8 },
-  { id: 8,  title: "Feria de Artesanías",             description: "Lo mejor del arte tradicional local",                      date: "29 Abril", location: "Plaza Central",        attendees: 2000, price: 5,  image: "/images/img10.jpg", category: "Cultura",     rating: 4.5 },
-  { id: 15, title: "Teatro Contemporáneo",            description: "Obras vanguardistas de dramaturgos locales",               date: "3 Mayo",   location: "Teatro Municipal",     attendees: 450,  price: 30, image: "/images/img10.jpg", category: "Cultura",     rating: 4.8 },
-  { id: 16, title: "Noche de Poesía",                 description: "Recitales y spoken word de poetas emergentes",             date: "5 Mayo",   location: "Café Literario",       attendees: 200,  price: 12, image: "/images/img10.jpg", category: "Cultura",     rating: 4.6 },
-  // Carrusel 3 - Gastronomía (6 eventos)
-  { id: 9,  title: "Festival Gastronómico",           description: "Sabores del mundo en un solo lugar",                       date: "25 Abril", location: "Plaza Central",        attendees: 2000, price: 25, image: "/images/img8.jpg",  category: "Gastronomía", rating: 4.9 },
-  { id: 10, title: "Noche de Vinos",                  description: "Cata de vinos premium con sommelier",                      date: "28 Abril", location: "Bodega del Centro",    attendees: 150,  price: 60, image: "/images/img8.jpg",  category: "Gastronomía", rating: 4.8 },
-  { id: 11, title: "Mercado Gourmet",                 description: "Productos artesanales y especialidades",                   date: "30 Abril", location: "Mercado Municipal",    attendees: 1800, price: 12, image: "/images/img8.jpg",  category: "Gastronomía", rating: 4.7 },
-  { id: 12, title: "Festival de Street Food",         description: "Los mejores food trucks de la ciudad",                     date: "2 Mayo",   location: "Parque Central",       attendees: 2500, price: 15, image: "/images/img8.jpg",  category: "Gastronomía", rating: 4.8 },
-  { id: 17, title: "Masterclass de Cocina",           description: "Aprende técnicas de chefs internacionales",               date: "7 Mayo",   location: "Escuela Culinaria",    attendees: 100,  price: 80, image: "/images/img8.jpg",  category: "Gastronomía", rating: 4.9 },
-  { id: 18, title: "Festival de Cerveza Artesanal",   description: "Las mejores cervecerías locales en un evento",            date: "10 Mayo",  location: "Jardín Cervecero",     attendees: 3000, price: 35, image: "/images/img8.jpg",  category: "Gastronomía", rating: 4.7 },
-]
-
-const carousel1 = featuredEvents.slice(0, 6)
-const carousel2 = featuredEvents.slice(6, 12)
-const carousel3 = featuredEvents.slice(12, 18)
+interface FeaturedEvent {
+  id: number
+  title: string
+  description: string
+  date: string
+  location: string
+  attendees: number
+  price: number | string
+  image: string
+  category: string
+  rating?: number | null
+  featuredAt?: string | null
+}
 
 const swiperBreakpoints = {
   640: { slidesPerView: 2 },
@@ -49,12 +36,105 @@ const swiperBreakpoints = {
 
 export function EventsPreview() {
   const router = useRouter()
+  const [featuredEvents, setFeaturedEvents] = useState<FeaturedEvent[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchFeaturedEvents = async () => {
+      try {
+        const res = await fetch("/api/events")
+        const data = await res.json()
+
+        const rawEvents =
+          data && data.ok && Array.isArray(data.eventos)
+            ? data.eventos
+            : Array.isArray(data)
+              ? data
+              : []
+
+        const destacados = rawEvents
+          .filter((event: any) => event?.estado === true && event?.destacado === true)
+          .map((event: any) => {
+            const firstImage =
+              event.imagenes && event.imagenes.length
+                ? event.imagenes[0].url_imagen_evento
+                : "/placeholder.svg"
+
+            const date = event.fecha_inicio
+              ? new Date(event.fecha_inicio).toLocaleDateString("es-CO", {
+                  day: "2-digit",
+                  month: "short",
+                })
+              : "Sin fecha"
+
+            let price: number | string = "Gratis"
+            if (event.gratis_pago) {
+              const prices = Array.isArray(event.valores)
+                ? event.valores
+                    .map((value: any) => Number(value?.precio_boleto ?? value?.valor ?? 0))
+                    .filter((value: number) => Number.isFinite(value) && value > 0)
+                : []
+              price = prices.length ? Math.min(...prices) : 0
+            }
+
+            return {
+              id: Number(event.id_evento),
+              title: String(event.nombre_evento || "Evento"),
+              description: String(event.descripcion || ""),
+              date,
+              location: String(event.sitio?.nombre_sitio || event.nombre_sitio || "Ubicación por confirmar"),
+              attendees: Number(event.cupo || 0),
+              price,
+              image: firstImage,
+              category: String(event.categoria?.nombre || event.categoria_nombre || "Sin categoría"),
+              rating: Number.isFinite(Number(event.promedio_valoracion)) ? Number(event.promedio_valoracion) : null,
+              featuredAt: event.fecha_destacado || null,
+            } as FeaturedEvent
+          })
+          .sort((a: FeaturedEvent, b: FeaturedEvent) => {
+            const featuredA = a.featuredAt ? new Date(a.featuredAt).getTime() : 0
+            const featuredB = b.featuredAt ? new Date(b.featuredAt).getTime() : 0
+            return featuredB - featuredA
+          })
+
+        setFeaturedEvents(destacados)
+      } catch (error) {
+        console.error("Error cargando eventos destacados:", error)
+        setFeaturedEvents([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFeaturedEvents()
+  }, [])
+
+  const featuredByCategory = useMemo(() => {
+    return featuredEvents.reduce<Record<string, FeaturedEvent[]>>((acc, event) => {
+      const key = event.category || "Sin categoría"
+      if (!acc[key]) {
+        acc[key] = []
+      }
+      acc[key].push(event)
+      return acc
+    }, {})
+  }, [featuredEvents])
+
+  const categorySections = useMemo(() => {
+    return Object.entries(featuredByCategory)
+      .map(([title, events], index) => ({
+        title,
+        events,
+        delay: 4000 + index * 500,
+      }))
+      .sort((a, b) => b.events.length - a.events.length)
+  }, [featuredByCategory])
 
   const handleEventDetails = (eventId: number) => {
     router.push(`/eventos?expand=${eventId}`)
   }
 
-  const EventCard = ({ event }: { event: (typeof featuredEvents)[0] }) => (
+  const EventCard = ({ event }: { event: FeaturedEvent }) => (
     <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-card/80 backdrop-blur-sm border-border overflow-hidden h-full rounded-sm">
       <div className="relative">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -67,10 +147,12 @@ export function EventsPreview() {
         <Badge className="absolute top-3 left-3 bg-gradient-to-r from-green-500 to-lime-400 text-white rounded-sm">
           {event.category}
         </Badge>
-        <div className="absolute top-3 right-3 flex items-center gap-1 bg-card/90 backdrop-blur-sm rounded-sm px-2 py-1">
-          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-          <span className="text-xs font-medium">{event.rating}</span>
-        </div>
+        {typeof event.rating === "number" && (
+          <div className="absolute top-3 right-3 flex items-center gap-1 bg-card/90 backdrop-blur-sm rounded-sm px-2 py-1">
+            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+            <span className="text-xs font-medium">{event.rating.toFixed(1)}</span>
+          </div>
+        )}
       </div>
 
       <CardContent className="p-6">
@@ -96,7 +178,7 @@ export function EventsPreview() {
 
         <div className="flex items-center justify-between">
           <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-lime-500 bg-clip-text text-transparent">
-            ${event.price}
+            {typeof event.price === "number" ? `$${event.price}` : event.price}
           </div>
           <Button
             onClick={() => handleEventDetails(event.id)}
@@ -115,7 +197,7 @@ export function EventsPreview() {
     delay,
   }: {
     title: string
-    events: typeof featuredEvents
+    events: FeaturedEvent[]
     delay: number
   }) => (
     <>
@@ -159,9 +241,26 @@ export function EventsPreview() {
 
   return (
     <section className="py-16 lg:py-24 pt-24 overflow-hidden">
-      <CarouselSection title="Música" events={carousel1} delay={4000} />
-      <CarouselSection title="Arte y Cultura" events={carousel2} delay={4500} />
-      <CarouselSection title="Gastronomía" events={carousel3} delay={5000} />
+      {loading ? (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-muted-foreground">Cargando eventos destacados...</p>
+        </div>
+      ) : categorySections.length > 0 ? (
+        categorySections.map((section) => (
+          <CarouselSection
+            key={section.title}
+            title={section.title}
+            events={section.events}
+            delay={section.delay}
+          />
+        ))
+      ) : (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-14">
+          <div className="rounded-sm border border-border bg-card/70 p-6 text-center text-muted-foreground">
+            No hay eventos destacados disponibles por ahora.
+          </div>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
