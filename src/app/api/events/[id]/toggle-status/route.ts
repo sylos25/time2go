@@ -64,12 +64,48 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
     }
 
-    const eventCheck = await client.query("SELECT estado FROM tabla_eventos WHERE id_evento = $1", [eventId]);
+    const eventCheck = await client.query("SELECT estado, destacado FROM tabla_eventos WHERE id_evento = $1", [eventId]);
     if (!eventCheck.rows || eventCheck.rows.length === 0) {
       return NextResponse.json({ ok: false, message: "Event not found" }, { status: 404 });
     }
 
     const body = await req.json();
+    const hasDestacado = typeof body.destacado !== "undefined";
+
+    if (hasDestacado) {
+      const requestedDestacado = body.destacado === true || body.destacado === "true";
+
+      if (requestedDestacado && eventCheck.rows[0].estado !== true) {
+        return NextResponse.json(
+          { ok: false, message: "Solo puedes destacar eventos aprobados" },
+          { status: 400 }
+        );
+      }
+
+      const highlightedResult = await client.query(
+        `UPDATE tabla_eventos
+         SET destacado = $1,
+             destacado_por = CASE WHEN $1::boolean THEN $2::int ELSE NULL::int END,
+             fecha_destacado = CASE WHEN $1 THEN CURRENT_TIMESTAMP ELSE NULL END,
+             fecha_actualizacion = CURRENT_TIMESTAMP
+         WHERE id_evento = $3
+         RETURNING id_evento, nombre_evento, destacado, destacado_por, fecha_destacado`,
+        [requestedDestacado, Number(user.id_usuario), eventId]
+      );
+
+      if (!highlightedResult.rows || highlightedResult.rows.length === 0) {
+        return NextResponse.json({ ok: false, message: "Event not found" }, { status: 404 });
+      }
+
+      return NextResponse.json({
+        ok: true,
+        message: requestedDestacado
+          ? "Evento destacado correctamente"
+          : "Evento removido de destacados",
+        event: highlightedResult.rows[0],
+      });
+    }
+
     const requestedStatus = body.estado === true || body.estado === "true";
 
     if (!requestedStatus) {
