@@ -149,7 +149,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       await client.query("COMMIT")
 
       const correoRes = await client.query(
-        "SELECT correo FROM tabla_usuarios WHERE id_usuario = $1 LIMIT 1",
+          "SELECT correo FROM tabla_usuarios_credenciales WHERE id_usuario = $1 LIMIT 1",
         [idUsuario]
       )
       const correo = correoRes.rows[0]?.correo
