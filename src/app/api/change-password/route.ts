@@ -3,11 +3,13 @@ import pool from "@/lib/db";
 import { verifyToken } from "@/lib/jwt";
 import bcrypt from "bcryptjs";
 
-const PASSWORD_LENGTH = 8;
+const MIN_PASSWORD_LENGTH = 8;
+const MAX_PASSWORD_LENGTH = 20;
 
 function validatePassword(password: string): string[] {
   const errors: string[] = [];
-  if (password.length !== PASSWORD_LENGTH) errors.push("La contraseña debe tener exactamente 8 caracteres");
+  if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH)
+    errors.push(`La contraseña debe tener entre ${MIN_PASSWORD_LENGTH} y ${MAX_PASSWORD_LENGTH} caracteres`);
   if (!/[a-zA-Z]/.test(password)) errors.push("Debe incluir al menos una letra");
   if (!/[0-9]/.test(password)) errors.push("Debe incluir al menos un número");
   if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) errors.push("Debe incluir al menos un carácter especial");
