@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Calendar, MapPin, Users, Search, Filter, Heart, Share2, Star, X, Clock, Info } from "lucide-react";
+import { Calendar, MapPin, Users, Search, Filter, Heart, Share2, Star, X, Clock, Info, Check } from "lucide-react";
 import { NumericFormat } from "react-number-format";
 import imageCompression from "browser-image-compression";
 import DatePicker from "react-datepicker";
@@ -66,6 +66,7 @@ export default function EventosPage() {
   const [sortBy, setSortBy] = useState("date")
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [expandedEventId, setExpandedEventId] = useState<number | null>(null)
+  const [copiedEventId, setCopiedEventId] = useState<number | null>(null)
 
   const router = useRouter();
 
@@ -331,6 +332,56 @@ const handleAddEvent = async () => {
       Cartagena: 5,
     };
     return municipios[location] || 0;
+  }
+
+  const handleShareEvent = async (event: any) => {
+    const id = event.id_evento ?? event.id
+    if (!id) return
+
+    const relativePath = `/eventos/${id}?returnTo=${encodeURIComponent("/eventos#eventos-disponibles")}`
+    const shareUrl = `${window.location.origin}${relativePath}`
+    const eventTitle = String(event.nombre_evento ?? event.title ?? "Evento en Time2Go")
+
+    try {
+      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+        try {
+          await navigator.share({
+            title: eventTitle,
+            text: `Mira este evento: ${eventTitle}`,
+            url: shareUrl,
+          })
+          return
+        } catch (shareError: any) {
+          if (shareError?.name === "AbortError") {
+            return
+          }
+          // Fallback to clipboard if native share fails.
+        }
+      }
+
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl)
+      } else {
+        const textarea = document.createElement("textarea")
+        textarea.value = shareUrl
+        textarea.setAttribute("readonly", "")
+        textarea.style.position = "fixed"
+        textarea.style.left = "-9999px"
+        document.body.appendChild(textarea)
+        textarea.select()
+        document.execCommand("copy")
+        document.body.removeChild(textarea)
+      }
+
+      const copiedId = Number(id)
+      setCopiedEventId(copiedId)
+      window.setTimeout(() => {
+        setCopiedEventId((current) => (current === copiedId ? null : current))
+      }, 2000)
+    } catch (error) {
+      console.error("No se pudo copiar el enlace del evento", error)
+      alert("No se pudo copiar el enlace del evento")
+    }
   }
   
   
@@ -645,6 +696,7 @@ const handleAddEvent = async () => {
               const eventId = Number(event.id_evento ?? event.id)
               const isFavorite = favoriteIds.includes(eventId)
               const isFavoritePending = favoritePendingIds.includes(eventId)
+              const isLinkCopied = copiedEventId === eventId
 
               return (
               <Card
@@ -702,8 +754,11 @@ const handleAddEvent = async () => {
                       variant="secondary"
                       type="button"
                       className="h-9 w-9 bg-card/90 backdrop-blur-sm rounded-full hover:bg-card"
+                      onClick={() => handleShareEvent(event)}
+                      aria-label={isLinkCopied ? "Enlace copiado" : "Copiar enlace del evento"}
+                      title={isLinkCopied ? "Enlace copiado" : "Copiar enlace del evento"}
                     >
-                      <Share2 className="h-4 w-4" />
+                      {isLinkCopied ? <Check className="h-4 w-4 text-green-600" /> : <Share2 className="h-4 w-4" />}
                     </Button>
                   </div>
                 </div>
