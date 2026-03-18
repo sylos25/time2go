@@ -165,33 +165,34 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     }
 
     if (action === "unban" || action === "validate") {
-  const result = await client.query(
-    `UPDATE tabla_usuarios
-     SET estado = TRUE,
-         fecha_actualizacion = CURRENT_TIMESTAMP,
-         fecha_desactivacion = NULL
-     WHERE id_usuario = $1
-     RETURNING id_usuario, estado`,
-    [userIdToToggle]
-  )
+      const result = await client.query(
+        `UPDATE tabla_usuarios
+         SET estado = TRUE,
+             fecha_actualizacion = CURRENT_TIMESTAMP,
+             fecha_desactivacion = NULL
+         WHERE id_usuario = $1
+         RETURNING id_usuario, estado`,
+        [userIdToToggle]
+      )
 
-  const correoRes = await client.query(
-    "SELECT correo FROM tabla_usuarios_credenciales WHERE id_usuario = $1 LIMIT 1",
-    [userIdToToggle]
-  )
-  const correo = correoRes.rows[0]?.correo
-  console.log("Correo desbaneo:", correo)
-  if (correo) {
-    await sendUnbanNotificationEmail(correo)
-  }
+      const correoRes = await client.query(
+        "SELECT correo FROM tabla_usuarios_credenciales WHERE id_usuario = $1 LIMIT 1",
+        [userIdToToggle]
+      )
+      const correo = correoRes.rows[0]?.correo
+      console.log("Correo desbaneo:", correo)
+      if (correo) {
+        await sendUnbanNotificationEmail(correo)
+      }
 
-  return NextResponse.json({
-    ok: true,
-    message: action === "validate" ? "Usuario validado correctamente" : "Usuario desbanneado correctamente",
-    user: result.rows[0],
-  })
-}
-return NextResponse.json({ ok: false, message: "Acción inválida. Usa action=ban, action=unban o action=validate" }, { status: 400 })
+      return NextResponse.json({
+        ok: true,
+        message: action === "validate" ? "Usuario validado correctamente" : "Usuario desbanneado correctamente",
+        user: result.rows[0],
+      })
+    }
+
+    return NextResponse.json({ ok: false, message: "Acción inválida. Usa action=ban, action=unban o action=validate" }, { status: 400 })
   } catch (error) {
     try {
       await client.query("ROLLBACK")
