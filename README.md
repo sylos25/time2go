@@ -80,3 +80,22 @@ Notas de uso:
 - El token en la cookie es HttpOnly: el cliente no puede leerla desde JavaScript. La app mantiene `localStorage` histórico para compatibilidad pero debe migrarse a depender sólo de la cookie cuando sea posible.
 - Para el cierre de sesión se llama a `/api/logout` y se limpia también el estado cliente.
 
+## Login resiliente (Turnstile)
+
+El login soporta modo de degradación controlada para incidentes del proveedor captcha.
+
+Variables de entorno:
+
+- `CLOUDFLARE_TURNSTILE_MODE=strict|degraded|disabled`
+	- `strict`: exige captcha y falla si el proveedor no responde.
+	- `degraded`: si el proveedor falla, permite login con controles antiabuso (rate limit + bloqueo temporal).
+	- `disabled`: desactiva verificación captcha.
+- `CLOUDFLARE_TURNSTILE_SECRET`: secreto de validación server-side.
+- `NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY`: llave pública para renderizar widget en cliente.
+- `NEXT_PUBLIC_TURNSTILE_STRICT_MODE=true|false`: controla si el frontend exige token antes de enviar login.
+
+Recomendación operativa:
+
+- Producción normal: `CLOUDFLARE_TURNSTILE_MODE=strict` y `NEXT_PUBLIC_TURNSTILE_STRICT_MODE=true`.
+- Contingencia por incidente: `CLOUDFLARE_TURNSTILE_MODE=degraded` y `NEXT_PUBLIC_TURNSTILE_STRICT_MODE=false`.
+

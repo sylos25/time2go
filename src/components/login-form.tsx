@@ -15,6 +15,9 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ onSuccess }: LoginFormProps) {
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY || ""
+  const turnstileStrictMode = process.env.NEXT_PUBLIC_TURNSTILE_STRICT_MODE === "true"
+  const shouldRenderTurnstile = turnstileSiteKey.length > 0
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -73,8 +76,8 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       return
     }
 
-    // Validar token de Turnstile
-    if (!turnstileToken) {
+    // En modo estricto, exige captcha solo si la llave está configurada.
+    if (turnstileStrictMode && shouldRenderTurnstile && !turnstileToken) {
       setTurnstileError("Por favor, completa la verificación del captcha")
       return
     }
@@ -252,24 +255,30 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       </div>
 
       {/* Turnstile Captcha */}
-      <div className="flex justify-center">
-        <Turnstile
-          key={turnstileKey}
-          siteKey={process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY || ""}
-          onSuccess={(token) => {
-            setTurnstileToken(token)
-            setTurnstileError("")
-          }}
-          onError={() => {
-            setTurnstileToken(null)
-            setTurnstileError("Error al cargar el captcha. Por favor, intenta nuevamente.")
-          }}
-          onExpire={() => {
-            setTurnstileToken(null)
-            setTurnstileError("La verificación del captcha ha expirado. Por favor, intenta nuevamente.")
-          }}
-        />
-      </div>
+      {shouldRenderTurnstile && (
+        <div className="flex justify-center">
+          <Turnstile
+            key={turnstileKey}
+            siteKey={turnstileSiteKey}
+            onSuccess={(token) => {
+              setTurnstileToken(token)
+              setTurnstileError("")
+            }}
+            onError={() => {
+              setTurnstileToken(null)
+              if (turnstileStrictMode) {
+                setTurnstileError("Error al cargar el captcha. Por favor, intenta nuevamente.")
+              }
+            }}
+            onExpire={() => {
+              setTurnstileToken(null)
+              if (turnstileStrictMode) {
+                setTurnstileError("La verificación del captcha ha expirado. Por favor, intenta nuevamente.")
+              }
+            }}
+          />
+        </div>
+      )}
 
       {(turnstileError || error) && (
         <div className="space-y-2">

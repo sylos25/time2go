@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Menu, X, User, LogOut, Settings, LayoutDashboard, Calendar, Ticket, Star } from "lucide-react"
+import { Menu, X, User, LogOut, Settings, LayoutDashboard, Calendar, Ticket, Star, Heart } from "lucide-react"
 import { usePermission, PERMISSIONS } from "@/hooks/use-permissions"
 import type { JSX } from "react"
 
@@ -415,6 +415,10 @@ export function Header({
                           <Star className="h-4 w-4 mr-2" />
                           Mis valoraciones
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigateTo("/mis-favoritos")} className="cursor-pointer">
+                          <Heart className="h-4 w-4 mr-2" />
+                          Mis favoritos
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
                           <LogOut className="h-4 w-4 mr-2" />
@@ -512,6 +516,20 @@ export function Header({
                     <span>Mis Eventos</span>
                   </button>
                 )}
+                <button
+                  onClick={() => navigateTo("/mis-valoraciones")}
+                  className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
+                >
+                  <Star className="h-5 w-5 text-lime-600" />
+                  <span>Mis Valoraciones</span>
+                </button>
+                <button
+                  onClick={() => navigateTo("/mis-favoritos")}
+                  className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
+                >
+                  <Heart className="h-5 w-5 text-lime-600" />
+                  <span>Mis Favoritos</span>
+                </button>
                 <button
                   onClick={handleLogout}
                   className="flex items-center space-x-3 text-red-600 hover:text-red-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-red-50 transition-all w-full text-left mt-4"

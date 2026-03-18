@@ -52,6 +52,68 @@ END;
 $$;
 
 
+-- ── 1.1 OBTENER una valoración por id ───────────────────────────────────────
+CREATE OR REPLACE FUNCTION app_api.fn_valoraciones_obtener_por_id(
+  p_id_valoracion tabla_valoraciones.id_valoracion%TYPE,
+  p_id_usuario tabla_valoraciones.id_usuario%TYPE
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SET search_path = public, app_api, pg_temp
+AS $$
+DECLARE
+  v_resultado JSONB;
+BEGIN
+  SELECT jsonb_build_object(
+    'id_valoracion',       v.id_valoracion,
+    'valoracion',          v.valoracion,
+    'comentario',          v.comentario,
+    'fecha_creacion',      v.fecha_creacion,
+    'fecha_actualizacion', v.fecha_actualizacion,
+    'id_publico_evento',   e.id_publico_evento,
+    'nombre_evento',       e.nombre_evento,
+    'fecha_inicio',        e.fecha_inicio,
+    'hora_inicio',         e.hora_inicio,
+    'imagen_evento',       img.url_imagen_evento
+  )
+  INTO v_resultado
+  FROM tabla_valoraciones v
+  JOIN tabla_eventos e ON v.id_evento = e.id_evento
+  LEFT JOIN LATERAL (
+    SELECT i.url_imagen_evento
+    FROM tabla_imagenes_eventos i
+    WHERE i.id_evento = e.id_evento
+    ORDER BY i.id_imagen_evento ASC
+    LIMIT 1
+  ) img ON TRUE
+  WHERE v.id_valoracion = p_id_valoracion
+    AND v.id_usuario = p_id_usuario;
+
+  IF v_resultado IS NULL THEN
+    RETURN jsonb_build_object(
+      'ok', FALSE,
+      'error_code', 'VALORACION_NOT_FOUND_OR_FORBIDDEN',
+      'sqlstate', 'P0002',
+      'error', 'Valoracion no encontrada o sin permisos'
+    );
+  END IF;
+
+  RETURN jsonb_build_object(
+    'ok', TRUE,
+    'valoracion', v_resultado
+  );
+EXCEPTION
+  WHEN OTHERS THEN
+    RETURN jsonb_build_object(
+      'ok', FALSE,
+      'error_code', 'DB_ERROR',
+      'sqlstate', SQLSTATE,
+      'error', SQLERRM
+    );
+END;
+$$;
+
+
 -- ── 2. CREAR una valoración ──────────────────────────────────────────────────
 DROP FUNCTION IF EXISTS app_api.fn_valoraciones_crear(INT, INT, NUMERIC, TEXT);
 

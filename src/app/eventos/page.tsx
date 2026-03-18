@@ -57,6 +57,8 @@ interface CategoriaEvento {
 export default function EventosPage() {
   const [events, setEvents] = useState<any[]>(initialEvents)
   const [categories, setCategories] = useState<CategoriaEvento[]>([])
+  const [favoriteIds, setFavoriteIds] = useState<number[]>([])
+  const [favoritePendingIds, setFavoritePendingIds] = useState<number[]>([])
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [isLogin, setIsLogin] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -154,6 +156,57 @@ const formatDia = (date: Date): string => {
     fetchEventos();
   }, []);
 
+  const fetchFavoritos = async () => {
+    try {
+      const res = await fetch("/api/favoritos", { credentials: "include" });
+      if (res.status === 401) {
+        setFavoriteIds([]);
+        return;
+      }
+
+      const data = await res.json();
+      if (res.ok && data?.ok && Array.isArray(data.favoritos)) {
+        setFavoriteIds(
+          data.favoritos
+            .map((value: unknown) => Number(value))
+            .filter((value: number) => Number.isFinite(value))
+        );
+        return;
+      }
+
+      setFavoriteIds([]);
+    } catch (error) {
+      console.error("Error fetching favorites:", error);
+      setFavoriteIds([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchFavoritos();
+
+    const onLogin = () => {
+      fetchFavoritos();
+    };
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === "token") {
+        if (event.newValue) {
+          fetchFavoritos();
+        } else {
+          setFavoriteIds([]);
+        }
+      }
+    };
+
+    window.addEventListener("user:login", onLogin);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      window.removeEventListener("user:login", onLogin);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
+
   const fetchCategorias = async () => {
     try {
       const res = await fetch("/api/categoria_evento");
@@ -217,6 +270,52 @@ const formatDia = (date: Date): string => {
   const handleEventExpand = (eventId: number) => {
     setExpandedEventId(expandedEventId === eventId ? null : eventId)
   }
+
+  const toggleFavorite = async (eventId: number) => {
+    if (!Number.isFinite(eventId) || eventId <= 0) {
+      return;
+    }
+
+    if (favoritePendingIds.includes(eventId)) {
+      return;
+    }
+
+    const isFavorite = favoriteIds.includes(eventId);
+    setFavoritePendingIds((prev) => [...prev, eventId]);
+    setFavoriteIds((prev) =>
+      isFavorite ? prev.filter((id) => id !== eventId) : [...prev, eventId]
+    );
+
+    try {
+      const res = await fetch(
+        isFavorite ? `/api/favoritos?id_evento=${eventId}` : "/api/favoritos",
+        {
+          method: isFavorite ? "DELETE" : "POST",
+          credentials: "include",
+          headers: isFavorite ? undefined : { "Content-Type": "application/json" },
+          body: isFavorite ? undefined : JSON.stringify({ id_evento: eventId }),
+        }
+      );
+
+      if (res.status === 401) {
+        setFavoriteIds((prev) => prev.filter((id) => id !== eventId));
+        openAuthModal(true);
+        return;
+      }
+
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.message || "No se pudo actualizar favoritos");
+      }
+    } catch (error) {
+      console.error("Error updating favorite:", error);
+      setFavoriteIds((prev) =>
+        isFavorite ? [...prev, eventId] : prev.filter((id) => id !== eventId)
+      );
+    } finally {
+      setFavoritePendingIds((prev) => prev.filter((id) => id !== eventId));
+    }
+  };
 
 const handleAddEvent = async () => {
   // This function is moved to crear page
@@ -542,7 +641,12 @@ const handleAddEvent = async () => {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredEvents.map((event) => (
+            {filteredEvents.map((event) => {
+              const eventId = Number(event.id_evento ?? event.id)
+              const isFavorite = favoriteIds.includes(eventId)
+              const isFavoritePending = favoritePendingIds.includes(eventId)
+
+              return (
               <Card
                 key={event.id_evento ?? event.id}
                 className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-card/90 backdrop-blur-sm border-border rounded-2xl overflow-hidden"
@@ -585,13 +689,18 @@ const handleAddEvent = async () => {
                     <Button
                       size="icon"
                       variant="secondary"
+                      type="button"
                       className="h-9 w-9 bg-card/90 backdrop-blur-sm rounded-full hover:bg-card"
+                      onClick={() => toggleFavorite(eventId)}
+                      disabled={isFavoritePending}
+                      aria-label={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
                     >
-                      <Heart className="h-4 w-4" />
+                      <Heart className={`h-4 w-4 transition-colors ${isFavorite ? "fill-red-500 text-red-500" : "text-foreground"}`} />
                     </Button>
                     <Button
                       size="icon"
                       variant="secondary"
+                      type="button"
                       className="h-9 w-9 bg-card/90 backdrop-blur-sm rounded-full hover:bg-card"
                     >
                       <Share2 className="h-4 w-4" />
@@ -635,6 +744,7 @@ const handleAddEvent = async () => {
                   <div className="flex items-center justify-between">
                     <div className="text-2xl font-bold text-lime-500">{typeof event.price === 'number' ? `$${event.price}` : event.price}</div>
                     <Button
+                      type="button"
                       onClick={() =>
                         router.push(
                           `/eventos/${event.id_evento ?? event.id}?returnTo=${encodeURIComponent("/eventos#eventos-disponibles")}`
@@ -647,7 +757,8 @@ const handleAddEvent = async () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              )
+            })}
           </div>
 
           {filteredEvents.length === 0 && (

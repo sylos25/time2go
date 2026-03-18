@@ -5,7 +5,31 @@ import { parseCookies } from "@/lib/cookies";
 import { dbErrorResponse } from "@/lib/api-error-response";
 
 async function getAuthenticatedUser(req: Request) {
-  // ... sin cambios
+  const authHeader = req.headers.get("authorization") || "";
+
+  if (authHeader.startsWith("Bearer ")) {
+    const token = authHeader.slice(7).trim();
+    const payload = verifyToken(token);
+    const userId = payload?.id_usuario;
+    if (payload && userId) {
+      return { id_usuario: Number(userId), name: payload.name };
+    }
+  }
+
+  const cookieHeader = req.headers.get("cookie");
+  if (cookieHeader) {
+    const cookies = parseCookies(cookieHeader);
+    const token = cookies["token"];
+    if (token) {
+      const payload = verifyToken(token);
+      const userId = payload?.id_usuario;
+      if (payload && userId) {
+        return { id_usuario: Number(userId), name: payload.name };
+      }
+    }
+  }
+
+  return null;
 }
 
 // ── GET — listar todas las valoraciones ─────────────────────────────────────
