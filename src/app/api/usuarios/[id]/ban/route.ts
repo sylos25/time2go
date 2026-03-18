@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import pool from "@/lib/db"
 import { verifyToken } from "@/lib/jwt"
 import { parseCookies } from "@/lib/cookies"
-import { sendBanNotificationEmail } from "@/lib/email"
+import { sendBanNotificationEmail, sendUnbanNotificationEmail } from "@/lib/email"
 
 async function getRequester(req: Request, client: any) {
   const authHeader = (req.headers.get("authorization") || "").trim()
@@ -154,7 +154,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       )
       const correo = correoRes.rows[0]?.correo
       if (correo) {
-        await sendBanNotificationEmail(correo, motivoBan)
+        await sendBanNotificationEmail(correo, motivoBan, inicioBan, finBan)
       }
 
       return NextResponse.json({
@@ -165,22 +165,33 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     }
 
     if (action === "unban" || action === "validate") {
-      const result = await client.query(
-        `UPDATE tabla_usuarios
-         SET estado = TRUE,
-             fecha_actualizacion = CURRENT_TIMESTAMP,
-             fecha_desactivacion = NULL
-         WHERE id_usuario = $1
-         RETURNING id_usuario, estado`,
-        [userIdToToggle]
-      )
+  const result = await client.query(
+    `UPDATE tabla_usuarios
+     SET estado = TRUE,
+         fecha_actualizacion = CURRENT_TIMESTAMP,
+         fecha_desactivacion = NULL
+     WHERE id_usuario = $1
+     RETURNING id_usuario, estado`,
+    [userIdToToggle]
+  )
 
-      return NextResponse.json({
-        ok: true,
-        message: action === "validate" ? "Usuario validado correctamente" : "Usuario desbanneado correctamente",
-        user: result.rows[0],
-      })
+  if (action === "unban") {
+    const correoRes = await client.query(
+      "SELECT correo FROM tabla_usuarios_credenciales WHERE id_usuario = $1 LIMIT 1",
+      [userIdToToggle]
+    )
+    const correo = correoRes.rows[0]?.correo
+    if (correo) {
+      await sendUnbanNotificationEmail(correo)
     }
+  }
+
+  return NextResponse.json({
+    ok: true,
+    message: action === "validate" ? "Usuario validado correctamente" : "Usuario desbanneado correctamente",
+    user: result.rows[0],
+  })
+}
 
     return NextResponse.json({ ok: false, message: "Acción inválida. Usa action=ban, action=unban o action=validate" }, { status: 400 })
   } catch (error) {

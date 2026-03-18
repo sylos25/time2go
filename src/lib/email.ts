@@ -216,7 +216,9 @@ export async function sendContactMessageEmail({
 
 export async function sendBanNotificationEmail(
   email: string,
-  motivo: string
+  motivo: string,
+  inicioBan?: Date,
+  finBan?: Date
 ): Promise<boolean> {
   try {
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
@@ -232,29 +234,52 @@ export async function sendBanNotificationEmail(
       .replace(/>/g, "&gt;")
       .replace(/\n/g, "<br/>")
 
+    const formatDate = (date: Date) =>
+      date.toLocaleString("es-CO", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "America/Bogota",
+      })
+
+    const fechaInicio = inicioBan ? formatDate(inicioBan) : formatDate(new Date())
+    const fechaFin = finBan ? formatDate(finBan) : null
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
       subject: "Time2Go - Tu cuenta ha sido desactivada",
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; font-size: 15px;">
           <img src="${bannerUrl}" alt="Banner" style="width: 100%; border-radius: 8px 8px 0 0; display: block;" />
           <div style="background: linear-gradient(to bottom left, #a21caf, #dc2626); padding: 20px; border-radius: 0; color: white; text-align: center;">
-            <h2 style="margin: 0;">Cuenta Desactivada</h2>
+            <h2 style="margin: 0; font-size: 22px;">Cuenta Desactivada</h2>
           </div>
-          <div style="padding: 20px; background: #FBFEFF; border-radius: 0 0 8px 8px;">
-            <p>¡Hola!</p>
-            <p>Te informamos que tu cuenta en <strong>Time2Go</strong> ha sido <strong>desactivada</strong> por el siguiente motivo:</p>
+          <div style="padding: 24px; background: #FBFEFF; border-radius: 0 0 8px 8px;">
+            <p style="font-size: 15px;">¡Hola!</p>
+            <p style="font-size: 15px;">Te informamos que tu cuenta en <strong>Time2Go</strong> ha sido <strong>desactivada</strong> por el siguiente motivo:</p>
             <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #dc2626; margin: 20px 0;">
-              <p style="margin: 0; color: #111827;">
+              <p style="margin: 0; color: #111827; font-size: 15px;">
                 ${sanitizedMotivo}
               </p>
             </div>
-            <p style="color: #666;">
+            <div style="background: #f9fafb; padding: 14px; border-radius: 6px; margin: 20px 0;">
+              <p style="margin: 0 0 6px 0; font-size: 14px; color: #555;">
+                🕐 <strong>Inicio del ban:</strong> ${fechaInicio}
+              </p>
+              ${fechaFin ? `
+              <p style="margin: 0; font-size: 14px; color: #555;">
+                🕐 <strong>Fin del ban:</strong> ${fechaFin}
+              </p>` : ""}
+            </div>
+            <p style="font-size: 15px; color: #666;">
               Si crees que esto es un error o deseas obtener más información, por favor contacta a nuestro equipo de soporte. Estaremos felices de ayudarte a resolver cualquier inconveniente.
             </p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="mailto:${process.env.EMAIL_USER}" style="background: linear-gradient(to top right, #15803d, #84cc16); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+              <a href="mailto:${process.env.EMAIL_USER}" style="background: linear-gradient(to top right, #15803d, #84cc16); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 15px;">
                 Contactar Soporte
               </a>
             </div>
@@ -272,6 +297,69 @@ export async function sendBanNotificationEmail(
     return true
   } catch (error) {
     console.error("Error enviando correo de baneo:", error)
+    return false
+  }
+}
+
+export async function sendUnbanNotificationEmail(
+  email: string
+): Promise<boolean> {
+  try {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      console.error("Email no configurado: falta EMAIL_USER o EMAIL_PASSWORD")
+      return false
+    }
+
+    const bannerUrl = "https://res.cloudinary.com/dljthy97e/image/upload/v1770842202/banner_top_azaedp.jpg"
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Time2Go - Tu cuenta ha sido reactivada",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; font-size: 15px;">
+          <img src="${bannerUrl}" alt="Banner" style="width: 100%; border-radius: 8px 8px 0 0; display: block;" />
+          <div style="background: linear-gradient(to bottom left, #a21caf, #dc2626); padding: 20px; border-radius: 0; color: white; text-align: center;">
+            <h2 style="margin: 0; font-size: 22px;">Cuenta Reactivada</h2>
+          </div>
+          <div style="padding: 24px; background: #FBFEFF; border-radius: 0 0 8px 8px;">
+            <p style="font-size: 15px;">¡Hola!</p>
+            <p style="font-size: 15px;">Nos complace informarte que tu cuenta en <strong>Time2Go</strong> ha sido <strong>reactivada</strong> y ya puedes acceder con normalidad.</p>
+            <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #15803d; margin: 20px 0;">
+              <p style="margin: 0; color: #111827; font-size: 15px;">
+                🕐 <strong>Fecha de reactivación:</strong> ${new Date().toLocaleString("es-CO", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
+                  timeZone: "America/Bogota",
+                })}
+              </p>
+            </div>
+            <p style="font-size: 15px; color: #666;">
+              Si tienes alguna duda o necesitas ayuda, no dudes en contactar a nuestro equipo de soporte.
+            </p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="mailto:${process.env.EMAIL_USER}" style="background: linear-gradient(to top right, #15803d, #84cc16); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 15px;">
+                Contactar Soporte
+              </a>
+            </div>
+            <hr style="border: none; border-top: 1px solid #F7FCFF; margin: 20px 0;">
+            <p style="font-size: 12px; color: #999;">
+              Este es un correo automático, por favor no respondas directamente a este mensaje.
+            </p>
+          </div>
+        </div>
+      `,
+    }
+
+    const info = await transporter.sendMail(mailOptions)
+    console.log("Correo de desbaneo enviado:", info.response)
+    return true
+  } catch (error) {
+    console.error("Error enviando correo de desbaneo:", error)
     return false
   }
 }
