@@ -35,14 +35,15 @@ async function getAuthenticatedUser(req: Request) {
 // ── GET — obtener una valoración por id ─────────────────────────────────────
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthenticatedUser(req);
     if (!user)
       return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
 
-    const idValoracion = Number(params.id);
+    const { id } = await params;
+    const idValoracion = Number(id);
     if (!Number.isFinite(idValoracion) || idValoracion <= 0)
       return NextResponse.json({ ok: false, message: "ID de valoración inválido" }, { status: 400 });
 
@@ -65,14 +66,15 @@ export async function GET(
 // ── PUT — editar estrellas y/o comentario ────────────────────────────────────
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthenticatedUser(req);
     if (!user)
       return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
 
-    const idValoracion = Number(params.id);
+    const { id } = await params;
+    const idValoracion = Number(id);
     if (!Number.isFinite(idValoracion) || idValoracion <= 0)
       return NextResponse.json({ ok: false, message: "ID de valoración inválido" }, { status: 400 });
 
@@ -102,14 +104,15 @@ export async function PUT(
 // ── DELETE — eliminar una valoración ─────────────────────────────────────────
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthenticatedUser(req);
     if (!user)
       return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
 
-    const idValoracion = Number(params.id);
+    const { id } = await params;
+    const idValoracion = Number(id);
     if (!Number.isFinite(idValoracion) || idValoracion <= 0)
       return NextResponse.json({ ok: false, message: "ID de valoración inválido" }, { status: 400 });
 

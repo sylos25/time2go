@@ -259,7 +259,7 @@ export default function MisFavoritosPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             <Users className="h-4 w-4" />
-                            <span>Aforo para {Number(event.attendees || 0).toLocaleString()}</span>
+                            <span>Aforo para {Number(event.attendees || 0).toLocaleString("es-CO")}</span>
                           </div>
                         </div>
 

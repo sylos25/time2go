@@ -1,5 +1,12 @@
 -- Funcion para listar eventos.
-
+-- ─────────────────────────────────────────────────────────────────────────────
+-- fn_eventos_listar_json
+-- Lista eventos con todas sus relaciones en una sola consulta set-based.
+-- Soporta filtro por id, id_publico, propios, todos o solo activos.
+-- Respuesta: { ok: true, event: {...} }   — con filtro de id único
+--            { ok: true, eventos: [...] } — listado
+--            { ok: false, error_code, sqlstate, error }
+-- ─────────────────────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION app_api.fn_eventos_listar_json(
   p_id_evento tabla_eventos.id_evento%TYPE DEFAULT NULL,
   p_id_publico_evento tabla_eventos.id_publico_evento%TYPE DEFAULT NULL,
@@ -15,6 +22,7 @@ DECLARE
   v_eventos JSONB;
   v_single JSONB;
 BEGIN
+  -- ── 1. Query principal set-based ──────────────────────────────────────────
   WITH eventos_base AS (
     SELECT
       e.id_evento,
@@ -274,8 +282,9 @@ BEGIN
   INTO v_eventos
   FROM eventos_json;
 
+  -- ── 2. Retorno: evento único o listado ────────────────────────────────────
   IF p_id_evento IS NOT NULL OR p_id_publico_evento IS NOT NULL THEN
-    SELECT value INTO v_single FROM jsonb_array_elements(v_eventos) LIMIT 1;
+    v_single := v_eventos->0;
 
     IF v_single IS NULL THEN
       RETURN jsonb_build_object(

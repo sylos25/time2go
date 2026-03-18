@@ -126,7 +126,7 @@ const formatDia = (date: Date): string => {
         }
 
         // date/time formatting
-        const date = e.fecha_inicio ? new Date(e.fecha_inicio).toLocaleDateString() : "";
+        const date = e.fecha_inicio ? new Date(e.fecha_inicio).toLocaleDateString("es-CO") : "";
         const time = e.hora_inicio ? `${e.hora_inicio}${e.hora_final ? ` - ${e.hora_final}` : ""}` : "";
 
         return {
@@ -581,7 +581,7 @@ const handleAddEvent = async () => {
                       <Users className="h-5 w-5 text-blue-600" />
                       <div>
                         <div className="font-semibold text-foreground">Asistentes</div>
-                        <div className="text-sm text-muted-foreground">{expandedEvent.attendees.toLocaleString()}</div>
+                        <div className="text-sm text-muted-foreground">{expandedEvent.attendees.toLocaleString("es-CO")}</div>
                       </div>
                     </div>
                   </div>
@@ -737,7 +737,7 @@ const handleAddEvent = async () => {
                     </div>
                     <div className="flex items-center text-sm text-muted-foreground">
                       <Users className="h-4 w-4 mr-3" />
-                      Aforo para {Number(event.attendees ?? event.cupo ?? 0).toLocaleString()}
+                      Aforo para {Number(event.attendees ?? event.cupo ?? 0).toLocaleString("es-CO")}
                     </div>
                   </div>
 

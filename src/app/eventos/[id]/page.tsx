@@ -482,7 +482,7 @@ export default function EventLanding() {
                   <Users className="h-5 w-5 mx-auto mb-2 text-fuchsia-600" />
                   <p className="text-xs text-muted-foreground">Aforo para</p>
                   <p className="font-semibold text-sm">
-                    {totalCupo.toLocaleString()}
+                    {totalCupo.toLocaleString("es-CO")}
                   </p>
                 </CardContent>
               </Card>
@@ -586,7 +586,7 @@ export default function EventLanding() {
                           </span>
                         </div>
                         <span className="font-bold text-lg">
-                          ${Number(v.precio_boleto ?? v.valor ?? 0).toLocaleString()}
+                          ${Number(v.precio_boleto ?? v.valor ?? 0).toLocaleString("es-CO")}
                         </span>
                       </div>
                     ))}
@@ -675,7 +675,7 @@ export default function EventLanding() {
                 )}
 
                 <p className="text-sm text-center text-muted-foreground mt-2">
-                  Cupos disponibles: <span className="font-semibold text-foreground">{cuposDisponibles.toLocaleString()}</span>
+                  Cupos disponibles: <span className="font-semibold text-foreground">{cuposDisponibles.toLocaleString("es-CO")}</span>
                 </p>
 
                 {event.links && event.links.length > 0 && (

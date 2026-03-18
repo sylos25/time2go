@@ -162,6 +162,14 @@ BEGIN
     'id_valoracion', v_id_valoracion
   );
 EXCEPTION
+  WHEN invalid_text_representation
+    OR numeric_value_out_of_range THEN
+    RETURN jsonb_build_object(
+      'ok',         FALSE,
+      'error_code', 'VALORACION_INVALID_FIELD_TYPE',
+      'sqlstate',   SQLSTATE,
+      'error',      SQLERRM
+    );
   WHEN unique_violation THEN
     RETURN jsonb_build_object(
       'ok', FALSE,
@@ -232,12 +240,20 @@ BEGIN
     'ok', TRUE
   );
 EXCEPTION
+  WHEN invalid_text_representation
+    OR numeric_value_out_of_range THEN
+    RETURN jsonb_build_object(
+      'ok',         FALSE,
+      'error_code', 'VALORACION_INVALID_FIELD_TYPE',
+      'sqlstate',   SQLSTATE,
+      'error',      SQLERRM
+    );
   WHEN OTHERS THEN
     RETURN jsonb_build_object(
-      'ok', FALSE,
+      'ok',         FALSE,
       'error_code', 'DB_ERROR',
-      'sqlstate', SQLSTATE,
-      'error', SQLERRM
+      'sqlstate',   SQLSTATE,
+      'error',      SQLERRM
     );
 END;
 $$;

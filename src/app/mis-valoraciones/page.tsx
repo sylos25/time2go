@@ -116,11 +116,11 @@ export default function MisValoracionesPage() {
 
   // ── Render ────────────────────────────────────────────────────────────
   return (
-    <main className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col bg-background">
       <Header onAuthClick={openAuthModal} />
 
       {/* ── Sección principal ── */}
-      <section className="pt-28 lg:pt-32 pb-12">
+      <section className="flex-grow pt-28 lg:pt-32 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
           {/* Título de sección */}
@@ -343,6 +343,6 @@ export default function MisValoracionesPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-    </main>
+    </div>
   )
 }

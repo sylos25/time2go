@@ -107,7 +107,7 @@ export default function MisEventosPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Ticket className="h-4 w-4" />
-                    <span>Cupo: {Number(evento.cupo || 0).toLocaleString()}</span>
+                    <span>Cupo: {Number(evento.cupo || 0).toLocaleString("es-CO")}</span>
                   </div>
                 </div>
 

@@ -90,7 +90,7 @@ export function EventsPreview() {
           </div>
           <div className="flex items-center text-sm text-muted-foreground">
             <Users className="h-4 w-4 mr-2 text-green-500" />
-            {event.attendees.toLocaleString()} interesados
+            {event.attendees.toLocaleString("es-CO")} interesados
           </div>
         </div>
 

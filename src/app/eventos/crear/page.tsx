@@ -16,16 +16,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowLeft, CircleCheckBig } from "lucide-react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 import { NumericFormat } from "react-number-format";
 // imageCompression removed — file upload UI simplified
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-
-interface ImagenEvento {
-  id_imagen_evento: number;
-  url_imagen_evento: string;
-}
 
 interface EventoInfoItem {
   detalle: string;
@@ -40,12 +35,12 @@ export default function CrearEventoPage() {
   const [tiposDeEvento, setTiposDeEvento] = useState<{ id_tipo_evento: number; nombre: string }[]>([]);
   const [sitios, setSitios] = useState<{ id_sitio: number; nombre_sitio: string }[]>([]);
   const [busquedaSitio, setBusquedaSitio] = useState("");
-  const [busquedaMunicipio, setBusquedaMunicipio] = useState("");
-  const [municipios, setMunicipios] = useState([]);
+  const [isSitiosOpen, setIsSitiosOpen] = useState(false);
   const [showTelefono2, setShowTelefono2] = useState(false);
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   // image preview state removed (no image upload in simplified form)
   const [isLoading, setIsLoading] = useState(false);
+  const [today, setToday] = useState<Date | null>(null);
   const [formErrors, setFormErrors] = useState<{
     nombre_evento?: string;
     pulep_evento?: string;
@@ -76,6 +71,10 @@ export default function CrearEventoPage() {
     setFormErrors((prev) => ({ ...prev, [field]: undefined, general: undefined }));
   };
 
+  useEffect(() => {
+    setToday(new Date());
+  }, []);
+
   const [newEvent, setNewEvent] = useState<any>({
     nombre_evento: "",
     pulep_evento: "",
@@ -92,29 +91,40 @@ export default function CrearEventoPage() {
     telefono2: "",
     fecha_inicio: null as Date | null,
     fecha_final: null as Date | null,
-    diasSeleccionados: [] as Date[],
     hora_inicio: "",
     hora_final: "",
     pago: false,
     reservar_anticipado: false,
     boletas: [{ nombre_boleto: "", precio_boleto: "", servicio: "" }],
-    linksBoleteria: [""] as string[],
     cupo: "",
     estado: false,
     imagenes: [] as File[],
     documento: null,
-    highlights: [],
-    additionalImages: [],
   });
 
   const ALPHANUM_SPACE_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ ]+$/;
   const TEXT_WITH_PUNCT_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]+$/;
 
-  const sanitizeAlphanumSpace = (value: string) =>
-    value.replace(/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ ]/g, "");
+  const normalizeSingleLineSpacing = (value: string) =>
+    value.replace(/\s+/g, " ").replace(/^\s+/, "");
 
-  const sanitizeTextWithPunct = (value: string) =>
-    value.replace(/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]/g, "");
+  const sanitizeAlphanumSpace = (value: string, maxLength?: number) => {
+    const sanitized = normalizeSingleLineSpacing(
+      value.replace(/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ ]/g, "")
+    );
+
+    return typeof maxLength === "number" ? sanitized.slice(0, maxLength) : sanitized;
+  };
+
+  const sanitizeTextWithPunct = (value: string, maxLength?: number) => {
+    const sanitized = value
+      .replace(/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_\/\n\r]/g, "")
+      .replace(/^\s+/, "");
+
+    return typeof maxLength === "number" ? sanitized.slice(0, maxLength) : sanitized;
+  };
+
+  const trimmedLength = (value: string) => value.trim().length;
 
   // Handler para el campo `cupo` (aforo)
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,43 +148,6 @@ export default function CrearEventoPage() {
     setNewEvent({ ...newEvent, cupo: value });
   };
 
-  // Generar rango de fechas entre fecha_inicio y fecha_final
-  const generarRangoDias = (inicio: Date | null, fin: Date | null): Date[] => {
-    if (!inicio || !fin) return [];
-    const diasArray: Date[] = [];
-    const current = new Date(inicio);
-    current.setHours(0, 0, 0, 0);
-    const end = new Date(fin);
-    end.setHours(0, 0, 0, 0);
-    
-    while (current <= end) {
-      diasArray.push(new Date(current));
-      current.setDate(current.getDate() + 1);
-    }
-    return diasArray;
-  };
-
-  // Toggle selección de un día
-  const toggleDiaSeleccionado = (fecha: Date) => {
-    setNewEvent((prev: any) => {
-      const selected = prev.diasSeleccionados || [];
-      const fechaTime = new Date(fecha).setHours(0, 0, 0, 0);
-      const found = selected.find((d: Date) => new Date(d).setHours(0, 0, 0, 0) === fechaTime);
-      
-      if (found) {
-        return { ...prev, diasSeleccionados: selected.filter((d: Date) => new Date(d).setHours(0, 0, 0, 0) !== fechaTime) };
-      } else {
-        return { ...prev, diasSeleccionados: [...selected, new Date(fecha)] };
-      }
-    });
-  };
-
-  // Helper para formatear fecha
-  const formatDia = (date: Date): string => {
-    const opciones: Intl.DateTimeFormatOptions = { weekday: "long", day: "numeric", month: "numeric" };
-    return date.toLocaleDateString("es-ES", opciones);
-  };
-
   // Handlers para boletas (tabla_boleteria)
   const addBoletaField = () => {
     if (newEvent.boletas.length < 12) {
@@ -185,7 +158,7 @@ export default function CrearEventoPage() {
   const updateBoleta = (index: number, field: string, value: string) => {
     const updatedBoletas = [...newEvent.boletas];
     if (field === "nombre_boleto") {
-      updatedBoletas[index][field] = sanitizeAlphanumSpace(value);
+      updatedBoletas[index][field] = sanitizeAlphanumSpace(value, 30);
     } else if (field === "precio_boleto" || field === "servicio") {
       updatedBoletas[index][field] = String(value || "").replace(/[^0-9]/g, "");
     } else {
@@ -216,7 +189,12 @@ export default function CrearEventoPage() {
 
   const updateInfoItem = (index: number, field: keyof EventoInfoItem, value: string | boolean) => {
     const updated = [...(newEvent.informacion_adicional_items || [])];
-    updated[index] = { ...updated[index], [field]: value };
+    updated[index] = {
+      ...updated[index],
+      [field]: field === "detalle" && typeof value === "string"
+        ? sanitizeTextWithPunct(value, 50)
+        : value,
+    };
     setNewEvent({ ...newEvent, informacion_adicional_items: updated });
   };
 
@@ -229,11 +207,6 @@ export default function CrearEventoPage() {
         : [{ detalle: "", obligatorio: true }],
     });
   };
-
-  // ticket link handlers removed from UI (kept as optional server-side field)
-
-  // image upload handler removed (no image upload in simplified form)
-
   // Fetch categorías
   useEffect(() => {
     const fetchCategorias = async () => {
@@ -312,10 +285,15 @@ export default function CrearEventoPage() {
   // Fetch sitios
   useEffect(() => {
     const fetchSitios = async () => {
-      if (!busquedaSitio || busquedaSitio.length < 2 || newEvent.id_sitio) return;
       try {
-        const res = await fetch(`/api/llamar_sitio?nombre_sitio=${encodeURIComponent(busquedaSitio)}`);
+        const query = busquedaSitio.trim();
+        const url = query
+          ? `/api/llamar_sitio?nombre_sitio=${encodeURIComponent(query)}`
+          : "/api/llamar_sitio";
+
+        const res = await fetch(url);
         const data = await res.json();
+
         if (Array.isArray(data)) {
           setSitios(data);
         } else {
@@ -327,25 +305,7 @@ export default function CrearEventoPage() {
       }
     };
     fetchSitios();
-  }, [busquedaSitio]);
-
-  // Fetch municipios
-  useEffect(() => {
-    if (newEvent.id_sitio) {
-      fetch(`/api/municipios?sitioId=${newEvent.id_sitio}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.length > 0) {
-            setBusquedaMunicipio(data[0].nombre_municipio);
-          } else {
-            setBusquedaMunicipio("");
-          }
-        })
-        .catch((err) => console.error("Error cargando municipios:", err));
-    } else {
-      setBusquedaMunicipio("");
-    }
-  }, [newEvent.id_sitio]);
+  }, [busquedaSitio, newEvent.id_sitio]);
 
   const handleAddEvent = async () => {
     try {
@@ -353,8 +313,8 @@ export default function CrearEventoPage() {
       setIsLoading(true);
 
       // Validaciones según la tabla_eventos
-      if (!newEvent.nombre_evento || newEvent.nombre_evento.length < 6) {
-        setFieldError("nombre_evento", "El nombre del evento debe tener al menos 6 caracteres.");
+      if (!newEvent.nombre_evento || trimmedLength(newEvent.nombre_evento) < 6 || trimmedLength(newEvent.nombre_evento) > 40) {
+        setFieldError("nombre_evento", "El nombre del evento debe tener entre 6 y 40 caracteres.");
         return;
       }
 
@@ -374,8 +334,8 @@ export default function CrearEventoPage() {
         return;
       }
 
-      if (!newEvent.responsable_evento || newEvent.responsable_evento.length < 6) {
-        setFieldError("responsable_evento", "El nombre del responsable debe tener al menos 6 caracteres.");
+      if (!newEvent.responsable_evento || trimmedLength(newEvent.responsable_evento) < 6 || trimmedLength(newEvent.responsable_evento) > 40) {
+        setFieldError("responsable_evento", "El nombre del responsable debe tener entre 6 y 40 caracteres.");
         return;
       }
 
@@ -384,8 +344,8 @@ export default function CrearEventoPage() {
         return;
       }
 
-      if (!newEvent.descripcion || newEvent.descripcion.length < 10) {
-        setFieldError("descripcion", "La descripción debe tener al menos 10 caracteres.");
+      if (!newEvent.descripcion || trimmedLength(newEvent.descripcion) < 10 || trimmedLength(newEvent.descripcion) > 100) {
+        setFieldError("descripcion", "La descripción debe tener entre 10 y 100 caracteres.");
         return;
       }
 
@@ -404,8 +364,8 @@ export default function CrearEventoPage() {
       }
 
       for (const item of infoItems) {
-        if (item.detalle.trim().length < 5) {
-          setFieldError("informacion_adicional_items", "Cada detalle debe tener al menos 5 caracteres.");
+        if (trimmedLength(item.detalle) < 10 || trimmedLength(item.detalle) > 40) {
+          setFieldError("informacion_adicional_items", "Cada detalle debe tener entre 10 y 40 caracteres.");
           return;
         }
         if (!TEXT_WITH_PUNCT_REGEX.test(item.detalle)) {
@@ -478,8 +438,8 @@ export default function CrearEventoPage() {
         }
         
         for (let boleta of boletasValidas) {
-          if (boleta.nombre_boleto.length < 3) {
-            setFieldError("boletas", "Cada nombre de boleta debe tener al menos 3 caracteres.");
+          if (trimmedLength(String(boleta.nombre_boleto || "")) < 3 || trimmedLength(String(boleta.nombre_boleto || "")) > 20) {
+            setFieldError("boletas", "Cada nombre de boleta debe tener entre 3 y 20 caracteres.");
             return;
           }
           if (!ALPHANUM_SPACE_REGEX.test(String(boleta.nombre_boleto || ""))) {
@@ -629,12 +589,13 @@ export default function CrearEventoPage() {
                     id="title"
                     value={newEvent.nombre_evento}
                     onChange={(e) => {
-                      const value = sanitizeAlphanumSpace(e.target.value);
+                      const value = sanitizeAlphanumSpace(e.target.value, 50);
                       clearFieldError("nombre_evento");
                       setNewEvent({ ...newEvent, nombre_evento: value });
                     }}
                     placeholder="Nombre completo del evento"
                     className="rounded-xl"
+                    maxLength={50}
                   />
                   {formErrors.nombre_evento && (
                     <p className="text-xs text-red-600">{formErrors.nombre_evento}</p>
@@ -667,12 +628,13 @@ export default function CrearEventoPage() {
                     id="responsable_evento"
                     value={newEvent.responsable_evento}
                     onChange={(e) => {
-                      const value = sanitizeAlphanumSpace(e.target.value);
+                      const value = sanitizeAlphanumSpace(e.target.value, 40);
                       clearFieldError("responsable_evento");
                       setNewEvent({ ...newEvent, responsable_evento: value });
                     }}
                     placeholder="Nombre completo de la entidad responsable del evento"
                     className="rounded-xl"
+                    maxLength={40}
                   />
                   {formErrors.responsable_evento && (
                     <p className="text-xs text-red-600">{formErrors.responsable_evento}</p>
@@ -742,36 +704,71 @@ export default function CrearEventoPage() {
 
                 <div className="space-y-2 relative">
                   <Label htmlFor="sitio">Sitio del evento</Label>
-                  <Input
-                    id="sitio"
-                    value={busquedaSitio}
-                    onChange={(e) => {
-                      clearFieldError("id_sitio");
-                      setBusquedaSitio(e.target.value);
-                      setNewEvent({ ...newEvent, id_sitio: 0 });
-                    }}
-                    placeholder="Escribe el nombre del sitio donde será el evento"
-                    className="rounded-xl"
-                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="sitio"
+                      value={busquedaSitio}
+                      onChange={(e) => {
+                        const value = e.target.value.slice(0, 50);
+                        clearFieldError("id_sitio");
+                        setBusquedaSitio(value);
+                        setNewEvent({ ...newEvent, id_sitio: 0 });
+                        setIsSitiosOpen(true);
+                      }}
+                      placeholder="Escribe el nombre del sitio donde será el evento"
+                      className="rounded-xl"
+                      maxLength={50}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setIsSitiosOpen((prev) => !prev)}
+                      aria-expanded={isSitiosOpen}
+                      aria-controls="sitios-dropdown"
+                      className="shrink-0 rounded-xl"
+                    >
+                      <ChevronDown className={`h-4 w-4 transition-transform ${isSitiosOpen ? "rotate-180" : "rotate-0"}`} />
+                    </Button>
+                  </div>
                   {formErrors.id_sitio && (
                     <p className="text-xs text-red-600">{formErrors.id_sitio}</p>
                   )}
-                  {sitios.length > 0 && (
-                    <ul className="absolute z-10 bg-popover text-popover-foreground border border-border rounded-xl mt-1 w-full max-h-60 overflow-y-auto shadow-lg">
-                      {sitios.map((sitio) => (
-                        <li
-                          key={sitio.id_sitio}
-                          onClick={() => {
-                            setBusquedaSitio(sitio.nombre_sitio);
-                            setNewEvent({ ...newEvent, id_sitio: sitio.id_sitio });
-                            setSitios([]);
-                          }}
-                          className="px-4 py-2 cursor-pointer transition-colors hover:bg-accent hover:text-accent-foreground"
-                        >
-                          {sitio.nombre_sitio}
-                        </li>
-                      ))}
-                    </ul>
+                  {isSitiosOpen && (
+                    <div
+                      id="sitios-dropdown"
+                      className="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-lg"
+                    >
+                      {sitios.length > 0 ? (
+                        <ul className="max-h-60 overflow-y-auto">
+                          {sitios.map((sitio) => {
+                            const isSelected = newEvent.id_sitio === sitio.id_sitio;
+
+                            return (
+                              <li
+                                key={sitio.id_sitio}
+                                onClick={() => {
+                                  setBusquedaSitio(sitio.nombre_sitio);
+                                  setNewEvent({ ...newEvent, id_sitio: sitio.id_sitio });
+                                  setIsSitiosOpen(false);
+                                }}
+                                className={`px-4 py-2 cursor-pointer transition-colors ${
+                                  isSelected
+                                    ? "bg-accent text-accent-foreground font-medium"
+                                    : "hover:bg-accent hover:text-accent-foreground"
+                                }`}
+                              >
+                                {sitio.nombre_sitio}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : (
+                        <div className="px-4 py-3 text-sm text-muted-foreground">
+                          No se encontraron sitios para esa búsqueda.
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -783,15 +780,16 @@ export default function CrearEventoPage() {
                   id="description"
                   value={newEvent.descripcion}
                   onChange={(e) => {
-                    const value = sanitizeTextWithPunct(e.target.value);
+                    const value = sanitizeTextWithPunct(e.target.value, 200);
                     clearFieldError("descripcion");
                     setNewEvent({ ...newEvent, descripcion: value });
                   }}
                   placeholder="Descripción breve del evento"
                   className="rounded-xl min-h-[100px]"
+                  maxLength={200}
                 />
                 <p className="text-xs text-muted-foreground">
-                  {newEvent.descripcion.length}/∞ caracteres (mínimo 10)
+                  {newEvent.descripcion.length}/200 caracteres (mínimo 10)
                 </p>
                 {formErrors.descripcion && (
                   <p className="text-xs text-red-600">{formErrors.descripcion}</p>
@@ -813,13 +811,17 @@ export default function CrearEventoPage() {
                       <Textarea
                         value={item.detalle}
                         onChange={(e) => {
-                          const value = sanitizeTextWithPunct(e.target.value);
+                          const value = sanitizeTextWithPunct(e.target.value, 50);
                           clearFieldError("informacion_adicional_items");
                           updateInfoItem(index, "detalle", value);
                         }}
                         placeholder="Ej: Ingreso desde las 7:00 PM, no se permite reingreso"
                         className="rounded-xl min-h-[90px]"
+                        maxLength={50}
                       />
+                      <p className="text-xs text-muted-foreground">
+                        {item.detalle.length}/50 caracteres (mínimo 10)
+                      </p>
                     </div>
 
                     <div className="flex items-center justify-between">
@@ -948,7 +950,7 @@ export default function CrearEventoPage() {
                       setNewEvent({ ...newEvent, fecha_inicio: date });
                     }}
                     dateFormat="dd/MM/yyyy"
-                    minDate={new Date()}
+                    minDate={today ?? undefined}
                     placeholderText="01/01/2025"
                     className="cursor-pointer w-75 rounded-xl border-border bg-card text-foreground shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
                   />
@@ -966,13 +968,12 @@ export default function CrearEventoPage() {
                         clearFieldError("fecha_final");
                         setNewEvent({
                           ...newEvent,
-                          fecha_final: date,
-                          diasSeleccionados: []
+                            fecha_final: date,
                         })
                       }
                     }
                     dateFormat="dd/MM/yyyy"
-                    minDate={newEvent.fecha_inicio || new Date()} 
+                    minDate={newEvent.fecha_inicio || today || undefined}
                     placeholderText="31/12/2025"
                     className="cursor-pointer w-75 rounded-xl border-border bg-card text-foreground shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
                   />
@@ -1032,7 +1033,6 @@ export default function CrearEventoPage() {
                           pago: false,
                           reservar_anticipado: false,
                           boletas: [{ nombre_boleto: "", precio_boleto: "", servicio: "" }],
-                          linksBoleteria: [""]
                         })
                       }
                     />
@@ -1082,12 +1082,17 @@ export default function CrearEventoPage() {
                             type="text"
                             value={boleta.nombre_boleto}
                             onChange={(e) => {
-                              const valor = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, "");
+                              const valor = sanitizeAlphanumSpace(e.target.value, 30);
+                              clearFieldError("boletas");
                               updateBoleta(index, "nombre_boleto", valor);
                             }}
                             placeholder="Ej: General, VIP, Early Bird, etc."
                             className="rounded-xl text-sm"
+                            maxLength={30}
                           />
+                          <p className="text-xs text-muted-foreground">
+                            {String(boleta.nombre_boleto || "").length}/30 caracteres (mínimo 3)
+                          </p>
                         </div>
 
                         <div className="grid md:grid-cols-2 gap-3">
