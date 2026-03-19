@@ -25,6 +25,58 @@ interface StatCard {
   color: string
 }
 
+interface RegistrationApiRow {
+  monthKey: string
+  total: number
+}
+
+interface CategoryApiRow {
+  idCategoriaEvento: number
+  nombre: string
+  total: number
+}
+
+interface TopRatedEventApiRow {
+  idEvento: number
+  nombreEvento: string
+  promedioValoracion: number
+  totalValoraciones: number
+}
+
+const CATEGORY_COLORS = ["#3B82F6", "#8B5CF6", "#10B981", "#F59E0B", "#EF4444", "#06B6D4", "#84CC16", "#EC4899"]
+
+const monthLabelFormatter = new Intl.DateTimeFormat("es-CO", { month: "short" })
+
+function getLastSixMonthsLabels() {
+  const result: string[] = []
+  const base = new Date()
+  base.setDate(1)
+
+  for (let offset = 5; offset >= 0; offset -= 1) {
+    const d = new Date(base.getFullYear(), base.getMonth() - offset, 1)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
+    result.push(key)
+  }
+
+  return result
+}
+
+function mapRegistrationsForChart(rows: RegistrationApiRow[]) {
+  const map = new Map(rows.map((row) => [row.monthKey, Number(row.total || 0)]))
+
+  return getLastSixMonthsLabels().map((monthKey) => {
+    const [year, month] = monthKey.split("-").map(Number)
+    const date = new Date(year, month - 1, 1)
+    const monthLabel = monthLabelFormatter.format(date)
+    const normalizedLabel = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)
+
+    return {
+      month: normalizedLabel,
+      registrados: map.get(monthKey) ?? 0,
+    }
+  })
+}
+
 export default function DashboardOverviewPage() {
   const [stats, setStats] = useState<StatCard[]>([
     { title: "Eventos Activos", value: 0, icon: Calendar, color: "from-fuchsia-500 to-red-700" },
@@ -32,30 +84,9 @@ export default function DashboardOverviewPage() {
     { title: "Usuarios Activos", value: 0, icon: Users, color: "from-lime-500 to-green-700" },
     { title: "Usuarios Baneados", value: 0, icon: Users, color: "from-gray-500 to-gray-600" },
   ])
-
-  const eventData = [
-    { month: "Jul", vistas: 8500, asistentes: 2100 },
-    { month: "Ago", vistas: 9200, asistentes: 2450 },
-    { month: "Sep", vistas: 11000, asistentes: 2800 },
-    { month: "Oct", vistas: 10500, asistentes: 2600 },
-    { month: "Nov", vistas: 12300, asistentes: 3100 },
-    { month: "Dic", vistas: 14200, asistentes: 3275 },
-  ]
-
-  const categoryData = [
-    { name: "Música", value: 45, color: "#3B82F6" },
-    { name: "Teatro", value: 25, color: "#8B5CF6" },
-    { name: "Deportes", value: 15, color: "#10B981" },
-    { name: "Arte", value: 10, color: "#F59E0B" },
-    { name: "Otros", value: 5, color: "#EF4444" },
-  ]
-
-  const topEvents = [
-    { name: "Festival Carranga", tickets: 1850, views: 8500 },
-    { name: "Concierto Rock", tickets: 800, views: 6200 },
-    { name: "La Madriguera", tickets: 380, views: 2400 },
-    { name: "Festival Jazz", tickets: 245, views: 1900 },
-  ]
+  const [registrationsData, setRegistrationsData] = useState(() => mapRegistrationsForChart([]))
+  const [categoryData, setCategoryData] = useState<Array<{ name: string; value: number; color: string }>>([])
+  const [topRatedEvents, setTopRatedEvents] = useState<Array<{ name: string; promedio: number; valoraciones: number }>>([])
 
   useEffect(() => {
     let cancelled = false
@@ -63,7 +94,7 @@ export default function DashboardOverviewPage() {
     const loadStats = async () => {
       try {
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-        const headers: any = {}
+        const headers: Record<string, string> = {}
         if (token) headers.Authorization = `Bearer ${token}`
 
         const [statsRes, usersRolesRes] = await Promise.all([
@@ -82,6 +113,22 @@ export default function DashboardOverviewPage() {
                 return s
               })
             )
+
+            setRegistrationsData(mapRegistrationsForChart((statsData.userRegistrationsByMonth || []) as RegistrationApiRow[]))
+
+            const categories = ((statsData.eventsByCategory || []) as CategoryApiRow[]).map((category, index) => ({
+              name: category.nombre,
+              value: Number(category.total || 0),
+              color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
+            }))
+            setCategoryData(categories)
+
+            const ratedEvents = ((statsData.topRatedEvents || []) as TopRatedEventApiRow[]).map((event) => ({
+              name: event.nombreEvento,
+              promedio: Number(event.promedioValoracion || 0),
+              valoraciones: Number(event.totalValoraciones || 0),
+            }))
+            setTopRatedEvents(ratedEvents)
           }
         }
 
@@ -128,24 +175,23 @@ export default function DashboardOverviewPage() {
         <div className="lg:col-span-2 bg-card rounded-xl shadow-sm border border-border p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-bold text-foreground">Evolución de Vistas y Asistentes</h3>
+              <h3 className="text-lg font-bold text-foreground">Evolución de Usuarios Registrados</h3>
               <p className="text-sm text-muted-foreground mt-1">Últimos 6 meses</p>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={eventData}>
+            <LineChart data={registrationsData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="month" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }} />
               <Legend wrapperStyle={{ fontSize: "14px" }} />
-              <Line type="monotone" dataKey="vistas" stroke="#3B82F6" strokeWidth={3} name="Vistas" dot={{ r: 4 }} />
               <Line
                 type="monotone"
-                dataKey="asistentes"
-                stroke="#8B5CF6"
+                dataKey="registrados"
+                stroke="#16A34A"
                 strokeWidth={3}
-                name="Asistentes"
+                name="Usuarios Registrados"
                 dot={{ r: 4 }}
               />
             </LineChart>
@@ -194,18 +240,17 @@ export default function DashboardOverviewPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-lg font-bold text-foreground">Eventos Más Populares</h3>
-            <p className="text-sm text-muted-foreground mt-1">Ordenados por número de tickets vendidos</p>
+            <p className="text-sm text-muted-foreground mt-1">Ordenados por promedio de valoración de usuarios</p>
           </div>
         </div>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={topEvents}>
+          <BarChart data={topRatedEvents}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} />
+            <YAxis tick={{ fontSize: 12 }} domain={[0, 5]} />
             <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }} />
             <Legend wrapperStyle={{ fontSize: "14px" }} />
-            <Bar dataKey="tickets" fill="#3B82F6" name="Tickets Vendidos" radius={[8, 8, 0, 0]} />
-            <Bar dataKey="views" fill="#8B5CF6" name="Vistas" radius={[8, 8, 0, 0]} />
+            <Bar dataKey="promedio" fill="#F59E0B" name="Promedio de Valoración" radius={[8, 8, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

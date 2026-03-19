@@ -63,7 +63,6 @@ export default function EventosPage() {
   const [isLogin, setIsLogin] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
-  const [sortBy, setSortBy] = useState("date")
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [expandedEventId, setExpandedEventId] = useState<number | null>(null)
   const [copiedEventId, setCopiedEventId] = useState<number | null>(null)
@@ -408,31 +407,13 @@ const handleAddEvent = async () => {
       return matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
-      const toNumberPrice = (x: any) => {
-        if (typeof x.price === 'number') return x.price;
-        if (x.raw && x.raw.valores && x.raw.valores.length) {
-          const vals = x.raw.valores.map((v: any) => Number(v.valor || 0)).filter(Boolean);
-          return vals.length ? Math.min(...vals) : 0;
-        }
-        return 0;
-      };
-
-      const toNumberAttendees = (x: any) => Number(x.attendees ?? x.cupo ?? x.raw?.cupo ?? 0);
-
       const toTime = (x: any) => {
         const maybe = x.raw?.fecha_inicio ?? x.fecha_inicio ?? x.date;
         const t = Date.parse(String(maybe));
         return isNaN(t) ? 0 : t;
       };
 
-      switch (sortBy) {
-        case "price":
-          return toNumberPrice(a) - toNumberPrice(b);
-        case "attendees":
-          return toNumberAttendees(b) - toNumberAttendees(a);
-        default:
-          return toTime(a) - toTime(b);
-      }
+      return toTime(a) - toTime(b);
     });
   
   // Eventos destacados (si decides mantener rating visual)
@@ -517,18 +498,6 @@ const handleAddEvent = async () => {
                       {category.nombre}
                     </SelectItem>
                   ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full lg:w-56 h-14 rounded-2xl border-2 border-gray-200">
-                  <SelectValue placeholder="Ordenar por" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="date">Fecha</SelectItem>
-                  <SelectItem value="price">Precio</SelectItem>
-                  <SelectItem value="rating">Valoración</SelectItem>
-                  <SelectItem value="attendees">Popularidad</SelectItem>
                 </SelectContent>
               </Select>
             </div>
