@@ -57,6 +57,7 @@ interface CategoriaEvento {
 export default function EventosPage() {
   const [events, setEvents] = useState<any[]>(initialEvents)
   const [categories, setCategories] = useState<CategoriaEvento[]>([])
+  const [selectedImageByEvent, setSelectedImageByEvent] = useState<Record<number, number>>({})
   const [favoriteIds, setFavoriteIds] = useState<number[]>([])
   const [favoritePendingIds, setFavoritePendingIds] = useState<number[]>([])
   const [authModalOpen, setAuthModalOpen] = useState(false)
@@ -676,6 +677,9 @@ const handleAddEvent = async () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredEvents.map((event) => {
               const eventId = Number(event.id_evento ?? event.id)
+              const eventImages = Array.isArray(event.raw?.imagenes) ? event.raw.imagenes : []
+              const selectedImageIndex = selectedImageByEvent[eventId] ?? 0
+              const safeSelectedIndex = eventImages[selectedImageIndex] ? selectedImageIndex : 0
               const isFavorite = favoriteIds.includes(eventId)
               const isFavoritePending = favoritePendingIds.includes(eventId)
               const isLinkCopied = copiedEventId === eventId
@@ -687,20 +691,30 @@ const handleAddEvent = async () => {
               >
                 <div className="relative overflow-hidden">
                   <div className="w-full h-52 bg-gray-100">
-                    {event.raw && event.raw.imagenes && event.raw.imagenes.length ? (
+                    {eventImages.length ? (
                       <>
                         <img
-                          src={event.raw.imagenes[0].url_imagen_evento}
+                          src={eventImages[safeSelectedIndex].url_imagen_evento}
                           alt={event.title}
                           className="w-full h-52 object-cover group-hover:scale-110 transition-transform duration-500"
                         />
                         <div className="absolute bottom-2 left-2 right-2 flex gap-2 overflow-x-auto p-1">
-                          {event.raw.imagenes.map((imgObj: any, i: number) => (
+                          {eventImages.map((imgObj: any, i: number) => (
                             <img
                               key={i}
                               src={imgObj.url_imagen_evento}
                               alt={`${event.title} ${i + 1}`}
-                              className="h-10 w-16 object-cover rounded-md border border-border shadow-sm"
+                              onClick={() =>
+                                setSelectedImageByEvent((prev) => ({
+                                  ...prev,
+                                  [eventId]: i,
+                                }))
+                              }
+                              className={`h-10 w-16 object-cover rounded-md border shadow-sm cursor-pointer transition ${
+                                safeSelectedIndex === i
+                                  ? "border-white ring-2 ring-white/90"
+                                  : "border-border opacity-90 hover:opacity-100"
+                              }`}
                             />
                           ))}
                         </div>

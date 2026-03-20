@@ -108,22 +108,35 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 
     const requestedStatus = body.estado === true || body.estado === "true";
 
-    if (!requestedStatus) {
-      return NextResponse.json({ ok: false, message: "Solo se permite aprobar eventos (FALSE -> TRUE)" }, { status: 400 });
-    }
-
-    if (eventCheck.rows[0].estado === true) {
+    if (requestedStatus && eventCheck.rows[0].estado === true) {
       return NextResponse.json({ ok: true, message: "El evento ya está aprobado" });
     }
 
-    // Update event status
+    if (!requestedStatus && eventCheck.rows[0].estado === false) {
+      return NextResponse.json({ ok: true, message: "El evento ya está rechazado" });
+    }
+
+    const rejectionReason = String(body?.motivo_rechazo || "").trim();
+    const rejectedBy = Number(body?.rechazado_por || user.id_usuario);
+
+    if (!requestedStatus && rejectionReason.length > 0 && rejectionReason.length < 10) {
+      return NextResponse.json({ ok: false, message: "El motivo de rechazo debe tener mínimo 10 caracteres" }, { status: 400 });
+    }
+
+    // Update event status (approve or reject)
     const result = await client.query(
-      `UPDATE tabla_eventos SET 
-        estado = $1,
-        fecha_actualizacion = CURRENT_TIMESTAMP
-      WHERE id_evento = $2
-      RETURNING id_evento, nombre_evento, estado`,
-      [true, eventId]
+      `UPDATE tabla_eventos
+       SET estado = $1,
+           motivo_rechazo = CASE WHEN $1::boolean THEN NULL ELSE NULLIF($2::text, '') END,
+           rechazo_por = CASE WHEN $1::boolean THEN NULL ELSE $3::int END,
+           destacado = CASE WHEN $1::boolean THEN destacado ELSE FALSE END,
+           destacado_por = CASE WHEN $1::boolean THEN destacado_por ELSE NULL END,
+           fecha_destacado = CASE WHEN $1::boolean THEN fecha_destacado ELSE NULL END,
+           fecha_desactivacion = CASE WHEN $1::boolean THEN NULL ELSE CURRENT_TIMESTAMP END,
+           fecha_actualizacion = CURRENT_TIMESTAMP
+       WHERE id_evento = $4
+       RETURNING id_evento, nombre_evento, estado, motivo_rechazo, rechazo_por`,
+      [requestedStatus, rejectionReason, rejectedBy, eventId]
     );
 
     if (!result.rows || result.rows.length === 0) {
@@ -132,7 +145,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 
     return NextResponse.json({
       ok: true,
-      message: "Evento aprobado correctamente",
+      message: requestedStatus ? "Evento aprobado correctamente" : "Evento rechazado correctamente",
       event: result.rows[0],
     });
   } catch (err) {
