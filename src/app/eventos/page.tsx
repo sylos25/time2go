@@ -102,6 +102,13 @@ const formatDia = (date: Date): string => {
   return date.toLocaleDateString("es-ES", opciones);
 };
 
+const formatEventPrice = (price: number | string): string => {
+  if (typeof price === "number") {
+    return `$${price.toLocaleString("es-CO")}`;
+  }
+  return String(price);
+};
+
   // Fetch and normalize events for the UI
   const fetchEventos = async () => {
     try {
@@ -114,16 +121,22 @@ const formatDia = (date: Date): string => {
         // determine first image
         const firstImage = e.imagenes && e.imagenes.length ? e.imagenes[0].url_imagen_evento : null;
 
-        // determine price (show min price if paid, otherwise 'Gratis')
+        // determine price (show min ticket price if paid, otherwise 'Gratis')
         let price: number | string = 0;
         if (!e.gratis_pago) {
           price = "Gratis";
-        } else if (e.valores && e.valores.length) {
-          const vals = e.valores.map((v: any) => Number(v.valor || 0)).filter(Boolean);
-          price = vals.length ? Math.min(...vals) : 0;
+        } else if (Array.isArray(e.valores) && e.valores.length > 0) {
+          const ticketPrices = e.valores
+            .map((v: any) => Number(v?.precio_boleto ?? v?.valor ?? 0))
+            .filter((value: number) => Number.isFinite(value) && value > 0);
+          price = ticketPrices.length > 0 ? Math.min(...ticketPrices) : 0;
         } else {
           price = 0;
         }
+
+        const siteName = String(e?.sitio?.nombre_sitio || e?.nombre_sitio || "").trim();
+        const municipalityName = String(e?.municipio?.nombre_municipio || e?.nombre_municipio || "").trim();
+        const location = siteName || municipalityName || "Sitio por confirmar";
 
         // date/time formatting
         const date = e.fecha_inicio ? new Date(e.fecha_inicio).toLocaleDateString("es-CO") : "";
@@ -137,7 +150,7 @@ const formatDia = (date: Date): string => {
           image: firstImage || "/placeholder.svg",
           date,
           time,
-          location: e.nombre_sitio || e.nombre_municipio || "",
+          location,
           attendees: e.cupo ?? 0,
           id_categoria_evento: Number(e.id_categoria_evento || e.evento_categoria_id || e.categoria?.id_categoria_evento || 0),
           price,
@@ -475,7 +488,7 @@ const handleAddEvent = async () => {
                                 </Badge>
                               </div>
                             </div>
-                            <div className="text-sm font-bold text-blue-600">${event.price}</div>
+                            <div className="text-sm font-bold text-blue-600">{formatEventPrice(event.price)}</div>
                           </div>
                         ))}
                       </div>
@@ -634,7 +647,7 @@ const handleAddEvent = async () => {
                   <div className="border-t pt-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-3xl font-bold text-blue-600">{typeof expandedEvent.price === 'number' ? `$${expandedEvent.price}` : expandedEvent.price}</span>
+                        <span className="text-3xl font-bold text-blue-600">{formatEventPrice(expandedEvent.price)}</span>
                         <span className="text-muted-foreground">por persona</span>
                       </div>
                       <div className="flex gap-3">
@@ -766,7 +779,7 @@ const handleAddEvent = async () => {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold text-lime-500">{typeof event.price === 'number' ? `$${event.price}` : event.price}</div>
+                    <div className="text-2xl font-bold text-lime-500">{formatEventPrice(event.price)}</div>
                     <Button
                       type="button"
                       onClick={() =>
