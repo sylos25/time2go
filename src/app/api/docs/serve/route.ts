@@ -1,83 +1,139 @@
 import { NextRequest, NextResponse } from "next/server"
 import fs from "fs"
 import path from "path"
+import pool from "@/lib/db"
+import { verifyToken } from "@/lib/jwt"
+import { parseCookies } from "@/lib/cookies"
 
-const ALLOWED_EXTENSIONS = [".pdf", ".png", ".jpg", ".jpeg", ".webp", ".xlsx", ".xls", ".docx", ".doc", ".pptx", ".ppt", ".csv", ".txt"]
+export const runtime = "nodejs"
 
-const MIME_TYPES: Record<string, string> = {
-  ".pdf":  "application/pdf",
-  ".png":  "image/png",
-  ".jpg":  "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".webp": "image/webp",
-  ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  ".xls":  "application/vnd.ms-excel",
-  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  ".doc":  "application/msword",
-  ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-  ".ppt":  "application/vnd.ms-powerpoint",
-  ".csv":  "text/csv",
-  ".txt":  "text/plain",
+// ── Verificar rol admin ──────────────────────────────────────────────────────
+async function ensureAdminRole(req: NextRequest): Promise<boolean> {
+  const authHeader = (req.headers.get("authorization") || "").trim()
+  let userId: string | null = null
+
+  if (authHeader.startsWith("Bearer ")) {
+    const token = authHeader.slice(7).trim()
+    const payload = verifyToken(token)
+    const userIdFromToken = payload?.id_usuario
+    if (payload && userIdFromToken) userId = String(userIdFromToken)
+  }
+
+  if (!userId) {
+    const cookies = parseCookies(req.headers.get("cookie"))
+    const token = cookies["token"]
+    if (token) {
+      const payload = verifyToken(token)
+      const userIdFromToken = payload?.id_usuario
+      if (payload && userIdFromToken) userId = String(userIdFromToken)
+    }
+  }
+
+  if (!userId) return false
+
+  const roleRes = await pool.query(
+    "SELECT id_rol FROM tabla_usuarios WHERE id_usuario = $1 LIMIT 1",
+    [userId]
+  )
+  const role = roleRes.rows?.[0] ? Number(roleRes.rows[0].id_rol) : null
+  return role === 4
 }
 
-function verifyAdmin(request: NextRequest): boolean {
-  const cookieToken = request.cookies.get("token")?.value
-  const authHeader = request.headers.get("authorization") ?? ""
-  const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null
-  const token = cookieToken ?? bearerToken
-  if (!token) return false
+// ── Determinar MIME type ─────────────────────────────────────────────────────
+function getMimeType(ext: string): string {
+  const mimeTypes: Record<string, string> = {
+    ".pdf": "application/pdf",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+    ".svg": "image/svg+xml",
+    ".bmp": "image/bmp",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".xls": "application/vnd.ms-excel",
+    ".csv": "text/csv",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".doc": "application/msword",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ".ppt": "application/vnd.ms-powerpoint",
+    ".txt": "text/plain",
+    ".md": "text/markdown",
+    ".json": "application/json",
+    ".xml": "application/xml",
+    ".yaml": "text/yaml",
+    ".yml": "text/yaml",
+    ".sql": "text/plain",
+    ".zip": "application/zip",
+    ".rar": "application/x-rar-compressed",
+  }
+  return mimeTypes[ext.toLowerCase()] || "application/octet-stream"
+}
+
+// ── GET: Servir archivo de /docs/ ────────────────────────────────────────────
+export async function GET(req: NextRequest) {
   try {
-    const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64").toString("utf-8"))
-    if (payload.exp && payload.exp * 1000 < Date.now()) return false
-    return Number(payload.id_rol ?? 0) === 4
-  } catch {
-    return false
+    const isAdmin = await ensureAdminRole(req)
+    if (!isAdmin) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    const relativePath = req.nextUrl.searchParams.get("path")
+    const download = req.nextUrl.searchParams.get("download") === "1"
+
+    if (!relativePath) {
+      return NextResponse.json({ error: "Missing path parameter" }, { status: 400 })
+    }
+
+    // Sanitizar el path para evitar directory traversal
+    const sanitizedPath = relativePath
+      .replace(/\.\./g, "") // Remover ..
+      .replace(/^\/+/, "") // Remover / inicial
+      .replace(/\/+/g, "/") // Normalizar slashes
+
+    // Ruta de la carpeta docs en public (para que funcione en Vercel)
+    const docsDir = path.join(process.cwd(), "public", "docs")
+    const fullPath = path.join(docsDir, sanitizedPath)
+
+    // Verificar que el archivo esta dentro de /docs/
+    const resolvedPath = path.resolve(fullPath)
+    const resolvedDocsDir = path.resolve(docsDir)
+    
+    if (!resolvedPath.startsWith(resolvedDocsDir)) {
+      return NextResponse.json({ error: "Invalid path" }, { status: 400 })
+    }
+
+    // Verificar que el archivo existe
+    if (!fs.existsSync(fullPath)) {
+      return NextResponse.json({ error: "File not found" }, { status: 404 })
+    }
+
+    const stats = fs.statSync(fullPath)
+    if (!stats.isFile()) {
+      return NextResponse.json({ error: "Not a file" }, { status: 400 })
+    }
+
+    // Leer el archivo
+    const fileBuffer = fs.readFileSync(fullPath)
+    const ext = path.extname(fullPath)
+    const mimeType = getMimeType(ext)
+    const filename = path.basename(fullPath).replace(/"/g, "")
+
+    // Determinar si mostrar inline o forzar descarga
+    const disposition = download
+      ? `attachment; filename="${filename}"`
+      : `inline; filename="${filename}"`
+
+    return new NextResponse(fileBuffer, {
+      headers: {
+        "Content-Type": mimeType,
+        "Content-Disposition": disposition,
+        "Content-Length": String(stats.size),
+        "Cache-Control": "private, max-age=3600",
+      },
+    })
+  } catch (err) {
+    console.error("Error serving doc:", err)
+    return NextResponse.json({ error: "Error serving file" }, { status: 500 })
   }
-}
-
-// GET /api/docs/serve?path=Diagramas/diagrama.png  (o ?file=archivo.pdf para raíz)
-export async function GET(request: NextRequest) {
-  if (!verifyAdmin(request)) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 403 })
-  }
-
-  // Acepta ?path= (con subcarpetas) o ?file= (solo nombre en raíz)
-  const fileParam = request.nextUrl.searchParams.get("path") ?? request.nextUrl.searchParams.get("file")
-  if (!fileParam) {
-    return NextResponse.json({ error: "Nombre de archivo requerido" }, { status: 400 })
-  }
-
-  const docsDir = path.join(process.cwd(), "docs")
-  const filePath = path.resolve(docsDir, fileParam)
-
-  // Path traversal check
-  if (!filePath.startsWith(docsDir + path.sep) && filePath !== docsDir) {
-    return NextResponse.json({ error: "Ruta no permitida" }, { status: 400 })
-  }
-
-  const safeName = path.basename(filePath)
-  const ext = path.extname(safeName).toLowerCase()
-
-  if (!ALLOWED_EXTENSIONS.includes(ext)) {
-    return NextResponse.json({ error: "Tipo de archivo no permitido" }, { status: 400 })
-  }
-
-  if (!fs.existsSync(filePath)) {
-    return NextResponse.json({ error: "Archivo no encontrado" }, { status: 404 })
-  }
-
-  const fileBuffer = fs.readFileSync(filePath)
-  const mimeType = MIME_TYPES[ext] ?? "application/octet-stream"
-  const download = request.nextUrl.searchParams.get("download") === "1"
-
-  return new NextResponse(fileBuffer, {
-    headers: {
-      "Content-Type": mimeType,
-      "Content-Disposition": download
-        ? `attachment; filename="${safeName}"`
-        : `inline; filename="${safeName}"`,
-      "Content-Length": String(fileBuffer.length),
-      "Cache-Control": "no-store",
-    },
-  })
 }
