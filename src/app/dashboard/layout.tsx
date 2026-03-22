@@ -137,6 +137,7 @@ export default function DashboardLayout({
       { href: "/dashboard/resumen", name: "Resumen General", icon: Home },
       ...(canManageEvents ? [{ href: "/dashboard/eventos", name: "Gestion de Eventos", icon: Calendar }] : []),
       { href: "/dashboard/ingresar-datos", name: "Ingresar Datos", icon: MapPin },
+      { href: "/dashboard/sitios-mapa", name: "Sitios (Mapa)", icon: MapPin },
       { href: "/dashboard/ver-datos", name: "Ver Datos", icon: Search },
       { href: "/dashboard/usuarios", name: "Usuarios", icon: Users },
       ...(isAdmin ? [{ href: "/dashboard/administrador", name: "Administrador", icon: ShieldCheck }] : []),
