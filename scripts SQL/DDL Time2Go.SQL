@@ -222,19 +222,35 @@ CREATE TABLE IF NOT EXISTS tabla_accesibilidad_menu_x_rol (
     FOREIGN KEY (id_rol)                                REFERENCES       tabla_roles(id_rol)
 );
 
+    CREATE TABLE IF NOT EXISTS tabla_categoria_ban (
+        id_categoria_ban    INT PRIMARY KEY,
+        nombre_categoria    VARCHAR NOT NULL UNIQUE CHECK (char_length(nombre_categoria) >= 4),
+        fecha_creacion      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        fecha_actualizacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
 
-CREATE TABLE IF NOT EXISTS tabla_baneados (
-    id_ban                                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    id_usuario                              INT                          NOT NULL,
-    motivo_ban                              TEXT                         NOT NULL        CHECK (char_length(motivo_ban) >= 10),
-    inicio_ban                              TIMESTAMP                    NOT NULL,
-    fin_ban                                 TIMESTAMP                    NOT NULL,
-    responsable                             INT                          NOT NULL,
-    fecha_registro                          TIMESTAMP   WITH TIME ZONE   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                   DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_usuario)                            REFERENCES       tabla_usuarios(id_usuario),
-    FOREIGN KEY (responsable)                           REFERENCES       tabla_usuarios(id_usuario)
-);
+    CREATE TABLE IF NOT EXISTS tabla_motivos_ban (
+        id_motivo_ban                           INT                          PRIMARY KEY,
+        id_categoria_ban                       INT                          NOT NULL,
+        motivo_ban                              TEXT                         NOT NULL        UNIQUE  CHECK (char_length(motivo_ban) >= 20),
+        fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
+        fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                   DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (id_categoria_ban)                     REFERENCES       tabla_categoria_ban(id_categoria_ban)
+    );
+
+
+    CREATE TABLE IF NOT EXISTS tabla_baneados (
+        id_ban                                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        id_usuario                              INT                          NOT NULL,
+        motivo_ban                              INT                          NOT NULL,
+        fin_ban                                 TIMESTAMP                    NOT NULL,
+        responsable_baneo                             INT                          NOT NULL,
+        fecha_registro                          TIMESTAMP   WITH TIME ZONE   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
+        fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                   DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (id_usuario)                            REFERENCES       tabla_usuarios(id_usuario),
+        FOREIGN KEY (responsable_baneo)                     REFERENCES       tabla_usuarios(id_usuario),
+        FOREIGN KEY (motivo_ban)                            REFERENCES       tabla_motivos_ban(id_motivo_ban)
+    );
 
 CREATE TABLE IF NOT EXISTS tabla_categoria_eventos (
     id_categoria_evento                     INT                          PRIMARY KEY,   
@@ -276,6 +292,7 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
     destacado                               BOOLEAN                      NOT NULL       DEFAULT FALSE,                              -- FALSE: No destacado and TRUE: Destacado.
     destacado_por                           INT,                                                                                    -- ID del usuario que destaca el evento. Debe ser un moderador o administrador.
     fecha_destacado                         TIMESTAMP   WITH TIME ZONE,                                                             -- Fecha en la que se destacó el evento.
+    Proceso                                 BOOLEAN                      NOT NULL       DEFAULT FALSE,                              -- FALSE: el evento no ha ocurrido and TRUE: el evento ha ocurrido.
     url_documento_evento                    VARCHAR                                     UNIQUE,
     documento_storage_provider              VARCHAR                      NOT NULL       DEFAULT 'legacy_url',
     documento_storage_key                   TEXT,

@@ -459,6 +459,16 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                   </div>
                 </div>
 
+                <div className="flex gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-bold mt-0.5">4</div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800 mb-1">Suspensiones y baneos</p>
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                        Time2Go podrá suspender o banear tu cuenta por incumplimiento de las normas de la plataforma. Todo baneo se aplica por un motivo específico y catalogado. Los baneos pueden ser temporales o permanentes según la gravedad de la infracción.
+                      </p>
+                    </div>
+                  </div>
+
                 <div className="bg-green-50 border border-green-100 rounded-xl p-3">
                   <p className="text-xs text-gray-500 leading-relaxed">
                     Para más información consulta nuestra{" "}
