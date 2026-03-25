@@ -396,17 +396,22 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
       return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
     }
 
-    const deleteResult = await client.query(
-      `SELECT app_api.fn_evento_eliminar($1, $2) AS payload`,
-      [eventId, Number(user.id_usuario)]
+    const updateResult = await client.query(
+      `UPDATE tabla_eventos
+       SET estado = FALSE,
+           destacado = FALSE,
+           fecha_desactivacion = CURRENT_TIMESTAMP,
+           fecha_actualizacion = CURRENT_TIMESTAMP
+       WHERE id_evento = $1
+       RETURNING id_evento`,
+      [eventId]
     );
 
-    const payload = deleteResult.rows?.[0]?.payload;
-    if (!payload?.ok) {
-      return dbErrorResponse(payload, "Error deleting event");
+    if (!updateResult.rows || updateResult.rows.length === 0) {
+      return NextResponse.json({ ok: false, message: "Event not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ ok: true, message: "Evento eliminado correctamente" });
+    return NextResponse.json({ ok: true, message: "Evento desactivado correctamente" });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ ok: false, message: "Error deleting event" }, { status: 500 });

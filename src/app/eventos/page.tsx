@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Calendar, MapPin, Users, Search, Filter, Heart, Share2, Star, X, Clock, Info } from "lucide-react";
+import { Calendar, MapPin, Users, Search, Filter, Heart, Share2, Star, X, Clock, Info, Check } from "lucide-react";
 import { NumericFormat } from "react-number-format";
 import imageCompression from "browser-image-compression";
 import DatePicker from "react-datepicker";
@@ -57,15 +57,16 @@ interface CategoriaEvento {
 export default function EventosPage() {
   const [events, setEvents] = useState<any[]>(initialEvents)
   const [categories, setCategories] = useState<CategoriaEvento[]>([])
+  const [selectedImageByEvent, setSelectedImageByEvent] = useState<Record<number, number>>({})
   const [favoriteIds, setFavoriteIds] = useState<number[]>([])
   const [favoritePendingIds, setFavoritePendingIds] = useState<number[]>([])
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [isLogin, setIsLogin] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
-  const [sortBy, setSortBy] = useState("date")
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [expandedEventId, setExpandedEventId] = useState<number | null>(null)
+  const [copiedEventId, setCopiedEventId] = useState<number | null>(null)
 
   const router = useRouter();
 
@@ -102,6 +103,13 @@ const formatDia = (date: Date): string => {
   return date.toLocaleDateString("es-ES", opciones);
 };
 
+const formatEventPrice = (price: number | string): string => {
+  if (typeof price === "number") {
+    return `$${price.toLocaleString("es-CO")}`;
+  }
+  return String(price);
+};
+
   // Fetch and normalize events for the UI
   const fetchEventos = async () => {
     try {
@@ -114,16 +122,22 @@ const formatDia = (date: Date): string => {
         // determine first image
         const firstImage = e.imagenes && e.imagenes.length ? e.imagenes[0].url_imagen_evento : null;
 
-        // determine price (show min price if paid, otherwise 'Gratis')
+        // determine price (show min ticket price if paid, otherwise 'Gratis')
         let price: number | string = 0;
         if (!e.gratis_pago) {
           price = "Gratis";
-        } else if (e.valores && e.valores.length) {
-          const vals = e.valores.map((v: any) => Number(v.valor || 0)).filter(Boolean);
-          price = vals.length ? Math.min(...vals) : 0;
+        } else if (Array.isArray(e.valores) && e.valores.length > 0) {
+          const ticketPrices = e.valores
+            .map((v: any) => Number(v?.precio_boleto ?? v?.valor ?? 0))
+            .filter((value: number) => Number.isFinite(value) && value > 0);
+          price = ticketPrices.length > 0 ? Math.min(...ticketPrices) : 0;
         } else {
           price = 0;
         }
+
+        const siteName = String(e?.sitio?.nombre_sitio || e?.nombre_sitio || "").trim();
+        const municipalityName = String(e?.municipio?.nombre_municipio || e?.nombre_municipio || "").trim();
+        const location = siteName || municipalityName || "Sitio por confirmar";
 
         // date/time formatting
         const date = e.fecha_inicio ? new Date(e.fecha_inicio).toLocaleDateString("es-CO") : "";
@@ -137,7 +151,7 @@ const formatDia = (date: Date): string => {
           image: firstImage || "/placeholder.svg",
           date,
           time,
-          location: e.nombre_sitio || e.nombre_municipio || "",
+          location,
           attendees: e.cupo ?? 0,
           id_categoria_evento: Number(e.id_categoria_evento || e.evento_categoria_id || e.categoria?.id_categoria_evento || 0),
           price,
@@ -332,6 +346,56 @@ const handleAddEvent = async () => {
     };
     return municipios[location] || 0;
   }
+
+  const handleShareEvent = async (event: any) => {
+    const id = event.id_evento ?? event.id
+    if (!id) return
+
+    const relativePath = `/eventos/${id}?returnTo=${encodeURIComponent("/eventos#eventos-disponibles")}`
+    const shareUrl = `${window.location.origin}${relativePath}`
+    const eventTitle = String(event.nombre_evento ?? event.title ?? "Evento en Time2Go")
+
+    try {
+      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+        try {
+          await navigator.share({
+            title: eventTitle,
+            text: `Mira este evento: ${eventTitle}`,
+            url: shareUrl,
+          })
+          return
+        } catch (shareError: any) {
+          if (shareError?.name === "AbortError") {
+            return
+          }
+          // Fallback to clipboard if native share fails.
+        }
+      }
+
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl)
+      } else {
+        const textarea = document.createElement("textarea")
+        textarea.value = shareUrl
+        textarea.setAttribute("readonly", "")
+        textarea.style.position = "fixed"
+        textarea.style.left = "-9999px"
+        document.body.appendChild(textarea)
+        textarea.select()
+        document.execCommand("copy")
+        document.body.removeChild(textarea)
+      }
+
+      const copiedId = Number(id)
+      setCopiedEventId(copiedId)
+      window.setTimeout(() => {
+        setCopiedEventId((current) => (current === copiedId ? null : current))
+      }, 2000)
+    } catch (error) {
+      console.error("No se pudo copiar el enlace del evento", error)
+      alert("No se pudo copiar el enlace del evento")
+    }
+  }
   
   
   // Funciones comentadas - usar cuando sea necesario
@@ -357,31 +421,13 @@ const handleAddEvent = async () => {
       return matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
-      const toNumberPrice = (x: any) => {
-        if (typeof x.price === 'number') return x.price;
-        if (x.raw && x.raw.valores && x.raw.valores.length) {
-          const vals = x.raw.valores.map((v: any) => Number(v.valor || 0)).filter(Boolean);
-          return vals.length ? Math.min(...vals) : 0;
-        }
-        return 0;
-      };
-
-      const toNumberAttendees = (x: any) => Number(x.attendees ?? x.cupo ?? x.raw?.cupo ?? 0);
-
       const toTime = (x: any) => {
         const maybe = x.raw?.fecha_inicio ?? x.fecha_inicio ?? x.date;
         const t = Date.parse(String(maybe));
         return isNaN(t) ? 0 : t;
       };
 
-      switch (sortBy) {
-        case "price":
-          return toNumberPrice(a) - toNumberPrice(b);
-        case "attendees":
-          return toNumberAttendees(b) - toNumberAttendees(a);
-        default:
-          return toTime(a) - toTime(b);
-      }
+      return toTime(a) - toTime(b);
     });
   
   // Eventos destacados (si decides mantener rating visual)
@@ -443,7 +489,7 @@ const handleAddEvent = async () => {
                                 </Badge>
                               </div>
                             </div>
-                            <div className="text-sm font-bold text-blue-600">${event.price}</div>
+                            <div className="text-sm font-bold text-blue-600">{formatEventPrice(event.price)}</div>
                           </div>
                         ))}
                       </div>
@@ -466,18 +512,6 @@ const handleAddEvent = async () => {
                       {category.nombre}
                     </SelectItem>
                   ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full lg:w-56 h-14 rounded-2xl border-2 border-gray-200">
-                  <SelectValue placeholder="Ordenar por" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="date">Fecha</SelectItem>
-                  <SelectItem value="price">Precio</SelectItem>
-                  <SelectItem value="rating">Valoración</SelectItem>
-                  <SelectItem value="attendees">Popularidad</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -614,7 +648,7 @@ const handleAddEvent = async () => {
                   <div className="border-t pt-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-3xl font-bold text-blue-600">{typeof expandedEvent.price === 'number' ? `$${expandedEvent.price}` : expandedEvent.price}</span>
+                        <span className="text-3xl font-bold text-blue-600">{formatEventPrice(expandedEvent.price)}</span>
                         <span className="text-muted-foreground">por persona</span>
                       </div>
                       <div className="flex gap-3">
@@ -643,8 +677,12 @@ const handleAddEvent = async () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredEvents.map((event) => {
               const eventId = Number(event.id_evento ?? event.id)
+              const eventImages = Array.isArray(event.raw?.imagenes) ? event.raw.imagenes : []
+              const selectedImageIndex = selectedImageByEvent[eventId] ?? 0
+              const safeSelectedIndex = eventImages[selectedImageIndex] ? selectedImageIndex : 0
               const isFavorite = favoriteIds.includes(eventId)
               const isFavoritePending = favoritePendingIds.includes(eventId)
+              const isLinkCopied = copiedEventId === eventId
 
               return (
               <Card
@@ -653,20 +691,30 @@ const handleAddEvent = async () => {
               >
                 <div className="relative overflow-hidden">
                   <div className="w-full h-52 bg-gray-100">
-                    {event.raw && event.raw.imagenes && event.raw.imagenes.length ? (
+                    {eventImages.length ? (
                       <>
                         <img
-                          src={event.raw.imagenes[0].url_imagen_evento}
+                          src={eventImages[safeSelectedIndex].url_imagen_evento}
                           alt={event.title}
                           className="w-full h-52 object-cover group-hover:scale-110 transition-transform duration-500"
                         />
                         <div className="absolute bottom-2 left-2 right-2 flex gap-2 overflow-x-auto p-1">
-                          {event.raw.imagenes.map((imgObj: any, i: number) => (
+                          {eventImages.map((imgObj: any, i: number) => (
                             <img
                               key={i}
                               src={imgObj.url_imagen_evento}
                               alt={`${event.title} ${i + 1}`}
-                              className="h-10 w-16 object-cover rounded-md border border-border shadow-sm"
+                              onClick={() =>
+                                setSelectedImageByEvent((prev) => ({
+                                  ...prev,
+                                  [eventId]: i,
+                                }))
+                              }
+                              className={`h-10 w-16 object-cover rounded-md border shadow-sm cursor-pointer transition ${
+                                safeSelectedIndex === i
+                                  ? "border-white ring-2 ring-white/90"
+                                  : "border-border opacity-90 hover:opacity-100"
+                              }`}
                             />
                           ))}
                         </div>
@@ -702,8 +750,11 @@ const handleAddEvent = async () => {
                       variant="secondary"
                       type="button"
                       className="h-9 w-9 bg-card/90 backdrop-blur-sm rounded-full hover:bg-card"
+                      onClick={() => handleShareEvent(event)}
+                      aria-label={isLinkCopied ? "Enlace copiado" : "Copiar enlace del evento"}
+                      title={isLinkCopied ? "Enlace copiado" : "Copiar enlace del evento"}
                     >
-                      <Share2 className="h-4 w-4" />
+                      {isLinkCopied ? <Check className="h-4 w-4 text-green-600" /> : <Share2 className="h-4 w-4" />}
                     </Button>
                   </div>
                 </div>
@@ -742,7 +793,7 @@ const handleAddEvent = async () => {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold text-lime-500">{typeof event.price === 'number' ? `$${event.price}` : event.price}</div>
+                    <div className="text-2xl font-bold text-lime-500">{formatEventPrice(event.price)}</div>
                     <Button
                       type="button"
                       onClick={() =>

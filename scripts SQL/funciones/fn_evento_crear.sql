@@ -103,7 +103,7 @@ BEGIN
         NULLIF(
           regexp_replace(COALESCE(v.value->>'telefono', ''), '[^0-9]', '', 'g'),
           ''
-        )::tabla_eventos_telefonos.telefono%TYPE AS telefono,
+        )::NUMERIC(10,0) AS telefono,
         COALESCE((v.value->>'es_principal')::BOOLEAN, FALSE)              AS es_principal
       FROM jsonb_array_elements(p_telefonos) AS v(value)
     )
@@ -146,8 +146,8 @@ BEGIN
       SELECT
         lower(BTRIM(v.value->>'nombre_boleto'))                                                AS nombre_key,
               BTRIM(v.value->>'nombre_boleto')                                                 AS nombre_boleto,
-        COALESCE(NULLIF(v.value->>'precio_boleto', '')::tabla_boleteria.precio_boleto%TYPE, 0) AS precio_boleto,
-        COALESCE(NULLIF(v.value->>'servicio',       '')::tabla_boleteria.servicio%TYPE,     0) AS servicio
+        COALESCE(NULLIF(v.value->>'precio_boleto', '')::NUMERIC(9,2), 0) AS precio_boleto,
+        COALESCE(NULLIF(v.value->>'servicio',       '')::NUMERIC(9,2), 0) AS servicio
       FROM jsonb_array_elements(p_boleteria) AS v(value)
       WHERE char_length(BTRIM(COALESCE(v.value->>'nombre_boleto', ''))) >= 1
     )
@@ -170,7 +170,7 @@ BEGIN
       FROM jsonb_array_elements(p_links) AS v(value)
     )
     INSERT INTO tabla_links (id_evento, link)
-    SELECT DISTINCT v_id_evento, BTRIM(raw_link)::tabla_links.link%TYPE
+    SELECT DISTINCT v_id_evento, BTRIM(raw_link)::TEXT
     FROM   links_raw
     WHERE  char_length(COALESCE(BTRIM(raw_link), '')) > 0;
   END IF;
@@ -184,11 +184,11 @@ BEGIN
           NULLIF(BTRIM(v.value->>'url_imagen_evento'), '')
         )
       )
-        NULLIF(BTRIM(v.value->>'url_imagen_evento'),  '')::tabla_imagenes_eventos.url_imagen_evento%TYPE AS url_imagen_evento,
+        NULLIF(BTRIM(v.value->>'url_imagen_evento'),  '')::VARCHAR AS url_imagen_evento,
         COALESCE(NULLIF(BTRIM(v.value->>'storage_provider'), ''), 'legacy_url')                         AS storage_provider,
-        NULLIF(BTRIM(v.value->>'storage_key'),        '')::tabla_imagenes_eventos.storage_key%TYPE       AS storage_key,
+        NULLIF(BTRIM(v.value->>'storage_key'),        '')::TEXT       AS storage_key,
         COALESCE(NULLIF(BTRIM(v.value->>'mime_type'), ''), 'image/jpeg')                                 AS mime_type,
-        NULLIF(v.value->>'bytes', '')::tabla_imagenes_eventos.bytes%TYPE                                 AS bytes,
+        NULLIF(v.value->>'bytes', '')::BIGINT                                 AS bytes,
         NULLIF(BTRIM(v.value->>'original_filename'),  '')                                                AS original_filename
       FROM jsonb_array_elements(p_imagenes) AS v(value)
       WHERE NULLIF(BTRIM(v.value->>'url_imagen_evento'), '') IS NOT NULL

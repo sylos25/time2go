@@ -204,7 +204,7 @@ export default function DashboardEventsPage() {
   }
 
   const deleteEvent = async (id: number) => {
-    if (!confirm("¿Estás seguro de eliminar este evento?")) return
+    if (!confirm("¿Estás seguro de desactivar este evento?")) return
 
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
@@ -222,7 +222,7 @@ export default function DashboardEventsPage() {
         throw new Error(body?.message || "No se pudo eliminar el evento")
       }
 
-      setEvents((prev) => prev.filter((event) => event.id !== id))
+      await refreshEvents()
     } catch (error) {
       console.error("Error eliminando evento", error)
       alert(error instanceof Error ? error.message : "Error eliminando evento")

@@ -2,9 +2,6 @@
 
 import { Swiper, SwiperSlide } from "swiper/react"
 import { Navigation, Pagination, Autoplay, EffectFade } from "swiper/modules"
-import { Button } from "@/components/ui/button"
-import { ArrowRight } from "lucide-react"
-import { useRouter } from "next/navigation"
 
 import "swiper/css"
 import "swiper/css/navigation"
@@ -43,12 +40,6 @@ const heroSlides = [
 ]
 
 export function HeroSection() {
-  const router = useRouter()
-
-  const handleSlideEventDetails = (slideId: number) => {
-    router.push(`/eventos?expand=${slideId}`)
-  }
-
   return (
     <section className="pt-16 lg:pt-20 pb-12 lg:pb-20 overflow-hidden">
       <div className="relative mt-8 w-screen left-1/2 -translate-x-1/2">
@@ -89,14 +80,6 @@ export function HeroSection() {
                   </div>
                   <h3 className="text-2xl lg:text-4xl xl:text-5xl font-bold mb-3 leading-tight">{slide.title}</h3>
                   <p className="text-base lg:text-lg opacity-90 max-w-2xl leading-relaxed">{slide.description}</p>
-                  <Button
-                    onClick={() => handleSlideEventDetails(slide.id)}
-                    variant="secondary"
-                    className="mt-6 bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-300"
-                  >
-                    Ver Detalles
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
                 </div>
               </div>
             </SwiperSlide>

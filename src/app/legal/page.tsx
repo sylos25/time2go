@@ -206,7 +206,7 @@ export default function LegalPage() {
         <div className="text-center py-6 border-t border-gray-200">
           <p className="text-sm text-gray-400">
             Última actualización: enero 2026 ·{" "}
-            <Link href="/" className="text-green-600 hover:underline">
+            <Link href="/" className="font-bold text-green-600 hover:underline  text-lg">
               Volver al inicio
             </Link>
           </p>

@@ -181,8 +181,8 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
 
         setExistingImages(fullEvent.imagenes || [])
         // set search strings for sitio/municipio to show in inputs
-        setBusquedaSitio(fullEvent.nombre_sitio || fullEvent.nombre || "")
-        setBusquedaMunicipio(fullEvent.nombre_municipio || "")
+        setBusquedaSitio(fullEvent.sitio?.nombre_sitio || fullEvent.nombre_sitio || fullEvent.nombre || "")
+        setBusquedaMunicipio(fullEvent.municipio?.nombre_municipio || fullEvent.nombre_municipio || "")
         if (fullEvent.valores && Array.isArray(fullEvent.valores) && fullEvent.valores.length > 0) {
           setBoletas(
             fullEvent.valores.map((v: any) => ({
@@ -231,8 +231,8 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
         })
 
         setExistingImages(event.imagenes || [])
-        setBusquedaSitio(event.nombre_sitio || event.nombre || "")
-        setBusquedaMunicipio(event.nombre_municipio || "")
+        setBusquedaSitio(event.sitio?.nombre_sitio || event.nombre_sitio || event.nombre || "")
+        setBusquedaMunicipio(event.municipio?.nombre_municipio || event.nombre_municipio || "")
         setBoletas(
           event.valores && Array.isArray(event.valores) && event.valores.length > 0
             ? event.valores.map((v: any) => ({
@@ -317,6 +317,16 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
     }
     fetchTypes()
   }, [formData.id_categoria_evento])
+
+  useEffect(() => {
+    if (!formData.id_sitio || busquedaSitio) return
+    const selectedSite = sites.find(
+      (site) => String(site.id_sitio || site.id) === String(formData.id_sitio)
+    )
+    if (selectedSite) {
+      setBusquedaSitio(selectedSite.nombre_sitio || selectedSite.nombre || "")
+    }
+  }, [formData.id_sitio, busquedaSitio, sites])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target as any
@@ -713,7 +723,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
                 className="rounded-lg"
               />
               {formErrors.id_sitio && <p className="text-xs text-red-600 mt-1">{formErrors.id_sitio}</p>}
-              {sites.length > 0 && (
+              {busquedaSitio.trim().length >= 2 && !formData.id_sitio && sites.length > 0 && (
                 <ul className="absolute z-10 bg-card border border-border rounded-lg mt-1 w-full max-h-60 overflow-y-auto shadow-lg">
                   {sites.map((sitio) => (
                     <li
