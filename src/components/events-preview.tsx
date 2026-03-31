@@ -16,6 +16,7 @@ import "swiper/css/pagination"
 
 interface FeaturedEvent {
   id: number
+  categoryId: number
   title: string
   description: string
   date: string
@@ -28,6 +29,16 @@ interface FeaturedEvent {
   featuredAt?: string | null
 }
 
+type LandingCategory = {
+  id: number
+  nombre: string
+}
+
+type HomeConfigResponse = {
+  ok: boolean
+  selectedCategories?: LandingCategory[]
+}
+
 const swiperBreakpoints = {
   640: { slidesPerView: 2 },
   1024: { slidesPerView: 3 },
@@ -37,13 +48,31 @@ const swiperBreakpoints = {
 export function EventsPreview() {
   const router = useRouter()
   const [featuredEvents, setFeaturedEvents] = useState<FeaturedEvent[]>([])
+  const [landingCategories, setLandingCategories] = useState<LandingCategory[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchFeaturedEvents = async () => {
       try {
-        const res = await fetch("/api/events")
-        const data = await res.json()
+        const [eventsRes, homeConfigRes] = await Promise.all([
+          fetch("/api/events"),
+          fetch("/api/home-config"),
+        ])
+
+        const data = await eventsRes.json()
+        const homeConfigData: HomeConfigResponse = await homeConfigRes.json().catch(() => ({ ok: false }))
+
+        const categories = Array.isArray(homeConfigData.selectedCategories)
+          ? homeConfigData.selectedCategories
+              .map((category) => ({
+                id: Number(category.id),
+                nombre: String(category.nombre || ""),
+              }))
+              .filter((category) => category.id > 0 && category.nombre.length > 0)
+          : []
+
+        setLandingCategories(categories)
+        const selectedCategoryIds = new Set(categories.map((category) => category.id))
 
         const rawEvents =
           data && data.ok && Array.isArray(data.eventos)
@@ -53,7 +82,21 @@ export function EventsPreview() {
               : []
 
         const destacados = rawEvents
-          .filter((event: any) => event?.estado === true && event?.destacado === true)
+          .filter((event: any) => {
+            if (event?.estado !== true || event?.destacado !== true) {
+              return false
+            }
+
+            if (selectedCategoryIds.size === 0) {
+              return true
+            }
+
+            const eventCategoryId = Number(
+              event?.id_categoria_evento || event?.evento_categoria_id || event?.categoria?.id_categoria_evento || 0
+            )
+
+            return selectedCategoryIds.has(eventCategoryId)
+          })
           .map((event: any) => {
             const firstImage =
               event.imagenes && event.imagenes.length
@@ -79,6 +122,7 @@ export function EventsPreview() {
 
             return {
               id: Number(event.id_evento),
+              categoryId: Number(event.id_categoria_evento || event.evento_categoria_id || event.categoria?.id_categoria_evento || 0),
               title: String(event.nombre_evento || "Evento"),
               description: String(event.descripcion || ""),
               date,
@@ -121,6 +165,16 @@ export function EventsPreview() {
   }, [featuredEvents])
 
   const categorySections = useMemo(() => {
+    if (landingCategories.length > 0) {
+      return landingCategories
+        .map((category, index) => ({
+          title: category.nombre,
+          events: featuredEvents.filter((event) => event.categoryId === category.id),
+          delay: 4000 + index * 500,
+        }))
+        .filter((section) => section.events.length > 0)
+    }
+
     return Object.entries(featuredByCategory)
       .map(([title, events], index) => ({
         title,
@@ -128,7 +182,7 @@ export function EventsPreview() {
         delay: 4000 + index * 500,
       }))
       .sort((a, b) => b.events.length - a.events.length)
-  }, [featuredByCategory])
+  }, [featuredByCategory, featuredEvents, landingCategories])
 
   const handleEventDetails = (eventId: number) => {
     router.push(`/eventos?expand=${eventId}`)

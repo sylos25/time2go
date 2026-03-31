@@ -19,11 +19,14 @@ DROP TABLE IF EXISTS tabla_links;
 DROP TABLE IF EXISTS tabla_evento_informacion_importante;
 DROP TABLE IF EXISTS tabla_valores;
 DROP TABLE IF EXISTS tabla_categoria_boletos;
+DROP TABLE IF EXISTS tabla_cambio_rol_usuario;
 DROP TABLE IF EXISTS tabla_valoraciones;
 DROP TABLE IF EXISTS tabla_imagenes_eventos;
 DROP TABLE IF EXISTS tabla_eventos_x_dias;
 DROP TABLE IF EXISTS tabla_eventos;
 DROP TABLE IF EXISTS tabla_tipo_eventos;
+DROP TABLE IF EXISTS tabla_inicio_categorias;
+DROP TABLE IF EXISTS tabla_inicio_hero_imagenes;
 DROP TABLE IF EXISTS tabla_categoria_eventos;
 DROP TABLE IF EXISTS tabla_baneados;
 DROP TABLE IF EXISTS tabla_usuarios_credenciales;
@@ -50,14 +53,14 @@ CREATE SCHEMA IF NOT EXISTS app_api;
 -- CREACION DE TABLAS
 CREATE TABLE IF NOT EXISTS tabla_paises (
     id_pais                                  INT                          PRIMARY KEY,
-    nombre_pais                              VARCHAR(47)                  NOT NULL       CHECK (char_length(nombre_pais) >= 4),
+    nombre_pais                              VARCHAR                      NOT NULL       CHECK (char_length(nombre_pais) >= 4),
     fecha_creacion                           TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                      TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS tabla_departamentos (
     id_departamento                          INT                          PRIMARY KEY,
-    nombre_departamento                      VARCHAR(30)                  NOT NULL       CHECK (char_length(nombre_departamento) >= 4),
+    nombre_departamento                      VARCHAR                      NOT NULL       CHECK (char_length(nombre_departamento) >= 4),
     id_pais                                  INT                          NOT NULL,
     fecha_creacion                           TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                      TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
@@ -67,8 +70,8 @@ CREATE TABLE IF NOT EXISTS tabla_departamentos (
 CREATE TABLE IF NOT EXISTS tabla_municipios (
     id_departamento                          INT                          NOT NULL,
     id_municipio                             INT                          PRIMARY KEY,
-    nombre_municipio                         VARCHAR(30)                  NOT NULL        CHECK (char_length(nombre_municipio) >= 3),
-    distrito                                 BOOLEAN                      NOT NULL,
+    nombre_municipio                         VARCHAR                      NOT NULL        CHECK (char_length(nombre_municipio) >= 3),
+    es_distrito                              BOOLEAN                      NOT NULL,
     area_metropolitana                       BOOLEAN                      NOT NULL,
     fecha_creacion                           TIMESTAMP   WITH TIME ZONE   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                      TIMESTAMP   WITH TIME ZONE                   DEFAULT CURRENT_TIMESTAMP,
@@ -77,19 +80,19 @@ CREATE TABLE IF NOT EXISTS tabla_municipios (
 
 CREATE TABLE IF NOT EXISTS tabla_tipo_sitios (
     id_tipo_sitio                            INT                          PRIMARY KEY,
-    nombre_tipo_sitio                        VARCHAR(30)                  NOT NULL       UNIQUE  CHECK (char_length(nombre_tipo_sitio) >= 4),
+    nombre_tipo_sitio                        VARCHAR                      NOT NULL       UNIQUE  CHECK (char_length(nombre_tipo_sitio) >= 4),
     fecha_creacion                           TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                      TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS tabla_sitios (
-    id_sitio                                 INT                          PRIMARY KEY,   
+    id_sitio                                 INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,   
     nombre_sitio                             VARCHAR                      NOT NULL                CHECK (char_length(nombre_sitio) >= 3),
     id_tipo_sitio                            INT                          NOT NULL,
     id_municipio                             INT                          NOT NULL,
     direccion                                VARCHAR                      NOT NULL       UNIQUE   CHECK (char_length(direccion) >= 6),
-    latitud                                  VARCHAR                      NOT NULL       UNIQUE,
-    longitud                                 VARCHAR                      NOT NULL       UNIQUE,
+    latitud                                  VARCHAR                     NOT NULL       UNIQUE,
+    longitud                                 VARCHAR                     NOT NULL       UNIQUE,
     sitio_web                                VARCHAR                                     UNIQUE,
     fecha_creacion                           TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT  CURRENT_TIMESTAMP,
     fecha_actualizacion                      TIMESTAMP   WITH TIME ZONE                  DEFAULT  CURRENT_TIMESTAMP,
@@ -99,7 +102,7 @@ CREATE TABLE IF NOT EXISTS tabla_sitios (
 CREATE TABLE IF NOT EXISTS tabla_sitios_telefonos (
     id_sitio_telefono                        INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     id_sitio                                 INT                          NOT NULL,
-    telefono                                 DECIMAL(10,0)                NOT NULL       UNIQUE   CHECK (telefono > 2999999999),
+    telefono_sitio                           DECIMAL(10,0)                NOT NULL       UNIQUE   CHECK (telefono_sitio > 2999999999),
     es_principal                             BOOLEAN                      NOT NULL       DEFAULT FALSE,
     fecha_creacion                           TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                      TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
@@ -117,7 +120,7 @@ CREATE TABLE IF NOT EXISTS tabla_sitios_discapacitados (
     id_sitios_discapacitados                INT         PRIMARY KEY,
     id_sitio                                INT                          NOT NULL,
     id_infraestructura_discapacitados       INT                          NOT NULL,
-    descripcion                             TEXT                         NOT NULL       CHECK (char_length(descripcion) >= 10),
+    descripcion_relacional                  TEXT                         NOT NULL       CHECK (char_length(descripcion_relacional) >= 10),
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_sitio) REFERENCES tabla_sitios(id_sitio),
@@ -126,41 +129,38 @@ CREATE TABLE IF NOT EXISTS tabla_sitios_discapacitados (
 
 CREATE TABLE IF NOT EXISTS tabla_roles (
     id_rol                                  INT                          PRIMARY KEY,   
-    nombre_rol                              VARCHAR                      NOT NULL       UNIQUE  CHECK (char_length(nombre_rol) >= 3),
+    nombre_rol                              VARCHAR                  NOT NULL       UNIQUE  CHECK (char_length(nombre_rol) >= 3),
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS tabla_usuarios (
-	id_usuario                              INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    id_publico                              VARCHAR                      NOT NULL       UNIQUE,
-    id_rol                                  INT                          NOT NULL       DEFAULT 1,
+    id_usuario                              INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_publico                              VARCHAR                      UNIQUE,
+    id_rol                                  INT                          NOT NULL,
+    tipo_documento                          tip_doc, 
+    numero_documento                        VARCHAR                                     UNIQUE  CHECK (char_length(numero_documento) >= 8),
+    nombres                                 VARCHAR                                 CHECK (char_length(nombres) >= 3),
+    apellidos                               VARCHAR                                 CHECK (char_length(apellidos) >= 3),    id_pais                                 INT,
+    telefono_persona                        DECIMAL(10,0)                               UNIQUE  CHECK (telefono_persona > 2999999999),
+    direccion_usuario                       VARCHAR                                CHECK (char_length(direccion_usuario) >= 6),
+    telefono_validado                       BOOLEAN                      NOT NULL       DEFAULT FALSE,
     terminos_condiciones                    BOOLEAN                      NOT NULL,
-    estado                                  BOOLEAN                      NOT NULL       DEFAULT TRUE,
-    fecha_registro                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
-    fecha_desactivacion                     TIMESTAMP   WITH TIME ZONE,
-    FOREIGN KEY (id_rol)                                REFERENCES       tabla_roles(id_rol)
-);
-
-CREATE TABLE IF NOT EXISTS tabla_personas (
-    id_usuario                              INT                          PRIMARY KEY,
-    nombres                                 VARCHAR(30)                                 CHECK (char_length(nombres) >= 3),
-    apellidos                               VARCHAR(30)                                 CHECK (char_length(apellidos) >= 3),
-    id_pais                                 INT,
-    telefono                                DECIMAL(10,0)                               UNIQUE  CHECK (telefono > 2999999999),
+    estado_usuario                          BOOLEAN                      NOT NULL       DEFAULT FALSE,
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_usuario)                            REFERENCES       tabla_usuarios(id_usuario),
+    fecha_desactivacion                     TIMESTAMP   WITH TIME ZONE,
+    FOREIGN KEY (id_rol)                                REFERENCES       tabla_roles(id_rol),
     FOREIGN KEY (id_pais)                               REFERENCES       tabla_paises(id_pais)
 );
 
 CREATE TABLE IF NOT EXISTS tabla_usuarios_credenciales (
-    id_usuario                              INT                          PRIMARY KEY,
+    id_usuario_credenciales                 INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     id_google                               VARCHAR                                     UNIQUE,
-    correo                                  VARCHAR                      NOT NULL       UNIQUE  CHECK (char_length(correo) >= 14),
-    contrasena_hash                         VARCHAR,
+    id_usuario                              INT                          NOT NULL       UNIQUE,
+    correo_usuario                          VARCHAR                      NOT NULL       UNIQUE  CHECK (char_length(correo_usuario) >= 14),
     validacion_correo                       BOOLEAN                      NOT NULL       DEFAULT FALSE,
+    contrasena_hash                         VARCHAR,
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_usuario)                            REFERENCES       tabla_usuarios(id_usuario)
@@ -168,13 +168,12 @@ CREATE TABLE IF NOT EXISTS tabla_usuarios_credenciales (
 
 CREATE TABLE IF NOT EXISTS tabla_auditoria_bd (
     id_auditoria                            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    tabla                                   VARCHAR                      NOT NULL,
-    operacion                               VARCHAR(10)                  NOT NULL,
-    id_usuario_app                          INT,
+    nombre_tabla                            VARCHAR                      NOT NULL,
+    operacion                               VARCHAR                      NOT NULL               CHECK (operacion IN ('INSERT', 'UPDATE', 'DELETE')),
+    id_usuario                              INT,
     usuario_bd                              VARCHAR                      NOT NULL        DEFAULT CURRENT_USER,
     fecha_evento                            TIMESTAMP   WITH TIME ZONE   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_operacion_auditoria CHECK (operacion IN ('INSERT', 'UPDATE', 'DELETE')),
-    CONSTRAINT fk_auditoria_usuario_app FOREIGN KEY (id_usuario_app) REFERENCES tabla_usuarios(id_usuario) ON DELETE SET NULL
+    FOREIGN KEY (id_usuario)                            REFERENCES tabla_usuarios(id_usuario) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS tabla_auditoria_pk (
@@ -243,13 +242,14 @@ CREATE TABLE IF NOT EXISTS tabla_accesibilidad_menu_x_rol (
         id_ban                                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
         id_usuario                              INT                          NOT NULL,
         motivo_ban                              INT                          NOT NULL,
-        fin_ban                                 TIMESTAMP                    NOT NULL,
-        responsable_baneo                             INT                          NOT NULL,
+        inicio_ban                              TIMESTAMP   WITH TIME ZONE   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
+        fin_ban                                 TIMESTAMP   WITH TIME ZONE   NOT NULL,
+        responsable_baneo                       INT                          NOT NULL,
         fecha_registro                          TIMESTAMP   WITH TIME ZONE   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
         fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                   DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (id_usuario)                            REFERENCES       tabla_usuarios(id_usuario),
-        FOREIGN KEY (responsable_baneo)                     REFERENCES       tabla_usuarios(id_usuario),
-        FOREIGN KEY (motivo_ban)                            REFERENCES       tabla_motivos_ban(id_motivo_ban)
+        FOREIGN KEY (motivo_ban)                            REFERENCES       tabla_motivos_ban(id_motivo_ban),
+        FOREIGN KEY (responsable_baneo)                    REFERENCES       tabla_usuarios(id_usuario)
     );
 
 CREATE TABLE IF NOT EXISTS tabla_categoria_eventos (
@@ -259,10 +259,34 @@ CREATE TABLE IF NOT EXISTS tabla_categoria_eventos (
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS tabla_inicio_hero_imagenes (
+    id_inicio_hero_imagen                   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    url_imagen                              VARCHAR                      NOT NULL       UNIQUE,
+    storage_provider                        VARCHAR                      NOT NULL       DEFAULT 'legacy_url',
+    storage_key                             TEXT,
+    mime_type                               VARCHAR                      NOT NULL       DEFAULT 'image/jpeg',
+    bytes                                   BIGINT,
+    original_filename                       VARCHAR,
+    orden                                   SMALLINT                     NOT NULL       DEFAULT 1,
+    activo                                  BOOLEAN                      NOT NULL       DEFAULT TRUE,
+    fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS tabla_inicio_categorias (
+    id_inicio_categoria                     INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_categoria_evento                     INT                          NOT NULL       UNIQUE,
+    orden                                   SMALLINT                     NOT NULL       DEFAULT 1,
+    activo                                  BOOLEAN                      NOT NULL       DEFAULT TRUE,
+    fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_categoria_evento)                   REFERENCES       tabla_categoria_eventos(id_categoria_evento) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS tabla_tipo_eventos (
     id_tipo_evento                          INT                          PRIMARY KEY,
     id_categoria_evento                     INT                          NOT NULL,
-    nombre                                  VARCHAR                      NOT NULL       UNIQUE CHECK (char_length(nombre) >= 3),
+    nombre_tipo_evento                      VARCHAR(20)                  NOT NULL       UNIQUE CHECK (char_length(nombre_tipo_evento) >= 3),
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_categoria_evento)                   REFERENCES       tabla_categoria_eventos(id_categoria_evento)
@@ -290,7 +314,7 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
     motivo_rechazo                          TEXT,                                                                                   -- Detalle del motivo de rechazo en caso de que el evento sea rechazado por un moderador o administrador.
     rechazo_por                             INT,                                                                                    -- ID del usuario que rechaza el evento. Debe ser un moderador o administrador.
     destacado                               BOOLEAN                      NOT NULL       DEFAULT FALSE,                              -- FALSE: No destacado and TRUE: Destacado.
-    destacado_por                           INT,                                                                                    -- ID del usuario que destaca el evento. Debe ser un moderador o administrador.
+    destacado_por_usuario                   INT,                                                                                    -- ID del usuario que destaca el evento. Debe ser un moderador o administrador.
     fecha_destacado                         TIMESTAMP   WITH TIME ZONE,                                                             -- Fecha en la que se destacó el evento.
     Proceso                                 BOOLEAN                      NOT NULL       DEFAULT FALSE,                              -- FALSE: el evento no ha ocurrido and TRUE: el evento ha ocurrido.
     url_documento_evento                    VARCHAR                                     UNIQUE,
@@ -304,7 +328,7 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
     fecha_desactivacion                     TIMESTAMP   WITH TIME ZONE,
     FOREIGN KEY (id_usuario)                            REFERENCES       tabla_usuarios(id_usuario),
     FOREIGN KEY (rechazo_por)                           REFERENCES       tabla_usuarios(id_usuario),
-    FOREIGN KEY (destacado_por)                         REFERENCES       tabla_usuarios(id_usuario),
+    FOREIGN KEY (destacado_por_usuario)                 REFERENCES       tabla_usuarios(id_usuario),
     FOREIGN KEY (id_tipo_evento)                        REFERENCES       tabla_tipo_eventos(id_tipo_evento),
     FOREIGN KEY (id_categoria_evento)                   REFERENCES       tabla_categoria_eventos(id_categoria_evento),
     FOREIGN KEY (id_sitio)                              REFERENCES       tabla_sitios(id_sitio)
@@ -336,6 +360,7 @@ CREATE TABLE IF NOT EXISTS tabla_imagenes_eventos (
     id_imagen_evento                        INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     url_imagen_evento                       VARCHAR                      NOT NULL       UNIQUE,
     id_evento                               INT                          NOT NULL,
+    principal                               BOOLEAN                      NOT NULL       DEFAULT FALSE,
     storage_provider                        VARCHAR                      NOT NULL       DEFAULT 'legacy_url',
     storage_key                             TEXT,
     mime_type                               VARCHAR                      NOT NULL       DEFAULT 'image/jpeg',
@@ -356,13 +381,24 @@ CREATE TABLE tabla_favoritos (
     FOREIGN KEY (id_evento)  REFERENCES tabla_eventos(id_evento)
 );
 
-CREATE TABLE IF NOT EXISTS tabla_documentos_usuarios (
-    id_documento_usuario                    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    url_documento_usuario                   VARCHAR                      NOT NULL       UNIQUE,
-    id_usuario                              INT                          NOT NULL       UNIQUE,
+CREATE TABLE IF NOT EXISTS tabla_cambio_rol_usuario (
+    id_cambio_rol_usuario                   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_usuario                              INT                          NOT NULL,
+    id_rol_solicitado                       INT                          NOT NULL       DEFAULT 2,                                -- 2: Rol de Promotor
+    url_documento_usuario                   VARCHAR,
+    proveedor_pago                          VARCHAR                      NOT NULL       DEFAULT 'wompi' CHECK (proveedor_pago IN ('wompi')),
+    referencia_pago                         VARCHAR                      NOT NULL       UNIQUE,
+    id_transaccion_pago                     VARCHAR                                     UNIQUE,
+    estado_pago                             VARCHAR                      NOT NULL       DEFAULT 'pendiente',                                                                                       CHECK (estado_pago IN ('pendiente', 'aprobado', 'rechazado', 'expirado', 'anulado', 'error')),
+    monto_pago                              DECIMAL(10,2)                NOT NULL       CHECK (monto_pago > 0),
+    moneda                                  CHAR(3)                      NOT NULL       DEFAULT 'COP',
+    hash_integridad                         VARCHAR,
+    json_respuesta_pasarela                 JSONB,
+    fecha_pago                              TIMESTAMP   WITH TIME ZONE,
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_usuario)                REFERENCES  tabla_usuarios(id_usuario)
+    FOREIGN KEY (id_usuario)                REFERENCES  tabla_usuarios(id_usuario),
+    FOREIGN KEY (id_rol_solicitado)         REFERENCES  tabla_roles(id_rol)
 );
 
 CREATE TABLE IF NOT EXISTS tabla_valoraciones (
@@ -412,7 +448,7 @@ CREATE TABLE IF NOT EXISTS tabla_denuncia_eventos (
     FOREIGN KEY (id_evento)                 REFERENCES  tabla_eventos(id_evento),
     FOREIGN KEY (revisada_por)              REFERENCES  tabla_usuarios(id_usuario),
     FOREIGN KEY (id_categoria_denuncia, id_motivo_denuncia)
-                                            REFERENCES  tabla_motivos_denuncia_eventos(id_categoria_denuncia, id_motivo_denuncia)
+    REFERENCES  tabla_motivos_denuncia_eventos(id_categoria_denuncia, id_motivo_denuncia)
 );
 CREATE TABLE IF NOT EXISTS tabla_reserva_eventos (
     id_reserva_evento                       INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

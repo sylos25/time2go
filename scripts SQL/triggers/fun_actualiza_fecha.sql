@@ -62,11 +62,6 @@ CREATE TRIGGER trig_update_tabla_usuarios
 BEFORE UPDATE ON tabla_usuarios
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
-DROP TRIGGER IF EXISTS trig_update_tabla_personas ON tabla_personas;
-CREATE TRIGGER trig_update_tabla_personas
-BEFORE UPDATE ON tabla_personas
-FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
-
 DROP TRIGGER IF EXISTS trig_update_tabla_usuarios_credenciales ON tabla_usuarios_credenciales;
 CREATE TRIGGER trig_update_tabla_usuarios_credenciales
 BEFORE UPDATE ON tabla_usuarios_credenciales
@@ -117,9 +112,9 @@ CREATE TRIGGER trig_update_tabla_imagenes_eventos
 BEFORE UPDATE ON tabla_imagenes_eventos
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
-DROP TRIGGER IF EXISTS trig_update_tabla_documentos_usuarios ON tabla_documentos_usuarios;
-CREATE TRIGGER trig_update_tabla_documentos_usuarios
-BEFORE UPDATE ON tabla_documentos_usuarios
+DROP TRIGGER IF EXISTS trig_update_tabla_cambio_rol_usuario ON tabla_cambio_rol_usuario;
+CREATE TRIGGER trig_update_tabla_cambio_rol_usuario
+BEFORE UPDATE ON tabla_cambio_rol_usuario
 FOR EACH ROW EXECUTE FUNCTION fun_actualiza_fecha();
 
 DROP TRIGGER IF EXISTS trig_update_tabla_valoraciones ON tabla_valoraciones;

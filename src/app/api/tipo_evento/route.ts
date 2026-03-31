@@ -22,7 +22,7 @@ export async function GET(req: Request) {
     }
 
     const result = await pool.query(
-      "SELECT id_tipo_evento, nombre FROM tabla_tipo_eventos WHERE id_categoria_evento = $1",
+      "SELECT id_tipo_evento, nombre_tipo_evento AS nombre FROM tabla_tipo_eventos WHERE id_categoria_evento = $1",
       [id]
     );
 

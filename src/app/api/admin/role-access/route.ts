@@ -80,8 +80,8 @@ export async function GET(req: Request) {
     const whereSql = q
       ? `
         WHERE (
-          CONCAT(COALESCE(p.nombres, ''), ' ', COALESCE(p.apellidos, '')) ILIKE $1
-          OR COALESCE(c.correo, '') ILIKE $1
+          CONCAT(COALESCE(u.nombres, ''), ' ', COALESCE(u.apellidos, '')) ILIKE $1
+          OR COALESCE(c.correo_usuario, '') ILIKE $1
           OR CAST(u.id_usuario AS TEXT) ILIKE $1
         )
       `
@@ -90,7 +90,6 @@ export async function GET(req: Request) {
     const totalQuery = `
       SELECT COUNT(1)::int AS total
       FROM tabla_usuarios u
-      LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
       LEFT JOIN tabla_usuarios_credenciales c ON c.id_usuario = u.id_usuario
       ${whereSql}
     `
@@ -100,12 +99,11 @@ export async function GET(req: Request) {
         u.id_usuario,
         u.id_rol,
         r.nombre_rol,
-        u.estado,
-        p.nombres,
-        p.apellidos,
-        c.correo
+        u.estado_usuario AS estado,
+        u.nombres,
+        u.apellidos,
+        c.correo_usuario AS correo
       FROM tabla_usuarios u
-      LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
       LEFT JOIN tabla_usuarios_credenciales c ON c.id_usuario = u.id_usuario
       LEFT JOIN tabla_roles r ON r.id_rol = u.id_rol
       ${whereSql}

@@ -176,7 +176,7 @@ export default function LegalPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-gradient-to-tl from-green-50 via-lime-50 to-green-50">
+      <main className="min-h-screen bg-background">
         {/* Dialog de aviso */}
         <Dialog open={showNotice} onOpenChange={setShowNotice}>
           <DialogContent className="sm:max-w-md">

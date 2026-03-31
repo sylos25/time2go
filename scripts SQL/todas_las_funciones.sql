@@ -8,7 +8,7 @@
 CREATE SCHEMA IF NOT EXISTS app_api;
 
 -- ---------------------------------------------------------------------
--- 1) Create user (tabla_usuarios + tabla_personas + tabla_usuarios_credenciales)
+-- 1) Create user (tabla_usuarios + tabla_usuarios_credenciales)
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION app_api.fn_auth_crear_usuario(
   p_email TEXT,
@@ -26,36 +26,28 @@ DECLARE
   v_id_publico TEXT;
 BEGIN
   INSERT INTO tabla_usuarios (
+    nombres,
+    apellidos,
+    id_pais,
     id_rol,
     terminos_condiciones,
-    fecha_registro,
-    estado,
+    estado_usuario,
     fecha_actualizacion
   ) VALUES (
+    NULLIF(BTRIM(p_nombres), ''),
+    NULLIF(BTRIM(p_apellidos), ''),
+    p_id_pais,
     COALESCE(p_id_rol, 1),
     TRUE,
-    NOW(),
     TRUE,
     NOW()
   )
   RETURNING id_usuario, id_publico
   INTO v_id_usuario, v_id_publico;
 
-  INSERT INTO tabla_personas (
-    id_usuario,
-    nombres,
-    apellidos,
-    id_pais
-  ) VALUES (
-    v_id_usuario,
-    NULLIF(BTRIM(p_nombres), ''),
-    NULLIF(BTRIM(p_apellidos), ''),
-    p_id_pais
-  );
-
   INSERT INTO tabla_usuarios_credenciales (
     id_usuario,
-    correo,
+    correo_usuario,
     contrasena_hash
   ) VALUES (
     v_id_usuario,
@@ -500,7 +492,7 @@ BEGIN
       e.motivo_rechazo,
       e.rechazo_por,
       e.destacado,
-      e.destacado_por,
+      e.destacado_por_usuario AS destacado_por,
       e.fecha_destacado,
       e.fecha_creacion,
       e.fecha_actualizacion,
@@ -599,7 +591,7 @@ BEGIN
       e.motivo_rechazo,
       e.rechazo_por,
       e.destacado,
-      e.destacado_por,
+      e.destacado_por_usuario AS destacado_por,
       e.fecha_destacado,
       e.url_documento_evento,
       e.documento_storage_provider,
@@ -610,8 +602,8 @@ BEGIN
       e.fecha_creacion,
       e.fecha_actualizacion,
       e.fecha_desactivacion,
-      p.nombres AS creador_nombres,
-      p.apellidos AS creador_apellidos,
+      u.nombres AS creador_nombres,
+      u.apellidos AS creador_apellidos,
       s.nombre_sitio,
       s.direccion AS sitio_direccion,
       m.id_municipio,
@@ -619,11 +611,11 @@ BEGIN
       ce.id_categoria_evento AS evento_categoria_id,
       ce.nombre AS categoria_nombre,
       te.id_tipo_evento AS evento_tipo_id,
-      te.nombre AS tipo_nombre,
+      te.nombre_tipo_evento AS tipo_nombre,
       tel_evento_principal.telefono AS telefono_1,
       tel_evento_secundario.telefono AS telefono_2,
-      tel_sitio_principal.telefono AS sitio_telefono_1,
-      tel_sitio_secundario.telefono AS sitio_telefono_2,
+      tel_sitio_principal.telefono_sitio AS sitio_telefono_1,
+      tel_sitio_secundario.telefono_sitio AS sitio_telefono_2,
       COALESCE(rv.reservas_count, 0) AS reservas_count,
       COALESCE(rv.reservas_asistentes, 0) AS reservas_asistentes,
       iinfo.id_evento_info_item,
@@ -631,7 +623,6 @@ BEGIN
       iinfo.obligatorio AS info_importante_obligatorio
     FROM tabla_eventos e
     LEFT JOIN tabla_usuarios u ON e.id_usuario = u.id_usuario
-    LEFT JOIN tabla_personas p ON e.id_usuario = p.id_usuario
     LEFT JOIN tabla_sitios s ON e.id_sitio = s.id_sitio
     LEFT JOIN tabla_municipios m ON s.id_municipio = m.id_municipio
     LEFT JOIN tabla_categoria_eventos ce ON e.id_categoria_evento = ce.id_categoria_evento
@@ -652,14 +643,14 @@ BEGIN
       LIMIT 1
     ) tel_evento_secundario ON TRUE
     LEFT JOIN LATERAL (
-      SELECT telefono
+      SELECT telefono_sitio
       FROM tabla_sitios_telefonos
       WHERE id_sitio = s.id_sitio AND es_principal = TRUE
       ORDER BY fecha_creacion ASC
       LIMIT 1
     ) tel_sitio_principal ON TRUE
     LEFT JOIN LATERAL (
-      SELECT telefono
+      SELECT telefono_sitio
       FROM tabla_sitios_telefonos
       WHERE id_sitio = s.id_sitio AND es_principal = FALSE
       ORDER BY fecha_creacion ASC
@@ -753,7 +744,7 @@ BEGIN
                 'id_sitios_discapacitados', sd.id_sitios_discapacitados,
                 'id_infraestructura_discapacitados', sd.id_infraestructura_discapacitados,
                 'nombre_infraestructura_discapacitados', tid.nombre_infraestructura_discapacitados,
-                'descripcion', sd.descripcion
+                'descripcion', sd.descripcion_relacional
               ) ORDER BY sd.id_sitios_discapacitados)
               FROM tabla_sitios_discapacitados sd
               LEFT JOIN tabla_tipo_infraestructura_discapacitados tid

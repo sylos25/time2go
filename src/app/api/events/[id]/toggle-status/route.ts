@@ -85,11 +85,11 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       const highlightedResult = await client.query(
         `UPDATE tabla_eventos
          SET destacado = $1,
-             destacado_por = CASE WHEN $1::boolean THEN $2::int ELSE NULL::int END,
+             destacado_por_usuario = CASE WHEN $1::boolean THEN $2::int ELSE NULL::int END,
              fecha_destacado = CASE WHEN $1 THEN CURRENT_TIMESTAMP ELSE NULL END,
              fecha_actualizacion = CURRENT_TIMESTAMP
          WHERE id_evento = $3
-         RETURNING id_evento, nombre_evento, destacado, destacado_por, fecha_destacado`,
+         RETURNING id_evento, nombre_evento, destacado, destacado_por_usuario AS destacado_por, fecha_destacado`,
         [requestedDestacado, Number(user.id_usuario), eventId]
       );
 
@@ -130,7 +130,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
            motivo_rechazo = CASE WHEN $1::boolean THEN NULL ELSE NULLIF($2::text, '') END,
            rechazo_por = CASE WHEN $1::boolean THEN NULL ELSE $3::int END,
            destacado = CASE WHEN $1::boolean THEN destacado ELSE FALSE END,
-           destacado_por = CASE WHEN $1::boolean THEN destacado_por ELSE NULL END,
+           destacado_por_usuario = CASE WHEN $1::boolean THEN destacado_por_usuario ELSE NULL END,
            fecha_destacado = CASE WHEN $1::boolean THEN fecha_destacado ELSE NULL END,
            fecha_desactivacion = CASE WHEN $1::boolean THEN NULL ELSE CURRENT_TIMESTAMP END,
            fecha_actualizacion = CURRENT_TIMESTAMP

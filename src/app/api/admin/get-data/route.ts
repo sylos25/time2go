@@ -50,7 +50,7 @@ const queryMap: Record<string, string> = {
     SELECT
       m.id_municipio,
       m.nombre_municipio,
-      m.distrito,
+      m.es_distrito AS distrito,
       m.area_metropolitana,
       d.nombre_departamento,
       p.nombre_pais,
@@ -75,8 +75,8 @@ const queryMap: Record<string, string> = {
       s.latitud,
       s.longitud,
       infra.infraestructura_discapacitados,
-      tel_principal.telefono AS telefono_1,
-      tel_secundario.telefono AS telefono_2,
+      tel_principal.telefono_sitio AS telefono_1,
+      tel_secundario.telefono_sitio AS telefono_2,
       s.sitio_web,
       s.fecha_creacion,
       s.fecha_actualizacion
@@ -95,14 +95,14 @@ const queryMap: Record<string, string> = {
       WHERE sd.id_sitio = s.id_sitio
     ) infra ON TRUE
     LEFT JOIN LATERAL (
-      SELECT telefono
+      SELECT telefono_sitio
       FROM tabla_sitios_telefonos
       WHERE id_sitio = s.id_sitio AND es_principal = TRUE
       ORDER BY fecha_creacion ASC
       LIMIT 1
     ) tel_principal ON TRUE
     LEFT JOIN LATERAL (
-      SELECT telefono
+      SELECT telefono_sitio
       FROM tabla_sitios_telefonos
       WHERE id_sitio = s.id_sitio AND es_principal = FALSE
       ORDER BY fecha_creacion ASC
@@ -116,7 +116,7 @@ const queryMap: Record<string, string> = {
       sd.id_sitios_discapacitados,
       s.nombre_sitio,
       tid.nombre_infraestructura_discapacitados,
-      sd.descripcion,
+      sd.descripcion_relacional AS descripcion,
       sd.fecha_creacion,
       sd.fecha_actualizacion
     FROM tabla_sitios_discapacitados sd
@@ -138,7 +138,7 @@ const queryMap: Record<string, string> = {
   tipo_eventos: `
     SELECT 
       te.id_tipo_evento,
-      te.nombre,
+      te.nombre_tipo_evento AS nombre,
       ce.nombre as nombre_categoria_evento,
       te.fecha_creacion,
       te.fecha_actualizacion
@@ -156,11 +156,11 @@ const queryMap: Record<string, string> = {
       e.responsable_evento,
       u.nombres || ' ' || u.apellidos AS usuario_creador,
       ce.nombre AS categoria_evento,
-      te.nombre AS tipo_evento,
+      te.nombre_tipo_evento AS tipo_evento,
       s.nombre_sitio,
       e.descripcion,
-      tel_principal.telefono AS telefono_1,
-      tel_secundario.telefono AS telefono_2,
+      tel_principal.telefono_sitio AS telefono_1,
+      tel_secundario.telefono_sitio AS telefono_2,
       e.fecha_inicio,
       e.fecha_fin,
       e.hora_inicio,
@@ -172,7 +172,7 @@ const queryMap: Record<string, string> = {
       e.motivo_rechazo,
       e.rechazo_por,
       e.destacado,
-      e.destacado_por,
+      e.destacado_por_usuario AS destacado_por,
       e.fecha_destacado,
       e.fecha_creacion,
       e.fecha_actualizacion,
@@ -286,7 +286,7 @@ const queryMap: Record<string, string> = {
       sd.id_sitios_discapacitados,
       s.nombre_sitio,
       tid.nombre_infraestructura_discapacitados,
-      sd.descripcion,
+      sd.descripcion_relacional AS descripcion,
       sd.fecha_creacion,
       sd.fecha_actualizacion
     FROM tabla_sitios_discapacitados sd

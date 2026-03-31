@@ -55,14 +55,14 @@ export async function GET(req: Request) {
     ] = await Promise.all([
       pool.query(`SELECT COUNT(1)::int AS count FROM tabla_eventos WHERE estado = TRUE`),
       pool.query(`SELECT COUNT(1)::int AS count FROM tabla_eventos WHERE estado = FALSE`),
-      pool.query(`SELECT COUNT(1)::int AS count FROM tabla_usuarios WHERE estado = TRUE AND id_rol = 1`),
-      pool.query(`SELECT COUNT(1)::int AS count FROM tabla_usuarios WHERE estado = FALSE`),
+      pool.query(`SELECT COUNT(1)::int AS count FROM tabla_usuarios WHERE estado_usuario = TRUE AND id_rol = 1`),
+      pool.query(`SELECT COUNT(1)::int AS count FROM tabla_usuarios WHERE estado_usuario = FALSE`),
       pool.query(
         `SELECT
-          to_char(date_trunc('month', fecha_registro), 'YYYY-MM') AS month_key,
+          to_char(date_trunc('month', fecha_creacion), 'YYYY-MM') AS month_key,
           COUNT(1)::int AS total
          FROM tabla_usuarios
-         WHERE fecha_registro >= date_trunc('month', CURRENT_DATE) - INTERVAL '5 months'
+         WHERE fecha_creacion >= date_trunc('month', CURRENT_DATE) - INTERVAL '5 months'
          GROUP BY 1
          ORDER BY 1 ASC`
       ),

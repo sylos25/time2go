@@ -71,7 +71,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     const action = String(body?.action || "").toLowerCase()
 
     const userCheck = await client.query(
-      "SELECT id_usuario, estado, id_rol FROM tabla_usuarios WHERE id_usuario = $1 LIMIT 1",
+      "SELECT id_usuario, estado_usuario AS estado, id_rol FROM tabla_usuarios WHERE id_usuario = $1 LIMIT 1",
       [userIdToToggle]
     )
     if (!userCheck.rows || userCheck.rows.length === 0) {
@@ -88,7 +88,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 
     if (action === "ban") {
       const idUsuario = Number(body?.id_usuario ?? userIdToToggle)
-      const motivoBan = String(body?.motivo_ban || "").trim()
+      const motivoBanId = Number(body?.motivo_ban)
       const inicioBanRaw = String(body?.inicio_ban || "").trim()
       const finBanRaw = String(body?.fin_ban || "").trim()
       const responsable = Number(body?.responsable)
@@ -97,8 +97,8 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
         return NextResponse.json({ ok: false, message: "ID de usuario inválido" }, { status: 400 })
       }
 
-      if (!motivoBan || motivoBan.length < 10) {
-        return NextResponse.json({ ok: false, message: "El motivo debe tener mínimo 10 caracteres" }, { status: 400 })
+      if (!Number.isFinite(motivoBanId) || motivoBanId <= 0) {
+        return NextResponse.json({ ok: false, message: "Debes seleccionar un motivo de ban válido" }, { status: 400 })
       }
 
       if (!inicioBanRaw || !finBanRaw) {
@@ -128,33 +128,43 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
         return NextResponse.json({ ok: false, message: "El responsable no existe" }, { status: 400 })
       }
 
+      const motivoBanRes = await client.query(
+        "SELECT id_motivo_ban, motivo_ban FROM tabla_motivos_ban WHERE id_motivo_ban = $1 LIMIT 1",
+        [motivoBanId]
+      )
+      if (!motivoBanRes.rows || motivoBanRes.rows.length === 0) {
+        return NextResponse.json({ ok: false, message: "El motivo de ban no existe" }, { status: 400 })
+      }
+
+      const motivoBanDescripcion = String(motivoBanRes.rows[0].motivo_ban)
+
       await client.query("BEGIN")
 
       await client.query(
-        `INSERT INTO tabla_baneados (id_usuario, motivo_ban, inicio_ban, fin_ban, responsable)
+        `INSERT INTO tabla_baneados (id_usuario, motivo_ban, inicio_ban, fin_ban, responsable_baneo)
          VALUES ($1, $2, $3, $4, $5)`,
-        [idUsuario, motivoBan, inicioBan.toISOString(), finBan.toISOString(), responsable]
+        [idUsuario, motivoBanId, inicioBan.toISOString(), finBan.toISOString(), responsable]
       )
 
       const result = await client.query(
         `UPDATE tabla_usuarios
-         SET estado = FALSE,
+         SET estado_usuario = FALSE,
              fecha_actualizacion = CURRENT_TIMESTAMP,
              fecha_desactivacion = CURRENT_TIMESTAMP
          WHERE id_usuario = $1
-         RETURNING id_usuario, estado`,
+         RETURNING id_usuario, estado_usuario AS estado`,
         [idUsuario]
       )
 
       await client.query("COMMIT")
 
       const correoRes = await client.query(
-          "SELECT correo FROM tabla_usuarios_credenciales WHERE id_usuario = $1 LIMIT 1",
+          "SELECT correo_usuario AS correo FROM tabla_usuarios_credenciales WHERE id_usuario = $1 LIMIT 1",
         [idUsuario]
       )
       const correo = correoRes.rows[0]?.correo
       if (correo) {
-        await sendBanNotificationEmail(correo, motivoBan, inicioBan, finBan)
+        await sendBanNotificationEmail(correo, motivoBanDescripcion, inicioBan, finBan)
       }
 
       return NextResponse.json({
@@ -167,16 +177,16 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     if (action === "unban" || action === "validate") {
       const result = await client.query(
         `UPDATE tabla_usuarios
-         SET estado = TRUE,
+         SET estado_usuario = TRUE,
              fecha_actualizacion = CURRENT_TIMESTAMP,
              fecha_desactivacion = NULL
          WHERE id_usuario = $1
-         RETURNING id_usuario, estado`,
+         RETURNING id_usuario, estado_usuario AS estado`,
         [userIdToToggle]
       )
 
       const correoRes = await client.query(
-        "SELECT correo FROM tabla_usuarios_credenciales WHERE id_usuario = $1 LIMIT 1",
+        "SELECT correo_usuario AS correo FROM tabla_usuarios_credenciales WHERE id_usuario = $1 LIMIT 1",
         [userIdToToggle]
       )
       const correo = correoRes.rows[0]?.correo

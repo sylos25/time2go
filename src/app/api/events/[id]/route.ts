@@ -326,22 +326,21 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
             e.motivo_rechazo,
             e.rechazo_por,
             e.destacado,
-            e.destacado_por,
+            e.destacado_por_usuario AS destacado_por,
             e.fecha_destacado,
             e.fecha_creacion,
             e.fecha_actualizacion,
             e.fecha_desactivacion,
             tel_principal.telefono AS telefono_1,
             tel_secundario.telefono AS telefono_2,
-            p.nombres,
-            p.apellidos,
+              u.nombres,
+              u.apellidos,
             s.nombre_sitio,
             m.nombre_municipio,
             ce.nombre as categoria_nombre,
-            te.nombre as tipo_nombre
+            te.nombre_tipo_evento as tipo_nombre
        FROM tabla_eventos e
       LEFT JOIN tabla_usuarios u ON e.id_usuario = u.id_usuario
-      LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
        LEFT JOIN tabla_sitios s ON e.id_sitio = s.id_sitio
       LEFT JOIN tabla_municipios m ON s.id_municipio = m.id_municipio
        LEFT JOIN tabla_categoria_eventos ce ON e.id_categoria_evento = ce.id_categoria_evento

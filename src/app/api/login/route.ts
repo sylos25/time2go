@@ -261,15 +261,14 @@ export async function POST(req: Request) {
           u.id_usuario,
           u.id_publico,
           u.id_rol,
-          c.correo,
-          p.nombres,
+          c.correo_usuario AS correo,
+          u.nombres,
           c.contrasena_hash,
           c.validacion_correo,
-          u.estado
+          u.estado_usuario AS estado
         FROM tabla_usuarios u
         INNER JOIN tabla_usuarios_credenciales c ON c.id_usuario = u.id_usuario
-        LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
-        WHERE c.correo = $1
+        WHERE c.correo_usuario = $1
         LIMIT 1
       `,
       [normalizedEmail]

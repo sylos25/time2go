@@ -3,7 +3,7 @@
 CREATE OR REPLACE FUNCTION fn_listar_usuarios_paginado_json(
   p_role tabla_usuarios.id_rol%TYPE DEFAULT NULL,
   p_roles INT[] DEFAULT NULL,
-  p_estado tabla_usuarios.estado%TYPE DEFAULT NULL,
+  p_estado tabla_usuarios.estado_usuario%TYPE DEFAULT NULL,
   p_q TEXT DEFAULT NULL,
   p_page INT DEFAULT 1,
   p_page_size INT DEFAULT 25
@@ -23,15 +23,14 @@ filtered AS (
     u.id_usuario,
     r.nombre_rol AS id_rol,
     c.id_google,
-    p.nombres,
-    p.apellidos,
-    p.telefono,
-    c.correo,
+    u.nombres,
+    u.apellidos,
+    u.telefono_persona AS telefono,
+    c.correo_usuario AS correo,
     c.validacion_correo,
     u.terminos_condiciones,
-    u.estado
+    u.estado_usuario AS estado
   FROM tabla_usuarios u
-  LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
   LEFT JOIN tabla_usuarios_credenciales c ON c.id_usuario = u.id_usuario
   LEFT JOIN tabla_roles r ON u.id_rol = r.id_rol
   WHERE
@@ -43,16 +42,16 @@ filtered AS (
         ELSE TRUE
       END
     )
-    AND (p_estado IS NULL OR u.estado = p_estado)
+    AND (p_estado IS NULL OR u.estado_usuario = p_estado)
     AND (
       (SELECT q FROM cfg) IS NULL
       OR CAST(u.id_usuario AS TEXT) ILIKE ('%' || (SELECT q FROM cfg) || '%')
       OR COALESCE(r.nombre_rol, '') ILIKE ('%' || (SELECT q FROM cfg) || '%')
       OR COALESCE(c.id_google, '') ILIKE ('%' || (SELECT q FROM cfg) || '%')
-      OR COALESCE(p.nombres, '') ILIKE ('%' || (SELECT q FROM cfg) || '%')
-      OR COALESCE(p.apellidos, '') ILIKE ('%' || (SELECT q FROM cfg) || '%')
-      OR COALESCE(CAST(p.telefono AS TEXT), '') ILIKE ('%' || (SELECT q FROM cfg) || '%')
-      OR COALESCE(c.correo, '') ILIKE ('%' || (SELECT q FROM cfg) || '%')
+      OR COALESCE(u.nombres, '') ILIKE ('%' || (SELECT q FROM cfg) || '%')
+      OR COALESCE(u.apellidos, '') ILIKE ('%' || (SELECT q FROM cfg) || '%')
+      OR COALESCE(CAST(u.telefono_persona AS TEXT), '') ILIKE ('%' || (SELECT q FROM cfg) || '%')
+      OR COALESCE(c.correo_usuario, '') ILIKE ('%' || (SELECT q FROM cfg) || '%')
     )
 ),
 total_cte AS (

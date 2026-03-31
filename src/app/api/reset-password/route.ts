@@ -16,9 +16,10 @@ export async function POST(req: Request) {
 
     const userResult = await pool.query(
       `
-        SELECT id_usuario, correo, nombres
-        FROM tabla_usuarios
-        WHERE correo = $1
+        SELECT c.id_usuario, c.correo_usuario AS correo, u.nombres
+        FROM tabla_usuarios_credenciales c
+        INNER JOIN tabla_usuarios u ON u.id_usuario = c.id_usuario
+        WHERE c.correo_usuario = $1
         LIMIT 1
       `,
       [email]
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
 
     await pool.query(
       `
-        UPDATE tabla_usuarios
+        UPDATE tabla_usuarios_credenciales
         SET contrasena_hash = $1
         WHERE id_usuario = $2
       `,

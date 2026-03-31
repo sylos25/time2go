@@ -10,7 +10,7 @@ import { CheckCircle } from "lucide-react"
 
 export default function AuthPage() {
   return (
-    <Suspense fallback={<main className="relative min-h-screen overflow-hidden bg-black" />}>
+    <Suspense fallback={<main className="relative min-h-screen overflow-hidden bg-background" />}>
       <AuthPageContent />
     </Suspense>
   )
@@ -60,7 +60,7 @@ function AuthPageContent() {
       [images.length]);
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-black">
+    <main className="relative min-h-screen overflow-hidden bg-background">
             {images.map((img, index) => ( 
               <div key={index} style={{ backgroundImage: `url(${img})` }} 
                 className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ${ 

@@ -1,71 +1,65 @@
 -- Cargar en tabla_roles.
-INSERT INTO tabla_roles 
+INSERT INTO tabla_roles (id_rol, nombre_rol)
 		    VALUES  (1,'Usuario'),
 				    (2,'Promotor'),
 				    (3,'Moderador'),
 				    (4,'Administrador');
 
 -- Cargar en tabla_accesibilidad_menu.
-INSERT INTO tabla_accesibilidad_menu 
-			VALUES (1, 'Crear Evento', NOW(), NOW()),
-				   (2, 'Dashboard', NOW(), NOW()),
-				   (3, 'Resumen General', NOW(), NOW()),
-				   (4, 'Gestión de Eventos', NOW(), NOW()),
-				   (5, 'Ingresar Datos', NOW(), NOW()),
-				   (6, 'Ver Datos', NOW(), NOW()),
-				   (7, 'Usuarios', NOW(), NOW()),
-				   (8, 'Mi Perfil', NOW(), NOW()),
-				   (9, 'Mis Eventos', NOW(), NOW()),
-				   (10, 'Mis Reservas', NOW(), NOW()),
-				   (11, 'Mis Valoraciones', NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu (id_accesibilidad, nombre_accesibilidad)
+			VALUES (1, 'Crear Evento'),
+				   (2, 'Dashboard'),
+				   (3, 'Resumen General'),
+				   (4, 'Gestión de Eventos'),
+				   (5, 'Ingresar Datos'),
+				   (6, 'Ver Datos'),
+				   (7, 'Usuarios'),
+				   (8, 'Mi Perfil'),
+				   (9, 'Mis Eventos'),
+				   (10, 'Mis Reservas'),
+				   (11, 'Mis Valoraciones');
 
 
 -- Cargar en tabla_accesibilidad_menu_x_rol.
-INSERT INTO tabla_accesibilidad_menu_x_rol 
-			VALUES (1, 1, 2, NOW(), NOW()),
-				   (2, 1, 4, NOW(), NOW()),
-				   (3, 2, 2, NOW(), NOW()),
-				   (4, 2, 3, NOW(), NOW()),
-				   (5, 2, 4, NOW(), NOW()),
-				   (6, 3, 3, NOW(), NOW()),
-				   (7, 3, 4, NOW(), NOW()),
-				   (8, 4, 3, NOW(), NOW()),
-				   (9, 4, 4, NOW(), NOW()),
-				   (10, 5, 3, NOW(), NOW()),
-				   (11, 5, 4, NOW(), NOW()),
-				   (12, 6, 3, NOW(), NOW()),
-				   (13, 6, 4, NOW(), NOW()),
-				   (14, 7, 3, NOW(), NOW()),
-				   (15, 7, 4, NOW(), NOW()),
-				   (16, 8, 1, NOW(), NOW()),
-				   (17, 8, 2, NOW(), NOW()),
-				   (18, 8, 3, NOW(), NOW()),
-				   (19, 8, 4, NOW(), NOW()),
-				   (20, 9, 2, NOW(), NOW()),
-				   (21, 9, 4, NOW(), NOW()),
-				   (22, 10, 1, NOW(), NOW()),
-				   (23, 10, 4, NOW(), NOW()),
-				   (24, 11, 1, NOW(), NOW()),
-				   (25, 11, 4, NOW(), NOW());
+INSERT INTO tabla_accesibilidad_menu_x_rol (id_accesibilidad_menu_x_rol, id_accesibilidad, id_rol)
+			VALUES (1, 1, 2),
+				   (2, 1, 4),
+				   (3, 2, 2),
+				   (4, 2, 3),
+				   (5, 2, 4),
+				   (6, 3, 3),
+				   (7, 3, 4),
+				   (8, 4, 3),
+				   (9, 4, 4),
+				   (10, 5, 3),
+				   (11, 5, 4),
+				   (12, 6, 3),
+				   (13, 6, 4),
+				   (14, 7, 3),
+				   (15, 7, 4),
+				   (16, 8, 1),
+				   (17, 8, 2),
+				   (18, 8, 3),
+				   (19, 8, 4),
+				   (20, 9, 2),
+				   (21, 9, 4),
+				   (22, 10, 1),
+				   (23, 10, 4),
+				   (24, 11, 1),
+				   (25, 11, 4);
 
 -- Cargar en tabla_usuarios.
-INSERT INTO tabla_usuarios (id_rol, terminos_condiciones, estado, fecha_registro, fecha_actualizacion, fecha_desactivacion)
-    		VALUES (1, TRUE, TRUE, NOW(), NOW(), NOW()),
-				   (2, TRUE, TRUE, NOW(), NOW(), NOW()),
-				   (3, TRUE, TRUE, NOW(), NOW(), NOW()),
-				   (4, TRUE, TRUE, NOW(), NOW(), NOW());
+INSERT INTO tabla_usuarios (id_rol, nombres, apellidos, id_pais, telefono_persona, terminos_condiciones, estado_usuario)
+			VALUES (1, 'Usuario', 'Prueba', 6, 3001234567, TRUE, TRUE),
+				   (2, 'Promotor', 'Prueba', 6, 3007654321, TRUE, TRUE),
+				   (3, 'Moderador', 'Prueba', 6, 3001122334, TRUE, TRUE),
+				   (4, 'Administrador', 'Prueba', 6, 3009876543, TRUE, TRUE);
 
-INSERT INTO tabla_personas (id_usuario, nombres, apellidos, id_pais, telefono, fecha_creacion, fecha_actualizacion)
-    		VALUES (1, 'Usuario', 'Prueba', 6, 3001234567, NOW(), NOW()),
-				   (2, 'Promotor', 'Prueba', 6, 3007654321, NOW(), NOW()),
-				   (3, 'Moderador', 'Prueba', 6, 3001122334, NOW(), NOW()),
-				   (4, 'Administrador', 'Prueba', 6, 3009876543, NOW(), NOW());
-
-INSERT INTO tabla_usuarios_credenciales (id_usuario, correo, contrasena_hash, id_google, validacion_correo, fecha_creacion, fecha_actualizacion)
-    		VALUES (1, 'usuario_prueba@correo.com', crypt('Usuario123.', gen_salt('bf', 12)), NULL, TRUE, NOW(), NOW()),
-				   (2, 'promotor_prueba@correo.com', crypt('Promotor123.', gen_salt('bf', 12)), NULL, TRUE, NOW(), NOW()),
-				   (3, 'moderador_prueba@correo.com', crypt('Moderador123.', gen_salt('bf', 12)), NULL, TRUE, NOW(), NOW()),
-				   (4, 'administrador_prueba@correo.com', crypt('Administrador123.', gen_salt('bf', 12)), NULL, TRUE, NOW(), NOW());
+INSERT INTO tabla_usuarios_credenciales (id_usuario, correo_usuario, contrasena_hash, validacion_correo)
+    		VALUES (1, 'usuario_prueba@correo.com', crypt('Usuario123.', gen_salt('bf', 12)), TRUE),
+				   (2, 'promotor_prueba@correo.com', crypt('Promotor123.', gen_salt('bf', 12)), TRUE),
+				   (3, 'moderador_prueba@correo.com', crypt('Moderador123.', gen_salt('bf', 12)), TRUE),
+				   (4, 'administrador_prueba@correo.com', crypt('Administrador123.', gen_salt('bf', 12)), TRUE);
 
 -- Cargar en tabla_categoria_eventos.
 INSERT INTO tabla_categoria_eventos (id_categoria_evento, nombre) 
@@ -74,7 +68,7 @@ INSERT INTO tabla_categoria_eventos (id_categoria_evento, nombre)
 				   (3, 'Deportes');
 
 -- Cargar en tabla_tipo_eventos.
-INSERT INTO tabla_tipo_eventos (id_tipo_evento, id_categoria_evento, nombre) 
+INSERT INTO tabla_tipo_eventos (id_tipo_evento, id_categoria_evento, nombre_tipo_evento) 
 			VALUES (1, 1, 'Concierto'),
 				   (2, 1, 'Festival de Música'),
 				   (3, 1, 'Sesión acústica'),
@@ -103,18 +97,18 @@ INSERT INTO tabla_tipo_sitios (id_tipo_sitio, nombre_tipo_sitio)
 				   (7, 'Parque Recreativo');
 
 -- Cargar en tabla_sitios.
-INSERT INTO tabla_sitios (id_sitio, nombre_sitio, id_tipo_sitio, id_municipio, direccion, latitud, longitud, sitio_web) 
-			VALUES (1, 'Teatro Santander', 1, 68001, 'Calle 33 #18-60.', '7,12116°', '-73,12401°', 'https://www.teatrosantanderbga.com/'),
-				   (2, 'Neomundo - Centro de convenciones y eventos', 2, 68001, 'Calle 89 Transversal Oriental Metropolitana-69, Barrio, Cl. 100.', '7,10215°', '-73,10619°', 'https://neomundo.co/'),
-				   (3, 'Museo de Arte Moderno de Bucaramanga MAMB', 3, 68001, 'Calle 37 #26-16.', '7,11996°', '-73,11686°', NULL),
-				   (4, 'Cancha de tierra del barrio La Cumbre', 4, 68276, 'Calle 34 con Carrera 8e.', '7,07904°', '-73,08879°', NULL),
-				   (5, 'Parque de Morrorico', 5, 68001, 'Comuna 14 Morrorico.', '7,13288°', '-73,10624°', NULL),
-				   (6, 'Parque Temático', 5, 68547, 'Cl. 2a #8-22.', '6,99446°', '-73,05165°', NULL),
-				   (7, 'Estadio municipal villa Concha', 6, 68547, 'I-45A #9-43, La Castallena.', '6,99533°', '-73,05006°', NULL),
-				   (8, 'Parque recrear Juan Pablo II', 7, 68307, 'a 37-60,, Cra. 22b #37-2', '7,0732°', '-73,1689°', NULL);
+INSERT INTO tabla_sitios (nombre_sitio, id_tipo_sitio, id_municipio, direccion, latitud, longitud, sitio_web) 
+			VALUES ('Teatro Santander', 1, 68001, 'Calle 33 #18-60.', '7,12116°', '-73,12401°', 'https://www.teatrosantanderbga.com/'),
+				   ('Neomundo - Centro de convenciones y eventos', 2, 68001, 'Calle 89 Transversal Oriental Metropolitana-69, Barrio, Cl. 100.', '7,10215°', '-73,10619°', 'https://neomundo.co/'),
+				   ('Museo de Arte Moderno de Bucaramanga MAMB', 3, 68001, 'Calle 37 #26-16.', '7,11996°', '-73,11686°', NULL),
+				   ('Cancha de tierra del barrio La Cumbre', 4, 68276, 'Calle 34 con Carrera 8e.', '7,07904°', '-73,08879°', NULL),
+				   ('Parque de Morrorico', 5, 68001, 'Comuna 14 Morrorico.', '7,13288°', '-73,10624°', NULL),
+				   ('Parque Temático', 5, 68547, 'Cl. 2a #8-22.', '6,99446°', '-73,05165°', NULL),
+				   ('Estadio municipal villa Concha', 6, 68547, 'I-45A #9-43, La Castallena.', '6,99533°', '-73,05006°', NULL),
+				   ('Parque recrear Juan Pablo II', 7, 68307, 'a 37-60,, Cra. 22b #37-2', '7,0732°', '-73,1689°', NULL);
 
 -- Cargar en tabla_sitios_telefonos.
-INSERT INTO tabla_sitios_telefonos (id_sitio, telefono, es_principal) 
+INSERT INTO tabla_sitios_telefonos (id_sitio, telefono_sitio, es_principal) 
 			VALUES (1, 6076424232, TRUE),
 				   (1, 3245670437, FALSE),
 				   (2, 6077000260, TRUE),
@@ -130,7 +124,7 @@ INSERT INTO tabla_tipo_infraestructura_discapacitados (id_infraestructura_discap
 				   (4, 'Señalización en Braille');
 
 -- Cargar en tabla_sitios_discapacitados.
-INSERT INTO tabla_sitios_discapacitados (id_sitios_discapacitados, id_sitio, id_infraestructura_discapacitados, descripcion) 
+INSERT INTO tabla_sitios_discapacitados (id_sitios_discapacitados, id_sitio, id_infraestructura_discapacitados, descripcion_relacional) 
 		    VALUES (1, 1, 2, 'Rampa en la entrada del Teatro Santander'),
 				   (2, 2, 2, 'Rampa en la entrada y para acceder entre los pisos de Neomundo'),
 				   (3, 2, 3, 'Señalización para discapacitados en Neomundo'),

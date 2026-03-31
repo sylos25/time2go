@@ -100,7 +100,7 @@ BEGIN
     'motivo_rechazo',      e.motivo_rechazo,
     'rechazo_por',         e.rechazo_por,
     'destacado',           e.destacado,
-    'destacado_por',       e.destacado_por,
+    'destacado_por',       e.destacado_por_usuario,
     'fecha_destacado',     e.fecha_destacado,
     'fecha_creacion',      e.fecha_creacion,
     'fecha_actualizacion', e.fecha_actualizacion,

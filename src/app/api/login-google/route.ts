@@ -69,15 +69,14 @@ export async function POST(req: Request) {
           u.id_usuario,
           u.id_publico,
           u.id_rol,
-          u.estado,
-          c.correo,
+          u.estado_usuario AS estado,
+          c.correo_usuario AS correo,
           c.id_google,
           c.validacion_correo,
-          p.nombres
+          u.nombres
         FROM tabla_usuarios u
         INNER JOIN tabla_usuarios_credenciales c ON c.id_usuario = u.id_usuario
-        LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
-        WHERE c.id_google = $1 OR c.correo = $2
+        WHERE c.id_google = $1 OR c.correo_usuario = $2
         LIMIT 1
       `,
       [igGoogle, email]
@@ -121,15 +120,13 @@ export async function POST(req: Request) {
       if (nombres || apellidos) {
         await pool.query(
           `
-            INSERT INTO tabla_personas (id_usuario, nombres, apellidos)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (id_usuario)
-            DO UPDATE
-            SET nombres = COALESCE(tabla_personas.nombres, EXCLUDED.nombres),
-                apellidos = COALESCE(tabla_personas.apellidos, EXCLUDED.apellidos),
+            UPDATE tabla_usuarios
+            SET nombres = COALESCE(NULLIF(nombres, ''), $1),
+                apellidos = COALESCE(NULLIF(apellidos, ''), $2),
                 fecha_actualizacion = CURRENT_TIMESTAMP
+            WHERE id_usuario = $3
           `,
-          [user.id_usuario, nombres || null, apellidos || null]
+          [nombres || null, apellidos || null, user.id_usuario]
         );
       }
 
@@ -139,11 +136,10 @@ export async function POST(req: Request) {
             u.id_usuario,
             u.id_publico,
             u.id_rol,
-            c.correo,
-            p.nombres
+            c.correo_usuario AS correo,
+            u.nombres
           FROM tabla_usuarios u
           INNER JOIN tabla_usuarios_credenciales c ON c.id_usuario = u.id_usuario
-          LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
           WHERE u.id_usuario = $1
           LIMIT 1
         `,
@@ -158,14 +154,16 @@ export async function POST(req: Request) {
         const createdUser = await client.query(
           `
             INSERT INTO tabla_usuarios (
+              nombres,
+              apellidos,
               terminos_condiciones,
-              estado,
+              estado_usuario,
               id_rol,
-              fecha_registro,
               fecha_actualizacion
-            ) VALUES (TRUE,TRUE,1,NOW(),NOW())
+            ) VALUES ($1,$2,TRUE,TRUE,1,NOW())
             RETURNING id_usuario, id_publico
-          `
+          `,
+          [nombres || null, apellidos || null]
         );
 
         const newUserId = createdUser.rows[0].id_usuario;
@@ -175,26 +173,13 @@ export async function POST(req: Request) {
             INSERT INTO tabla_usuarios_credenciales (
               id_usuario,
               id_google,
-              correo,
+              correo_usuario,
               validacion_correo,
               fecha_creacion,
               fecha_actualizacion
             ) VALUES ($1,$2,$3,TRUE,NOW(),NOW())
           `,
           [newUserId, igGoogle, email]
-        );
-
-        await client.query(
-          `
-            INSERT INTO tabla_personas (
-              id_usuario,
-              nombres,
-              apellidos,
-              fecha_creacion,
-              fecha_actualizacion
-            ) VALUES ($1,$2,$3,NOW(),NOW())
-          `,
-          [newUserId, nombres || null, apellidos || null]
         );
 
         await client.query("COMMIT");
@@ -205,11 +190,10 @@ export async function POST(req: Request) {
               u.id_usuario,
               u.id_publico,
               u.id_rol,
-              c.correo,
-              p.nombres
+              c.correo_usuario AS correo,
+              u.nombres
             FROM tabla_usuarios u
             INNER JOIN tabla_usuarios_credenciales c ON c.id_usuario = u.id_usuario
-            LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
             WHERE u.id_usuario = $1
             LIMIT 1
           `,

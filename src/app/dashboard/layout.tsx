@@ -3,7 +3,7 @@
 import type React from "react"
 import { useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Calendar, Home, Loader2, LogOut, MapPin, Menu, Search, ShieldCheck, Users } from "lucide-react"
+import { Calendar, Home, ImageIcon, Loader2, LogOut, MapPin, Menu, Search, ShieldCheck, Users } from "lucide-react"
 import { SessionMonitor } from "@/components/session-monitor"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
@@ -136,6 +136,7 @@ export default function DashboardLayout({
     () => [
       { href: "/dashboard/resumen", name: "Resumen General", icon: Home },
       ...(canManageEvents ? [{ href: "/dashboard/eventos", name: "Gestion de Eventos", icon: Calendar }] : []),
+      ...(canManageEvents ? [{ href: "/dashboard/inicio", name: "Panel de Control del Inicio", icon: ImageIcon }] : []),
       { href: "/dashboard/ingresar-datos", name: "Ingresar Datos", icon: MapPin },
       { href: "/dashboard/sitios-mapa", name: "Sitios (Mapa)", icon: MapPin },
       { href: "/dashboard/ver-datos", name: "Ver Datos", icon: Search },

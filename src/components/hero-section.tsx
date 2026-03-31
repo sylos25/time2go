@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useMemo, useState } from "react"
 import { Swiper, SwiperSlide } from "swiper/react"
 import { Navigation, Pagination, Autoplay, EffectFade } from "swiper/modules"
 
@@ -39,7 +40,54 @@ const heroSlides = [
   },
 ]
 
+type HomeConfigResponse = {
+  ok: boolean
+  heroImages?: Array<{ id: number; url: string; order: number }>
+}
+
 export function HeroSection() {
+  const [dynamicImages, setDynamicImages] = useState<Array<{ id: number; url: string }>>([])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadHeroImages = async () => {
+      try {
+        const res = await fetch("/api/home-config")
+        const data: HomeConfigResponse = await res.json().catch(() => ({ ok: false }))
+
+        if (!res.ok || !data.ok || !Array.isArray(data.heroImages)) return
+
+        const images = data.heroImages
+          .map((item) => ({ id: Number(item.id), url: String(item.url || "") }))
+          .filter((item) => item.id > 0 && item.url.length > 0)
+
+        if (!cancelled) {
+          setDynamicImages(images)
+        }
+      } catch (error) {
+        console.error("Error cargando imágenes del hero:", error)
+      }
+    }
+
+    loadHeroImages()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const slidesToRender = useMemo(() => {
+    if (dynamicImages.length === 0) return heroSlides
+
+    return dynamicImages.map((item, index) => ({
+      id: item.id,
+      title: `Evento destacado ${index + 1}`,
+      description: "Descubre experiencias únicas y planes imperdibles cerca de ti",
+      image: item.url,
+      category: "Destacado",
+    }))
+  }, [dynamicImages])
+
   return (
     <section className="pt-16 lg:pt-20 pb-12 lg:pb-20 overflow-hidden">
       <div className="relative mt-8 w-screen left-1/2 -translate-x-1/2">
@@ -59,7 +107,7 @@ export function HeroSection() {
           }}
           navigation={true}
         >
-          {heroSlides.map((slide, index) => (
+          {slidesToRender.map((slide, index) => (
             <SwiperSlide key={slide.id} className="relative group">
               {/* Primera imagen carga eager (alta prioridad), el resto lazy */}
               {/* eslint-disable-next-line @next/next/no-img-element */}

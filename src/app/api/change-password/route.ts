@@ -70,7 +70,7 @@ export async function POST(req: Request) {
 
     // Obtener el usuario de la base de datos
     const userResult = await pool.query(
-      `SELECT contrasena_hash FROM tabla_usuarios WHERE id_usuario = $1`,
+      `SELECT contrasena_hash FROM tabla_usuarios_credenciales WHERE id_usuario = $1`,
       [userId]
     );
 
@@ -98,7 +98,9 @@ export async function POST(req: Request) {
 
     // Actualizar la contraseña en la base de datos
     await pool.query(
-      `UPDATE tabla_usuarios SET contrasena_hash = $1, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id_usuario = $2`,
+      `UPDATE tabla_usuarios_credenciales
+       SET contrasena_hash = $1, fecha_actualizacion = CURRENT_TIMESTAMP
+       WHERE id_usuario = $2`,
       [hashedPassword, userId]
     );
 

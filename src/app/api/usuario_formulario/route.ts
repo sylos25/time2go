@@ -50,12 +50,12 @@ export async function POST(req: Request) {
     const client = await pool.connect();
     try {
     const emailExists = await client.query(
-      `SELECT 1 FROM tabla_usuarios_credenciales WHERE correo = $1 LIMIT 1`,
+      `SELECT 1 FROM tabla_usuarios_credenciales WHERE correo_usuario = $1 LIMIT 1`,
       [email]
     );
 
     const phoneExists = await client.query(
-      `SELECT 1 FROM tabla_personas WHERE telefono = $1 LIMIT 1`,
+      `SELECT 1 FROM tabla_usuarios WHERE telefono_persona = $1 LIMIT 1`,
       [telefono]
     );
 
@@ -94,33 +94,26 @@ export async function POST(req: Request) {
 
     const result = await client.query(
       `INSERT INTO tabla_usuarios (
+        nombres,
+        apellidos,
+        id_pais,
+        telefono_persona,
         terminos_condiciones,
         id_rol,
-        estado
-      ) VALUES ($1,$2,$3) RETURNING id_usuario, id_publico`,
-      [terminosCondiciones, 1, true]
+        estado_usuario
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id_usuario, id_publico`,
+      [firstName, lastName, pais, telefono, terminosCondiciones, 1, true]
     );
 
     const usuarioBase = result.rows[0] as { id_usuario: string | number; id_publico: string };
 
     await client.query(
-      `INSERT INTO tabla_personas (
-        id_usuario,
-        nombres,
-        apellidos,
-        id_pais,
-        telefono
-      ) VALUES ($1,$2,$3,$4,$5)`,
-      [usuarioBase.id_usuario, firstName, lastName, pais, telefono]
-    );
-
-    await client.query(
       `INSERT INTO tabla_usuarios_credenciales (
         id_usuario,
-        correo,
+        correo_usuario,
         contrasena_hash,
         validacion_correo
-      ) VALUES ($1,$2,$3,$4) RETURNING correo`,
+      ) VALUES ($1,$2,$3,$4) RETURNING correo_usuario`,
       [usuarioBase.id_usuario, email, hashedPassword, false]
     );
 

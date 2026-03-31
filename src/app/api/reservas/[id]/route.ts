@@ -65,11 +65,11 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
               s.direccion AS sitio_direccion,
               m.nombre_municipio,
               ce.nombre AS categoria_nombre,
-              te.nombre AS tipo_nombre,
+              te.nombre_tipo_evento AS tipo_nombre,
               tel_evento_principal.telefono AS telefono_1,
               tel_evento_secundario.telefono AS telefono_2,
-              pc.nombres AS creador_nombres,
-              pc.apellidos AS creador_apellidos,
+              uc.nombres AS creador_nombres,
+              uc.apellidos AS creador_apellidos,
               img.url_imagen_evento
        FROM tabla_reserva_eventos r
        INNER JOIN tabla_eventos e ON r.id_evento = e.id_evento
@@ -97,7 +97,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
        ) tel_evento_secundario ON TRUE
        LEFT JOIN tabla_sitios s ON e.id_sitio = s.id_sitio
        LEFT JOIN tabla_municipios m ON s.id_municipio = m.id_municipio
-       LEFT JOIN tabla_personas pc ON pc.id_usuario = e.id_usuario
+       LEFT JOIN tabla_usuarios uc ON uc.id_usuario = e.id_usuario
        LEFT JOIN LATERAL (
          SELECT i.url_imagen_evento
          FROM tabla_imagenes_eventos i

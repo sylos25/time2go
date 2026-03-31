@@ -21,7 +21,7 @@ const TABLE_CONFIG: Record<string, TableConfig> = {
   municipios: {
     tableName: "tabla_municipios",
     idColumn: "id_municipio",
-    editableColumns: ["nombre_municipio", "distrito", "area_metropolitana"],
+    editableColumns: ["nombre_municipio", "es_distrito", "area_metropolitana"],
   },
   tipo_sitios: {
     tableName: "tabla_tipo_sitios",
@@ -41,7 +41,7 @@ const TABLE_CONFIG: Record<string, TableConfig> = {
   sitios_discapacitados: {
     tableName: "tabla_sitios_discapacitados",
     idColumn: "id_sitios_discapacitados",
-    editableColumns: ["descripcion"],
+    editableColumns: ["descripcion_relacional"],
   },
   categoria_eventos: {
     tableName: "tabla_categoria_eventos",
@@ -51,7 +51,7 @@ const TABLE_CONFIG: Record<string, TableConfig> = {
   tipo_eventos: {
     tableName: "tabla_tipo_eventos",
     idColumn: "id_tipo_evento",
-    editableColumns: ["nombre"],
+    editableColumns: ["nombre_tipo_evento"],
   },
   eventos: {
     tableName: "tabla_eventos",
@@ -73,7 +73,7 @@ const TABLE_CONFIG: Record<string, TableConfig> = {
       "motivo_rechazo",
       "rechazo_por",
       "destacado",
-      "destacado_por",
+      "destacado_por_usuario",
       "fecha_destacado",
     ],
   },
@@ -107,7 +107,111 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: `Tabla desconocida: ${table}` }, { status: 400 })
     }
 
-    const filteredEntries = Object.entries(data).filter(([key]) => config.editableColumns.includes(key))
+    const normalizedData = { ...data }
+    if (table === "municipios" && Object.prototype.hasOwnProperty.call(normalizedData, "distrito")) {
+      normalizedData.es_distrito = normalizedData.distrito
+      delete normalizedData.distrito
+    }
+
+    if (table === "sitios_discapacitados" && Object.prototype.hasOwnProperty.call(normalizedData, "descripcion")) {
+      normalizedData.descripcion_relacional = normalizedData.descripcion
+      delete normalizedData.descripcion
+    }
+
+    if (table === "tipo_eventos" && Object.prototype.hasOwnProperty.call(normalizedData, "nombre")) {
+      normalizedData.nombre_tipo_evento = normalizedData.nombre
+      delete normalizedData.nombre
+    }
+
+    if (table === "eventos" && Object.prototype.hasOwnProperty.call(normalizedData, "destacado_por")) {
+      normalizedData.destacado_por_usuario = normalizedData.destacado_por
+      delete normalizedData.destacado_por
+    }
+
+    if (table === "sitios") {
+      const siteFields = ["nombre_sitio", "direccion", "latitud", "longitud", "sitio_web"]
+      const siteEntries = Object.entries(normalizedData).filter(([key]) => siteFields.includes(key))
+      const phone1 = typeof normalizedData.telefono_1 === "string" ? normalizedData.telefono_1.trim() : normalizedData.telefono_1
+      const phone2 = typeof normalizedData.telefono_2 === "string" ? normalizedData.telefono_2.trim() : normalizedData.telefono_2
+
+      await pool.query("BEGIN")
+      try {
+        if (siteEntries.length > 0) {
+          const setClauses = siteEntries.map(([key], index) => `${key} = $${index + 1}`)
+          const values = siteEntries.map(([, value]) => value)
+          values.push(id)
+          await pool.query(
+            `UPDATE tabla_sitios
+             SET ${setClauses.join(", ")}
+             WHERE id_sitio = $${values.length}`,
+            values
+          )
+        }
+
+        for (const [rawPhone, isPrimary] of [[phone1, true], [phone2, false]] as const) {
+          const sanitizedPhone = rawPhone ? String(rawPhone).replace(/\D/g, "") : ""
+          await pool.query(
+            `DELETE FROM tabla_sitios_telefonos
+             WHERE id_sitio = $1 AND es_principal = $2`,
+            [id, isPrimary]
+          )
+
+          if (sanitizedPhone) {
+            await pool.query(
+              `INSERT INTO tabla_sitios_telefonos (id_sitio, telefono_sitio, es_principal)
+               VALUES ($1, $2, $3)`,
+              [id, sanitizedPhone, isPrimary]
+            )
+          }
+        }
+
+        const result = await pool.query(
+          `SELECT
+             s.id_sitio,
+             s.nombre_sitio,
+             s.direccion,
+             s.latitud,
+             s.longitud,
+             s.sitio_web,
+             tel_principal.telefono_sitio AS telefono_1,
+             tel_secundario.telefono_sitio AS telefono_2
+           FROM tabla_sitios s
+           LEFT JOIN LATERAL (
+             SELECT telefono_sitio
+             FROM tabla_sitios_telefonos
+             WHERE id_sitio = s.id_sitio AND es_principal = TRUE
+             ORDER BY fecha_creacion ASC
+             LIMIT 1
+           ) tel_principal ON TRUE
+           LEFT JOIN LATERAL (
+             SELECT telefono_sitio
+             FROM tabla_sitios_telefonos
+             WHERE id_sitio = s.id_sitio AND es_principal = FALSE
+             ORDER BY fecha_creacion ASC
+             LIMIT 1
+           ) tel_secundario ON TRUE
+           WHERE s.id_sitio = $1`,
+          [id]
+        )
+
+        await pool.query("COMMIT")
+
+        if (result.rows.length === 0) {
+          return NextResponse.json({ error: "Registro no encontrado" }, { status: 404 })
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: "Registro actualizado correctamente",
+          data: result.rows[0],
+        })
+      } catch (error) {
+        await pool.query("ROLLBACK")
+        throw error
+      }
+    }
+
+    const filteredEntries = Object.entries(normalizedData).filter(([key]) => config.editableColumns.includes(key))
 
     if (filteredEntries.length === 0) {
       return NextResponse.json({ error: "No hay campos editables para actualizar" }, { status: 400 })

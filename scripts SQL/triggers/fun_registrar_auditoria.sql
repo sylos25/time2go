@@ -20,7 +20,7 @@ BEGIN
     END IF;
 
     IF TG_OP = 'INSERT' THEN
-        INSERT INTO tabla_auditoria_bd (tabla, operacion, id_usuario_app, usuario_bd)
+        INSERT INTO tabla_auditoria_bd (nombre_tabla, operacion, id_usuario, usuario_bd)
         VALUES (TG_TABLE_NAME, TG_OP, v_id_usuario_app, CURRENT_USER)
         RETURNING id_auditoria INTO v_id_auditoria;
 
@@ -59,7 +59,7 @@ BEGIN
 
         RETURN NEW;
     ELSIF TG_OP = 'UPDATE' THEN
-        INSERT INTO tabla_auditoria_bd (tabla, operacion, id_usuario_app, usuario_bd)
+        INSERT INTO tabla_auditoria_bd (nombre_tabla, operacion, id_usuario, usuario_bd)
         VALUES (TG_TABLE_NAME, TG_OP, v_id_usuario_app, CURRENT_USER)
         RETURNING id_auditoria INTO v_id_auditoria;
 
@@ -104,7 +104,7 @@ BEGIN
 
         RETURN NEW;
     ELSIF TG_OP = 'DELETE' THEN
-        INSERT INTO tabla_auditoria_bd (tabla, operacion, id_usuario_app, usuario_bd)
+        INSERT INTO tabla_auditoria_bd (nombre_tabla, operacion, id_usuario, usuario_bd)
         VALUES (TG_TABLE_NAME, TG_OP, v_id_usuario_app, CURRENT_USER)
         RETURNING id_auditoria INTO v_id_auditoria;
 

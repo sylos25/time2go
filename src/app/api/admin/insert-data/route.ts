@@ -33,11 +33,10 @@ export async function POST(req: NextRequest) {
 
       case "sitios":
         result = await pool.query(
-          `INSERT INTO tabla_sitios (id_sitio, nombre_sitio, id_tipo_sitio, id_municipio, direccion, latitud, longitud, sitio_web)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          `INSERT INTO tabla_sitios (nombre_sitio, id_tipo_sitio, id_municipio, direccion, latitud, longitud, sitio_web)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
            RETURNING id_sitio, nombre_sitio, id_tipo_sitio, id_municipio, direccion, latitud, longitud, sitio_web`,
           [
-            data.id_sitio,
             data.nombre_sitio,
             data.id_tipo_sitio,
             data.id_municipio,
@@ -48,21 +47,21 @@ export async function POST(req: NextRequest) {
           ]
         )
 
+        const createdSiteId = result.rows[0]?.id_sitio
+
         if (data.telefono_1) {
           await pool.query(
-            `INSERT INTO tabla_sitios_telefonos (id_sitio, telefono, es_principal)
-             VALUES ($1, $2, TRUE)
-             ON CONFLICT (telefono) DO NOTHING`,
-            [data.id_sitio, data.telefono_1]
+            `INSERT INTO tabla_sitios_telefonos (id_sitio, telefono_sitio, es_principal)
+             VALUES ($1, $2, TRUE)`,
+            [createdSiteId, data.telefono_1]
           )
         }
 
         if (data.telefono_2) {
           await pool.query(
-            `INSERT INTO tabla_sitios_telefonos (id_sitio, telefono, es_principal)
-             VALUES ($1, $2, FALSE)
-             ON CONFLICT (telefono) DO NOTHING`,
-            [data.id_sitio, data.telefono_2]
+            `INSERT INTO tabla_sitios_telefonos (id_sitio, telefono_sitio, es_principal)
+             VALUES ($1, $2, FALSE)`,
+            [createdSiteId, data.telefono_2]
           )
         }
 
@@ -92,8 +91,8 @@ export async function POST(req: NextRequest) {
 
       case "sitios_discapacitados":
       case "sitios_disc":
-        query = `INSERT INTO tabla_sitios_discapacitados (id_sitios_discapacitados, id_sitio, id_infraestructura_discapacitados, descripcion)
-                 VALUES ($1, $2, $3, $4) RETURNING id_sitios_discapacitados, id_sitio, id_infraestructura_discapacitados, descripcion`
+        query = `INSERT INTO tabla_sitios_discapacitados (id_sitios_discapacitados, id_sitio, id_infraestructura_discapacitados, descripcion_relacional)
+                 VALUES ($1, $2, $3, $4) RETURNING id_sitios_discapacitados, id_sitio, id_infraestructura_discapacitados, descripcion_relacional AS descripcion`
         values = [
           data.id_sitios_discapacitados ?? data.id_sitios_disc,
           data.id_sitio,
@@ -103,8 +102,8 @@ export async function POST(req: NextRequest) {
         break
 
       case "tipo_eventos":
-        query = `INSERT INTO tabla_tipo_eventos (id_tipo_evento, id_categoria_evento, nombre) 
-                 VALUES ($1, $2, $3) RETURNING id_tipo_evento, id_categoria_evento, nombre`
+        query = `INSERT INTO tabla_tipo_eventos (id_tipo_evento, id_categoria_evento, nombre_tipo_evento) 
+                 VALUES ($1, $2, $3) RETURNING id_tipo_evento, id_categoria_evento, nombre_tipo_evento AS nombre`
         values = [data.id_tipo_evento, data.id_categoria_evento, data.nombre]
         break
 

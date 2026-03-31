@@ -9,17 +9,18 @@ import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
   AlertCircle,
+  CreditCard,
   Lock,
   Loader2,
   CheckCircle,
   Rat,
-  Upload,
   UserX,
   ShieldAlert,
   CalendarClock,
@@ -56,7 +57,7 @@ export default function PerfilPage() {
   const [isPromotorDialogOpen, setIsPromotorDialogOpen] = useState(false)
   const [selectedPdf, setSelectedPdf] = useState<File | null>(null)
   const [promotorError, setPromotorError] = useState<string | null>(null)
-  const [isUploadingPdf, setIsUploadingPdf] = useState(false)
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false)
 
   // Desactivar cuenta
   const [deactivateOpen,  setDeactivateOpen]  = useState(false)
@@ -74,6 +75,14 @@ export default function PerfilPage() {
   }
 
   useEffect(() => { fetchUserData() }, [])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("pago") === "resultado") {
+      setSuccessMessage("¡Pago recibido! Tu rol de Promotor se activará en breve. Si no cambia en unos minutos, recarga la página.")
+      window.history.replaceState({}, "", "/perfil")
+    }
+  }, [])
 
   const fetchUserData = async () => {
     try {
@@ -111,27 +120,24 @@ export default function PerfilPage() {
     setSelectedPdf(file)
   }
 
-  const handleUploadPromotorDocument = async () => {
-    if (!selectedPdf) { setPromotorError("Debes seleccionar un archivo PDF"); return }
-    setIsUploadingPdf(true); setPromotorError(null)
+  const handlePayWithWompi = async () => {
+    setIsProcessingPayment(true); setPromotorError(null)
     try {
       const token = localStorage.getItem("token")
       const formData = new FormData()
-      formData.append("document", selectedPdf)
+      if (selectedPdf) formData.append("document", selectedPdf)
       const res = await fetch("/api/promotor-document", {
         method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
         credentials: "include",
       })
       const data = await res.json()
-      if (!res.ok || !data?.ok) { setPromotorError(data?.message || "No se pudo subir el documento"); return }
-      setSuccessMessage("Documento cargado correctamente. Tu solicitud para promotor fue registrada.")
-      setIsPromotorDialogOpen(false); setSelectedPdf(null)
+      if (!res.ok || !data?.ok) { setPromotorError(data?.message || "No se pudo iniciar el pago"); return }
+      window.location.href = data.checkout_url
     } catch {
-      setPromotorError("Ocurrió un error al subir el documento")
-    } finally {
-      setIsUploadingPdf(false)
+      setPromotorError("Ocurrió un error al iniciar el pago")
+      setIsProcessingPayment(false)
     }
   }
 
@@ -243,7 +249,7 @@ export default function PerfilPage() {
                     {user.id_rol === 1 && (
                       <Button type="button" variant="outline" onClick={handleOpenPromotorDialog}
                         className="border-green-500 text-green-700 hover:scale-103 hover:bg-green-50 hover:text-green-800">
-                        Hazte promotor
+                        Organiza tus eventos
                       </Button>
                     )}
                   </div>
@@ -339,35 +345,69 @@ export default function PerfilPage() {
         </div>
       </div>
 
-      {/* ── Dialog Promotor ── */}
-      <Dialog open={isPromotorDialogOpen} onOpenChange={setIsPromotorDialogOpen}>
-        <DialogContent>
+      {/* ── Dialog Promotor / Pago Wompi ── */}
+      <Dialog open={isPromotorDialogOpen} onOpenChange={(open) => { if (!isProcessingPayment) setIsPromotorDialogOpen(open) }}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Hazte promotor</DialogTitle>
+            <DialogTitle className="text-xl">Organiza tus eventos</DialogTitle>
+            <DialogDescription>
+              Convértete en Promotor y empieza a publicar eventos en Time2Go
+            </DialogDescription>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground -mt-2">
-            Carga un documento PDF con tu información como organizador. Tamaño máximo: 5 MB.
-          </p>
-          <div className="space-y-3">
-            <Input type="file" accept="application/pdf,.pdf" onChange={handleFileChange} disabled={isUploadingPdf} />
+
+          {/* Beneficios */}
+          <div className="space-y-2 py-1">
+            {[
+              "Crea y gestiona tus propios eventos",
+              "Accede al panel exclusivo de Promotor",
+              "Gestiona reservas y boletaría",
+              "Publica tus eventos para toda la comunidad",
+            ].map((benefit, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm text-foreground">
+                <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                <span>{benefit}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Precio */}
+          <div className="rounded-xl border border-green-200 dark:border-green-900/60 bg-green-50 dark:bg-green-950/30 p-4">
+            <p className="text-3xl font-bold text-green-700 dark:text-green-400">
+              {new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(
+                Number(process.env.NEXT_PUBLIC_PROMOTOR_PRICE_COP ?? "50000")
+              )}
+            </p>
+            <p className="text-xs text-green-600 dark:text-green-500 mt-1">Pago único de activación · Sin cuotas ni suscripciones</p>
+          </div>
+
+          {/* PDF opcional */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-foreground">
+              Documento de soporte <span className="text-muted-foreground font-normal">(opcional, máx. 5 MB)</span>
+            </p>
+            <Input type="file" accept="application/pdf,.pdf" onChange={handleFileChange} disabled={isProcessingPayment} />
             {selectedPdf && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Archivo: <span className="font-medium text-foreground">{selectedPdf.name}</span>
               </p>
             )}
-            {promotorError && (
-              <div className="flex items-center gap-2 text-sm text-red-600">
-                <AlertCircle className="h-4 w-4 shrink-0" /><span>{promotorError}</span>
-              </div>
-            )}
           </div>
+
+          {promotorError && (
+            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-md border border-red-200 dark:border-red-900">
+              <AlertCircle className="h-4 w-4 shrink-0" /><span>{promotorError}</span>
+            </div>
+          )}
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsPromotorDialogOpen(false)} disabled={isUploadingPdf}>Cancelar</Button>
-            <Button onClick={handleUploadPromotorDocument} disabled={isUploadingPdf}
+            <Button variant="outline" onClick={() => setIsPromotorDialogOpen(false)} disabled={isProcessingPayment}>
+              Cancelar
+            </Button>
+            <Button onClick={handlePayWithWompi} disabled={isProcessingPayment}
               className="bg-gradient-to-tr from-green-600 to-lime-500 text-white">
-              {isUploadingPdf
-                ? <><Loader2 className="h-4 w-4 animate-spin mr-1" />Subiendo...</>
-                : <><Upload className="h-4 w-4 mr-1" />Cargar PDF</>}
+              {isProcessingPayment
+                ? <><Loader2 className="h-4 w-4 animate-spin mr-1" />Redirigiendo...</>
+                : <><CreditCard className="h-4 w-4 mr-1" />Pagar con Wompi</>}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -31,7 +31,7 @@ async function getAuthenticatedUser(req: Request) {
   if (!userId) return null
 
   const res = await pool.query(
-    "SELECT id_usuario, id_rol, estado FROM tabla_usuarios WHERE id_usuario = $1 LIMIT 1",
+    "SELECT id_usuario, id_rol, estado_usuario AS estado FROM tabla_usuarios WHERE id_usuario = $1 LIMIT 1",
     [userId]
   )
   if (!res.rows || res.rows.length === 0) return null
@@ -70,23 +70,30 @@ export async function POST(req: Request) {
 
     await client.query(
       `UPDATE tabla_usuarios
-       SET estado              = FALSE,
+       SET estado_usuario      = FALSE,
            fecha_actualizacion = CURRENT_TIMESTAMP,
            fecha_desactivacion = CURRENT_TIMESTAMP
        WHERE id_usuario = $1`,
       [user.id_usuario]
     )
 
-    // Registra en tabla_baneados con motivo de auto-desactivación.
-    // fin_ban lejano = vigente indefinidamente hasta que soporte reactive manualmente.
+    const motivoAutoDesactivacion = await client.query(
+      `SELECT id_motivo_ban
+       FROM tabla_motivos_ban
+       WHERE id_categoria_ban = 8
+       ORDER BY id_motivo_ban ASC
+       LIMIT 1`
+    )
+
+    const idMotivoBan = Number(motivoAutoDesactivacion.rows[0]?.id_motivo_ban)
+    if (!Number.isFinite(idMotivoBan) || idMotivoBan <= 0) {
+      throw new Error("No existe un motivo de ban administrativo para registrar la auto-desactivación")
+    }
+
     await client.query(
-      `INSERT INTO tabla_baneados (id_usuario, motivo_ban, inicio_ban, fin_ban, responsable)
+      `INSERT INTO tabla_baneados (id_usuario, motivo_ban, inicio_ban, fin_ban, responsable_baneo)
        VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $1)`,
-      [
-        user.id_usuario,
-        "Cuenta desactivada a solicitud del propio usuario.",
-        new Date("2099-12-31").toISOString(),
-      ]
+      [user.id_usuario, idMotivoBan, new Date("2099-12-31").toISOString()]
     )
 
     await client.query("COMMIT")

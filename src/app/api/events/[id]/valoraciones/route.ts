@@ -41,9 +41,8 @@ async function getAuthenticatedUser(req: Request) {
   if (!userId) return null;
 
   const userQuery = await pool.query(
-    `SELECT u.id_usuario, p.nombres, p.apellidos
+    `SELECT u.id_usuario, u.nombres, u.apellidos
      FROM tabla_usuarios u
-     LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
      WHERE u.id_usuario = $1
      LIMIT 1`,
     [userId]
@@ -69,11 +68,10 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
         v.valoracion,
         v.comentario,
         v.fecha_creacion,
-        p.nombres,
-        p.apellidos
+        u.nombres,
+        u.apellidos
       FROM tabla_valoraciones v
       INNER JOIN tabla_usuarios u ON u.id_usuario = v.id_usuario
-      LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
       WHERE v.id_evento = $1
       ORDER BY v.fecha_creacion DESC`,
       [eventId]

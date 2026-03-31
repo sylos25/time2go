@@ -43,12 +43,11 @@ async function getAuthenticatedUser(req: Request) {
     `SELECT
        u.id_usuario,
        u.id_rol,
-       p.nombres,
-       p.apellidos,
-       p.telefono,
-       c.correo
+       u.nombres,
+       u.apellidos,
+       u.telefono_persona AS telefono,
+       c.correo_usuario AS correo
      FROM tabla_usuarios u
-     LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
      LEFT JOIN tabla_usuarios_credenciales c ON c.id_usuario = u.id_usuario
      WHERE u.id_usuario = $1
      LIMIT 1`,
@@ -94,9 +93,9 @@ export async function GET(req: Request) {
                 COALESCE(asistentes.quienes_asistiran, '') AS quienes_asistiran,
                 r.fecha_reserva,
                 r.estado,
-                p.nombres,
-                p.apellidos,
-                c.correo
+                u.nombres,
+                u.apellidos,
+                c.correo_usuario AS correo
          FROM tabla_reserva_eventos r
          LEFT JOIN LATERAL (
            SELECT COUNT(1)::INT AS cuantos_asistiran,
@@ -105,7 +104,6 @@ export async function GET(req: Request) {
            WHERE ra.id_reserva_evento = r.id_reserva_evento
          ) asistentes ON TRUE
          INNER JOIN tabla_usuarios u ON r.id_usuario = u.id_usuario
-         LEFT JOIN tabla_personas p ON p.id_usuario = u.id_usuario
          LEFT JOIN tabla_usuarios_credenciales c ON c.id_usuario = u.id_usuario
          WHERE r.id_evento = $1
            AND r.estado = TRUE
