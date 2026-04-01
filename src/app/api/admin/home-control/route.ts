@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { type PoolClient } from "pg"
 import pool from "@/lib/db"
 import { checkUserPermission, PERMISSION_IDS } from "@/lib/permissions"
 import { uploadImageBuffer } from "@/lib/document-storage"
@@ -32,7 +33,7 @@ function normalizeIdList(value: unknown, maxItems: number) {
 	return unique.slice(0, maxItems)
 }
 
-async function buildResponsePayload(client: any) {
+async function buildResponsePayload(client: PoolClient) {
 	const heroImagesRes = await client.query<HeroImageRow>(
 		`SELECT id_inicio_hero_imagen, url_imagen, orden
 		 FROM tabla_inicio_hero_imagenes
@@ -121,6 +122,11 @@ export async function POST(req: Request) {
 			MAX_HERO_IMAGES
 		)
 
+		const retainedOrderIds = normalizeIdList(
+			JSON.parse(String(formData.get("retainedOrderIds") || "[]")),
+			MAX_HERO_IMAGES
+		)
+
 		const newImages = formData
 			.getAll("newHeroImages")
 			.filter((value) => value instanceof File && value.size > 0) as File[]
@@ -147,6 +153,16 @@ export async function POST(req: Request) {
 		const retainedImages = activeImagesRes.rows.filter(
 			(image) => !removeImageIds.includes(Number(image.id_inicio_hero_imagen))
 		)
+
+		// Sort retained images by the order sent from the frontend, falling back to DB order
+		const sortedRetainedImages =
+			retainedOrderIds.length > 0
+				? [...retainedImages].sort((a, b) => {
+						const posA = retainedOrderIds.indexOf(Number(a.id_inicio_hero_imagen))
+						const posB = retainedOrderIds.indexOf(Number(b.id_inicio_hero_imagen))
+						return (posA === -1 ? 999 : posA) - (posB === -1 ? 999 : posB)
+				  })
+				: retainedImages
 
 		if (retainedImages.length + newImages.length > MAX_HERO_IMAGES) {
 			await client.query("ROLLBACK")
@@ -209,7 +225,7 @@ export async function POST(req: Request) {
 		}
 
 		let orderCounter = 1
-		for (const image of retainedImages) {
+		for (const image of sortedRetainedImages) {
 			await client.query(
 				`UPDATE tabla_inicio_hero_imagenes
 				 SET orden = $1,

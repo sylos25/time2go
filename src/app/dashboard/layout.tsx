@@ -135,8 +135,8 @@ export default function DashboardLayout({
   const menuItems = useMemo(
     () => [
       { href: "/dashboard/resumen", name: "Resumen General", icon: Home },
+      ...(canManageEvents ? [{ href: "/dashboard/inicio", name: "Personalizar el Inicio", icon: ImageIcon }] : []),
       ...(canManageEvents ? [{ href: "/dashboard/eventos", name: "Gestion de Eventos", icon: Calendar }] : []),
-      ...(canManageEvents ? [{ href: "/dashboard/inicio", name: "Panel de Control del Inicio", icon: ImageIcon }] : []),
       { href: "/dashboard/ingresar-datos", name: "Ingresar Datos", icon: MapPin },
       { href: "/dashboard/sitios-mapa", name: "Sitios (Mapa)", icon: MapPin },
       { href: "/dashboard/ver-datos", name: "Ver Datos", icon: Search },
