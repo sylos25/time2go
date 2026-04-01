@@ -3,7 +3,21 @@
 import type React from "react"
 import { useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Calendar, Home, ImageIcon, Loader2, LogOut, MapPin, Menu, Search, ShieldCheck, Users } from "lucide-react"
+import Image from "next/image"
+import {
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Home,
+  ImageIcon,
+  Loader2,
+  LogOut,
+  MapPin,
+  Menu,
+  Search,
+  ShieldCheck,
+  Users,
+} from "lucide-react"
 import { SessionMonitor } from "@/components/session-monitor"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
@@ -23,6 +37,7 @@ export default function DashboardLayout({
   const router = useRouter()
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [loading, setLoading] = useState(true)
   const [authorized, setAuthorized] = useState<boolean | null>(null)
   const [canManageEvents, setCanManageEvents] = useState(false)
@@ -177,76 +192,92 @@ export default function DashboardLayout({
     <div className="min-h-screen bg-background">
       <SessionMonitor />
 
+      <header className="w-full bg-green-700 dark:bg-green-900 border-b border-green-600/50 dark:border-green-800 backdrop-blur-xl sticky top-0 z-50">
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden p-2 rounded-lg hover:bg-white/20 dark:hover:bg-green-800 transition-colors"
+            >
+              <Menu className="w-5 h-5 text-white dark:text-green-100" />
+            </button>
+            <button
+              onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+              className="hidden lg:inline-flex p-2 rounded-lg hover:bg-white/20 dark:hover:bg-green-800 transition-colors"
+              aria-label={isSidebarCollapsed ? "Expandir menu" : "Contraer menu"}
+            >
+              {isSidebarCollapsed ? (
+                <ChevronRight className="w-5 h-5 text-white dark:text-green-100" />
+              ) : (
+                <ChevronLeft className="w-5 h-5 text-white dark:text-green-100" />
+              )}
+            </button>
+
+            <div className="relative h-20 w-50 sm:w-52 md:w-56">
+              <Image src="/images/logo.png" alt="Time2Go" fill className="object-contain" priority />
+            </div>
+
+            <p className="text-2xl sm:text-3xl font-sans font-bold mt-0.5 text-white dark:text-green-100 truncate">
+              Bienvenido, {meUser?.nombres || meUser?.name || "Usuario"}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <ThemeToggle inline />
+          </div>
+        </div>
+      </header>
+
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 lg:hidden"
+          className="fixed inset-0 top-16 bg-black/20 backdrop-blur-sm z-30 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       <aside
-        className={`fixed top-0 left-0 z-40 w-72 h-screen bg-green-700 dark:bg-green-900 border-r border-green-500/40 dark:border-green-800 transform transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed top-16 left-0 z-40 w-72 h-[calc(100vh-4rem)] bg-green-700 dark:bg-green-900 border-r border-green-500/40 dark:border-green-800 transform transition-all duration-300 lg:translate-x-0 ${
+          isSidebarCollapsed ? "lg:w-20" : "lg:w-72"
+        } ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between px-6 py-5 border-b border-green-500/40 dark:border-green-800">
-          <div className="flex items-center gap-3">
-            <img src="/images/logo.png" alt="Logo" className="w-full h-full object-cover" />
-          </div>
-        </div>
-
-        <nav className="p-4 space-y-1">
+        <nav className="px-4 pt-20 pb-4 space-y-1">
           {menuItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
             return (
               <button
                 key={item.href}
                 onClick={() => router.push(item.href)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all ${
+                className={`w-full flex items-center px-4 py-3 rounded-lg font-medium transition-all ${
+                  isSidebarCollapsed ? "lg:justify-center lg:px-2" : "gap-3"
+                } ${
                   isActive
                     ? "bg-pink-700 text-white shadow-md shadow-sky-600/25 cursor-pointer"
                     : "text-white dark:text-green-100 hover:bg-white/20 dark:hover:bg-green-800/40 cursor-pointer"
                 }`}
+                title={item.name}
               >
                 <item.icon className="w-5 h-5" />
-                <span className="text-sm">{item.name}</span>
+                <span className={`text-sm ${isSidebarCollapsed ? "lg:hidden" : ""}`}>{item.name}</span>
               </button>
             )
           })}
 
           <button
             onClick={() => router.push("/")}
-            className="mt-2 w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all text-white dark:text-green-100 hover:bg-white/20 dark:hover:bg-green-800/40 cursor-pointer"
+            className={`mt-2 w-full flex items-center px-4 py-3 rounded-lg font-medium transition-all text-white dark:text-green-100 hover:bg-white/20 dark:hover:bg-green-800/40 cursor-pointer ${
+              isSidebarCollapsed ? "lg:justify-center lg:px-2" : "gap-3"
+            }`}
+            title="Salir"
           >
             <LogOut className="w-5 h-5" />
-            <span className="text-sm">Salir</span>
+            <span className={`text-sm ${isSidebarCollapsed ? "lg:hidden" : ""}`}>Salir</span>
           </button>
         </nav>
       </aside>
 
-      <div className="lg:ml-72">
-        <header className="bg-green-700 dark:bg-green-900 border-b border-green-600/50 dark:border-green-800 backdrop-blur-xl sticky top-0 z-20">
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-lg hover:bg-white/20 dark:hover:bg-green-800 transition-colors"
-              >
-                <Menu className="w-5 h-5 text-white dark:text-green-100" />
-              </button>
-              <div>
-                <p className="text-3xl font-sans font-bold mt-0.5 text-white dark:text-green-100">
-                  Bienvenido, {meUser?.nombres || meUser?.name || "Usuario"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <ThemeToggle inline />
-            </div>
-          </div>
-        </header>
-
+      <div className={`transition-all duration-300 ${isSidebarCollapsed ? "lg:ml-20" : "lg:ml-72"}`}>
         <main className="p-6">{children}</main>
       </div>
     </div>

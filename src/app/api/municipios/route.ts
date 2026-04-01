@@ -7,14 +7,17 @@ export async function GET(req: Request) {
     const sitioId = Number(searchParams.get("sitioId"));
 
     if (!sitioId) {
-      return NextResponse.json(
-        { error: "Falta el parámetro sitioId" },
-        { status: 400 }
+      const result = await pool.query(
+        `SELECT m.id_municipio, m.nombre_municipio, m.id_departamento
+         FROM tabla_municipios m
+         ORDER BY m.nombre_municipio ASC`
       );
+
+      return NextResponse.json(result.rows, { status: 200 });
     }
 
     const result = await pool.query(
-      `SELECT m.id_municipio, m.nombre_municipio FROM tabla_municipios m
+      `SELECT m.id_municipio, m.nombre_municipio, m.id_departamento FROM tabla_municipios m
         INNER JOIN tabla_sitios s ON m.id_municipio = s.id_municipio
           WHERE s.id_sitio = $1`,
       [sitioId]

@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect, useRef } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
@@ -17,530 +17,52 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ArrowLeft, ChevronDown } from "lucide-react";
-import { NumericFormat } from "react-number-format";
 // imageCompression removed — file upload UI simplified
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-
-interface EventoInfoItem {
-  detalle: string;
-  obligatorio: boolean;
-}
+import { AdditionalInfoSection } from "@/components/events/create-event/additional-info-section";
+import { TicketSection } from "@/components/events/create-event/ticket-section";
+import { MediaSection } from "@/components/events/create-event/media-section";
+import { CreateSiteModal } from "@/components/events/create-event/create-site-modal";
+import { useCreateEventForm } from "@/hooks/use-create-event-form";
 
 export default function CrearEventoPage() {
   const router = useRouter();
   const imageInputRef = useRef<HTMLInputElement | null>(null);
-  const [authorized, setAuthorized] = useState<boolean | null>(null);
-  const [categorias, setCategorias] = useState<{ id_categoria_evento: number; nombre: string }[]>([]);
-  const [tiposDeEvento, setTiposDeEvento] = useState<{ id_tipo_evento: number; nombre: string }[]>([]);
-  const [sitios, setSitios] = useState<{ id_sitio: number; nombre_sitio: string }[]>([]);
-  const [busquedaSitio, setBusquedaSitio] = useState("");
-  const [isSitiosOpen, setIsSitiosOpen] = useState(false);
-  const [showTelefono2, setShowTelefono2] = useState(false);
-  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
-  // image preview state removed (no image upload in simplified form)
-  const [isLoading, setIsLoading] = useState(false);
-  const [today, setToday] = useState<Date | null>(null);
-  const [formErrors, setFormErrors] = useState<{
-    nombre_evento?: string;
-    pulep_evento?: string;
-    responsable_evento?: string;
-    id_categoria_evento?: string;
-    id_tipo_evento?: string;
-    id_sitio?: string;
-    descripcion?: string;
-    informacion_adicional_items?: string;
-    telefono1?: string;
-    telefono2?: string;
-    fecha_inicio?: string;
-    fecha_final?: string;
-    hora_inicio?: string;
-    hora_final?: string;
-    cupo?: string;
-    boletas?: string;
-    imagenes?: string;
-    documento?: string;
-    general?: string;
-  }>({});
-
-  const setFieldError = (field: keyof typeof formErrors, message: string) => {
-    setFormErrors({ [field]: message });
-  };
-
-  const clearFieldError = (field: keyof typeof formErrors) => {
-    setFormErrors((prev) => ({ ...prev, [field]: undefined, general: undefined }));
-  };
-
-  useEffect(() => {
-    setToday(new Date());
-  }, []);
-
-  const [newEvent, setNewEvent] = useState<any>({
-    nombre_evento: "",
-    pulep_evento: "",
-    responsable_evento: "",
-    id_usuario: "",
-    id_categoria_evento: 0,
-    id_tipo_evento: 0,
-    id_sitio: 0,
-    descripcion: "",
-    informacion_adicional_items: [
-      { detalle: "", obligatorio: true },
-    ] as EventoInfoItem[],
-    telefono1: "",
-    telefono2: "",
-    fecha_inicio: null as Date | null,
-    fecha_final: null as Date | null,
-    hora_inicio: "",
-    hora_final: "",
-    pago: false,
-    reservar_anticipado: false,
-    boletas: [{ nombre_boleto: "", precio_boleto: "", servicio: "" }],
-    cupo: "",
-    estado: false,
-    imagenes: [] as File[],
-    documento: null,
-  });
-
-  const ALPHANUM_SPACE_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ ]+$/;
-  const TEXT_WITH_PUNCT_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]+$/;
-
-  const normalizeSingleLineSpacing = (value: string) =>
-    value.replace(/\s+/g, " ").replace(/^\s+/, "");
-
-  const sanitizeAlphanumSpace = (value: string, maxLength?: number) => {
-    const sanitized = normalizeSingleLineSpacing(
-      value.replace(/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ ]/g, "")
-    );
-
-    return typeof maxLength === "number" ? sanitized.slice(0, maxLength) : sanitized;
-  };
-
-  const sanitizeTextWithPunct = (value: string, maxLength?: number) => {
-    const sanitized = value
-      .replace(/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_\/\n\r]/g, "")
-      .replace(/^\s+/, "");
-
-    return typeof maxLength === "number" ? sanitized.slice(0, maxLength) : sanitized;
-  };
-
-  const trimmedLength = (value: string) => value.trim().length;
-
-  // Handler para el campo `cupo` (aforo)
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-
-    // Permitir borrar el campo
-    if (value === "") {
-      setNewEvent({ ...newEvent, cupo: "" });
-      return;
-    }
-
-    // Solo permitir dígitos mientras se escribe
-    if (!/^\d*$/.test(value)) return;
-
-    const num = Number(value);
-
-    // Restringir a máximo 5000 mientras se escribe
-    if (num > 5000) return;
-
-    // Guardar siempre el valor tal cual (como string)
-    setNewEvent({ ...newEvent, cupo: value });
-  };
-
-  // Handlers para boletas (tabla_boleteria)
-  const addBoletaField = () => {
-    if (newEvent.boletas.length < 12) {
-      setNewEvent({ ...newEvent, boletas: [...newEvent.boletas, { nombre_boleto: "", precio_boleto: "", servicio: "" }] });
-    }
-  };
-
-  const updateBoleta = (index: number, field: string, value: string) => {
-    const updatedBoletas = [...newEvent.boletas];
-    if (field === "nombre_boleto") {
-      updatedBoletas[index][field] = sanitizeAlphanumSpace(value, 30);
-    } else if (field === "precio_boleto" || field === "servicio") {
-      updatedBoletas[index][field] = String(value || "").replace(/[^0-9]/g, "");
-    } else {
-      updatedBoletas[index][field] = value;
-    }
-    setNewEvent({ ...newEvent, boletas: updatedBoletas });
-  };
-
-  const removeBoletaField = (index: number) => {
-    const updatedBoletas = newEvent.boletas.filter((_: any, i: number) => i !== index);
-    setNewEvent({ ...newEvent, boletas: updatedBoletas });
-  };
-
-  const removeAllBoletas = () => {
-    setNewEvent((prev: any) => ({ ...prev, boletas: [{ nombre_boleto: "", precio_boleto: "", servicio: "" }] }));
-  };
-
-  const addInfoItem = () => {
-    if ((newEvent.informacion_adicional_items || []).length >= 20) return;
-    setNewEvent((prev: any) => ({
-      ...prev,
-      informacion_adicional_items: [
-        ...(prev.informacion_adicional_items || []),
-        { detalle: "", obligatorio: false },
-      ],
-    }));
-  };
-
-  const updateInfoItem = (index: number, field: keyof EventoInfoItem, value: string | boolean) => {
-    const updated = [...(newEvent.informacion_adicional_items || [])];
-    updated[index] = {
-      ...updated[index],
-      [field]: field === "detalle" && typeof value === "string"
-        ? sanitizeTextWithPunct(value, 50)
-        : value,
-    };
-    setNewEvent({ ...newEvent, informacion_adicional_items: updated });
-  };
-
-  const removeInfoItem = (index: number) => {
-    const updated = (newEvent.informacion_adicional_items || []).filter((_: EventoInfoItem, i: number) => i !== index);
-    setNewEvent({
-      ...newEvent,
-      informacion_adicional_items: updated.length
-        ? updated
-        : [{ detalle: "", obligatorio: true }],
-    });
-  };
-  // Fetch categorías
-  useEffect(() => {
-    const fetchCategorias = async () => {
-      try {
-        const res = await fetch("/api/categoria_evento");
-        const data = await res.json();
-        setCategorias(data);
-      } catch (error) {
-        console.error("Error al cargar categorías:", error);
-      }
-    };
-    fetchCategorias();
-  }, []);
-
-  // Authorization: ensure user is authenticated and has permission to create events
-  useEffect(() => {
-    let cancelled = false;
-    const checkAuth = async () => {
-      try {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-        const headers: any = {};
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-        const res = await fetch('/api/me', { headers, credentials: 'include' });
-        if (!res.ok) {
-          if (!cancelled) setAuthorized(false);
-          return;
-        }
-        const data = await res.json();
-        const roleNum = data?.user?.id_rol !== undefined ? Number(data.user.id_rol) : undefined;
-        if (roleNum === undefined || Number.isNaN(roleNum)) {
-          if (!cancelled) setAuthorized(false);
-          return;
-        }
-
-        const permissionRes = await fetch(
-          `/api/permissions/check?id_accesibilidad=1&id_rol=${roleNum}`,
-          { headers, credentials: 'include' }
-        );
-
-        if (!permissionRes.ok) {
-          if (!cancelled) setAuthorized(false);
-          return;
-        }
-
-        const permissionData = await permissionRes.json();
-        if (!cancelled) setAuthorized(Boolean(permissionData?.hasAccess));
-      } catch (err) {
-        console.error('Auth check error', err);
-        if (!cancelled) setAuthorized(false);
-      }
-    }
-    checkAuth();
-    return () => { cancelled = true }
-  }, [router]);
-
-  // Fetch tipos de evento
-  useEffect(() => {
-    const fetchTiposDeEvento = async () => {
-      if (!newEvent.id_categoria_evento || newEvent.id_categoria_evento === 0) {
-        setTiposDeEvento([]);
-        return;
-      }
-  
-      try {
-        const res = await fetch(`/api/tipo_evento?categoriaId=${newEvent.id_categoria_evento}`);
-        const data = await res.json();
-        setTiposDeEvento(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("Error al cargar tipos de evento:", error);
-      }
-    };
-  
-    fetchTiposDeEvento();
-  }, [newEvent.id_categoria_evento]);
-
-  // Fetch sitios
-  useEffect(() => {
-    const fetchSitios = async () => {
-      try {
-        const query = busquedaSitio.trim();
-        const url = query
-          ? `/api/llamar_sitio?nombre_sitio=${encodeURIComponent(query)}`
-          : "/api/llamar_sitio";
-
-        const res = await fetch(url);
-        const data = await res.json();
-
-        if (Array.isArray(data)) {
-          setSitios(data);
-        } else {
-          setSitios([]);
-        }
-      } catch (error) {
-        console.error("Error al buscar sitios:", error);
-        setSitios([]);
-      }
-    };
-    fetchSitios();
-  }, [busquedaSitio, newEvent.id_sitio]);
-
-  const handleAddEvent = async () => {
-    try {
-      setFormErrors({});
-      setIsLoading(true);
-
-      // Validaciones según la tabla_eventos
-      if (!newEvent.nombre_evento || trimmedLength(newEvent.nombre_evento) < 6 || trimmedLength(newEvent.nombre_evento) > 40) {
-        setFieldError("nombre_evento", "El nombre del evento debe tener entre 6 y 40 caracteres.");
-        return;
-      }
-
-      if (!ALPHANUM_SPACE_REGEX.test(newEvent.nombre_evento)) {
-        setFieldError("nombre_evento", "El nombre del evento solo permite letras y números.");
-        return;
-      }
-
-      // Validación opcional para pulep_evento: si se proporciona, debe tener al menos 6 caracteres
-      if (newEvent.pulep_evento && (newEvent.pulep_evento.length < 6 || newEvent.pulep_evento.length > 8)) {
-        setFieldError("pulep_evento", "Si proporcionas el código PULEP, debe tener entre 6 y 8 caracteres.");
-        return;
-      }
-
-      if (newEvent.pulep_evento && !/^[A-Z0-9]+$/.test(newEvent.pulep_evento)) {
-        setFieldError("pulep_evento", "El código PULEP solo permite letras mayúsculas y números.");
-        return;
-      }
-
-      if (!newEvent.responsable_evento || trimmedLength(newEvent.responsable_evento) < 6 || trimmedLength(newEvent.responsable_evento) > 40) {
-        setFieldError("responsable_evento", "El nombre del responsable debe tener entre 6 y 40 caracteres.");
-        return;
-      }
-
-      if (!ALPHANUM_SPACE_REGEX.test(newEvent.responsable_evento)) {
-        setFieldError("responsable_evento", "El responsable solo permite letras y números.");
-        return;
-      }
-
-      if (!newEvent.descripcion || trimmedLength(newEvent.descripcion) < 10 || trimmedLength(newEvent.descripcion) > 100) {
-        setFieldError("descripcion", "La descripción debe tener entre 10 y 100 caracteres.");
-        return;
-      }
-
-      if (!TEXT_WITH_PUNCT_REGEX.test(newEvent.descripcion)) {
-        setFieldError("descripcion", "La descripción solo permite letras, números y signos de puntuación permitidos.");
-        return;
-      }
-
-      const infoItems = (newEvent.informacion_adicional_items || []).filter(
-        (item: EventoInfoItem) => item.detalle?.trim()
-      );
-
-      if (infoItems.length === 0) {
-        setFieldError("informacion_adicional_items", "Debes registrar al menos un ítem de información adicional.");
-        return;
-      }
-
-      for (const item of infoItems) {
-        if (trimmedLength(item.detalle) < 10 || trimmedLength(item.detalle) > 40) {
-          setFieldError("informacion_adicional_items", "Cada detalle debe tener entre 10 y 40 caracteres.");
-          return;
-        }
-        if (!TEXT_WITH_PUNCT_REGEX.test(item.detalle)) {
-          setFieldError("informacion_adicional_items", "La información adicional solo permite letras, números y signos de puntuación permitidos.");
-          return;
-        }
-      }
-
-      if (infoItems.length > 20) {
-        setFieldError("informacion_adicional_items", "Solo puedes registrar hasta 20 ítems.");
-        return;
-      }
-
-      if (!newEvent.telefono1 || newEvent.telefono1.length !== 10 || Number(newEvent.telefono1) <= 2999999999) {
-        setFieldError("telefono1", "El teléfono debe tener 10 dígitos y ser válido (mayor a 2999999999).");
-        return;
-      }
-
-      if (newEvent.telefono2 && (newEvent.telefono2.length !== 10 || Number(newEvent.telefono2) <= 2999999999)) {
-        setFieldError("telefono2", "El teléfono 2 debe tener 10 dígitos y ser válido (mayor a 2999999999).");
-        return;
-      }
-
-      if (!newEvent.id_categoria_evento || newEvent.id_categoria_evento === 0) {
-        setFieldError("id_categoria_evento", "Debes seleccionar una categoría.");
-        return;
-      }
-
-      if (!newEvent.id_tipo_evento || newEvent.id_tipo_evento === 0) {
-        setFieldError("id_tipo_evento", "Debes seleccionar un tipo de evento.");
-        return;
-      }
-
-      if (!newEvent.id_sitio || newEvent.id_sitio === 0) {
-        setFieldError("id_sitio", "Debes seleccionar un sitio.");
-        return;
-      }
-
-      if (!newEvent.fecha_inicio) {
-        setFieldError("fecha_inicio", "Debes seleccionar una fecha de inicio.");
-        return;
-      }
-
-      if (!newEvent.fecha_final) {
-        setFieldError("fecha_final", "Debes seleccionar una fecha final.");
-        return;
-      }
-
-      if (!newEvent.hora_inicio) {
-        setFieldError("hora_inicio", "Debes seleccionar una hora de inicio.");
-        return;
-      }
-
-      if (!newEvent.hora_final) {
-        setFieldError("hora_final", "Debes seleccionar una hora final.");
-        return;
-      }
-
-      if (!newEvent.cupo || !Number.isInteger(Number(newEvent.cupo)) || Number(newEvent.cupo) < 20 || Number(newEvent.cupo) > 5000) {
-        setFieldError("cupo", "El aforo debe ser un número entero entre 20 y 5000.");
-        return;
-      }
-
-      // Validaciones para eventos de pago
-      if (newEvent.pago) {
-        const boletasValidas = newEvent.boletas.filter((b: any) => b.nombre_boleto && b.precio_boleto);
-        if (boletasValidas.length === 0) {
-          setFieldError("boletas", "Debes definir al menos una boleta con nombre y precio.");
-          return;
-        }
-        
-        for (let boleta of boletasValidas) {
-          if (trimmedLength(String(boleta.nombre_boleto || "")) < 3 || trimmedLength(String(boleta.nombre_boleto || "")) > 20) {
-            setFieldError("boletas", "Cada nombre de boleta debe tener entre 3 y 20 caracteres.");
-            return;
-          }
-          if (!ALPHANUM_SPACE_REGEX.test(String(boleta.nombre_boleto || ""))) {
-            setFieldError("boletas", "El nombre de la boleta solo permite letras y números.");
-            return;
-          }
-          const precio = Number(boleta.precio_boleto);
-          const servicio = boleta.servicio === "" ? 0 : Number(boleta.servicio);
-          if (!Number.isFinite(precio) || !Number.isInteger(precio) || precio <= 0 || precio > 500000000) {
-            setFieldError("boletas", "El precio de la boleta debe ser un entero positivo y no mayor a 500.000.000.");
-            return;
-          }
-          if (!Number.isFinite(servicio) || !Number.isInteger(servicio) || servicio < 0 || servicio > 500000000) {
-            setFieldError("boletas", "El cargo por servicio debe ser un entero entre 0 y 500.000.000.");
-            return;
-          }
-        }
-
-        // ticket purchase links are optional in simplified form
-      }
-
-      const formData = new FormData();
-
-      formData.append("nombre_evento", newEvent.nombre_evento);
-      formData.append("pulep_evento", newEvent.pulep_evento || "");
-      formData.append("responsable_evento", newEvent.responsable_evento);
-      formData.append("descripcion", newEvent.descripcion);
-      formData.append(
-        "informacion_adicional_items",
-        JSON.stringify(
-          infoItems.map((item: EventoInfoItem) => ({
-            detalle: item.detalle.trim(),
-            obligatorio: Boolean(item.obligatorio),
-          }))
-        )
-      );
-      
-      const fechaInicioStr = newEvent.fecha_inicio ? newEvent.fecha_inicio.toISOString().split('T')[0] : "";
-      const fechaFinalStr = newEvent.fecha_final ? newEvent.fecha_final.toISOString().split('T')[0] : "";
-      formData.append("fecha_inicio", fechaInicioStr);
-      formData.append("fecha_fin", fechaFinalStr);
-      formData.append("hora_inicio", newEvent.hora_inicio || "");
-      formData.append("hora_final", newEvent.hora_final || "");
-      
-      const storedUserId = localStorage.getItem('userId') || "";
-      formData.append("id_usuario", String(newEvent.id_usuario || storedUserId));
-      formData.append("id_categoria_evento", String(newEvent.id_categoria_evento || 0));
-      formData.append("id_tipo_evento", String(newEvent.id_tipo_evento || 0));
-      formData.append("id_sitio", String(newEvent.id_sitio || 0));
-      formData.append("telefono_1", newEvent.telefono1 || newEvent.telefono_1 || "");
-      formData.append("telefono_2", newEvent.telefono2 || newEvent.telefono_2 || "");
-      formData.append("gratis_pago", String(newEvent.pago ?? false));
-      formData.append("reservar_anticipado", String(newEvent.reservar_anticipado ?? false));
-      
-      // Boletas (tabla_boleteria)
-      formData.append("boletas", JSON.stringify(newEvent.boletas || []));
-      
-      // Links de compra (tabla_links) are optional and handled server-side if provided
-      
-      formData.append("cupo", String(newEvent.cupo || 0));
-      formData.append("estado", String(newEvent.estado ?? false));
-
-      (newEvent.imagenes || []).forEach((file: File) => {
-        formData.append("additionalImages", file);
-      });
-
-      formData.append("documento", newEvent.documento);
-
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-
-      const res = await fetch("/api/events", {
-        method: "POST",
-        headers,
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        const message = String(payload?.message || "Error al crear el evento");
-        if (message.toLowerCase().includes("imagen")) {
-          setFormErrors({ imagenes: message });
-        } else if (message.toLowerCase().includes("document") || message.toLowerCase().includes("documento")) {
-          setFormErrors({ documento: message });
-        } else {
-          setFormErrors({ general: message });
-        }
-        return;
-      }
-
-      setSuccessDialogOpen(true);
-    } catch (error) {
-      console.error("Error al guardar el evento:", error);
-      setFormErrors({ general: "Error al crear el evento. Intenta nuevamente." });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const {
+    authorized,
+    categorias,
+    tiposDeEvento,
+    sitios,
+    busquedaSitio,
+    isSitiosOpen,
+    showTelefono2,
+    successDialogOpen,
+    isLoading,
+    today,
+    formErrors,
+    newEvent,
+    setNewEvent,
+    setBusquedaSitio,
+    setIsSitiosOpen,
+    setShowTelefono2,
+    setSuccessDialogOpen,
+    setFieldError,
+    clearFieldError,
+    sanitizeAlphanumSpace,
+    sanitizeTextWithPunct,
+    handleCupoChange,
+    addBoletaField,
+    updateBoleta,
+    removeBoletaField,
+    removeAllBoletas,
+    addInfoItem,
+    updateInfoItem,
+    removeInfoItem,
+    refreshSitios,
+    handleAddEvent,
+  } = useCreateEventForm();
+  const [createSiteModalOpen, setCreateSiteModalOpen] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -730,6 +252,14 @@ export default function CrearEventoPage() {
                     >
                       <ChevronDown className={`h-4 w-4 transition-transform ${isSitiosOpen ? "rotate-180" : "rotate-0"}`} />
                     </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCreateSiteModalOpen(true)}
+                      className="shrink-0 rounded-xl"
+                    >
+                      + Sitio
+                    </Button>
                   </div>
                   {formErrors.id_sitio && (
                     <p className="text-xs text-red-600">{formErrors.id_sitio}</p>
@@ -796,79 +326,15 @@ export default function CrearEventoPage() {
                 )}
               </div>
 
-              <div className="space-y-4 p-4 border border-border bg-muted/20 rounded-lg shadow-md">
-                <div>
-                  <Label>Información adicional del evento</Label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Registra los datos clave del evento por ítems para mejorar la lectura y la escalabilidad.
-                  </p>
-                </div>
-
-                {(newEvent.informacion_adicional_items || []).map((item: EventoInfoItem, index: number) => (
-                  <div key={index} className="space-y-3 p-3 bg-muted/40 rounded-lg border border-border">
-                    <div className="space-y-2">
-                      <Label className="text-xs">Detalle importante</Label>
-                      <Textarea
-                        value={item.detalle}
-                        onChange={(e) => {
-                          const value = sanitizeTextWithPunct(e.target.value, 50);
-                          clearFieldError("informacion_adicional_items");
-                          updateInfoItem(index, "detalle", value);
-                        }}
-                        placeholder="Ej: Ingreso desde las 7:00 PM, no se permite reingreso"
-                        className="rounded-xl min-h-[90px]"
-                        maxLength={50}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {item.detalle.length}/50 caracteres (mínimo 10)
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <label className="flex items-center gap-2 text-sm cursor-pointer text-foreground">
-                        <input
-                          type="checkbox"
-                          checked={Boolean(item.obligatorio)}
-                          onChange={(e) => updateInfoItem(index, "obligatorio", e.target.checked)}
-                          className="w-4 h-4 cursor-pointer border-border"
-                        />
-                        Ítem obligatorio para asistentes
-                      </label>
-
-                      {(newEvent.informacion_adicional_items || []).length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeInfoItem(index)}
-                          className="cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white text-sm hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-400 hover:scale-102 w-30 text-center"
-                        >
-                          Quitar
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-                <div className="flex justify-between items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={addInfoItem}
-                    disabled={(newEvent.informacion_adicional_items || []).length >= 20}
-                    className={`px-3 py-1.5 rounded-md text-white text-sm ${(newEvent.informacion_adicional_items || []).length >= 20
-                      ? "bg-gray-300 cursor-not-allowed"
-                      : "cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-green-700 to-lime-500 text-white text-sm hover:bg-gradient-to-tr hover:from-green-600 hover:to-lime-400 hover:scale-102 w-45 text-center"
-                      }`}
-                  >
-                    + Añadir ítem
-                  </button>
-                  <span className="text-sm text-muted-foreground">
-                    {(newEvent.informacion_adicional_items || []).length}/20 ítems
-                  </span>
-                </div>
-
-                {formErrors.informacion_adicional_items && (
-                  <p className="text-xs text-red-600">{formErrors.informacion_adicional_items}</p>
-                )}
-              </div>
+              <AdditionalInfoSection
+                items={newEvent.informacion_adicional_items || []}
+                error={formErrors.informacion_adicional_items}
+                onAdd={addInfoItem}
+                onUpdate={updateInfoItem}
+                onRemove={removeInfoItem}
+                onClearError={() => clearFieldError("informacion_adicional_items")}
+                sanitizeText={sanitizeTextWithPunct}
+              />
 
               <div className="space-y-2">
                 <Label htmlFor="telefono1">Teléfono del organizador del evento</Label>
@@ -1019,157 +485,27 @@ export default function CrearEventoPage() {
                 </div>
               </div>
 
-              {/* Ticket Type */}
-              <div className="space-y-4 p-4 border rounded-lg shadow-md">
-                <div className="flex gap-6 items-center">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="tipoEntrada"
-                      checked={!newEvent.pago}
-                      onChange={() =>
-                        setNewEvent({
-                          ...newEvent,
-                          pago: false,
-                          reservar_anticipado: false,
-                          boletas: [{ nombre_boleto: "", precio_boleto: "", servicio: "" }],
-                        })
-                      }
-                    />
-                    Gratis
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="tipoEntrada"
-                      checked={newEvent.pago}
-                      onChange={() => setNewEvent({ ...newEvent, pago: true, reservar_anticipado: false })}
-                    />
-                    Pago
-                  </label>
-                </div>
-
-                {!newEvent.pago && (
-                  <div className="flex items-center gap-2 p-3 bg-muted/40 rounded-lg border border-border">
-                    <input
-                      id="reservar_anticipado"
-                      type="checkbox"
-                      checked={newEvent.reservar_anticipado}
-                      onChange={(e) => setNewEvent({ ...newEvent, reservar_anticipado: e.target.checked })}
-                      className="w-4 h-4 cursor-pointer"
-                    />
-                    <label htmlFor="reservar_anticipado" className="cursor-pointer">
-                      <span className="font-medium text-foreground">¿Se requiere reserva anticipada?</span>
-                      <p className="text-xs text-muted-foreground">Marca esta opción si los usuarios deben reservar entrada para asistir al evento</p>
-                    </label>
-                  </div>
-                )}
-
-                {newEvent.pago && (
-                  <div className="space-y-4 p-4 border border-border rounded-lg shadow-md bg-muted/20">
-                    <h2 className="text-lg font-semibold cursor-default">Tipos de Boletas y Precios</h2>
-                    <p className="text-xs text-muted-foreground italic -translate-y-3 cursor-default"> 
-                      Define los diferentes tipos de boletas disponibles para tu evento con sus precios.
-                    </p>
-                    {formErrors.boletas && (
-                      <p className="text-xs text-red-600">{formErrors.boletas}</p>
-                    )}
-                    {newEvent.boletas.map((boleta: any, index: number) => (
-                      <div key={index} className="space-y-3 p-3 bg-muted/40 rounded-lg border border-border">
-                        <div className="space-y-2">
-                          <Label className="text-xs">Nombre de la boleta</Label>
-                          <Input
-                            type="text"
-                            value={boleta.nombre_boleto}
-                            onChange={(e) => {
-                              const valor = sanitizeAlphanumSpace(e.target.value, 30);
-                              clearFieldError("boletas");
-                              updateBoleta(index, "nombre_boleto", valor);
-                            }}
-                            placeholder="Ej: General, VIP, Early Bird, etc."
-                            className="rounded-xl text-sm"
-                            maxLength={30}
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            {String(boleta.nombre_boleto || "").length}/30 caracteres (mínimo 3)
-                          </p>
-                        </div>
-
-                        <div className="grid md:grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <Label className="text-xs">Precio</Label>
-                            <NumericFormat
-                              value={boleta.precio_boleto}
-                              prefix="$"
-                              thousandSeparator="."
-                              decimalSeparator=","
-                              allowNegative={false}
-                              decimalScale={0}
-                              isAllowed={(values) => values.floatValue === undefined || values.floatValue <= 500000000}
-                              onValueChange={(values) => updateBoleta(index, "precio_boleto", values.value)}
-                              placeholder="$0"
-                              className="rounded-xl border px-2 py-1 w-full text-sm"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-xs">Cargo por servicio (opcional)</Label>
-                            <NumericFormat
-                              value={boleta.servicio}
-                              prefix="$"
-                              thousandSeparator="."
-                              decimalSeparator=","
-                              allowNegative={false}
-                              decimalScale={0}
-                              isAllowed={(values) => values.floatValue === undefined || values.floatValue <= 500000000}
-                              onValueChange={(values) => updateBoleta(index, "servicio", values.value)}
-                              placeholder="$0"
-                              className="rounded-xl border px-2 py-1 w-full text-sm"
-                            />
-                            <p className="text-xs text-muted-foreground">Cargo adicional por procesamiento/plataforma</p>
-                          </div>
-                        </div>
-
-                        {newEvent.boletas.length > 1 && newEvent.pago && (
-                          <div className="flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() => removeBoletaField(index)}
-                            className="cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white text-sm hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-400 hover:scale-102 w-30 text-center ">
-                            Quitar
-                          </button>
-                        </div>
-                        )}
-                      </div>
-                    ))}
-                    <div className="flex justify-between items-center gap-3">
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={addBoletaField}
-                          disabled={newEvent.boletas.length >= 12}
-                          className={`px-3 py-1.5 rounded-md text-white text-sm ${
-                            newEvent.boletas.length >= 12
-                              ? "bg-gray-300 cursor-not-allowed"
-                              : "cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-green-700 to-lime-500 text-white text-sm hover:bg-gradient-to-tr hover:from-green-600 hover:to-lime-400 hover:scale-102 w-45 text-center"
-                          }`}>
-                          + Añadir tipo de boleta
-                        </button>
-                        {newEvent.boletas.length >= 2 && (
-                          <button
-                            type="button"
-                            onClick={removeAllBoletas}
-                            className="cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white text-sm hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-400 hover:scale-102 w-45 text-center">
-                            Eliminar todas
-                          </button>
-                        )}
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        {newEvent.boletas.length}/12 tipos de boletas
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <TicketSection
+                pago={newEvent.pago}
+                reservarAnticipado={newEvent.reservar_anticipado}
+                boletas={newEvent.boletas}
+                error={formErrors.boletas}
+                onTogglePago={(pago) =>
+                  setNewEvent((prev) => ({
+                    ...prev,
+                    pago,
+                    reservar_anticipado: false,
+                    boletas: pago ? prev.boletas : [{ nombre_boleto: "", precio_boleto: "", servicio: "" }],
+                  }))
+                }
+                onToggleReserva={(value) => setNewEvent((prev) => ({ ...prev, reservar_anticipado: value }))}
+                onAddBoleta={addBoletaField}
+                onUpdateBoleta={updateBoleta}
+                onRemoveBoleta={removeBoletaField}
+                onRemoveAllBoletas={removeAllBoletas}
+                onClearError={() => clearFieldError("boletas")}
+                sanitizeAlphanum={sanitizeAlphanumSpace}
+              />
 
               
 
@@ -1186,7 +522,7 @@ export default function CrearEventoPage() {
                   value={newEvent.cupo === "" ? "" : newEvent.cupo}
                   onChange={(e) => {
                     clearFieldError("cupo");
-                    handleChange(e);
+                    handleCupoChange(e.target.value);
                   }}
                   placeholder="100"
                   className="rounded-xl border px-2 py-1 w-full"
@@ -1199,124 +535,19 @@ export default function CrearEventoPage() {
                 )}
               </div>
 
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="imagenes_evento">Fotos del evento</Label>
-                  <Input
-                    ref={imageInputRef}
-                    id="imagenes_evento"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
-                      if (files.length > 8) {
-                        setFieldError("imagenes", "Puedes cargar maximo 8 imagenes.");
-                        e.currentTarget.value = "";
-                        setNewEvent({ ...newEvent, imagenes: [] });
-                        return;
-                      } else {
-                        clearFieldError("imagenes");
-                      }
-                      setNewEvent({ ...newEvent, imagenes: files.slice(0, 8) });
-                    }}
-                    className="rounded-xl"
-                  />
-                  {formErrors.imagenes && (
-                    <p className="text-xs text-red-600">{formErrors.imagenes}</p>
-                  )}
-                  {(newEvent.imagenes || []).length > 1 && (
-                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
-                      Advertencia: estás cargando más de una imagen. Verifica que todas correspondan al mismo evento.
-                    </p>
-                  )}
-                  {newEvent.imagenes && newEvent.imagenes.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
-                      {newEvent.imagenes.map((file: File, index: number) => (
-                        <div key={`${file.name}-${index}`} className="rounded-xl border bg-card p-2 shadow-sm">
-                          <img
-                            src={URL.createObjectURL(file)}
-                            alt={file.name}
-                            className="h-24 w-full rounded-lg object-cover"
-                          />
-                          <p className="mt-2 text-xs text-muted-foreground truncate">{file.name}</p>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const updated = (newEvent.imagenes || []).filter((_: File, i: number) => i !== index);
-                              if (updated.length === 0 && imageInputRef.current) {
-                                imageInputRef.current.value = "";
-                              }
-                              setNewEvent({ ...newEvent, imagenes: updated });
-                            }}
-                            className="mt-2 w-full rounded-md border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                          >
-                            Quitar
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <p className="text-xs text-muted-foreground">{(newEvent.imagenes || []).length}/8 imagenes</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="documento_evento">Documento del evento (opcional)</Label>
-                  <Input
-                    id="documento_evento"
-                    type="file"
-                    accept="application/pdf,.pdf"
-                    onChange={(e) => {
-                      const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
-                      if (!file) {
-                        clearFieldError("documento");
-                        setNewEvent({ ...newEvent, documento: null });
-                        return;
-                      }
-
-                      const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-                      if (!isPdf) {
-                        setFieldError("documento", "Solo se permite cargar un documento PDF.");
-                        e.currentTarget.value = "";
-                        setNewEvent({ ...newEvent, documento: null });
-                        return;
-                      }
-
-                      if (file && file.size > 5 * 1024 * 1024) {
-                        setFieldError("documento", "El documento no puede superar 5 MB.");
-                        e.currentTarget.value = "";
-                        setNewEvent({ ...newEvent, documento: null });
-                        return;
-                      }
-                      clearFieldError("documento");
-                      setNewEvent({ ...newEvent, documento: file });
-                    }}
-                    className="rounded-xl"
-                  />
-                  {formErrors.documento && (
-                    <p className="text-xs text-red-600">{formErrors.documento}</p>
-                  )}
-                  {newEvent.documento && (
-                    <div className="mt-2 rounded-xl border border-border bg-muted/40 p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{newEvent.documento.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {(newEvent.documento.size / 1024).toFixed(1)} KB
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setNewEvent({ ...newEvent, documento: null })}
-                          className="rounded-md border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                        >
-                          Quitar
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <MediaSection
+                imageInputRef={imageInputRef}
+                imagenes={newEvent.imagenes || []}
+                documento={newEvent.documento}
+                imagenesError={formErrors.imagenes}
+                documentoError={formErrors.documento}
+                onUpdateImages={(files) => setNewEvent((prev) => ({ ...prev, imagenes: files }))}
+                onUpdateDocument={(file) => setNewEvent((prev) => ({ ...prev, documento: file }))}
+                onSetImagesError={(message) => setFieldError("imagenes", message)}
+                onClearImagesError={() => clearFieldError("imagenes")}
+                onSetDocumentError={(message) => setFieldError("documento", message)}
+                onClearDocumentError={() => clearFieldError("documento")}
+              />
 
               {/* Buttons */}
               <div className="flex gap-50 pt-6 border-t">
@@ -1371,6 +602,14 @@ export default function CrearEventoPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CreateSiteModal
+        open={createSiteModalOpen}
+        onOpenChange={setCreateSiteModalOpen}
+        onCreated={() => {
+          void refreshSitios();
+        }}
+      />
 
       <Footer />
     </div>

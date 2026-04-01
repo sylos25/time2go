@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -12,16 +12,14 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Menu, X, User, LogOut, Settings, LayoutDashboard, Calendar, Ticket, Star, Heart } from "lucide-react"
+import { Menu, X } from "lucide-react"
 import { usePermission, PERMISSIONS } from "@/hooks/use-permissions"
+import { useHeaderSession } from "@/hooks/use-header-session"
+import {
+  DesktopNav,
+  type NavigationItem,
+} from "@/components/header-sections/desktop-nav"
+import { MobileNav } from "@/components/header-sections/mobile-nav"
 import type { JSX } from "react"
 
 interface HeaderProps {
@@ -38,202 +36,30 @@ export function Header({
   userName = "Usuario",
 }: HeaderProps): JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
   const router = useRouter()
-  const [user, setUser] = useState<any>(null);
-  const logoutTimerRef = useRef<number | null>(null);
-  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
-
-  const parseJwtExp = (token: string) => {
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      return payload.exp as number | undefined;
-    } catch {
-      return undefined;
-    }
-  };
-
-  const scheduleAutoLogout = (expiresAtSec?: number) => {
-    if (logoutTimerRef.current) {
-      window.clearTimeout(logoutTimerRef.current);
-      logoutTimerRef.current = null;
-    }
-    if (!expiresAtSec) return;
-    const ms = expiresAtSec * 1000 - Date.now();
-    if (ms <= 0) {
-      performLogout();
-      return;
-    }
-    logoutTimerRef.current = window.setTimeout(() => {
-      performLogout();
-    }, ms);
-  };
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20)
-    }
-
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
-
-  const pathname = usePathname();
-
-  useEffect(() => {
-    // Read token from localStorage on mount and on route change to keep session
-    const syncFromStorage = () => {
-      const token = localStorage.getItem("token");
-      const storedName = localStorage.getItem("userName");
-      const storedUserPublicId = localStorage.getItem("userPublicId");
-      const storedRole = localStorage.getItem("userRole");
-      if (token) {
-        const exp = parseJwtExp(token);
-        setUser({ token, name: storedName || undefined, id_publico: storedUserPublicId || undefined, role: storedRole ? Number(storedRole) : undefined });
-        if (exp) scheduleAutoLogout(exp);
-      }
-      // if no token, don't immediately clear user here — we'll validate session with the server
-    };
-
-    const validateSession = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          // If token exists, validate locally by expiry to avoid unnecessary server calls
-          const exp = parseJwtExp(token);
-          if (exp && exp * 1000 <= Date.now()) {
-            // expired token
-            performLogout();
-            return;
-          }
-
-          // Token seems valid locally — optimistically set user from localStorage
-          const storedName = localStorage.getItem('userName');
-          setUser({ token, name: storedName || (user as any)?.name });
-          if (exp) scheduleAutoLogout(exp);
-
-            // Also validate token with the server in background (silent clear if invalid)
-          try {
-            const res = await fetch('/api/me', { headers: { Authorization: `Bearer ${token}` }, credentials: 'include' });
-            if (!res.ok) {
-              // token not valid on server -> clear silently
-              clearSessionSilent();
-              return;
-            }
-            const data = await res.json();
-            if (data?.ok && data.user) {
-              const name = data.user.nombres || data.user.correo || storedName || user?.name;
-              const userPublicId = data.user.id_publico || localStorage.getItem('userPublicId') || undefined;
-              const roleNumber = data.user.id_rol !== undefined ? Number(data.user.id_rol) : undefined;
-              if (userPublicId) {
-                localStorage.setItem('userPublicId', String(userPublicId));
-              }
-              if (roleNumber !== undefined) localStorage.setItem('userRole', String(roleNumber));
-              setUser({ token, name, id_publico: userPublicId, role: roleNumber });
-            } else {
-              clearSessionSilent();
-            }
-          } catch (err) {
-            console.error('validateSession server check error', err);
-          }
-
-          return;
-        }
-
-        // No token in localStorage — maybe server session (cookie) exists; ask /api/me
-        const res = await fetch('/api/me', { credentials: 'include' });
-        if (!res.ok) {
-          // session invalid — clear silently so we don't interrupt navigation
-          clearSessionSilent();
-          return;
-        }
-        const data = await res.json();
-        if (data?.ok && data.user) {
-          const name = data.user.nombres || data.user.correo || localStorage.getItem('userName') || user?.name;
-          const tokenFromStorage = localStorage.getItem('token') || (user as any)?.token;
-          const userPublicId = data.user.id_publico || localStorage.getItem('userPublicId') || undefined;
-          const roleNumber = data.user.id_rol !== undefined ? Number(data.user.id_rol) : undefined;
-          if (userPublicId) {
-            localStorage.setItem('userPublicId', String(userPublicId));
-          }
-          if (roleNumber !== undefined) localStorage.setItem('userRole', String(roleNumber));
-          setUser({ token: tokenFromStorage, name, id_publico: userPublicId, role: roleNumber });
-          const expFromToken = tokenFromStorage ? parseJwtExp(tokenFromStorage) : undefined;
-          if (expFromToken) scheduleAutoLogout(expFromToken);
-        } else {
-          // server said no session — clear silently
-          clearSessionSilent();
-        }
-      } catch (err) {
-        console.error('validateSession error', err);
-      }
-    };
-
-    syncFromStorage();
-    validateSession();
-
-    const onLogin = (e: Event) => {
-      const ev = e as CustomEvent;
-      const detail = ev.detail ?? {};
-      const token = detail.token || localStorage.getItem("token");
-      const name = detail.name || detail.nombre || localStorage.getItem("userName") || "Usuario";
-      const userPublicId = detail.id_publico || localStorage.getItem("userPublicId") || undefined;
-      const roleNumber = detail.id_rol !== undefined ? Number(detail.id_rol) : undefined;
-      if (token) localStorage.setItem("token", token);
-      if (name) localStorage.setItem("userName", name);
-      if (userPublicId) {
-        localStorage.setItem("userPublicId", String(userPublicId));
-      }
-      if (roleNumber !== undefined) localStorage.setItem('userRole', String(roleNumber));
-      setUser({ token, name, id_publico: userPublicId, role: roleNumber });
-      const exp = detail.expiresAt || parseJwtExp(token || "");
-      if (exp) scheduleAutoLogout(exp);
-    };
-
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === "token") {
-        // if token removed in another tab, logout here
-        if (!e.newValue) {
-          performLogout();
-        } else {
-          // new token added/updated -> re-validate session
-          syncFromStorage();
-          validateSession();
-        }
-      }
-      if (e.key === "userName") {
-        // just sync name
-        const storedName = localStorage.getItem('userName');
-        setUser((prev: any) => (prev ? { ...prev, name: storedName || prev.name } : prev));
-      }
-      if (e.key === 'userRole') {
-        const storedRole = localStorage.getItem('userRole');
-        setUser((prev: any) => (prev ? { ...prev, role: storedRole !== null ? Number(storedRole) : prev.role } : prev));
-      }
-    };
-
-    window.addEventListener("user:login", onLogin);
-    window.addEventListener("storage", onStorage);
-
-    return () => {
-      window.removeEventListener("user:login", onLogin);
-      window.removeEventListener("storage", onStorage);
-    };
-  }, [pathname]);
+  const pathname = usePathname()
+  const { user, performLogout } = useHeaderSession(pathname)
 
   // derive login state and display name from local user state (fallback to props)
-  const loggedIn = Boolean(user) || isLoggedIn;
-  const displayName = (user?.name || user?.firstName || user?.name || user?.firstName || userName) as string;
+  const loggedIn = Boolean(user) || isLoggedIn
+  const displayName = (user?.name || user?.firstName || userName) as string
 
   // Determine role only from deterministic sources during render.
-  const userRole = user?.role !== undefined ? Number(user.role) : isAdmin ? 2 : 0;
-  const isRegularUser = userRole === 1;
+  const userRole = user?.role !== undefined ? Number(user.role) : isAdmin ? 2 : 0
+  const isRegularUser = userRole === 1
   
   // Verificar permisos usando el sistema de accesibilidad
-  const { hasAccess: canCreate } = usePermission(loggedIn ? PERMISSIONS.CREAR_EVENTOS : null, userRole);
-  const { hasAccess: canDashboard } = usePermission(loggedIn ? PERMISSIONS.VER_DASHBOARD : null, userRole);
+  const { hasAccess: canCreate } = usePermission(
+    loggedIn ? PERMISSIONS.CREAR_EVENTOS : null,
+    userRole,
+  )
+  const { hasAccess: canDashboard } = usePermission(
+    loggedIn ? PERMISSIONS.VER_DASHBOARD : null,
+    userRole,
+  )
 
-  const navigationItems = [
+  const navigationItems: NavigationItem[] = [
     { name: "Inicio", path: "/" },
     { name: "Eventos", path: "/eventos" },
     { name: "Contacto", path: "/contacto" },
@@ -244,46 +70,23 @@ export function Header({
     setMenuOpen(false)
   }
 
-  const performLogout = () => {
-    // limpiar estado y localStorage, notificar y redirigir
-    // Ask server to clear cookie (best-effort)
-    try {
-      void fetch('/api/logout', { method: 'POST', credentials: 'include' })
-    } catch (err) {
-      console.error('logout request error', err)
+  const handleJoinClick = () => {
+    if (onAuthClick) {
+      onAuthClick(true)
+      setMenuOpen(false)
+      return
     }
-
-    localStorage.removeItem("token");
-    localStorage.removeItem("userName");
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userPublicId');
-    setUser(null);
-    if (logoutTimerRef.current) {
-      window.clearTimeout(logoutTimerRef.current);
-      logoutTimerRef.current = null;
-    }
-    window.dispatchEvent(new CustomEvent("user:logout"));
-    router.push("/");
-    setMenuOpen(false);
-    setLogoutDialogOpen(false);
+    router.push("/auth")
+    setMenuOpen(false)
   }
 
-  // Limpiar sesión sin redirigir ni disparar eventos (usado para expiración automática o invalidación silenciosa)
-  const clearSessionSilent = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userName");
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userPublicId');
-    setUser(null);
-    if (logoutTimerRef.current) {
-      window.clearTimeout(logoutTimerRef.current);
-      logoutTimerRef.current = null;
-    }
-    // do not dispatch user:logout or redirect here to avoid interrupting navigation
+  const handleConfirmLogout = async () => {
+    await performLogout()
+    setMenuOpen(false)
+    setLogoutDialogOpen(false)
   }
 
   const handleLogout = () => {
-    // abrir modal de confirmación en lugar de confirmar inmediato
     setLogoutDialogOpen(true);
   }
 
@@ -305,7 +108,7 @@ export function Header({
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" className="hover:scale-103" onClick={() => setLogoutDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={performLogout} className="bg-gradient-to-tr from-fuchsia-700 to-red-500 hover:scale-103 hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-450 text-white">Cerrar sesión</Button>
+            <Button onClick={handleConfirmLogout} className="bg-gradient-to-tr from-fuchsia-700 to-red-500 hover:scale-103 hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-450 text-white">Cerrar sesión</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -338,210 +141,34 @@ export function Header({
                 </div>
             </button>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-8">
-              {navigationItems.map((item) => (
-                <button
-                  key={item.name}
-                  onClick={() => navigateTo(item.path)}
-                  className="text-white hover:text-lime-400 font-medium transition-colors relative group cursor-pointer"
-                >
-                  {item.name}
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-lime-500 transition-all group-hover:w-full" />
-                </button>
-              ))}
-
-              {!loggedIn ? (
-                <Button
-                  onClick={() => router.push("/auth")}
-                  className="bg-gradient-to-tr from-fuchsia-700 to-red-600 text-white font-medium shadow-lg rounded-sm transition-all duration-300 hover:scale-105 hover:from-fuchsia-600 hover:to-red-450 hover:shadow-md"
-                >
-                  Únete
-                </Button>
-              ) : (
-                <div className="flex items-center gap-3">
-                  {canCreate && (
-                    <button
-                      onClick={() => navigateTo("/eventos/crear")}
-                      className="text-white hover:text-lime-400 font-medium transition-colors relative group cursor-pointer"
-                    >
-                      Crear Evento
-                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-lime-500 transition-all group-hover:w-full" />
-                    </button>
-                  )}
-
-                  {canDashboard && (
-                    <button
-                      onClick={() => navigateTo("/dashboard")}
-                      className="text-white hover:text-lime-400 font-medium transition-colors relative group cursor-pointer"
-                    >
-                      Dashboard
-                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-lime-500 transition-all group-hover:w-full" />
-                    </button>
-                  )}
-
-                  <DropdownMenu modal={false}>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="flex items-center gap-3 px-4 py-6 hover:bg-black/10 text-white">
-                        <div className="w-8 h-8 rounded-sm bg-card flex items-center justify-center text-lime-600 font-medium">
-                          {displayName.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="font-medium">{displayName}</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56 z-[80] bg-popover text-popover-foreground border border-border shadow-lg">
-                        <DropdownMenuLabel className="text-green-700">
-                          <p>Mi Cuenta</p>
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => navigateTo("/perfil")} className="cursor-pointer">
-                          <User className="h-4 w-4 mr-2" />
-                          <p>Mi Perfil</p>
-                        </DropdownMenuItem>
-                        {isRegularUser ? (
-                          <DropdownMenuItem onClick={() => navigateTo("/mis-reservas")} className="cursor-pointer">
-                            <Ticket className="h-4 w-4 mr-2" />
-                            Mis Reservas
-                          </DropdownMenuItem>
-                        ) : (
-                          <DropdownMenuItem onClick={() => navigateTo("/mis-eventos")} className="cursor-pointer">
-                            <Calendar className="h-4 w-4 mr-2" />
-                            Mis Eventos
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem onClick={() => navigateTo("/mis-valoraciones")} className="cursor-pointer">
-                          <Star className="h-4 w-4 mr-2" />
-                          Mis valoraciones
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigateTo("/mis-favoritos")} className="cursor-pointer">
-                          <Heart className="h-4 w-4 mr-2" />
-                          Mis favoritos
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
-                          <LogOut className="h-4 w-4 mr-2" />
-                          Cerrar Sesión
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              )}
-            </nav>
+            <DesktopNav
+              navigationItems={navigationItems}
+              loggedIn={loggedIn}
+              canCreate={canCreate}
+              canDashboard={canDashboard}
+              displayName={displayName}
+              isRegularUser={isRegularUser}
+              navigateTo={navigateTo}
+              onJoinClick={handleJoinClick}
+              onLogoutClick={handleLogout}
+            />
 
 
           </div>
         </div>
       </header>
 
-      {/* Mobile Navigation */}
-      <nav
-        className={`fixed top-0 left-0 h-full w-72 sm:w-80 max-w-full bg-background/95 dark:bg-card/95 text-foreground backdrop-blur-md shadow-2xl transform transition-transform duration-300 z-40 lg:hidden ${
-          menuOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="pt-24 px-6">
-          <ul className="space-y-2">
-            {navigationItems.map((item) => (
-              <li key={item.name}>
-                <button
-                  onClick={() => navigateTo(item.path)}
-                  className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
-                >
-                  <span className="w-2 h-2 bg-lime-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <span>{item.name}</span>
-                </button>
-              </li>
-            ))}
-            {loggedIn && (
-              <>
-                {canCreate && (
-                  <li>
-                    <button
-                      onClick={() => navigateTo("/eventos/crear")}
-                      className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
-                    >
-                      <span className="w-2 h-2 bg-lime-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <span>Crear Evento</span>
-                    </button>
-                  </li>
-                )}
-                {canDashboard && (
-                  <li>
-                    <button
-                      onClick={() => navigateTo("/dashboard")}
-                      className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
-                    >
-                      <span className="w-2 h-2 bg-lime-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <span>Dashboard</span>
-                    </button>
-                  </li>
-                )}
-              </>
-            )}
-          </ul>
-
-          <div className="mt-8 pt-8 border-t border-gray-200">
-            {!loggedIn ? (
-              <Button
-                onClick={() => router.push("/auth")}
-                className="w-full bg-gradient-to-tr from-green-700 to-lime-500 text-white hover:from-emerald-800 hover:to-lime-500 font-semibold shadow-lg hover:shadow-xl transition-all rounded-lg py-6 text-base"
-              >
-                Únete a Time2Go
-              </Button>
-            ) : (
-              <div className="space-y-2">
-                <button
-                  onClick={() => navigateTo("/perfil")}
-                  className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
-                >
-                  <User className="h-5 w-5 text-lime-600" />
-                  <span>Mi Perfil</span>
-                </button>
-                {isRegularUser ? (
-                  <button
-                    onClick={() => navigateTo("/mis-reservas")}
-                    className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
-                  >
-                    <Ticket className="h-5 w-5 text-lime-600" />
-                    <span>Mis Reservas</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => navigateTo("/mis-eventos")}
-                    className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
-                  >
-                    <Calendar className="h-5 w-5 text-lime-600" />
-                    <span>Mis Eventos</span>
-                  </button>
-                )}
-                <button
-                  onClick={() => navigateTo("/mis-valoraciones")}
-                  className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
-                >
-                  <Star className="h-5 w-5 text-lime-600" />
-                  <span>Mis Valoraciones</span>
-                </button>
-                <button
-                  onClick={() => navigateTo("/mis-favoritos")}
-                  className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
-                >
-                  <Heart className="h-5 w-5 text-lime-600" />
-                  <span>Mis Favoritos</span>
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center space-x-3 text-red-600 hover:text-red-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-red-50 transition-all w-full text-left mt-4"
-                >
-                  <LogOut className="h-5 w-5" />
-                  <span>Cerrar Sesión</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </nav>
+      <MobileNav
+        menuOpen={menuOpen}
+        navigationItems={navigationItems}
+        loggedIn={loggedIn}
+        canCreate={canCreate}
+        canDashboard={canDashboard}
+        isRegularUser={isRegularUser}
+        navigateTo={navigateTo}
+        onJoinClick={handleJoinClick}
+        onLogoutClick={handleLogout}
+      />
     </>
   )
 }
