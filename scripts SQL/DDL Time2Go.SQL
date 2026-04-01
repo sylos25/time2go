@@ -7,6 +7,7 @@
 |------------------------------------------------------------------------------------|
 */
 -- BORRADO TABLAS
+DROP TABLE IF EXISTS tabla_recuperacion_contrasena_tokens;
 DROP TABLE IF EXISTS tabla_validacion_email_tokens;
 DROP TABLE IF EXISTS tabla_reserva_asistentes;
 DROP TABLE IF EXISTS tabla_reserva_eventos;
@@ -43,6 +44,7 @@ DROP TABLE IF EXISTS tabla_paises;
 
 -- CREACION DE TIPOS ENUM
 CREATE TYPE tip_doc AS ENUM ('Tarjeta de Identidad','Cédula de Ciudadanía', 'Cédula de Extranjería', 'Pasaporte');
+CREATE TYPE rec_cont AS ENUM ('Pendiente', 'Caducado', 'Validado');
 
 -- Primero cargar la extension de pgcrypto.
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -201,6 +203,20 @@ CREATE TABLE IF NOT EXISTS tabla_validacion_email_tokens (
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     fecha_expiracion                        TIMESTAMP   WITH TIME ZONE   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     fecha_validacion                        TIMESTAMP   WITH TIME ZONE,
+    FOREIGN KEY (id_usuario)                            REFERENCES       tabla_usuarios(id_usuario)
+);
+
+CREATE TABLE IF NOT EXISTS tabla_recuperacion_contrasena_tokens (
+    id_token_recuperacion                   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_usuario                              INT                          NOT NULL,
+    token                                   VARCHAR                      NOT NULL        UNIQUE,
+    estado                                  rec_cont                     NOT NULL        DEFAULT 'Pendiente',
+    fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
+    fecha_expiracion                        TIMESTAMP   WITH TIME ZONE   NOT NULL        DEFAULT CURRENT_TIMESTAMP + INTERVAL '10 minutes',
+    fecha_validacion                        TIMESTAMP   WITH TIME ZONE,
+    direccion_ip                            VARCHAR,
+    user_agent                              TEXT,
+    fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_usuario)                            REFERENCES       tabla_usuarios(id_usuario)
 );
 

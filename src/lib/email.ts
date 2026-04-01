@@ -16,14 +16,8 @@ const transporter = nodemailer.createTransport({
 })
 
 
-export function generateRandomPassword(): string {
-  const length = 12
-  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
-  let password = ""
-  for (let i = 0; i < length; i++) {
-    password += charset.charAt(Math.floor(Math.random() * charset.length))
-  }
-  return password
+export function generatePasswordResetToken(): string {
+  return crypto.randomBytes(32).toString("hex")
 }
 
 export function generateEmailValidationToken(): string {
@@ -97,7 +91,11 @@ export async function sendEmailValidationEmail(
   }
 }
 
-export async function sendResetPasswordEmail(email: string, newPassword: string): Promise<boolean> {
+export async function sendPasswordResetTokenEmail(
+  email: string,
+  token: string,
+  baseUrl: string
+): Promise<boolean> {
   try {
     // Validar configuración de email
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
@@ -105,17 +103,13 @@ export async function sendResetPasswordEmail(email: string, newPassword: string)
       return false
     }
 
-    const appBaseUrl =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      process.env.APP_URL ||
-      process.env.BETTER_AUTH_URL ||
-      "http://localhost:3000"
+    const resetUrl = `${baseUrl}/reset-password?token=${token}`
     const bannerUrl = "https://res.cloudinary.com/dljthy97e/image/upload/v1770842202/banner_top_azaedp.jpg"
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Time2Go - Esta es tu nueva contraseña",
+      subject: "Time2Go - Restablece tu contraseña",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <img src="${bannerUrl}" alt="Banner" style="width: 100%; border-radius: 8px 8px 0 0; display: block;" />
@@ -124,14 +118,19 @@ export async function sendResetPasswordEmail(email: string, newPassword: string)
           </div>
           <div style="padding: 20px; background: #FBFEFF; border-radius: 0 0 8px 8px;">
             <p>Hola,</p>
-            <p>Has solicitado restablecer tu contraseña en Time2Go. Tu nueva contraseña temporal es:</p>
-            <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #15803d; margin: 20px 0;">
-              <p style="margin: 0; font-family: monospace; font-size: 18px; font-weight: bold; color: #84cc16;">
-                ${newPassword}
-              </p>
+            <p>Has solicitado restablecer tu contraseña en Time2Go.</p>
+            <p>Haz clic en el siguiente botón para continuar con el proceso:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetUrl}" style="background: linear-gradient(to top right, #15803d, #84cc16); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+                Restablecer Contraseña
+              </a>
             </div>
+            <p style="color: #666;">O copia y pega este enlace en tu navegador:</p>
+            <p style="background: white; padding: 10px; border-radius: 4px; word-break: break-all; font-size: 12px; color: #15803d;">
+              ${resetUrl}
+            </p>
             <p style="color: #666;">
-              <strong>Por seguridad:</strong> Te recomendamos cambiar esta contraseña en tu próximo inicio de sesión.
+              <strong>Por seguridad:</strong> Este enlace expira en 10 minutos y solo puede utilizarse una vez.
             </p>
             <p>Si no solicitaste este cambio, por favor ignora este correo.</p>
             <hr style="border: none; border-top: 1px solid #F7FCFF; margin: 20px 0;">

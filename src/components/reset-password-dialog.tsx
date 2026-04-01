@@ -62,14 +62,14 @@ export function ResetPasswordDialog({ open, onOpenChange }: ResetPasswordDialogP
         <DialogHeader>
           <DialogTitle>Restablecer Contraseña</DialogTitle>
           <DialogDescription>
-            Ingresa su correo electrónico y le enviaremos una nueva contraseña.
+            Ingresa tu correo electrónico y te enviaremos un enlace para restablecerla.
           </DialogDescription>
         </DialogHeader>
 
         {success ? (
           <div className="space-y-4">
             <p className="text-green-600 text-center font-medium">
-              ¡Correo enviado exitosamente!
+              Si el correo existe, recibirás un enlace de recuperación.
             </p>
           </div>
         ) : (

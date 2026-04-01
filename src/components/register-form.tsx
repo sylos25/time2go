@@ -1,256 +1,58 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
-import { Eye, EyeOff, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-  EMAIL_MAX_LENGTH,
-  PASSWORD_MAX_LENGTH,
-  REGISTER_PASSWORD_LENGTH,
-  getEmailError,
-  hasPasswordLetter,
-  hasPasswordNumber,
-  hasPasswordSpecial,
-  sanitizeEmail,
-  sanitizePassword,
-  validateRegisterPassword,
-} from "@/lib/auth-form-validation"
+import { EmailInputField } from "@/components/auth-form-parts/email-input-field"
+import { PasswordInputField } from "@/components/auth-form-parts/password-input-field"
+import { DuplicateFieldsModal } from "@/components/register-form-parts/duplicate-fields-modal"
+import { PasswordRequirements } from "@/components/register-form-parts/password-requirements"
+import { TermsConditionsModal } from "@/components/register-form-parts/terms-conditions-modal"
+import { useRegisterForm } from "@/hooks/use-register-form"
 
 interface RegisterFormProps {
   onSuccess: () => void
 }
 
-interface FormFields {
-  firstName: string
-  lastName: string
-  pais: string | number
-  telefono: string
-  email: string
-  password: string
-}
-
-const MAX_NAME_LENGTH = 50
-const PHONE_LENGTH = 10
-const PASSWORD_MIN_LENGTH = REGISTER_PASSWORD_LENGTH
-
-const NAME_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/
-const DIGITS_REGEX = /^\d+$/
-const DIGITS_PARTIAL_REGEX = /^\d*$/
-
 export function RegisterForm({ onSuccess }: RegisterFormProps) {
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [terminosCondiciones, setTerminosCondiciones] = useState(false)
-  const [registroError, setRegistroError] = useState("")
-  const [emailError, setEmailError] = useState("")
-  const [phoneError, setPhoneError] = useState("")
-  const [showModal, setShowModal] = useState(false)
-  const [passwordValidation, setPasswordValidation] = useState<{ isValid: boolean; errors: string[] }>({ isValid: false, errors: [] })
-  const acceptButtonRef = useRef<HTMLButtonElement | null>(null)
-  const modalRef = useRef<HTMLDivElement | null>(null)
-  const [listaPaises, setListaPaises] = useState<{ value: number; label: string }[]>([])
-  const [duplicateModal, setDuplicateModal] = useState<{
-    open: boolean
-    duplicates: string[]
-    message?: string
-  }>({ open: false, duplicates: [] })
-
-  const formDataInicial: FormFields = {
-    firstName: "",
-    lastName: "",
-    pais: "",
-    telefono: "",
-    email: "",
-    password: "",
-  }
-
-  const [formData, setFormData] = useState<FormFields>(formDataInicial)
-  const [touchedFields, setTouchedFields] = useState<Record<keyof FormFields, boolean>>({
-    firstName: false,
-    lastName: false,
-    pais: false,
-    telefono: false,
-    email: false,
-    password: false,
-  })
-  const [touchedConfirmPassword, setTouchedConfirmPassword] = useState(false)
-  const [touchedTerminosCondiciones, setTouchedTerminosCondiciones] = useState(false)
-
-  useEffect(() => {
-    fetch("/api/llamar_pais")
-      .then((res) => res.json())
-      .then((data) => setListaPaises(data))
-      .catch((err) => console.error("Error al cargar países:", err))
-  }, [])
-
-  useEffect(() => {
-    if (!showModal) return
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = "hidden"
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault()
-        e.stopPropagation()
-        return
-      }
-      if (e.key === "Tab") {
-        const container = modalRef.current
-        if (!container) return
-        const focusable = Array.from(
-          container.querySelectorAll<HTMLElement>(
-            'a[href], button:not([disabled]), textarea, input:not([type="hidden"]):not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
-          )
-        ).filter(Boolean)
-        if (focusable.length === 0) { e.preventDefault(); return }
-        const first = focusable[0]
-        const last = focusable[focusable.length - 1]
-        const active = document.activeElement as HTMLElement | null
-        if (!e.shiftKey && active === last) { e.preventDefault(); first.focus() }
-        else if (e.shiftKey && active === first) { e.preventDefault(); last.focus() }
-      }
-    }
-    document.addEventListener("keydown", onKey, true)
-    setTimeout(() => { acceptButtonRef.current?.focus() }, 0)
-    return () => {
-      document.body.style.overflow = previousOverflow
-      document.removeEventListener("keydown", onKey, true)
-    }
-  }, [showModal])
-
-  const handleBlur = (field: keyof FormFields) => {
-    setTouchedFields((prev) => ({ ...prev, [field]: true }))
-  }
-
-  const handleInputChange = <K extends keyof FormFields>(field: K, value: FormFields[K]) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
-
-  const touchField = (field: keyof FormFields) => {
-    setTouchedFields((prev) => ({ ...prev, [field]: true }))
-  }
-
-  const touchMultipleFields = (fields: (keyof FormFields)[]) => {
-    setTouchedFields((prev) => ({ ...prev, ...Object.fromEntries(fields.map((field) => [field, true])) }))
-  }
-
-  const handleNameChange = (field: "firstName" | "lastName", e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    if (NAME_REGEX.test(value) && value.length <= MAX_NAME_LENGTH) {
-      handleInputChange(field, value)
-    }
-  }
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    if (DIGITS_PARTIAL_REGEX.test(value) && value.length <= PHONE_LENGTH) {
-      handleInputChange("telefono", value)
-      if (phoneError) setPhoneError("")
-    }
-  }
-
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = sanitizeEmail(e.target.value)
-    handleInputChange("email", value)
-    setEmailError(getEmailError(value))
-  }
-
-  const validatePassword = (password: string): { isValid: boolean; errors: string[] } => {
-    return validateRegisterPassword(password, PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH)
-  }
-
-  const validatePhone = (phone: string): boolean => {
-    if (!DIGITS_REGEX.test(phone)) return false
-    if (phone.length !== PHONE_LENGTH) return false
-    return Number(phone) > 2999999999
-  }
-
-  const handleDuplicateModalClose = () => {
-    setDuplicateModal({ open: false, duplicates: [], message: undefined })
-  }
-
-  const handleAccept = () => {
-    setTerminosCondiciones(true)
-    setTouchedTerminosCondiciones(true)
-    setShowModal(false)
-  }
-
-  const handleReject = () => {
-    setTerminosCondiciones(false)
-    setShowModal(false)
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setRegistroError("")
-    setEmailError("")
-    const sanitizedEmail = sanitizeEmail(formData.email)
-    const sanitizedPassword = sanitizePassword(formData.password)
-    const sanitizedConfirmPassword = sanitizePassword(confirmPassword)
-
-    if (sanitizedEmail !== formData.email || sanitizedPassword !== formData.password) {
-      setFormData((prev) => ({
-        ...prev,
-        email: sanitizedEmail,
-        password: sanitizedPassword,
-      }))
-    }
-    if (sanitizedConfirmPassword !== confirmPassword) setConfirmPassword(sanitizedConfirmPassword)
-
-    const requiredFields: (keyof FormFields)[] = ["firstName", "lastName", "pais", "telefono", "email", "password"]
-    const normalizedFormData: FormFields = {
-      ...formData,
-      email: sanitizedEmail,
-      password: sanitizedPassword,
-    }
-    const missing = requiredFields.filter((f) => !normalizedFormData[f] || String(normalizedFormData[f]).trim() === "")
-    if (missing.length > 0) {
-      touchMultipleFields(missing)
-      setRegistroError("Por favor completa los campos obligatorios.")
-      return
-    }
-    if (!validatePhone(normalizedFormData.telefono)) {
-      touchField("telefono")
-      setPhoneError("El número de teléfono debe tener 10 dígitos válidos.")
-      setRegistroError("El número de teléfono no es válido.")
-      return
-    }
-    const normalizedEmailError = getEmailError(normalizedFormData.email)
-    if (normalizedEmailError) {
-      touchField("email")
-      setEmailError(normalizedEmailError)
-      setRegistroError(normalizedEmailError)
-      return
-    }
-    if (!terminosCondiciones) { setTouchedTerminosCondiciones(true); setRegistroError("Debe aceptar los términos y condiciones."); return }
-    if (!normalizedFormData.password || normalizedFormData.password !== sanitizedConfirmPassword) { touchField("password"); setTouchedConfirmPassword(true); setRegistroError("Las contraseñas no coinciden."); return }
-    const currentPasswordValidation = validatePassword(normalizedFormData.password)
-    if (!currentPasswordValidation.isValid) { touchField("password"); setRegistroError(`Contraseña inválida: ${currentPasswordValidation.errors.join(", ")}`); return }
-    try {
-      const res = await fetch("/api/usuario_formulario", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName: normalizedFormData.firstName, lastName: normalizedFormData.lastName, pais: normalizedFormData.pais, telefono: normalizedFormData.telefono, email: normalizedFormData.email, password: normalizedFormData.password, terminosCondiciones }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setRegistroError(data.error || "Error al crear usuario.")
-        if (res.status === 409) setDuplicateModal({ open: true, duplicates: data.duplicates || [], message: data.error })
-        return
-      }
-      setRegistroError("")
-      setFormData(formDataInicial)
-      setConfirmPassword("")
-      setTerminosCondiciones(false)
-      setTimeout(() => { onSuccess() }, 500)
-    } catch (err) {
-      console.error("Registro error:", err)
-      setRegistroError("Error de red. Intenta nuevamente.")
-    }
-  }
+  const {
+    confirmPassword,
+    duplicateModal,
+    emailError,
+    formData,
+    listaPaises,
+    phoneError,
+    registroError,
+    showConfirmPassword,
+    showModal,
+    showPassword,
+    terminosCondiciones,
+    touchedConfirmPassword,
+    touchedFields,
+    touchedTerminosCondiciones,
+    passwordValidation,
+    EMAIL_MAX_LENGTH,
+    MAX_NAME_LENGTH,
+    PASSWORD_MAX_LENGTH,
+    PASSWORD_MIN_LENGTH,
+    handleAcceptTerms,
+    handleBlur,
+    handleConfirmPasswordChange,
+    handleCountryChange,
+    handleDuplicateModalClose,
+    handleEmailChange,
+    handleNameChange,
+    handlePasswordChange,
+    handlePhoneBlur,
+    handlePhoneChange,
+    handleRejectTerms,
+    handleSubmit,
+    handleTermsCheckedChange,
+    openTermsModal,
+    setShowConfirmPassword,
+    setShowPassword,
+    setTouchedConfirmPassword,
+  } = useRegisterForm(onSuccess)
 
   return (
     <>
@@ -286,7 +88,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
           <Label htmlFor="pais" className="text-sm font-medium">País</Label>
           <select
             id="pais" value={formData.pais}
-            onChange={(e) => handleInputChange("pais", e.target.value)} onBlur={() => handleBlur("pais")}
+            onChange={handleCountryChange} onBlur={() => handleBlur("pais")}
             className={`pl-3 pr-4 py-2 w-full border rounded-md text-sm bg-card cursor-pointer ${touchedFields.pais && !formData.pais ? "border-red-500 ring-red-500" : "border-gray-300"}`}
           >
             <option value="">Selecciona un país</option>
@@ -301,14 +103,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
           <input
             id="telefono" type="tel" placeholder="1234567890" value={formData.telefono}
             onChange={handlePhoneChange}
-            onBlur={() => {
-              handleBlur("telefono")
-              if (formData.telefono && !validatePhone(formData.telefono)) {
-                setPhoneError("El número de teléfono debe tener 10 dígitos válidos.")
-              } else {
-                setPhoneError("")
-              }
-            }}
+            onBlur={handlePhoneBlur}
             className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${(touchedFields.telefono && !formData.telefono) || phoneError ? "border-red-500 ring-red-500" : "border-gray-300"}`}
           />
           {phoneError && <p className="text-red-500 text-xs mt-0.5">{phoneError}</p>}
@@ -316,72 +111,52 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
         </div>
 
         {/* Email */}
-        <div className="space-y-2">
-          <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-          <Input
-            id="email" type="text" value={formData.email}
-            onChange={handleEmailChange} onBlur={() => handleBlur("email")}
-            autoCapitalize="none"
-            maxLength={EMAIL_MAX_LENGTH}
-            className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${(touchedFields.email && !formData.email) || emailError ? "border-red-500 ring-red-500" : "border-gray-300"}`}
-            placeholder="ejemplo@correo.com"
-          />
-          {emailError && <p className="text-red-500 text-xs -mt-0.5">{emailError}</p>}
-          {touchedFields.email && !formData.email && !emailError && <p className="text-red-500 text-xs -mt-0.5">Este campo es obligatorio</p>}
-        </div>
+        <EmailInputField
+          value={formData.email}
+          onChange={handleEmailChange}
+          onBlur={() => handleBlur("email")}
+          maxLength={EMAIL_MAX_LENGTH}
+          hasError={(touchedFields.email && !formData.email) || Boolean(emailError)}
+          errorMessage={emailError}
+          showRequiredError={touchedFields.email && !formData.email}
+        />
 
         {/* Password */}
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-sm font-medium">Contraseña</Label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              id="password" type={showPassword ? "text" : "password"} placeholder="••••••••"
-              value={formData.password} maxLength={PASSWORD_MAX_LENGTH} onBlur={() => handleBlur("password")}
-              onChange={(e) => {
-                const value = sanitizePassword(e.target.value)
-                handleInputChange("password", value)
-                if (value) setPasswordValidation(validatePassword(value))
-                else setPasswordValidation({ isValid: false, errors: [] })
-              }}
-              className="pl-10 pr-10"
-            />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer">
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-          {touchedFields.password && !formData.password && <p className="text-red-500 text-xs mt-0.5">Este campo es obligatorio</p>}
-          <div className={`p-3 rounded-lg text-sm ${passwordValidation.isValid ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
-            <p className={`font-semibold mb-2 ${passwordValidation.isValid ? "text-green-700" : "text-red-700"}`}>
-              Requisitos de contraseña:
-            </p>
-            <ul className="space-y-1 text-xs">
-              <li className={`flex items-center gap-2 ${hasPasswordLetter(formData.password) ? "text-green-600" : "text-red-600"}`}>{hasPasswordLetter(formData.password) ? "✓" : "✗"} Al menos una letra</li>
-              <li className={`flex items-center gap-2 ${hasPasswordNumber(formData.password) ? "text-green-600" : "text-red-600"}`}>{hasPasswordNumber(formData.password) ? "✓" : "✗"} Al menos un número</li>
-              <li className={`flex items-center gap-2 ${hasPasswordSpecial(formData.password) ? "text-green-600" : "text-red-600"}`}>{hasPasswordSpecial(formData.password) ? "✓" : "✗"} Al menos un carácter especial</li>
-              <li className={`flex items-center gap-2 ${formData.password.length >= PASSWORD_MIN_LENGTH && formData.password.length <= PASSWORD_MAX_LENGTH ? "text-green-600" : "text-red-600"}`}>{formData.password.length >= PASSWORD_MIN_LENGTH && formData.password.length <= PASSWORD_MAX_LENGTH ? "✓" : "✗"} Entre 8 y 20 caracteres ({formData.password.length})</li>
-            </ul>
-          </div>
+          <PasswordInputField
+            id="password"
+            label="Contraseña"
+            value={formData.password}
+            onChange={handlePasswordChange}
+            onBlur={() => handleBlur("password")}
+            maxLength={PASSWORD_MAX_LENGTH}
+            showPassword={showPassword}
+            onToggleVisibility={() => setShowPassword(!showPassword)}
+            hasError={touchedFields.password && !formData.password}
+            errorMessage={touchedFields.password && !formData.password ? "Este campo es obligatorio" : undefined}
+          >
+          <PasswordRequirements
+            password={formData.password}
+            minLength={PASSWORD_MIN_LENGTH}
+            isValid={passwordValidation.isValid}
+          />
+          </PasswordInputField>
         </div>
 
         {/* Confirm Password */}
         <div className="space-y-2">
-          <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirmar Contraseña</Label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              id="confirmPassword" type={showConfirmPassword ? "text" : "password"} placeholder="••••••••"
-              value={confirmPassword} maxLength={PASSWORD_MAX_LENGTH}
-              onChange={(e) => setConfirmPassword(sanitizePassword(e.target.value))} onBlur={() => setTouchedConfirmPassword(true)}
-              className={`pl-10 pr-10 w-full border rounded-md py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                formData.password && confirmPassword && formData.password !== confirmPassword ? "border-red-500 ring-red-500"
-                : formData.password && confirmPassword && formData.password === confirmPassword ? "border-green-500 ring-green-500"
-                : "border-gray-300"}`}
-            />
-            <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer">
-              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
+          <PasswordInputField
+            id="confirmPassword"
+            label="Confirmar Contraseña"
+            value={confirmPassword}
+            onChange={handleConfirmPasswordChange}
+            onBlur={() => setTouchedConfirmPassword(true)}
+            maxLength={PASSWORD_MAX_LENGTH}
+            showPassword={showConfirmPassword}
+            onToggleVisibility={() => setShowConfirmPassword(!showConfirmPassword)}
+            hasError={Boolean(formData.password && confirmPassword && formData.password !== confirmPassword)}
+            errorMessage={touchedConfirmPassword && !confirmPassword ? "Este campo es obligatorio" : undefined}
+          >
           {confirmPassword && (
             <div className={`p-3 rounded-lg text-sm flex items-center gap-2 ${formData.password === confirmPassword ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
               {formData.password === confirmPassword
@@ -389,7 +164,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                 : <><span className="text-red-600 font-semibold">✗</span><p className="text-red-700">Las contraseñas no coinciden</p></>}
             </div>
           )}
-          {touchedConfirmPassword && !confirmPassword && <p className="text-red-500 text-xs mt-0.5">Este campo es obligatorio</p>}
+          </PasswordInputField>
         </div>
 
         {/* Accept Terms */}
@@ -400,101 +175,18 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               id="terminosCondiciones"
               checked={terminosCondiciones}
               onCheckedChange={(checked) => {
-                setTerminosCondiciones(Boolean(checked))
-                setTouchedTerminosCondiciones(true)
+                handleTermsCheckedChange(Boolean(checked))
               }}
             />
             <Label htmlFor="terminosCondiciones" className="text-sm text-muted-foreground cursor-pointer">
               Acepto los{" "}
             </Label>
-            <Button type="button" variant="link" className="text-green-600 hover:text-lime-500 p-0 h-auto cursor-pointer" onClick={() => setShowModal(true)}>
+            <Button type="button" variant="link" className="text-green-600 hover:text-lime-500 p-0 h-auto cursor-pointer" onClick={openTermsModal}>
               términos y condiciones de servicio
             </Button>
           </div>
           {touchedTerminosCondiciones && !terminosCondiciones && <p className="text-red-500 text-xs">Debe aceptar los términos y condiciones</p>}
         </div>
-
-        {/* Modal de Política */}
-        {showModal && (
-          <div
-            role="dialog" aria-modal="true" aria-labelledby="policy-title" aria-describedby="policy-body"
-            className="fixed inset-0 z-[9999] bg-green-950/30 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation() }}
-            onPointerDownCapture={(e) => { e.preventDefault(); e.stopPropagation() }}
-            onMouseDownCapture={(e) => { e.preventDefault(); e.stopPropagation() }}
-          >
-            <div ref={modalRef} onClick={(e) => e.stopPropagation()} className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
-
-              {/* Header */}
-              <div className="bg-gradient-to-r from-green-600 to-lime-500 px-6 py-5">
-                <h2 id="policy-title" className="text-white font-bold text-lg leading-tight">
-                  Términos y Condiciones
-                </h2>
-                <p className="text-white/80 text-xs mt-0.5">Time2Go · Ley 1581 de 2012</p>
-              </div>
-
-              {/* Contenido */}
-              <div id="policy-body" className="px-6 py-5 max-h-[50vh] overflow-y-auto space-y-4">
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-bold mt-0.5">1</div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800 mb-1">Autorización de tratamiento de datos</p>
-                    <p className="text-sm text-gray-600 leading-relaxed">Al registrarse en Time2Go, el usuario autoriza de manera previa, expresa e informada el tratamiento de sus datos personales conforme a la Ley 1581 de 2012 y demás normas concordantes.</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-lime-100 text-lime-700 flex items-center justify-center text-xs font-bold mt-0.5">2</div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800 mb-1">Finalidad del tratamiento</p>
-                    <p className="text-sm text-gray-600 leading-relaxed">Los datos suministrados serán tratados para permitir el registro en la plataforma, brindar información sobre eventos en Bucaramanga y área metropolitana, enviar comunicaciones informativas y mejorar la experiencia del usuario.</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold mt-0.5">3</div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800 mb-1">Derechos del titular (Habeas Data)</p>
-                    <p className="text-sm text-gray-600 leading-relaxed">El titular podrá ejercer en cualquier momento sus derechos de acceso, actualización, rectificación y supresión de datos, así como revocar la autorización otorgada, a través de nuestros canales de soporte.</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-bold mt-0.5">4</div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-800 mb-1">Suspensiones y baneos</p>
-                      <p className="text-sm text-gray-600 leading-relaxed">
-                        Time2Go podrá suspender o banear tu cuenta por incumplimiento de las normas de la plataforma. Todo baneo se aplica por un motivo específico y catalogado. Los baneos pueden ser temporales o permanentes según la gravedad de la infracción.
-                      </p>
-                    </div>
-                  </div>
-
-                <div className="bg-green-50 border border-green-100 rounded-xl p-3">
-                  <p className="text-xs text-gray-500 leading-relaxed">
-                    Para más información consulta nuestra{" "}
-                    <a href="/legal#privacidad" target="_blank" className="text-green-600 hover:underline font-medium cursor-pointer">
-                      Política de Privacidad completa
-                    </a>
-                    {" "}disponible en el sitio web.
-                  </p>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex gap-3 justify-end">
-                <Button variant="outline" onClick={handleReject} className="border-gray-200 text-gray-600 hover:bg-gray-100 cursor-pointer">
-                  Rechazar
-                </Button>
-                <Button
-                  ref={acceptButtonRef} onClick={handleAccept}
-                  className="bg-gradient-to-r from-green-600 to-lime-500 hover:from-green-700 hover:to-lime-600 text-white font-semibold cursor-pointer"
-                >
-                  Aceptar y continuar
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {registroError && <p className="text-red-500 text-sm">{registroError}</p>}
         <div className="flex flex-col items-center space-y-4">
@@ -506,23 +198,14 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
         </div>
       </form>
 
-      {/* Duplicate Modal */}
-      {duplicateModal.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" role="dialog" aria-modal="true" aria-labelledby="dup-title">
-          <div className="bg-card rounded-md p-6 w-full max-w-sm shadow-lg">
-            <h3 id="dup-title" className="text-lg font-semibold mb-2">Campos ya registrados</h3>
-            <p className="text-sm text-foreground mb-4">{duplicateModal.message}</p>
-            {duplicateModal.duplicates.length > 0 && (
-              <ul className="text-sm text-muted-foreground mb-4 list-disc list-inside">
-                {duplicateModal.duplicates.map((dup, idx) => (<li key={idx}>{dup}</li>))}
-              </ul>
-            )}
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={handleDuplicateModalClose} className="cursor-pointer">Cerrar</Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <TermsConditionsModal open={showModal} onAccept={handleAcceptTerms} onReject={handleRejectTerms} />
+
+      <DuplicateFieldsModal
+        open={duplicateModal.open}
+        duplicates={duplicateModal.duplicates}
+        message={duplicateModal.message}
+        onClose={handleDuplicateModalClose}
+      />
     </>
   )
 }
