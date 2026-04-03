@@ -257,7 +257,7 @@ export default function DocsPage() {
 
   if (allowed === null) {
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center">
+      <main className="min-h-screen bg-gradient-to-tl from-green-50 via-lime-50 to-green-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-gray-500 text-sm">Verificando acceso...</p>
@@ -267,7 +267,7 @@ export default function DocsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-gradient-to-tl from-green-50 via-lime-50 to-green-50">
 
       {/* Hero */}
       <div className="bg-gradient-to-r from-green-600 to-lime-500 pt-24 pb-16">
