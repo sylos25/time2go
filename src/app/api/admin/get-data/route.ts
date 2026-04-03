@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import pool from "@/lib/db"
+import { PERMISSION_IDS, requirePermission } from "@/lib/permissions"
 
 const allowed: Record<string, string> = {
   paises: "tabla_paises",
@@ -298,6 +299,9 @@ const queryMap: Record<string, string> = {
 }
 
 export async function GET(req: NextRequest) {
+  const denied = await requirePermission(req, PERMISSION_IDS.VER_DATOS)
+  if (denied) return denied
+
   try {
     const url = new URL(req.url)
     const table = url.searchParams.get("table")

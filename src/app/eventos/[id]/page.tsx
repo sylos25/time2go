@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Header } from "@/components/header";
@@ -859,7 +859,7 @@ export default function EventLanding() {
                           0
                         ).getDate();
 
-                        const calendarCells: JSX.Element[] = [];
+                        const calendarCells: ReactElement[] = [];
 
                         ["D", "L", "M", "M", "J", "V", "S"].forEach(
                           (day, i) => {

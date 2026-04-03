@@ -1,39 +1,20 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import pool from "@/lib/db";
 import { serializeCookie } from "@/lib/cookies";
+import { getJwtSecret } from "@/lib/jwt";
+import {
+  runLoginRateLimitPrelude,
+  registerFailedAuth,
+  clearSuccessfulAuth,
+} from "@/lib/login-rate-limit";
+import { loginPostBodySchema } from "@/lib/validation/api-schemas";
 
-type LoginLimiter = {
-  requests: number[];
-  lockUntil: number;
-};
-
-const ipLimiter = new Map<string, LoginLimiter>();
-const credentialLimiter = new Map<string, LoginLimiter>();
-
-const ONE_MINUTE_MS = 60 * 1000;
-const FIFTEEN_MINUTES_MS = 15 * ONE_MINUTE_MS;
-const THIRTY_MINUTES_MS = 30 * ONE_MINUTE_MS;
-
-function cleanupLimiterMap(map: Map<string, LoginLimiter>, now: number, windowMs: number) {
-  for (const [key, value] of map.entries()) {
-    value.requests = value.requests.filter((ts) => now - ts <= windowMs);
-    if (value.requests.length === 0 && value.lockUntil <= now) {
-      map.delete(key);
-    }
+function devWarn(...args: unknown[]) {
+  if (process.env.NODE_ENV !== "production") {
+    console.warn(...args);
   }
-}
-
-function getOrCreateLimiter(map: Map<string, LoginLimiter>, key: string): LoginLimiter {
-  const existing = map.get(key);
-  if (existing) {
-    return existing;
-  }
-
-  const created: LoginLimiter = { requests: [], lockUntil: 0 };
-  map.set(key, created);
-  return created;
 }
 
 function getClientIp(req: Request): string {
@@ -55,63 +36,6 @@ function getClientIp(req: Request): string {
 
 function normalizeEmail(value: string): string {
   return String(value || "").trim().toLowerCase();
-}
-
-function addAttemptAndCheckWindow(
-  limiter: LoginLimiter,
-  now: number,
-  windowMs: number,
-  maxAttempts: number
-) {
-  limiter.requests = limiter.requests.filter((ts) => now - ts <= windowMs);
-  limiter.requests.push(now);
-
-  return {
-    blocked: limiter.requests.length > maxAttempts,
-    count: limiter.requests.length,
-  };
-}
-
-function setProgressiveLock(limiter: LoginLimiter, now: number, failsInWindow: number) {
-  if (failsInWindow >= 10) {
-    limiter.lockUntil = Math.max(limiter.lockUntil, now + THIRTY_MINUTES_MS);
-  } else if (failsInWindow >= 6) {
-    limiter.lockUntil = Math.max(limiter.lockUntil, now + 10 * ONE_MINUTE_MS);
-  } else if (failsInWindow >= 4) {
-    limiter.lockUntil = Math.max(limiter.lockUntil, now + 3 * ONE_MINUTE_MS);
-  }
-}
-
-function lockResponse(lockUntil: number) {
-  const retryAfter = Math.max(1, Math.ceil((lockUntil - Date.now()) / 1000));
-  return NextResponse.json(
-    {
-      message: "Demasiados intentos. Intenta nuevamente en unos minutos.",
-      error: "too_many_attempts",
-      retryAfter,
-    },
-    {
-      status: 429,
-      headers: {
-        "Retry-After": String(retryAfter),
-      },
-    }
-  );
-}
-
-function registerFailedAuth(ip: string, email: string, now: number) {
-  const ipEntry = getOrCreateLimiter(ipLimiter, ip);
-  const credEntry = getOrCreateLimiter(credentialLimiter, `${ip}::${email}`);
-
-  const ipAttempt = addAttemptAndCheckWindow(ipEntry, now, FIFTEEN_MINUTES_MS, 40);
-  const credAttempt = addAttemptAndCheckWindow(credEntry, now, FIFTEEN_MINUTES_MS, 8);
-
-  setProgressiveLock(ipEntry, now, ipAttempt.count);
-  setProgressiveLock(credEntry, now, credAttempt.count);
-}
-
-function clearSuccessfulAuth(ip: string, email: string) {
-  credentialLimiter.delete(`${ip}::${email}`);
 }
 
 async function verifyTurnstileToken(
@@ -173,37 +97,28 @@ function getCaptchaMode(): "strict" | "degraded" | "disabled" {
 
 export async function POST(req: Request) {
   try {
-    const { email, password, turnstileToken } = (await req.json()) as {
-      email?: string;
-      password?: string;
-      turnstileToken?: string | null;
-    };
+    let raw: unknown;
+    try {
+      raw = await req.json();
+    } catch {
+      return NextResponse.json({ message: "Cuerpo JSON inválido" }, { status: 400 });
+    }
+
+    const parsedBody = loginPostBodySchema.safeParse(raw);
+    if (!parsedBody.success) {
+      return NextResponse.json({ message: "Solicitud inválida" }, { status: 400 });
+    }
+
+    const { email, password, turnstileToken } = parsedBody.data;
 
     const normalizedEmail = normalizeEmail(String(email || ""));
     const ip = getClientIp(req);
     const now = Date.now();
     const captchaMode = getCaptchaMode();
 
-    cleanupLimiterMap(ipLimiter, now, FIFTEEN_MINUTES_MS);
-    cleanupLimiterMap(credentialLimiter, now, FIFTEEN_MINUTES_MS);
-
-    const ipEntry = getOrCreateLimiter(ipLimiter, ip);
-    const credentialKey = `${ip}::${normalizedEmail}`;
-    const credentialEntry = getOrCreateLimiter(credentialLimiter, credentialKey);
-
-    if (ipEntry.lockUntil > now) {
-      return lockResponse(ipEntry.lockUntil);
-    }
-
-    if (credentialEntry.lockUntil > now) {
-      return lockResponse(credentialEntry.lockUntil);
-    }
-
-    // Limita volumen bruto por IP para reducir ataques distribuidos sobre credenciales.
-    const ipWindow = addAttemptAndCheckWindow(ipEntry, now, FIFTEEN_MINUTES_MS, 70);
-    if (ipWindow.blocked) {
-      ipEntry.lockUntil = Math.max(ipEntry.lockUntil, now + 10 * ONE_MINUTE_MS);
-      return lockResponse(ipEntry.lockUntil);
+    const rateLimited = await runLoginRateLimitPrelude(ip, normalizedEmail, now);
+    if (rateLimited) {
+      return rateLimited;
     }
 
     if (!normalizedEmail || !password) {
@@ -221,7 +136,7 @@ export async function POST(req: Request) {
           return NextResponse.json({ message: "Captcha requerido", error: "turnstile_required" }, { status: 400 });
         }
 
-        console.warn("[login] Missing turnstile token, degraded mode active");
+        devWarn("[login] Missing turnstile token, degraded mode active");
       }
 
       if (turnstileToken) {
@@ -250,7 +165,7 @@ export async function POST(req: Request) {
           }
 
           // Modo degradado: permite autenticar, pero con límites de intentos activos.
-          console.warn("[login] Turnstile provider unavailable, degraded mode active", captchaResult.details);
+          devWarn("[login] Turnstile provider unavailable, degraded mode active", captchaResult.details);
         }
       }
     }
@@ -329,15 +244,14 @@ export async function POST(req: Request) {
 
     clearSuccessfulAuth(ip, normalizedEmail);
 
-    const secret =
-      process.env.BETTER_AUTH_SECRET || process.env.JWT_SECRET || "dev-secret";
     const expiresIn = 60 * 60 * 12;
     const token = jwt.sign(
       {
         id_usuario: user.id_usuario,
+        id_rol: user.id_rol,
         name: user.nombres || user.correo.split("@")[0],
       },
-      secret,
+      getJwtSecret(),
       { expiresIn }
     );
 

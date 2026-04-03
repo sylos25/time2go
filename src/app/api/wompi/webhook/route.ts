@@ -5,13 +5,19 @@ import pool from "@/lib/db"
 export const runtime = "nodejs"
 
 const WOMPI_EVENTS_SECRET = process.env.WOMPI_EVENTS_SECRET || ""
+const IS_PRODUCTION = process.env.NODE_ENV === "production"
 
 /**
  * Verifica la firma del webhook de Wompi.
  * SHA256(values_of_properties + timestamp + events_secret)
  */
 function verifyWompiSignature(body: Record<string, unknown>, receivedChecksum: string): boolean {
-  if (!WOMPI_EVENTS_SECRET) return true // skip verification if secret not configured
+  if (!WOMPI_EVENTS_SECRET) {
+    if (IS_PRODUCTION) {
+      return false
+    }
+    return true
+  }
 
   const signature = body.signature as { checksum: string; properties: string[] } | undefined
   const timestamp = body.timestamp as number | undefined

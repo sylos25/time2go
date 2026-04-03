@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import pool from "@/lib/db"
+import { PERMISSION_IDS, requirePermission } from "@/lib/permissions"
 
 type TableConfig = {
   tableName: string
@@ -95,6 +96,9 @@ const TABLE_CONFIG: Record<string, TableConfig> = {
 }
 
 export async function PUT(req: NextRequest) {
+  const denied = await requirePermission(req, PERMISSION_IDS.INGRESAR_DATOS)
+  if (denied) return denied
+
   try {
     const { table, id, data } = await req.json()
 

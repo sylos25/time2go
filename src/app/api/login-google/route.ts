@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import pool from "@/lib/db";
 import { serializeCookie } from "@/lib/cookies";
+import { getJwtSecret } from "@/lib/jwt";
 
 const GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo";
 
@@ -212,12 +213,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "No fue posible resolver el usuario" }, { status: 500 });
     }
 
-    const secret = process.env.BETTER_AUTH_SECRET || process.env.JWT_SECRET || "dev-secret";
     const expiresIn = 60 * 60 * 12;
     const userId = String(user.id_usuario);
     const token = jwt.sign(
-      { id_usuario: userId, name: user.nombres || email.split("@")[0] },
-      secret,
+      {
+        id_usuario: userId,
+        id_rol: user.id_rol,
+        name: user.nombres || email.split("@")[0],
+      },
+      getJwtSecret(),
       { expiresIn }
     );
 

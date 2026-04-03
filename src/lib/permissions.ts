@@ -4,8 +4,7 @@
  */
 
 import pool from "@/lib/db";
-import { verifyToken } from "@/lib/jwt";
-import { parseCookies } from "@/lib/cookies";
+import { getRequesterIdFromRequest } from "@/lib/auth-request";
 
 export interface PermissionCheckResult {
   hasAccess: boolean;
@@ -25,34 +24,13 @@ export async function checkUserPermission(
   idAccesibilidad: number
 ): Promise<PermissionCheckResult> {
   try {
-    // Obtener el usuario autenticado
     const authHeader = req.headers.get("authorization") || "";
-    let userId: string | null = null;
-
-    if (authHeader.startsWith("Bearer ")) {
-      const token = authHeader.slice(7).trim();
-      const payload = verifyToken(token);
-      const userIdFromToken = payload?.id_usuario;
-      if (!payload || !userIdFromToken) {
-        return { hasAccess: false, error: "Token inválido" };
-      }
-      userId = String(userIdFromToken);
-    } else {
-      const cookieHeader = req.headers.get("cookie");
-      if (cookieHeader) {
-        const cookies = parseCookies(cookieHeader);
-        const token = cookies["token"];
-        if (token) {
-          const payload = verifyToken(token);
-          const userIdFromToken = payload?.id_usuario;
-          if (payload && userIdFromToken) {
-            userId = String(userIdFromToken);
-          }
-        }
-      }
-    }
+    const userId = getRequesterIdFromRequest(req);
 
     if (!userId) {
+      if (authHeader.startsWith("Bearer ")) {
+        return { hasAccess: false, error: "Token inválido" };
+      }
       return { hasAccess: false, error: "Usuario no autenticado" };
     }
 
@@ -95,6 +73,7 @@ export async function checkUserPermission(
  *  1 Crear Evento | 2 Dashboard | 3 Resumen General | 4 Gestión de Eventos
  *  5 Ingresar Datos | 6 Ver Datos | 7 Usuarios | 8 Mi Perfil
  *  9 Mis Eventos | 10 Mis Reservas | 11 Mis Valoraciones
+ *  Nota: gestión de roles (admin) usa PERMISSION_IDS.VER_DASHBOARD (id 2).
  */
 export const PERMISSION_IDS = {
   CREAR_EVENTOS: 1,
@@ -108,8 +87,6 @@ export const PERMISSION_IDS = {
   MIS_EVENTOS: 9,
   MIS_RESERVAS: 10,
   MIS_VALORACIONES: 11,
-  /** Panel de administrador: se protege también con comprobación de rol=4 */
-  GESTIONAR_ROLES: 2,
 } as const;
 
 /**

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
-import { verifyToken } from "@/lib/jwt";
+import { getRequesterIdFromRequest } from "@/lib/auth-request";
 import bcrypt from "bcryptjs";
+import { changePasswordBodySchema } from "@/lib/validation/api-schemas";
 
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 20;
@@ -19,16 +20,19 @@ function validatePassword(password: string): string[] {
 // POST /api/change-password
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { currentPassword, newPassword, confirmPassword } = body;
-
-    // Validar que los campos requeridos existan
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      return NextResponse.json(
-        { ok: false, message: "Todos los campos son requeridos" },
-        { status: 400 }
-      );
+    let raw: unknown;
+    try {
+      raw = await req.json();
+    } catch {
+      return NextResponse.json({ ok: false, message: "JSON inválido" }, { status: 400 });
     }
+
+    const parsed = changePasswordBodySchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json({ ok: false, message: "Datos inválidos" }, { status: 400 });
+    }
+
+    const { currentPassword, newPassword, confirmPassword } = parsed.data;
 
     // Validar que las contraseñas nuevas coincidan
     if (newPassword !== confirmPassword) {
@@ -46,27 +50,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // Obtener el usuario del token
     const authHeader = req.headers.get("authorization") || "";
-    if (!authHeader.startsWith("Bearer ")) {
-      return NextResponse.json(
-        { ok: false, message: "No autorizado" },
-        { status: 401 }
-      );
+    const userId = getRequesterIdFromRequest(req);
+    if (!userId) {
+      const message = authHeader.startsWith("Bearer ") ? "Token inválido" : "No autorizado";
+      return NextResponse.json({ ok: false, message }, { status: 401 });
     }
-
-    const token = authHeader.slice(7).trim();
-    const payload = verifyToken(token);
-
-    const userIdFromToken = payload?.id_usuario;
-    if (!payload || !userIdFromToken) {
-      return NextResponse.json(
-        { ok: false, message: "Token inválido" },
-        { status: 401 }
-      );
-    }
-
-    const userId = String(userIdFromToken);
 
     // Obtener el usuario de la base de datos
     const userResult = await pool.query(

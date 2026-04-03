@@ -1,32 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import pool from "@/lib/db"
 import { getDocumentFromStorage } from "@/lib/document-storage"
-import { verifyToken } from "@/lib/jwt"
-import { parseCookies } from "@/lib/cookies"
+import { getRequesterIdLenient } from "@/lib/auth-request"
 
 export const runtime = "nodejs"
 
 async function ensureAdminRole(req: NextRequest) {
-  const authHeader = (req.headers.get("authorization") || "").trim()
-  let userId: string | null = null
-
-  if (authHeader.startsWith("Bearer ")) {
-    const token = authHeader.slice(7).trim()
-    const payload = verifyToken(token)
-    const userIdFromToken = payload?.id_usuario
-    if (payload && userIdFromToken) userId = String(userIdFromToken)
-  }
-
-  if (!userId) {
-    const cookies = parseCookies(req.headers.get("cookie"))
-    const token = cookies["token"]
-    if (token) {
-      const payload = verifyToken(token)
-      const userIdFromToken = payload?.id_usuario
-      if (payload && userIdFromToken) userId = String(userIdFromToken)
-    }
-  }
-
+  const userId = getRequesterIdLenient(req)
   if (!userId) return false
 
   const roleRes = await pool.query(
