@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
@@ -20,8 +21,18 @@ import {
   Users,
   Grid3X3,
   TagIcon,
+  ChevronDown,
 } from "lucide-react";
 import Valoraciones from "./valoraciones";
+
+const LeafletMap = dynamic(() => import("@/components/leaflet-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[300px] w-full rounded-xl bg-muted/40 flex items-center justify-center">
+      <p className="text-sm text-muted-foreground">Cargando mapa...</p>
+    </div>
+  ),
+});
 
 export default function EventLanding() {
   const router = useRouter();
@@ -41,6 +52,7 @@ export default function EventLanding() {
   const [alreadyReserved, setAlreadyReserved] = useState(false);
   const [eventReservations, setEventReservations] = useState<any[]>([]);
   const [loadingEventReservations, setLoadingEventReservations] = useState(false);
+  const [showMap, setShowMap] = useState(false);
 
   // Helpers
   const formatDate = (d: any) => {
@@ -90,7 +102,6 @@ export default function EventLanding() {
       if (t instanceof Date) {
         return t.toTimeString().slice(0, 5);
       }
-      // Handle time string from database (HH:MM:SS format)
       const timeStr = String(t).trim();
       const parts = timeStr.split(":");
       return parts.slice(0, 2).join(":");
@@ -98,7 +109,6 @@ export default function EventLanding() {
       return String(t);
     }
   };
-    
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("es-CO", {
@@ -282,13 +292,13 @@ export default function EventLanding() {
   ]
     .filter(Boolean)
     .join(" / ") || "—";
-  
+
   const formattedFechaInicio = formatDate(event.fecha_inicio);
   const formattedFechaFin = event.fecha_fin ? formatDate(event.fecha_fin) : null;
   const formattedHorario = `${formatTime(event.hora_inicio)}${
     event.hora_final ? " - " + formatTime(event.hora_final) : ""
   }`;
-  
+
   const tipoEventoNombre =
     event.tipo_evento?.nombre || event.tipo_nombre || "—";
 
@@ -306,7 +316,7 @@ export default function EventLanding() {
   const minPrice = event.valores?.length
     ? Math.min(...event.valores.map((v: any) => Number(v.precio_boleto ?? v.valor ?? 0)))
     : 0;
-  
+
   const priceLabel = event.gratis_pago
     ? `Desde ${formatCurrency(minPrice)}`
     : "Gratis";
@@ -335,6 +345,12 @@ export default function EventLanding() {
       : alreadyReserved
         ? "Ya reservado"
         : "Reservar";
+
+  // Map coords derived from sitio
+  const sitioLat = event.sitio?.latitud ? Number(event.sitio.latitud) : null;
+  const sitioLng = event.sitio?.longitud ? Number(event.sitio.longitud) : null;
+  const hasMapCoords = sitioLat !== null && sitioLng !== null && !isNaN(sitioLat) && !isNaN(sitioLng);
+
   return (
     <main className="min-h-screen bg-background">
       <Header onAuthClick={() => {}} />
@@ -374,7 +390,7 @@ export default function EventLanding() {
                 alt={event.nombre_evento}
                 className="max-w-full max-h-full w-auto h-auto object-contain"
               />
-              
+
               {/* Flechas de Navegación del Carousel */}
               {event.imagenes.length > 1 && (
                 <>
@@ -489,62 +505,103 @@ export default function EventLanding() {
             </div>
 
             {/* Detalles de la locación */}
-              <Card className="bg-card/80 backdrop-blur-sm">
-                <CardHeader className="flex items-start gap-4">
-                  <div className="flex-1 text-left">
-                    <CardTitle className="text-lg">Ubicación</CardTitle>
-                    <p className="mt-2">
-                      {event.sitio?.nombre_sitio || "Lugar por confirmar"}
-                    </p>
+            <Card className="bg-card/80 backdrop-blur-sm">
+              <CardHeader className="flex items-start gap-4">
+                <div className="flex-1 text-left w-full">
+                  <CardTitle className="text-lg">Ubicación</CardTitle>
+                  <p className="mt-2">
+                    {event.sitio?.nombre_sitio || "Lugar por confirmar"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {event.sitio?.direccion} — {event.municipio?.nombre_municipio}
+                  </p>
+
+                  {/* Botón para desplegar/ocultar mapa */}
+                  {hasMapCoords && (
+                    <button
+                      onClick={() => setShowMap((prev) => !prev)}
+                      className="mt-3 flex items-center gap-1.5 text-sm font-medium text-primary hover:opacity-75 transition-opacity"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      {showMap ? "Ocultar mapa" : "Ver en el mapa"}
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform duration-200 ${
+                          showMap ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                  )}
+
+                  {/* Mapa desplegable con animación */}
+                  <div
+                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                      showMap && hasMapCoords ? "max-h-[320px] mt-3 opacity-100" : "max-h-0 opacity-0"
+                    }`}
+                  >
+                    {showMap && hasMapCoords && (
+                      <div className="h-[300px] w-full rounded-xl overflow-hidden border border-border">
+                        <LeafletMap
+                          center={{ lat: sitioLat!, lng: sitioLng! }}
+                          zoom={16}
+                          selectedCoords={{ lat: sitioLat!, lng: sitioLng! }}
+                          onMapClick={() => {}}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    <p className="text-sm font-medium">Accesibilidad</p>
                     <p className="text-sm text-muted-foreground">
-                      {event.sitio?.direccion} — {event.municipio?.nombre_municipio}
+                      {event.sitio?.acceso_discapacidad
+                        ? "Este sitio reporta acceso para personas con discapacidad."
+                        : "Este sitio no reporta acceso para personas con discapacidad."}
                     </p>
-                    <div className="mt-3 space-y-2">
-                      <p className="text-sm font-medium">Accesibilidad</p>
-                      <p className="text-sm text-muted-foreground">
-                        {event.sitio?.acceso_discapacidad ? "Este sitio reporta acceso para personas con discapacidad." : "Este sitio no reporta acceso para personas con discapacidad."}
-                      </p>
-                      {Array.isArray(event.sitio?.infraestructura_discapacitados) && event.sitio.infraestructura_discapacitados.length > 0 && (
+                    {Array.isArray(event.sitio?.infraestructura_discapacitados) &&
+                      event.sitio.infraestructura_discapacitados.length > 0 && (
                         <div className="space-y-1">
                           {event.sitio.infraestructura_discapacitados.map((infra: any) => (
-                            <div key={infra.id_sitios_discapacitados} className="rounded-md border border-border/60 bg-muted/40 p-2 text-sm">
+                            <div
+                              key={infra.id_sitios_discapacitados}
+                              className="rounded-md border border-border/60 bg-muted/40 p-2 text-sm"
+                            >
                               <p className="font-medium">
-                                {infra.nombre_infraestructura_discapacitados || "Infraestructura de accesibilidad"}
+                                {infra.nombre_infraestructura_discapacitados ||
+                                  "Infraestructura de accesibilidad"}
                               </p>
                               <p className="text-muted-foreground">{infra.descripcion}</p>
                             </div>
                           ))}
                         </div>
                       )}
-                    </div>
                   </div>
-                </CardHeader>
-              </Card>
+                </div>
+              </CardHeader>
+            </Card>
 
             {/* Descripción */}
-              <Card className="bg-card/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-lg">Acerca del evento</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 -mt-6">
-                  <p className="text-base text-muted-foreground leading-relaxed whitespace-pre-line">
-                    {event.descripcion}
-                  </p>
-                  <div className="flex items-center justify-between rounded-lg bg-muted/40 border border-border p-3">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Responsable del evento</p>
-                      <p className="text-sm">
-                        {event.responsable_evento || "No registrado"}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">PULEP</p>
-                      <p>{pulepEvento}</p>
-                    </div>
+            <Card className="bg-card/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">Acerca del evento</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 -mt-6">
+                <p className="text-base text-muted-foreground leading-relaxed whitespace-pre-line">
+                  {event.descripcion}
+                </p>
+                <div className="flex items-center justify-between rounded-lg bg-muted/40 border border-border p-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Responsable del evento</p>
+                    <p className="text-sm">
+                      {event.responsable_evento || "No registrado"}
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">PULEP</p>
+                    <p>{pulepEvento}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {informacionImportante && (
               <Card className="bg-card/80 backdrop-blur-sm">
@@ -591,7 +648,6 @@ export default function EventLanding() {
                       </div>
                     ))}
                   </div>
-                  
                 </CardContent>
               </Card>
             )}
@@ -623,7 +679,10 @@ export default function EventLanding() {
                             Documento: {reservation.tipo_documento} · {reservation.numero_documento}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Asistentes: {reservation.cuantos_asistiran} · Reserva: {reservation.fecha_reserva ? new Date(reservation.fecha_reserva).toLocaleString("es-ES") : "—"}
+                            Asistentes: {reservation.cuantos_asistiran} · Reserva:{" "}
+                            {reservation.fecha_reserva
+                              ? new Date(reservation.fecha_reserva).toLocaleString("es-ES")
+                              : "—"}
                           </p>
                           {reservation.quienes_asistiran ? (
                             <p className="text-sm text-muted-foreground whitespace-pre-line">
@@ -643,11 +702,12 @@ export default function EventLanding() {
               <CardHeader>
                 <CardTitle className="text-lg">Valoraciones</CardTitle>
               </CardHeader>
-              <CardContent className="-mt-5"> 
+              <CardContent className="-mt-5">
                 <Valoraciones eventId={event.id_evento} />
               </CardContent>
             </Card>
           </div>
+
           <div className="space-y-6">
             <Card className="border-blue-200 bg-card/80 backdrop-blur-sm shadow-lg">
               <CardContent className="p-6">
@@ -675,7 +735,10 @@ export default function EventLanding() {
                 )}
 
                 <p className="text-sm text-center text-muted-foreground mt-2">
-                  Cupos disponibles: <span className="font-semibold text-foreground">{cuposDisponibles.toLocaleString("es-CO")}</span>
+                  Cupos disponibles:{" "}
+                  <span className="font-semibold text-foreground">
+                    {cuposDisponibles.toLocaleString("es-CO")}
+                  </span>
                 </p>
 
                 {event.links && event.links.length > 0 && (
@@ -730,8 +793,8 @@ export default function EventLanding() {
                   <span className="text-muted-foreground">Horario</span>
                   <span className="font-medium">{formattedHorario}</span>
                 </div>
-                
-                {/* calendario */}
+
+                {/* Calendario */}
                 {(event.fecha_inicio || diasArr.length > 0) && (
                   <div className="mt-4 pt-4 border-t">
                     <p className="text-muted-foreground mb-3 font-medium">
@@ -743,62 +806,91 @@ export default function EventLanding() {
 
                         if (event.fecha_inicio) {
                           const startDate = new Date(event.fecha_inicio);
-                          const endDate = event.fecha_fin ? new Date(event.fecha_fin) : startDate;
-                          
-                          for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-                            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                          const endDate = event.fecha_fin
+                            ? new Date(event.fecha_fin)
+                            : startDate;
+
+                          for (
+                            let d = new Date(startDate);
+                            d <= endDate;
+                            d.setDate(d.getDate() + 1)
+                          ) {
+                            const dateStr = `${d.getFullYear()}-${String(
+                              d.getMonth() + 1
+                            ).padStart(2, "0")}-${String(d.getDate()).padStart(
+                              2,
+                              "0"
+                            )}`;
                             eventDates.add(dateStr);
                           }
                         }
-                        
-                        diasArr.forEach(d => {
+
+                        diasArr.forEach((d: any) => {
                           try {
                             const date = new Date(d);
-                            const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                            const dateStr = `${date.getFullYear()}-${String(
+                              date.getMonth() + 1
+                            ).padStart(2, "0")}-${String(
+                              date.getDate()
+                            ).padStart(2, "0")}`;
                             eventDates.add(dateStr);
-                          } catch (e) {
-                          }
+                          } catch (e) {}
                         });
-                        const allDates = Array.from(eventDates).map(d => new Date(d));
+
+                        const allDates = Array.from(eventDates).map(
+                          (d) => new Date(d)
+                        );
                         if (allDates.length === 0) return [];
-                        
-                        const minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
-                        const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
-                        
+
+                        const minDate = new Date(
+                          Math.min(...allDates.map((d) => d.getTime()))
+                        );
+                        const maxDate = new Date(
+                          Math.max(...allDates.map((d) => d.getTime()))
+                        );
+
                         const displayMonth = minDate.getMonth();
                         const displayYear = minDate.getFullYear();
                         const firstDay = new Date(displayYear, displayMonth, 1);
                         const startingDayOfWeek = firstDay.getDay();
-                        const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate();
-                        
-                        const calendarCells = [];
-                        
-                        // Day headers
-                        ['D', 'L', 'M', 'M', 'J', 'V', 'S'].forEach((day, i) => {
-                          calendarCells.push(
-                            <div key={`header-${i}`} className="text-center text-xs font-semibold text-muted-foreground py-1">
-                              {day}
-                            </div>
-                          );
-                        });
-                        
-                        // Empty cells before first day
+                        const daysInMonth = new Date(
+                          displayYear,
+                          displayMonth + 1,
+                          0
+                        ).getDate();
+
+                        const calendarCells: JSX.Element[] = [];
+
+                        ["D", "L", "M", "M", "J", "V", "S"].forEach(
+                          (day, i) => {
+                            calendarCells.push(
+                              <div
+                                key={`header-${i}`}
+                                className="text-center text-xs font-semibold text-muted-foreground py-1"
+                              >
+                                {day}
+                              </div>
+                            );
+                          }
+                        );
+
                         for (let i = 0; i < startingDayOfWeek; i++) {
                           calendarCells.push(<div key={`empty-${i}`} />);
                         }
-                        
-                        // Day cells
+
                         for (let day = 1; day <= daysInMonth; day++) {
-                          const dateStr = `${displayYear}-${String(displayMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                          const dateStr = `${displayYear}-${String(
+                            displayMonth + 1
+                          ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                           const isEventDay = eventDates.has(dateStr);
-                          
+
                           calendarCells.push(
                             <div
                               key={`day-${day}`}
                               className={`text-center py-1.5 text-xs rounded-md ${
                                 isEventDay
-                                  ? 'bg-gradient-to-tr from-lime-500 to-green-600 text-white font-bold'
-                                  : 'text-muted-foreground'
+                                  ? "bg-gradient-to-tr from-lime-500 to-green-600 text-white font-bold"
+                                  : "text-muted-foreground"
                               }`}
                             >
                               {day}
@@ -814,30 +906,29 @@ export default function EventLanding() {
             </Card>
 
             {/* Organizer Card */}
-              <Card className="bg-card/80 backdrop-blur-sm">
-                <CardHeader className="pb-1">
-                  <CardTitle className="text-base">Organizador</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm -mt-6">
-                  {event.creador && (
-                    <div className="flex items-center gap-3">
-                      <div>
-                        <p className="font-medium">
-                          {event.creador.nombres} {event.creador.apellidos}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Organizador</p>
-                      </div>
+            <Card className="bg-card/80 backdrop-blur-sm">
+              <CardHeader className="pb-1">
+                <CardTitle className="text-base">Organizador</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm -mt-6">
+                {event.creador && (
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <p className="font-medium">
+                        {event.creador.nombres} {event.creador.apellidos}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Organizador</p>
                     </div>
-                  )}
-                  {organizerPhones !== "—" && (
-                    <div className="flex items-center gap-2 text-muted-foreground mt-2">
-                      <Phone className="h-4 w-4" />
-                      <span>{organizerPhones}</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
+                  </div>
+                )}
+                {organizerPhones !== "—" && (
+                  <div className="flex items-center gap-2 text-muted-foreground mt-2">
+                    <Phone className="h-4 w-4" />
+                    <span>{organizerPhones}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { uploadImageBuffer } from "@/lib/document-storage";
+import { uploadDocumentBuffer, uploadImageBuffer } from "@/lib/document-storage";
 import pool from "@/lib/db";
 import { verifyToken } from "@/lib/jwt";
 import { parseCookies } from "@/lib/cookies";
+import { PERMISSION_IDS } from "@/lib/permissions";
 import { dbErrorResponse } from "@/lib/api-error-response";
 
 export const runtime = "nodejs";
@@ -10,77 +11,65 @@ export const runtime = "nodejs";
 const ALPHANUM_SPACE_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ ]+$/;
 const TEXT_WITH_PUNCT_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]+$/;
 
-async function getAuthenticatedUser(req: Request, client: any) {
-  const authHeader = (req.headers.get("authorization") || "").trim();
-  let userId: string | null = null;
 
-  if (authHeader.startsWith("Bearer ")) {
-    try {
-      const t = authHeader.slice(7).trim();
-      const payload = verifyToken(t);
-      const userIdFromToken = payload?.id_usuario;
-      if (payload && userIdFromToken) userId = String(userIdFromToken);
-    } catch (e) {
-      console.error("token verification failed", e);
-    }
-  }
-
-  if (!userId) {
-    const cookies = parseCookies(req.headers.get("cookie"));
-    const token = cookies["token"];
-    if (token) {
-      try {
-        const payload = verifyToken(token);
-        const userIdFromToken = payload?.id_usuario;
-        if (payload && userIdFromToken) userId = String(userIdFromToken);
-      } catch (e) {
-        console.error("cookie token verification failed", e);
-      }
-    }
-  }
-
-  if (!userId) return null;
-
-  const roleRes = await client.query(
-    "SELECT id_usuario, id_rol FROM tabla_usuarios WHERE id_usuario = $1 LIMIT 1",
-    [userId]
-  );
-  if (!roleRes.rows || roleRes.rows.length === 0) return null;
-
-  return {
-    id_usuario: String(roleRes.rows[0].id_usuario),
-    id_rol: Number(roleRes.rows[0].id_rol),
-  };
-}
-
-export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
-  const { id } = await context.params;
-  const eventId = Number(id);
+export async function POST(req: Request) {
   const client = await pool.connect();
   try {
-    if (!eventId) {
-      return NextResponse.json({ ok: false, message: "Invalid event ID" }, { status: 400 });
+    const authHeader = req.headers.get("authorization") || "";
+    let requesterId: string | null = null;
+
+    if (authHeader.startsWith("Bearer ")) {
+      const token = authHeader.slice(7).trim();
+      const payload = verifyToken(token);
+      const userIdFromToken = payload?.id_usuario;
+      if (!payload || !userIdFromToken) {
+        return NextResponse.json({ ok: false, message: "Invalid token" }, { status: 401 });
+      }
+      requesterId = String(userIdFromToken);
+    } else {
+      const cookieHeader = req.headers.get("cookie");
+      if (cookieHeader) {
+        const cookies = parseCookies(cookieHeader);
+        const token = cookies["token"];
+        if (token) {
+          const payload = verifyToken(token);
+          const userIdFromToken = payload?.id_usuario;
+          if (payload && userIdFromToken) {
+            requesterId = String(userIdFromToken);
+          }
+        }
+      }
+      if (!requesterId) {
+        return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
+      }
     }
 
-    const user = await getAuthenticatedUser(req, client);
-    if (!user) {
-      return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
+    const roleRes = await client.query(
+      "SELECT id_rol FROM tabla_usuarios WHERE id_usuario = $1 LIMIT 1",
+      [requesterId]
+    );
+    const role = roleRes.rows && roleRes.rows[0] ? Number(roleRes.rows[0].id_rol) : null;
+    if (!role) {
+      return NextResponse.json({ ok: false, message: "User role not found" }, { status: 403 });
     }
 
-    if (user.id_rol !== 4) {
+    const permissionRes = await client.query(
+      `SELECT id_accesibilidad_menu_x_rol
+       FROM tabla_accesibilidad_menu_x_rol
+       WHERE id_accesibilidad = $1 AND id_rol = $2
+       LIMIT 1`,
+      [PERMISSION_IDS.CREAR_EVENTOS, role]
+    );
+
+    if (!permissionRes.rows || permissionRes.rows.length === 0) {
       return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
-    }
-
-    // Check event exists
-    const eventCheck = await client.query("SELECT id_evento FROM tabla_eventos WHERE id_evento = $1", [eventId]);
-    if (!eventCheck.rows || eventCheck.rows.length === 0) {
-      return NextResponse.json({ ok: false, message: "Event not found" }, { status: 404 });
     }
 
     const formData = await req.formData();
 
-    // Upload new images
     const maxImages = 8;
+    const maxDocBytes = 5 * 1024 * 1024;
+
     const files = formData.getAll("additionalImages") as File[];
     if (files.length > maxImages) {
       return NextResponse.json({ ok: false, message: "Maximo 8 imagenes" }, { status: 400 });
@@ -94,31 +83,56 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       originalFileName: string;
     }> = [];
     for (const f of files) {
-      if (f && (f as any).size > 0) {
-        const buffer = Buffer.from(await f.arrayBuffer());
-        const result = await uploadImageBuffer({
-          buffer,
-          contentType: String((f as any).type || "image/jpeg"),
-          originalFileName: String((f as any).name || "imagen.jpg"),
-          eventId,
-        });
-        const imageUrl = result.publicUrl || `/api/events/image?key=${encodeURIComponent(result.storageKey)}`;
-        uploadedImages.push({
-          url: imageUrl,
-          provider: result.provider,
-          storageKey: result.storageKey,
-          mimeType: result.mimeType,
-          bytes: result.sizeBytes,
-          originalFileName: result.originalFileName,
-        });
-      }
+      const buffer = Buffer.from(await f.arrayBuffer());
+      const result = await uploadImageBuffer({
+        buffer,
+        contentType: String((f as any).type || "image/jpeg"),
+        originalFileName: String((f as any).name || "imagen.jpg"),
+      });
+      const imageUrl = result.publicUrl || `/api/events/image?key=${encodeURIComponent(result.storageKey)}`;
+      uploadedImages.push({
+        url: imageUrl,
+        provider: result.provider,
+        storageKey: result.storageKey,
+        mimeType: result.mimeType,
+        bytes: result.sizeBytes,
+        originalFileName: result.originalFileName,
+      });
     }
 
-    // Get images to delete
-    const imagesToDeleteRaw = formData.get("imagesToDelete") as string | null;
-    const imagesToDelete: number[] = imagesToDeleteRaw ? JSON.parse(imagesToDeleteRaw) : [];
+    const docFile = formData.get("documento") as File | null;
+    let documentoUrl: string | null = null;
+    let documentoStorageProvider: string | null = null;
+    let documentoStorageKey: string | null = null;
+    let documentoMimeType: string | null = null;
+    let documentoBytes: number | null = null;
+    let documentoOriginalFilename: string | null = null;
 
-    // Get form fields
+    if (docFile && (docFile as unknown as any).size) {
+      const fileName = String((docFile as any).name || "").toLowerCase();
+      const fileType = String((docFile as any).type || "").toLowerCase();
+      const isPdf = fileType === "application/pdf" || fileName.endsWith(".pdf");
+      if (!isPdf) {
+        return NextResponse.json({ ok: false, message: "Solo se permite cargar un documento PDF" }, { status: 400 });
+      }
+      const docSize = (docFile as unknown as any).size as number;
+      if (docSize > maxDocBytes) {
+        return NextResponse.json({ ok: false, message: "Documento supera 5 MB" }, { status: 400 });
+      }
+      const bufferDoc = Buffer.from(await docFile.arrayBuffer());
+      const docResult = await uploadDocumentBuffer({
+        buffer: bufferDoc,
+        contentType: "application/pdf",
+        originalFileName: String((docFile as any).name || "documento.pdf"),
+      });
+      documentoUrl = docResult.publicUrl;
+      documentoStorageProvider = docResult.provider;
+      documentoStorageKey = docResult.storageKey;
+      documentoMimeType = docResult.mimeType;
+      documentoBytes = docResult.sizeBytes;
+      documentoOriginalFilename = docResult.originalFileName;
+    }
+
     const nombre_evento = ((formData.get("nombre_evento") as string) || "").trim();
     const pulepRaw = ((formData.get("pulep_evento") as string) || "").trim();
     const pulep_evento = pulepRaw ? pulepRaw.toUpperCase() : null;
@@ -129,6 +143,8 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     const fecha_fin = (formData.get("fecha_fin") as string) || null;
     const hora_inicio = (formData.get("hora_inicio") as string) || null;
     const hora_final = (formData.get("hora_final") as string) || null;
+    const userId = String(requesterId || "");
+
     const id_categoria_evento = Number(formData.get("id_categoria_evento") || 0);
     const id_tipo_evento = Number(formData.get("id_tipo_evento") || 0);
     const id_sitio = Number(formData.get("id_sitio") || 0);
@@ -136,19 +152,19 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     const telefono_2 = (formData.get("telefono_2") as string) || null;
     const cupoRaw = String(formData.get("cupo") || "").trim();
     const cupo = /^\d+$/.test(cupoRaw) ? Number(cupoRaw) : NaN;
+    const estado = String(formData.get("estado") || "true") === "true";
+    const reservar_anticipado = String(formData.get("reservar_anticipado") || "false") === "true";
+    const gratis_pago = String(formData.get("gratis_pago") || "false") === "true";
+
+    const boletasRaw = formData.get("boletas") as string | null;
     const costosRaw = formData.get("costos") as string | null;
     const tiposRaw = formData.get("tiposBoleteria") as string | null;
     const linksRaw = formData.get("linksBoleteria") as string | null;
-    const boletasRaw = formData.get("boletas") as string | null;
+    const boletasParsed: Array<{ nombre_boleto?: string; precio_boleto?: string | number; servicio?: string | number }> =
+      boletasRaw ? JSON.parse(boletasRaw) : [];
     const costos: string[] = costosRaw ? JSON.parse(costosRaw) : [];
     const tiposBoleteria: string[] = tiposRaw ? JSON.parse(tiposRaw) : [];
     const linksBoleteria: string[] = linksRaw ? JSON.parse(linksRaw) : [];
-    const boletas: Array<{ nombre_boleto?: string; precio_boleto?: string | number; servicio?: string | number }> = boletasRaw
-      ? JSON.parse(boletasRaw)
-      : [];
-    const gratis_pago = String(formData.get("gratis_pago") || "false") === "true";
-    const reservar_anticipado = String(formData.get("reservar_anticipado") || "false") === "true";
-
     const infoItemsParsed: Array<{ detalle: string; obligatorio?: boolean }> =
       infoItemsRaw ? JSON.parse(infoItemsRaw) : [];
     const infoItems = (Array.isArray(infoItemsParsed) ? infoItemsParsed : [])
@@ -162,59 +178,55 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     if (!nombre_evento || nombre_evento.length < 6) {
       return NextResponse.json({ ok: false, message: "El nombre del evento debe tener al menos 6 caracteres" }, { status: 400 });
     }
-
     if (!ALPHANUM_SPACE_REGEX.test(nombre_evento)) {
       return NextResponse.json({ ok: false, message: "El nombre del evento solo permite letras y números" }, { status: 400 });
     }
-
     if (!responsable_evento || responsable_evento.length < 6) {
       return NextResponse.json({ ok: false, message: "El responsable del evento es obligatorio y debe tener al menos 6 caracteres" }, { status: 400 });
     }
-
     if (!ALPHANUM_SPACE_REGEX.test(responsable_evento)) {
       return NextResponse.json({ ok: false, message: "El responsable del evento solo permite letras y números" }, { status: 400 });
     }
-
     if (!descripcion || descripcion.length < 10) {
       return NextResponse.json({ ok: false, message: "La descripción del evento debe tener al menos 10 caracteres" }, { status: 400 });
     }
-
     if (!TEXT_WITH_PUNCT_REGEX.test(descripcion)) {
       return NextResponse.json({ ok: false, message: "La descripción del evento contiene caracteres no permitidos" }, { status: 400 });
     }
-
     if (!Number.isInteger(cupo) || cupo < 20 || cupo > 5000) {
       return NextResponse.json({ ok: false, message: "El aforo debe ser un número entero entre 20 y 5000" }, { status: 400 });
     }
-
     for (const infoItem of infoItems) {
       if (!TEXT_WITH_PUNCT_REGEX.test(infoItem.detalle)) {
         return NextResponse.json({ ok: false, message: "La información adicional contiene caracteres no permitidos" }, { status: 400 });
       }
     }
-
     if (pulep_evento && !/^[A-Z0-9]{6,8}$/.test(pulep_evento)) {
       return NextResponse.json(
         { ok: false, message: "El código PULEP debe tener entre 6 y 8 caracteres y solo usar letras mayúsculas y números" },
         { status: 400 }
       );
     }
+    if (docFile && documentoStorageKey && !documentoOriginalFilename) {
+      documentoOriginalFilename = "documento.pdf";
+    }
 
     const eventPayload = {
       nombre_evento,
       pulep_evento,
       responsable_evento,
+      id_categoria_evento,
+      id_tipo_evento,
+      id_sitio,
       descripcion,
       fecha_inicio,
       fecha_fin,
       hora_inicio,
       hora_final,
-      id_categoria_evento,
-      id_tipo_evento,
-      id_sitio,
+      gratis_pago,
       cupo,
       reservar_anticipado,
-      gratis_pago,
+      estado,
     };
 
     const phonesPayload = [
@@ -222,7 +234,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       ...(telefono_2 ? [{ telefono: telefono_2, es_principal: false }] : []),
     ];
 
-    const normalizedBoletas = (Array.isArray(boletas) ? boletas : [])
+    const normalizedBoletas = (Array.isArray(boletasParsed) ? boletasParsed : [])
       .map((boleta) => ({
         nombre_boleto: String(boleta?.nombre_boleto || "").trim(),
         precio_boleto: String(boleta?.precio_boleto ?? "").replace(/[^0-9]/g, ""),
@@ -234,7 +246,6 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       if (normalizedBoletas.length === 0) {
         return NextResponse.json({ ok: false, message: "Debes definir al menos una boleta para eventos de pago" }, { status: 400 });
       }
-
       for (const boleta of normalizedBoletas) {
         if (boleta.nombre_boleto.length < 3 || !ALPHANUM_SPACE_REGEX.test(boleta.nombre_boleto)) {
           return NextResponse.json({ ok: false, message: "El nombre de la boleta solo permite letras y números y mínimo 3 caracteres" }, { status: 400 });
@@ -251,17 +262,17 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     }
 
     const ticketsPayload = gratis_pago
-      ? (normalizedBoletas.length > 0
-          ? normalizedBoletas.map((boleta) => ({
-              nombre_boleto: boleta.nombre_boleto,
-              precio_boleto: Number(boleta.precio_boleto),
-              servicio: boleta.servicio.length ? Number(boleta.servicio) : 0,
-            }))
-          : tiposBoleteria.map((nombreBoleto, i) => {
-              const costoRaw = costos[i] || "";
-              const precioBoleto = parseFloat(costoRaw.replace(/[^0-9.,-]/g, "").replace(",", ".")) || 0;
-              return { nombre_boleto: nombreBoleto, precio_boleto: precioBoleto, servicio: 0 };
-            }))
+      ? normalizedBoletas.length > 0
+        ? normalizedBoletas.map((boleta) => ({
+            nombre_boleto: boleta.nombre_boleto,
+            precio_boleto: Number(boleta.precio_boleto),
+            servicio: boleta.servicio.length ? Number(boleta.servicio) : 0,
+          }))
+        : tiposBoleteria.map((nombreBoleto, i) => {
+            const costoRaw = costos[i] || "";
+            const precioBoleto = parseFloat(costoRaw.replace(/[^0-9.,-]/g, "").replace(",", ".")) || 0;
+            return { nombre_boleto: nombreBoleto, precio_boleto: precioBoleto, servicio: 0 };
+          })
       : [];
 
     const imagesPayload = uploadedImages.map((image) => ({
@@ -273,148 +284,247 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       original_filename: image.originalFileName,
     }));
 
-    const updateResult = await client.query(
-      `SELECT app_api.fn_evento_actualizar(
+    const documentPayload = documentoUrl || documentoStorageKey
+      ? {
+          url_documento_evento: documentoUrl || `bucket://${documentoStorageKey}`,
+          storage_provider: documentoStorageProvider,
+          storage_key: documentoStorageKey,
+          mime_type: documentoMimeType,
+          bytes: documentoBytes,
+          original_filename: documentoOriginalFilename,
+        }
+      : null;
+
+    const dbResult = await client.query(
+      `SELECT app_api.fn_evento_crear(
          $1,
-         $2,
+         $2::jsonb,
          $3::jsonb,
          $4::jsonb,
          $5::jsonb,
          $6::jsonb,
          $7::jsonb,
-         $8::jsonb,
-         $9::int[]
+         $8::jsonb
        ) AS payload`,
       [
-        eventId,
-        Number(user.id_usuario),
+        Number(userId),
         JSON.stringify(eventPayload),
         JSON.stringify(phonesPayload),
         JSON.stringify(infoItems),
         JSON.stringify(ticketsPayload),
-        JSON.stringify((linksBoleteria || []).filter(Boolean)),
+        JSON.stringify(linksBoleteria.filter(Boolean)),
         JSON.stringify(imagesPayload),
-        imagesToDelete,
+        documentPayload ? JSON.stringify(documentPayload) : null,
       ]
     );
 
-    const updatePayload = updateResult.rows?.[0]?.payload;
-    if (!updatePayload?.ok) {
-      return dbErrorResponse(updatePayload, "Error updating event");
+    const payload = dbResult.rows?.[0]?.payload;
+    if (!payload?.ok) {
+      return dbErrorResponse(payload, "Error creando evento");
     }
 
-    // Return updated event
-    const result = await client.query(
-          `SELECT e.id_evento,
-            e.id_publico_evento,
-            e.pulep_evento,
-            e.nombre_evento,
-            e.responsable_evento,
-            e.id_usuario,
-            e.id_categoria_evento,
-            e.id_tipo_evento,
-            e.id_sitio,
-            e.descripcion,
-            e.fecha_inicio,
-            e.fecha_fin,
-            e.hora_inicio,
-            e.hora_final,
-            e.gratis_pago,
-            e.cupo,
-            e.reservar_anticipado,
-            e.estado,
-            e.motivo_rechazo,
-            e.rechazo_por,
-            e.destacado,
-            e.destacado_por_usuario AS destacado_por,
-            e.fecha_destacado,
-            e.fecha_creacion,
-            e.fecha_actualizacion,
-            e.fecha_desactivacion,
-            tel_principal.telefono AS telefono_1,
-            tel_secundario.telefono AS telefono_2,
-              u.nombres,
-              u.apellidos,
-            s.nombre_sitio,
-            m.nombre_municipio,
-            ce.nombre as categoria_nombre,
-            te.nombre_tipo_evento as tipo_nombre
-       FROM tabla_eventos e
-      LEFT JOIN tabla_usuarios u ON e.id_usuario = u.id_usuario
-       LEFT JOIN tabla_sitios s ON e.id_sitio = s.id_sitio
-      LEFT JOIN tabla_municipios m ON s.id_municipio = m.id_municipio
-       LEFT JOIN tabla_categoria_eventos ce ON e.id_categoria_evento = ce.id_categoria_evento
-       LEFT JOIN tabla_tipo_eventos te ON e.id_tipo_evento = te.id_tipo_evento
-       LEFT JOIN LATERAL (
-         SELECT telefono
-         FROM tabla_eventos_telefonos
-         WHERE id_evento = e.id_evento AND es_principal = TRUE
-         ORDER BY fecha_creacion ASC
-         LIMIT 1
-       ) tel_principal ON TRUE
-       LEFT JOIN LATERAL (
-         SELECT telefono
-         FROM tabla_eventos_telefonos
-         WHERE id_evento = e.id_evento AND es_principal = FALSE
-         ORDER BY fecha_creacion ASC
-         LIMIT 1
-       ) tel_secundario ON TRUE
-       WHERE e.id_evento = $1`,
-      [eventId]
-    );
-
-    if (!result.rows || result.rows.length === 0) {
-      return NextResponse.json({ ok: false, message: "Event not found" }, { status: 404 });
-    }
-
-    const updatedEvent = result.rows[0];
-    return NextResponse.json({ ok: true, event: updatedEvent });
+    return NextResponse.json({ ok: true, eventId: payload.id_evento });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ ok: false, message: "Error updating event" }, { status: 500 });
+    return NextResponse.json({ ok: false, message: "Error creando evento" }, { status: 500 });
   } finally {
     client.release();
   }
 }
 
-export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
-  const { id } = await context.params;
-  const eventId = Number(id);
-  const client = await pool.connect();
+
+export async function GET(req: Request) {
   try {
-    if (!eventId) {
-      return NextResponse.json({ ok: false, message: "Invalid event ID" }, { status: 400 });
+    const url = new URL(req.url);
+    const idParam = url.searchParams.get("id");
+    const idPublicoParam = (url.searchParams.get("idPublico") || "").trim();
+    const mineParam = (url.searchParams.get("mine") || "").trim().toLowerCase();
+    const onlyMine = mineParam === "true" || mineParam === "1";
+    const includeAllParam = (url.searchParams.get("includeAll") || "").trim().toLowerCase();
+    const includeAll = includeAllParam === "true" || includeAllParam === "1";
+
+    const idNum = idParam !== null ? Number(idParam) : null;
+    if (idParam !== null && (!Number.isFinite(idNum) || Number.isNaN(idNum))) {
+      return NextResponse.json({ ok: false, message: "Invalid id parameter" }, { status: 400 });
     }
 
-    const user = await getAuthenticatedUser(req, client);
-    if (!user) {
-      return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
+    if (idPublicoParam && idPublicoParam.length < 6) {
+      return NextResponse.json({ ok: false, message: "Invalid idPublico parameter" }, { status: 400 });
     }
 
-    if (user.id_rol !== 4) {
-      return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
+    if (onlyMine && includeAll) {
+      return NextResponse.json({ ok: false, message: "Invalid query combination" }, { status: 400 });
     }
 
-    const updateResult = await client.query(
-      `UPDATE tabla_eventos
-       SET estado = FALSE,
-           destacado = FALSE,
-           fecha_desactivacion = CURRENT_TIMESTAMP,
-           fecha_actualizacion = CURRENT_TIMESTAMP
-       WHERE id_evento = $1
-       RETURNING id_evento`,
-      [eventId]
+    let requesterId: string | null = null;
+    if (onlyMine || includeAll) {
+      const authHeader = (req.headers.get("authorization") || "").trim();
+      if (authHeader.startsWith("Bearer ")) {
+        const token = authHeader.slice(7).trim();
+        const payload = verifyToken(token);
+        const userIdFromToken = payload?.id_usuario;
+        if (payload && userIdFromToken) {
+          requesterId = String(userIdFromToken);
+        }
+      }
+
+      if (!requesterId) {
+        const cookieHeader = req.headers.get("cookie");
+        if (cookieHeader) {
+          const cookies = parseCookies(cookieHeader);
+          const token = cookies["token"];
+          if (token) {
+            const payload = verifyToken(token);
+            const userIdFromToken = payload?.id_usuario;
+            if (payload && userIdFromToken) {
+              requesterId = String(userIdFromToken);
+            }
+          }
+        }
+      }
+
+      if (!requesterId) {
+        return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
+      }
+
+      if (includeAll) {
+        const roleRes = await pool.query(
+          "SELECT id_rol FROM tabla_usuarios WHERE id_usuario = $1 LIMIT 1",
+          [requesterId]
+        );
+        const role = roleRes.rows && roleRes.rows[0] ? Number(roleRes.rows[0].id_rol) : null;
+        if (!role) {
+          return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
+        }
+
+        const permissionRes = await pool.query(
+          `SELECT id_accesibilidad_menu_x_rol
+           FROM tabla_accesibilidad_menu_x_rol
+           WHERE id_accesibilidad = $1 AND id_rol = $2
+           LIMIT 1`,
+          [PERMISSION_IDS.GESTIONAR_EVENTOS, role]
+        );
+
+        if (!permissionRes.rows || permissionRes.rows.length === 0) {
+          return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
+        }
+      }
+    }
+
+    const functionExistsResult = await pool.query(
+      `SELECT EXISTS (
+         SELECT 1
+         FROM pg_proc p
+         INNER JOIN pg_namespace n ON n.oid = p.pronamespace
+         WHERE n.nspname = 'app_api'
+           AND p.proname = 'fn_eventos_listar_json'
+       ) AS exists`
     );
 
-    if (!updateResult.rows || updateResult.rows.length === 0) {
-      return NextResponse.json({ ok: false, message: "Event not found" }, { status: 404 });
+    const functionExists = Boolean(functionExistsResult.rows?.[0]?.exists);
+    if (!functionExists) {
+      return NextResponse.json(
+        { ok: false, message: "La función app_api.fn_eventos_listar_json no existe en la base de datos" },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ ok: true, message: "Evento desactivado correctamente" });
-  } catch (err) {
+    const dbResult = await pool.query(
+      `SELECT app_api.fn_eventos_listar_json($1, $2, $3, $4, $5) AS payload`,
+      [
+        idNum,
+        idPublicoParam || null,
+        onlyMine,
+        includeAll,
+        requesterId ? Number(requesterId) : null,
+      ]
+    );
+
+    const payload = dbResult.rows?.[0]?.payload;
+
+    // ── Evento individual: enriquecer sitio con coordenadas ──────────────────
+    if (idParam || idPublicoParam) {
+      if (!payload?.ok) {
+        return NextResponse.json(
+          { ok: false, message: payload?.error || "Evento no encontrado" },
+          { status: 404 }
+        );
+      }
+
+      const event = payload.event;
+
+      // Obtener coordenadas del sitio desde la BD si el evento tiene id_sitio
+      const sitioId = event?.id_sitio ?? event?.sitio?.id_sitio ?? null;
+      if (sitioId) {
+        try {
+          const sitioRes = await pool.query(
+            `SELECT
+               s.id_sitio,
+               s.nombre_sitio,
+               s.direccion,
+               s.latitud,
+               s.longitud,
+               s.sitio_web,
+               s.acceso_discapacidad,
+               COALESCE(
+                 json_agg(
+                   json_build_object(
+                     'id_sitios_discapacitados', sd.id_sitios_discapacitados,
+                     'nombre_infraestructura_discapacitados', tid.nombre_infraestructura_discapacitados,
+                     'descripcion', sd.descripcion_relacional
+                   )
+                 ) FILTER (WHERE sd.id_sitios_discapacitados IS NOT NULL),
+                 '[]'
+               ) AS infraestructura_discapacitados
+             FROM tabla_sitios s
+             LEFT JOIN tabla_sitios_discapacitados sd ON sd.id_sitio = s.id_sitio
+             LEFT JOIN tabla_tipo_infraestructura_discapacitados tid
+               ON tid.id_infraestructura_discapacitados = sd.id_infraestructura_discapacitados
+             WHERE s.id_sitio = $1
+             GROUP BY s.id_sitio`,
+            [sitioId]
+          );
+
+          if (sitioRes.rows && sitioRes.rows.length > 0) {
+            // Combinar el sitio que ya trae la función con los campos nuevos
+            event.sitio = {
+              ...(typeof event.sitio === "object" && event.sitio !== null ? event.sitio : {}),
+              ...sitioRes.rows[0],
+            };
+          }
+        } catch (sitioErr) {
+          // No fallar el request completo si la consulta del sitio falla
+          console.error("Error enriqueciendo sitio con coordenadas:", sitioErr);
+        }
+      }
+
+      return NextResponse.json({ ok: true, event });
+    }
+
+    // ── Lista de eventos ─────────────────────────────────────────────────────
+    if (!payload?.ok) {
+      return NextResponse.json(
+        { ok: false, message: payload?.error || "Error obteniendo eventos" },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({ ok: true, eventos: payload.eventos || [] });
+  } catch (err: any) {
     console.error(err);
-    return NextResponse.json({ ok: false, message: "Error deleting event" }, { status: 500 });
-  } finally {
-    client.release();
+
+    const dbMessage = String(err?.message || "");
+    if (err?.code === "42703" && dbMessage.toLowerCase().includes("cuantos_asistiran")) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "La función fn_eventos_listar_json en PostgreSQL está desactualizada y referencia la columna cuantos_asistiran. Reemplázala por la versión actual del script scripts SQL/funciones/fn_eventos_listar_json.sql.",
+        },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ ok: false, message: "Error obteniendo eventos" }, { status: 500 });
   }
 }
