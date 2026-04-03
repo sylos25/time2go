@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { uploadDocumentBuffer, uploadImageBuffer } from "@/lib/document-storage";
 import pool from "@/lib/db";
-import { verifyToken } from "@/lib/jwt";
-import { parseCookies } from "@/lib/cookies";
+import { getRequesterIdFromRequest, getRequesterIdLenient } from "@/lib/auth-request";
 import { PERMISSION_IDS } from "@/lib/permissions";
 import { dbErrorResponse } from "@/lib/api-error-response";
 
@@ -16,32 +15,10 @@ export async function POST(req: Request) {
   const client = await pool.connect();
   try {
     const authHeader = req.headers.get("authorization") || "";
-    let requesterId: string | null = null;
-
-    if (authHeader.startsWith("Bearer ")) {
-      const token = authHeader.slice(7).trim();
-      const payload = verifyToken(token);
-      const userIdFromToken = payload?.id_usuario;
-      if (!payload || !userIdFromToken) {
-        return NextResponse.json({ ok: false, message: "Invalid token" }, { status: 401 });
-      }
-      requesterId = String(userIdFromToken);
-    } else {
-      const cookieHeader = req.headers.get("cookie");
-      if (cookieHeader) {
-        const cookies = parseCookies(cookieHeader);
-        const token = cookies["token"];
-        if (token) {
-          const payload = verifyToken(token);
-          const userIdFromToken = payload?.id_usuario;
-          if (payload && userIdFromToken) {
-            requesterId = String(userIdFromToken);
-          }
-        }
-      }
-      if (!requesterId) {
-        return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
-      }
+    const requesterId = getRequesterIdFromRequest(req);
+    if (!requesterId) {
+      const message = authHeader.startsWith("Bearer ") ? "Invalid token" : "Not authenticated";
+      return NextResponse.json({ ok: false, message }, { status: 401 });
     }
 
     const roleRes = await client.query(
@@ -358,30 +335,7 @@ export async function GET(req: Request) {
 
     let requesterId: string | null = null;
     if (onlyMine || includeAll) {
-      const authHeader = (req.headers.get("authorization") || "").trim();
-      if (authHeader.startsWith("Bearer ")) {
-        const token = authHeader.slice(7).trim();
-        const payload = verifyToken(token);
-        const userIdFromToken = payload?.id_usuario;
-        if (payload && userIdFromToken) {
-          requesterId = String(userIdFromToken);
-        }
-      }
-
-      if (!requesterId) {
-        const cookieHeader = req.headers.get("cookie");
-        if (cookieHeader) {
-          const cookies = parseCookies(cookieHeader);
-          const token = cookies["token"];
-          if (token) {
-            const payload = verifyToken(token);
-            const userIdFromToken = payload?.id_usuario;
-            if (payload && userIdFromToken) {
-              requesterId = String(userIdFromToken);
-            }
-          }
-        }
-      }
+      requesterId = getRequesterIdLenient(req);
 
       if (!requesterId) {
         return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });

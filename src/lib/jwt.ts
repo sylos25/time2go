@@ -1,24 +1,28 @@
-import jwt from 'jsonwebtoken';
+import jwt, { type SignOptions } from "jsonwebtoken";
+import { resolveJwtSecret } from "@/lib/jwt-secret";
 
 export interface JwtPayload {
   id_usuario?: string;
+  id_rol?: number;
   name?: string;
   iat?: number;
   exp?: number;
 }
 
-const SECRET = process.env.BETTER_AUTH_SECRET || process.env.JWT_SECRET || 'dev-secret';
+export function getJwtSecret(): string {
+  return resolveJwtSecret();
+}
 
 export function verifyToken(token: string): JwtPayload | null {
   try {
-    const payload = jwt.verify(token, SECRET) as JwtPayload;
+    const payload = jwt.verify(token, getJwtSecret()) as JwtPayload;
     return payload;
-  } catch (err) {
+  } catch {
     return null;
   }
 }
 
-export function signToken(payload: object, expiresIn: string | number = '12h') {
-  // Tip: cast to any to avoid TS overload mismatches from @types/jsonwebtoken
-  return jwt.sign(payload as any, SECRET as any, { expiresIn: expiresIn as any } as any) as string;
+export function signToken(payload: object, expiresIn: string | number = "12h"): string {
+  const options: SignOptions = { expiresIn: expiresIn as SignOptions["expiresIn"] };
+  return jwt.sign(payload, getJwtSecret(), options);
 }

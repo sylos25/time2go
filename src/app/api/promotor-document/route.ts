@@ -1,8 +1,7 @@
 import crypto from "node:crypto"
 import { NextResponse } from "next/server"
 import pool from "@/lib/db"
-import { parseCookies } from "@/lib/cookies"
-import { verifyToken } from "@/lib/jwt"
+import { getRequesterIdLenient } from "@/lib/auth-request"
 import { uploadDocumentBuffer } from "@/lib/document-storage"
 
 export const runtime = "nodejs"
@@ -12,34 +11,6 @@ const DEFAULT_WOMPI_AMOUNT_COP = Number(process.env.PROMOTOR_ROLE_WOMPI_AMOUNT_C
 const WOMPI_PUBLIC_KEY = process.env.WOMPI_PUBLIC_KEY || ""
 const WOMPI_INTEGRITY_SECRET = process.env.WOMPI_INTEGRITY_SECRET || ""
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
-
-async function getAuthenticatedUserId(req: Request): Promise<string | null> {
-  const authHeader = req.headers.get("authorization") || ""
-
-  if (authHeader.startsWith("Bearer ")) {
-    const token = authHeader.slice(7).trim()
-    const payload = verifyToken(token)
-    const userIdFromToken = payload?.id_usuario
-    if (payload && userIdFromToken) {
-      return String(userIdFromToken)
-    }
-  }
-
-  const cookieHeader = req.headers.get("cookie")
-  if (cookieHeader) {
-    const cookies = parseCookies(cookieHeader)
-    const token = cookies["token"]
-    if (token) {
-      const payload = verifyToken(token)
-      const userIdFromToken = payload?.id_usuario
-      if (payload && userIdFromToken) {
-        return String(userIdFromToken)
-      }
-    }
-  }
-
-  return null
-}
 
 function isPdf(file: File) {
   const type = (file.type || "").toLowerCase()
@@ -51,7 +22,7 @@ export async function POST(req: Request) {
   const client = await pool.connect()
 
   try {
-    const userId = await getAuthenticatedUserId(req)
+    const userId = getRequesterIdLenient(req)
     if (!userId) {
       return NextResponse.json({ ok: false, message: "No autenticado" }, { status: 401 })
     }

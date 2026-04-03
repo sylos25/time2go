@@ -15,7 +15,7 @@ type AccessRow = {
 const MAX_PAGE_SIZE = 100
 
 const ensureAdmin = async (req: Request) => {
-  const permission = await checkUserPermission(req, PERMISSION_IDS.GESTIONAR_ROLES)
+  const permission = await checkUserPermission(req, PERMISSION_IDS.VER_DASHBOARD)
   if (!permission.hasAccess) {
     return {
       ok: false,

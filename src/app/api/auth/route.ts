@@ -1,9 +1,32 @@
 import pool from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { dbErrorResponse, internalErrorResponse } from '@/lib/api-error-response';
+import {
+  authRegisterBodySchema,
+  parseOptionalNumericId,
+} from '@/lib/validation/api-schemas';
 
+/**
+ * Registro vía función SQL `fn_auth_crear_usuario`.
+ * El flujo web principal del sitio suele ser POST /api/usuario_formulario; conserva esta ruta
+ * solo si tienes clientes (scripts, apps) que dependan de ella.
+ */
 export async function POST(req: Request) {
-  const { email, password, nombres, apellidos, id_pais, id_rol } = await req.json();
+  let raw: unknown;
+  try {
+    raw = await req.json();
+  } catch {
+    return NextResponse.json({ ok: false, message: 'JSON inválido' }, { status: 400 });
+  }
+
+  const parsed = authRegisterBodySchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json({ ok: false, message: 'Datos inválidos' }, { status: 400 });
+  }
+
+  const { email, password, nombres, apellidos, id_pais, id_rol } = parsed.data;
+  const idPaisNum = parseOptionalNumericId(id_pais ?? undefined);
+  const idRolNum = parseOptionalNumericId(id_rol ?? undefined) ?? 1;
 
   try {
     const result = await pool.query(
@@ -13,8 +36,8 @@ export async function POST(req: Request) {
         password,
         nombres ?? null,
         apellidos ?? null,
-        id_pais ?? null,
-        id_rol ?? 1,
+        idPaisNum,
+        idRolNum,
       ]
     );
 

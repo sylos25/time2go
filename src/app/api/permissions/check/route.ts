@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
-import { verifyToken } from "@/lib/jwt";
-import { parseCookies } from "@/lib/cookies";
+import { getRequesterIdFromRequest } from "@/lib/auth-request";
 
 /**
  * API para verificar si un rol tiene acceso a una funcionalidad específica
@@ -25,39 +24,10 @@ export async function GET(req: Request) {
     // Si no se proporciona id_rol, obtenerlo del usuario autenticado
     if (!idRol) {
       const authHeader = req.headers.get("authorization") || "";
-      let userId: string | null = null;
-
-      if (authHeader.startsWith("Bearer ")) {
-        const token = authHeader.slice(7).trim();
-        const payload = verifyToken(token);
-        const userIdFromToken = payload?.id_usuario;
-        if (!payload || !userIdFromToken) {
-          return NextResponse.json(
-            { ok: false, message: "Token inválido" },
-            { status: 401 }
-          );
-        }
-        userId = String(userIdFromToken);
-      } else {
-        const cookieHeader = req.headers.get("cookie");
-        if (cookieHeader) {
-          const cookies = parseCookies(cookieHeader);
-          const token = cookies["token"];
-          if (token) {
-            const payload = verifyToken(token);
-            const userIdFromToken = payload?.id_usuario;
-            if (payload && userIdFromToken) {
-              userId = String(userIdFromToken);
-            }
-          }
-        }
-      }
-
+      const userId = getRequesterIdFromRequest(req);
       if (!userId) {
-        return NextResponse.json(
-          { ok: false, message: "Usuario no autenticado" },
-          { status: 401 }
-        );
+        const message = authHeader.startsWith("Bearer ") ? "Token inválido" : "Usuario no autenticado";
+        return NextResponse.json({ ok: false, message }, { status: 401 });
       }
 
       // Obtener el rol del usuario

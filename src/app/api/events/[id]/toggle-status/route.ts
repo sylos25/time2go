@@ -1,37 +1,9 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
-import { verifyToken } from "@/lib/jwt";
-import { parseCookies } from "@/lib/cookies";
+import { getRequesterIdLenient } from "@/lib/auth-request";
 
 async function getAuthenticatedUser(req: Request, client: any) {
-  const authHeader = (req.headers.get("authorization") || "").trim();
-  let userId: string | null = null;
-
-  if (authHeader.startsWith("Bearer ")) {
-    try {
-      const t = authHeader.slice(7).trim();
-      const payload = verifyToken(t);
-      const userIdFromToken = payload?.id_usuario;
-      if (payload && userIdFromToken) userId = String(userIdFromToken);
-    } catch (e) {
-      console.error("token verification failed", e);
-    }
-  }
-
-  if (!userId) {
-    const cookies = parseCookies(req.headers.get("cookie"));
-    const token = cookies["token"];
-    if (token) {
-      try {
-        const payload = verifyToken(token);
-        const userIdFromToken = payload?.id_usuario;
-        if (payload && userIdFromToken) userId = String(userIdFromToken);
-      } catch (e) {
-        console.error("cookie token verification failed", e);
-      }
-    }
-  }
-
+  const userId = getRequesterIdLenient(req);
   if (!userId) return null;
 
   const roleRes = await client.query(

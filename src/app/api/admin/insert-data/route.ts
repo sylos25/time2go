@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import pool from "@/lib/db"
+import { PERMISSION_IDS, requirePermission } from "@/lib/permissions"
 
 export async function POST(req: NextRequest) {
+  const denied = await requirePermission(req, PERMISSION_IDS.INGRESAR_DATOS)
+  if (denied) return denied
+
   try {
     const { table, data } = await req.json()
 

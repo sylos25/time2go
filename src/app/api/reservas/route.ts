@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
-import { verifyToken } from "@/lib/jwt";
-import { parseCookies } from "@/lib/cookies";
+import { getRequesterIdLenient } from "@/lib/auth-request";
 
 const TIPOS_DOCUMENTO_VALIDOS = [
   "Cédula de Ciudadanía",
@@ -12,31 +11,7 @@ const TIPOS_DOCUMENTO_VALIDOS = [
 type TipoDocumento = (typeof TIPOS_DOCUMENTO_VALIDOS)[number];
 
 async function getAuthenticatedUser(req: Request) {
-  const authHeader = (req.headers.get("authorization") || "").trim();
-  let userId: string | null = null;
-
-  if (authHeader.startsWith("Bearer ")) {
-    const token = authHeader.slice(7).trim();
-    const payload = verifyToken(token);
-    const userIdFromToken = payload?.id_usuario;
-    if (payload && userIdFromToken) {
-      userId = String(userIdFromToken);
-    }
-  }
-
-  if (!userId) {
-    const cookieHeader = req.headers.get("cookie");
-    const cookies = parseCookies(cookieHeader);
-    const token = cookies["token"];
-    if (token) {
-      const payload = verifyToken(token);
-      const userIdFromToken = payload?.id_usuario;
-      if (payload && userIdFromToken) {
-        userId = String(userIdFromToken);
-      }
-    }
-  }
-
+  const userId = getRequesterIdLenient(req);
   if (!userId) return null;
 
   const userRes = await pool.query(

@@ -1,35 +1,12 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
-import { verifyToken } from "@/lib/jwt";
-import { parseCookies } from "@/lib/cookies";
+import { getJwtPayloadLenient } from "@/lib/auth-request";
 import { dbErrorResponse } from "@/lib/api-error-response";
 
-async function getAuthenticatedUser(req: Request) {
-  const authHeader = req.headers.get("authorization") || "";
-
-  if (authHeader.startsWith("Bearer ")) {
-    const token = authHeader.slice(7).trim();
-    const payload = verifyToken(token);
-    const userId = payload?.id_usuario;
-    if (payload && userId) {
-      return { id_usuario: Number(userId), name: payload.name };
-    }
-  }
-
-  const cookieHeader = req.headers.get("cookie");
-  if (cookieHeader) {
-    const cookies = parseCookies(cookieHeader);
-    const token = cookies["token"];
-    if (token) {
-      const payload = verifyToken(token);
-      const userId = payload?.id_usuario;
-      if (payload && userId) {
-        return { id_usuario: Number(userId), name: payload.name };
-      }
-    }
-  }
-
-  return null;
+function getAuthenticatedUser(req: Request) {
+  const payload = getJwtPayloadLenient(req);
+  if (!payload?.id_usuario) return null;
+  return { id_usuario: Number(payload.id_usuario), name: payload.name };
 }
 
 // ── GET — obtener una valoración por id ─────────────────────────────────────
@@ -38,7 +15,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getAuthenticatedUser(req);
+    const user = getAuthenticatedUser(req);
     if (!user)
       return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
 
@@ -69,7 +46,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getAuthenticatedUser(req);
+    const user = getAuthenticatedUser(req);
     if (!user)
       return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
 
@@ -107,7 +84,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getAuthenticatedUser(req);
+    const user = getAuthenticatedUser(req);
     if (!user)
       return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
 
