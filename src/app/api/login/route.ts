@@ -15,6 +15,7 @@ const credentialLimiter = new Map<string, LoginLimiter>();
 const ONE_MINUTE_MS = 60 * 1000;
 const FIFTEEN_MINUTES_MS = 15 * ONE_MINUTE_MS;
 const THIRTY_MINUTES_MS = 30 * ONE_MINUTE_MS;
+const SHOULD_APPLY_LOGIN_RATE_LIMIT = process.env.NODE_ENV === "production";
 
 function cleanupLimiterMap(map: Map<string, LoginLimiter>, now: number, windowMs: number) {
   for (const [key, value] of map.entries()) {
@@ -100,6 +101,10 @@ function lockResponse(lockUntil: number) {
 }
 
 function registerFailedAuth(ip: string, email: string, now: number) {
+  if (!SHOULD_APPLY_LOGIN_RATE_LIMIT) {
+    return;
+  }
+
   const ipEntry = getOrCreateLimiter(ipLimiter, ip);
   const credEntry = getOrCreateLimiter(credentialLimiter, `${ip}::${email}`);
 
@@ -111,6 +116,10 @@ function registerFailedAuth(ip: string, email: string, now: number) {
 }
 
 function clearSuccessfulAuth(ip: string, email: string) {
+  if (!SHOULD_APPLY_LOGIN_RATE_LIMIT) {
+    return;
+  }
+
   credentialLimiter.delete(`${ip}::${email}`);
 }
 
@@ -184,26 +193,28 @@ export async function POST(req: Request) {
     const now = Date.now();
     const captchaMode = getCaptchaMode();
 
-    cleanupLimiterMap(ipLimiter, now, FIFTEEN_MINUTES_MS);
-    cleanupLimiterMap(credentialLimiter, now, FIFTEEN_MINUTES_MS);
+    if (SHOULD_APPLY_LOGIN_RATE_LIMIT) {
+      cleanupLimiterMap(ipLimiter, now, FIFTEEN_MINUTES_MS);
+      cleanupLimiterMap(credentialLimiter, now, FIFTEEN_MINUTES_MS);
 
-    const ipEntry = getOrCreateLimiter(ipLimiter, ip);
-    const credentialKey = `${ip}::${normalizedEmail}`;
-    const credentialEntry = getOrCreateLimiter(credentialLimiter, credentialKey);
+      const ipEntry = getOrCreateLimiter(ipLimiter, ip);
+      const credentialKey = `${ip}::${normalizedEmail}`;
+      const credentialEntry = getOrCreateLimiter(credentialLimiter, credentialKey);
 
-    if (ipEntry.lockUntil > now) {
-      return lockResponse(ipEntry.lockUntil);
-    }
+      if (ipEntry.lockUntil > now) {
+        return lockResponse(ipEntry.lockUntil);
+      }
 
-    if (credentialEntry.lockUntil > now) {
-      return lockResponse(credentialEntry.lockUntil);
-    }
+      if (credentialEntry.lockUntil > now) {
+        return lockResponse(credentialEntry.lockUntil);
+      }
 
-    // Limita volumen bruto por IP para reducir ataques distribuidos sobre credenciales.
-    const ipWindow = addAttemptAndCheckWindow(ipEntry, now, FIFTEEN_MINUTES_MS, 70);
-    if (ipWindow.blocked) {
-      ipEntry.lockUntil = Math.max(ipEntry.lockUntil, now + 10 * ONE_MINUTE_MS);
-      return lockResponse(ipEntry.lockUntil);
+      // Limita volumen bruto por IP para reducir ataques distribuidos sobre credenciales.
+      const ipWindow = addAttemptAndCheckWindow(ipEntry, now, FIFTEEN_MINUTES_MS, 70);
+      if (ipWindow.blocked) {
+        ipEntry.lockUntil = Math.max(ipEntry.lockUntil, now + 10 * ONE_MINUTE_MS);
+        return lockResponse(ipEntry.lockUntil);
+      }
     }
 
     if (!normalizedEmail || !password) {

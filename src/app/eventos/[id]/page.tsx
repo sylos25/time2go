@@ -751,7 +751,7 @@ export default function EventLanding() {
                           }
                         }
                         
-                        diasArr.forEach(d => {
+                        diasArr.forEach((d: string | number | Date) => {
                           try {
                             const date = new Date(d);
                             const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;

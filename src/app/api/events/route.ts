@@ -72,6 +72,16 @@ export async function POST(req: Request) {
     const maxDocBytes = 5 * 1024 * 1024;
 
     const files = formData.getAll("additionalImages") as File[];
+    const imageMetaRaw = (formData.get("imagenes_meta") as string) || "[]";
+    let parsedImageMeta: Array<{ order?: number; principal?: boolean }> = [];
+    try {
+      const candidate = JSON.parse(imageMetaRaw);
+      if (Array.isArray(candidate)) {
+        parsedImageMeta = candidate;
+      }
+    } catch {
+      parsedImageMeta = [];
+    }
     if (files.length > maxImages) {
       return NextResponse.json({ ok: false, message: "Maximo 8 imagenes" }, { status: 400 });
     }
@@ -98,6 +108,23 @@ export async function POST(req: Request) {
         mimeType: result.mimeType,
         bytes: result.sizeBytes,
         originalFileName: result.originalFileName,
+      });
+    }
+
+    const normalizedImageMeta = uploadedImages.map((_, index) => {
+      const meta = parsedImageMeta[index] || {};
+      const rawOrder = Number(meta.order);
+      return {
+        order: Number.isInteger(rawOrder) && rawOrder > 0 ? rawOrder : index + 1,
+        principal: Boolean(meta.principal),
+      };
+    });
+
+    const firstPrincipalIndex = normalizedImageMeta.findIndex((meta) => meta.principal);
+    if (normalizedImageMeta.length > 0) {
+      const principalIndex = firstPrincipalIndex >= 0 ? firstPrincipalIndex : 0;
+      normalizedImageMeta.forEach((meta, index) => {
+        meta.principal = index === principalIndex;
       });
     }
 
@@ -154,6 +181,7 @@ export async function POST(req: Request) {
     const id_sitio = Number(formData.get("id_sitio") || 0);
     const telefono_1 = (formData.get("telefono_1") as string) || null;
     const telefono_2 = (formData.get("telefono_2") as string) || null;
+    const telefono_principal = (formData.get("telefono_principal") as string) || "1";
     const cupoRaw = String(formData.get("cupo") || "").trim();
     const cupo = /^\d+$/.test(cupoRaw) ? Number(cupoRaw) : NaN;
     const estado = String(formData.get("estado") || "true") === "true";
@@ -245,8 +273,8 @@ export async function POST(req: Request) {
     };
 
     const phonesPayload = [
-      ...(telefono_1 ? [{ telefono: telefono_1, es_principal: true }] : []),
-      ...(telefono_2 ? [{ telefono: telefono_2, es_principal: false }] : []),
+      ...(telefono_1 ? [{ telefono: telefono_1, es_principal: telefono_principal === "1" }] : []),
+      ...(telefono_2 ? [{ telefono: telefono_2, es_principal: telefono_principal === "2" }] : []),
     ];
 
     const normalizedBoletas = (Array.isArray(boletasParsed) ? boletasParsed : [])
@@ -295,8 +323,10 @@ export async function POST(req: Request) {
           })
       : [];
 
-    const imagesPayload = uploadedImages.map((image) => ({
+    const imagesPayload = uploadedImages.map((image, index) => ({
       url_imagen_evento: image.url,
+      orden: normalizedImageMeta[index]?.order ?? index + 1,
+      principal: Boolean(normalizedImageMeta[index]?.principal),
       storage_provider: image.provider,
       storage_key: image.storageKey,
       mime_type: image.mimeType,
@@ -341,6 +371,50 @@ export async function POST(req: Request) {
     const payload = dbResult.rows?.[0]?.payload;
     if (!payload?.ok) {
       return dbErrorResponse(payload, "Error creando evento");
+    }
+
+    const createdEventId = Number(payload?.id_evento || 0);
+    if (createdEventId > 0 && imagesPayload.length > 0) {
+      const orderedUniqueImages = Array.from(
+        new Map(
+          [...imagesPayload]
+            .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0))
+            .map((image) => [String(image.url_imagen_evento), image])
+        ).values()
+      );
+
+      const chosenPrincipalUrl =
+        orderedUniqueImages.find((image) => image.principal)?.url_imagen_evento ||
+        orderedUniqueImages[0]?.url_imagen_evento ||
+        null;
+
+      await client.query("DELETE FROM tabla_imagenes_eventos WHERE id_evento = $1", [createdEventId]);
+
+      for (const image of orderedUniqueImages) {
+        await client.query(
+          `INSERT INTO tabla_imagenes_eventos (
+             url_imagen_evento,
+             id_evento,
+             principal,
+             storage_provider,
+             storage_key,
+             mime_type,
+             bytes,
+             original_filename
+           )
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [
+            image.url_imagen_evento,
+            createdEventId,
+            image.url_imagen_evento === chosenPrincipalUrl,
+            image.storage_provider,
+            image.storage_key,
+            image.mime_type,
+            image.bytes,
+            image.original_filename,
+          ]
+        );
+      }
     }
 
     return NextResponse.json({ ok: true, eventId: payload.id_evento });

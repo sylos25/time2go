@@ -42,6 +42,9 @@ export function useLoginForm(onSuccess: () => void) {
   const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState("")
   const [emailValidationError, setEmailValidationError] = useState(false)
+  const [isBanned, setIsBanned] = useState(false)
+  const [isNotRegistered, setIsNotRegistered] = useState(false)
+  const [areCredentialsInvalid, setAreCredentialsInvalid] = useState(false)
   const [resetPasswordOpen, setResetPasswordOpen] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const [turnstileError, setTurnstileError] = useState("")
@@ -75,6 +78,9 @@ export function useLoginForm(onSuccess: () => void) {
     event.preventDefault()
     setError("")
     setEmailValidationError(false)
+    setIsBanned(false)
+    setIsNotRegistered(false)
+    setAreCredentialsInvalid(false)
     setTurnstileError("")
 
     const sanitizedEmail = sanitizeEmail(email)
@@ -109,9 +115,16 @@ export function useLoginForm(onSuccess: () => void) {
         setTurnstileKey((prev) => prev + 1)
         setTurnstileError("")
 
-        if (response.status === 403 && data.requiresEmailValidation) {
+        // Manejar casos específicos de error
+        if (response.status === 403 && data.banned) {
+          setIsBanned(true)
+          setError(data.message || "Tu cuenta está baneada. Contacta al administrador.")
+        } else if (response.status === 403 && data.requiresEmailValidation) {
           setEmailValidationError(true)
           setError(data.message || "Debes validar tu correo electrónico antes de poder acceder.")
+        } else if (response.status === 401 && data.message === "Credenciales inválidas") {
+          setAreCredentialsInvalid(true)
+          setError(data.message || "Email o contraseña incorrectos.")
         } else {
           setError(data.error || data.message || "Error al iniciar sesión")
         }
@@ -163,6 +176,9 @@ export function useLoginForm(onSuccess: () => void) {
     email,
     emailValidationError,
     error,
+    isBanned,
+    isNotRegistered,
+    areCredentialsInvalid,
     password,
     rememberMe,
     resetPasswordOpen,

@@ -1,16 +1,21 @@
 "use client"
 
 import { useEffect, useMemo } from "react"
+import { ChevronDown, ChevronUp, Star } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 interface MediaSectionProps {
   imageInputRef: React.RefObject<HTMLInputElement | null>
   imagenes: File[]
+  imagenPrincipalIndex: number
   documento: File | null
   imagenesError?: string
   documentoError?: string
   onUpdateImages: (files: File[]) => void
+  onMoveImage: (index: number, direction: "up" | "down") => void
+  onSetPrincipalImage: (index: number) => void
+  onRemoveImage: (index: number) => void
   onUpdateDocument: (file: File | null) => void
   onSetImagesError: (message: string) => void
   onClearImagesError: () => void
@@ -21,10 +26,14 @@ interface MediaSectionProps {
 export function MediaSection({
   imageInputRef,
   imagenes,
+  imagenPrincipalIndex,
   documento,
   imagenesError,
   documentoError,
   onUpdateImages,
+  onMoveImage,
+  onSetPrincipalImage,
+  onRemoveImage,
   onUpdateDocument,
   onSetImagesError,
   onClearImagesError,
@@ -82,19 +91,48 @@ export function MediaSection({
               <div key={`${preview.file.name}-${index}`} className="rounded-xl border bg-card p-2 shadow-sm">
                 <img src={preview.url} alt={preview.file.name} className="h-24 w-full rounded-lg object-cover" />
                 <p className="mt-2 text-xs text-muted-foreground truncate">{preview.file.name}</p>
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onSetPrincipalImage(index)}
+                    className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${
+                      imagenPrincipalIndex === index
+                        ? "border-amber-400 bg-amber-50 text-amber-800"
+                        : "text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <Star className="h-3.5 w-3.5" />
+                    {imagenPrincipalIndex === index ? "Principal" : "Marcar principal"}
+                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      title="Subir"
+                      onClick={() => onMoveImage(index, "up")}
+                      disabled={index === 0}
+                      className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-30"
+                    >
+                      <ChevronUp className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Bajar"
+                      onClick={() => onMoveImage(index, "down")}
+                      disabled={index === imagePreviews.length - 1}
+                      className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-30"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    const updated = (imagenes || []).filter((_, i) => i !== index)
-                    if (updated.length === 0 && imageInputRef.current) {
-                      imageInputRef.current.value = ""
-                    }
-                    onUpdateImages(updated)
-                  }}
+                  onClick={() => onRemoveImage(index)}
                   className="mt-2 w-full rounded-md border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
                 >
                   Quitar
                 </button>
+                <p className="mt-1 text-[11px] text-muted-foreground text-center">Orden: {index + 1}</p>
               </div>
             ))}
           </div>

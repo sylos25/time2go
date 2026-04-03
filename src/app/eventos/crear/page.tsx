@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Dialog,
   DialogContent,
@@ -391,11 +392,36 @@ export default function CrearEventoPage() {
                   {formErrors.telefono2 && (
                     <p className="text-xs text-red-600">{formErrors.telefono2}</p>
                   )}
+
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium">Teléfono principal</Label>
+                    <RadioGroup
+                      value={newEvent.telefono_principal}
+                      onValueChange={(value: "1" | "2") =>
+                        setNewEvent({ ...newEvent, telefono_principal: value })
+                      }
+                      className="flex gap-6"
+                    >
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="1" id="principal-tel1" />
+                        <Label htmlFor="principal-tel1" className="cursor-pointer text-sm">
+                          Teléfono 1
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="2" id="principal-tel2" />
+                        <Label htmlFor="principal-tel2" className="cursor-pointer text-sm">
+                          Teléfono 2
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
                   <Button
                     type="button"
                     onClick={() => {
                       setShowTelefono2(false);
-                      setNewEvent({ ...newEvent, telefono2: "" });
+                      setNewEvent({ ...newEvent, telefono2: "", telefono_principal: "1" });
                     }}
                     className="cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white text-sm hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-400 hover:scale-102 w-45 text-center"
                   >
@@ -538,10 +564,73 @@ export default function CrearEventoPage() {
               <MediaSection
                 imageInputRef={imageInputRef}
                 imagenes={newEvent.imagenes || []}
+                imagenPrincipalIndex={newEvent.imagenPrincipalIndex || 0}
                 documento={newEvent.documento}
                 imagenesError={formErrors.imagenes}
                 documentoError={formErrors.documento}
-                onUpdateImages={(files) => setNewEvent((prev) => ({ ...prev, imagenes: files }))}
+                onUpdateImages={(files) =>
+                  setNewEvent((prev) => ({
+                    ...prev,
+                    imagenes: files,
+                    imagenPrincipalIndex:
+                      files.length > 0
+                        ? Math.min(Math.max(prev.imagenPrincipalIndex || 0, 0), files.length - 1)
+                        : 0,
+                  }))
+                }
+                onMoveImage={(index, direction) =>
+                  setNewEvent((prev) => {
+                    const files = [...(prev.imagenes || [])]
+                    if (index < 0 || index >= files.length) return prev
+
+                    const targetIndex = direction === "up" ? index - 1 : index + 1
+                    if (targetIndex < 0 || targetIndex >= files.length) return prev
+
+                    const temp = files[index]
+                    files[index] = files[targetIndex]
+                    files[targetIndex] = temp
+
+                    let principalIndex = prev.imagenPrincipalIndex || 0
+                    if (principalIndex === index) principalIndex = targetIndex
+                    else if (principalIndex === targetIndex) principalIndex = index
+
+                    return {
+                      ...prev,
+                      imagenes: files,
+                      imagenPrincipalIndex: principalIndex,
+                    }
+                  })
+                }
+                onSetPrincipalImage={(index) =>
+                  setNewEvent((prev) => ({
+                    ...prev,
+                    imagenPrincipalIndex: index,
+                  }))
+                }
+                onRemoveImage={(index) =>
+                  setNewEvent((prev) => {
+                    const updated = (prev.imagenes || []).filter((_, i) => i !== index)
+                    if (updated.length === 0 && imageInputRef.current) {
+                      imageInputRef.current.value = ""
+                    }
+
+                    const currentPrincipal = prev.imagenPrincipalIndex || 0
+                    const nextPrincipal =
+                      updated.length === 0
+                        ? 0
+                        : currentPrincipal === index
+                          ? 0
+                          : currentPrincipal > index
+                            ? currentPrincipal - 1
+                            : currentPrincipal
+
+                    return {
+                      ...prev,
+                      imagenes: updated,
+                      imagenPrincipalIndex: Math.min(nextPrincipal, Math.max(updated.length - 1, 0)),
+                    }
+                  })
+                }
                 onUpdateDocument={(file) => setNewEvent((prev) => ({ ...prev, documento: file }))}
                 onSetImagesError={(message) => setFieldError("imagenes", message)}
                 onClearImagesError={() => clearFieldError("imagenes")}

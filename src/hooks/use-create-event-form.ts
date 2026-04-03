@@ -25,6 +25,7 @@ export interface NewEventState {
   informacion_adicional_items: EventoInfoItem[]
   telefono1: string
   telefono2: string
+  telefono_principal: "1" | "2"
   fecha_inicio: Date | null
   fecha_final: Date | null
   hora_inicio: string
@@ -35,6 +36,7 @@ export interface NewEventState {
   cupo: string
   estado: boolean
   imagenes: File[]
+  imagenPrincipalIndex: number
   documento: File | null
 }
 
@@ -96,6 +98,7 @@ const initialEventState: NewEventState = {
   informacion_adicional_items: [{ detalle: "", obligatorio: true }],
   telefono1: "",
   telefono2: "",
+  telefono_principal: "1",
   fecha_inicio: null,
   fecha_final: null,
   hora_inicio: "",
@@ -106,6 +109,7 @@ const initialEventState: NewEventState = {
   cupo: "",
   estado: false,
   imagenes: [],
+  imagenPrincipalIndex: 0,
   documento: null,
 }
 
@@ -614,11 +618,30 @@ export function useCreateEventForm() {
       formData.append("id_sitio", String(newEvent.id_sitio || 0))
       formData.append("telefono_1", newEvent.telefono1 || "")
       formData.append("telefono_2", newEvent.telefono2 || "")
+      formData.append("telefono_principal", newEvent.telefono_principal || "1")
       formData.append("gratis_pago", String(newEvent.pago ?? false))
       formData.append("reservar_anticipado", String(newEvent.reservar_anticipado ?? false))
       formData.append("boletas", JSON.stringify(newEvent.boletas || []))
       formData.append("cupo", String(newEvent.cupo || 0))
       formData.append("estado", String(newEvent.estado ?? false))
+
+      const safePrincipalIndex =
+        (newEvent.imagenes || []).length > 0
+          ? Math.min(
+              Math.max(Number(newEvent.imagenPrincipalIndex || 0), 0),
+              (newEvent.imagenes || []).length - 1,
+            )
+          : 0
+
+      formData.append(
+        "imagenes_meta",
+        JSON.stringify(
+          (newEvent.imagenes || []).map((_: File, index: number) => ({
+            order: index + 1,
+            principal: index === safePrincipalIndex,
+          })),
+        ),
+      )
 
       ;(newEvent.imagenes || []).forEach((file: File) => {
         formData.append("additionalImages", file)
