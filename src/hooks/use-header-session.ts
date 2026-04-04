@@ -16,9 +16,11 @@ interface ClearSessionOptions {
   callServerLogout?: boolean
 }
 
-export function useHeaderSession(pathname: string) {
+export function useHeaderSession() {
   const router = useRouter()
   const [user, setUser] = useState<HeaderUser | null>(null)
+  /** Primera validación con /api/me terminó (éxito o fallo). */
+  const [sessionResolved, setSessionResolved] = useState(false)
   const logoutTimerRef = useRef<number | null>(null)
   const ACCESS_EXP_KEY = "accessExpiresAt"
 
@@ -198,6 +200,9 @@ export function useHeaderSession(pathname: string) {
         }
       } catch (err) {
         console.error("validateSession error", err)
+        await clearSessionSilent()
+      } finally {
+        setSessionResolved(true)
       }
     }
 
@@ -229,6 +234,7 @@ export function useHeaderSession(pathname: string) {
       }
 
       setUser({ name, id_publico: userPublicId, role: roleNumber })
+      setSessionResolved(true)
 
       const exp = detail.expiresAt
       if (exp) scheduleAutoLogout(exp)
@@ -268,7 +274,6 @@ export function useHeaderSession(pathname: string) {
       window.removeEventListener("storage", onStorage)
     }
   }, [
-    pathname,
     scheduleAutoLogout,
     clearSessionSilent,
     performLogout,
@@ -280,5 +285,6 @@ export function useHeaderSession(pathname: string) {
     user,
     performLogout,
     clearSessionSilent,
+    sessionResolved,
   }
 }

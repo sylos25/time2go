@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
@@ -20,8 +21,27 @@ import {
   Users,
   Grid3X3,
   TagIcon,
+  ChevronDown,
 } from "lucide-react";
 import Valoraciones from "./valoraciones";
+
+const LeafletMap = dynamic(() => import("@/components/leaflet-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[300px] w-full rounded-xl bg-muted/40 flex items-center justify-center">
+      <p className="text-sm text-muted-foreground">Cargando mapa...</p>
+    </div>
+  ),
+});
+
+function parseSiteCoordinate(value: unknown): number | null {
+  if (value == null) return null;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  const s = String(value).trim().replace(",", ".");
+  if (!s) return null;
+  const n = Number.parseFloat(s);
+  return Number.isFinite(n) ? n : null;
+}
 
 export default function EventLanding() {
   const router = useRouter();
@@ -41,6 +61,7 @@ export default function EventLanding() {
   const [alreadyReserved, setAlreadyReserved] = useState(false);
   const [eventReservations, setEventReservations] = useState<any[]>([]);
   const [loadingEventReservations, setLoadingEventReservations] = useState(false);
+  const [showMap, setShowMap] = useState(false);
 
   // Helpers
   const formatDate = (d: any) => {
@@ -335,6 +356,17 @@ export default function EventLanding() {
       : alreadyReserved
         ? "Ya reservado"
         : "Reservar";
+
+  const sitioLat = parseSiteCoordinate(event.sitio?.latitud);
+  const sitioLng = parseSiteCoordinate(event.sitio?.longitud);
+  const hasMapCoords =
+    sitioLat !== null &&
+    sitioLng !== null &&
+    sitioLat >= -90 &&
+    sitioLat <= 90 &&
+    sitioLng >= -180 &&
+    sitioLng <= 180;
+
   return (
     <main className="min-h-screen bg-background">
       <Header onAuthClick={() => {}} />
@@ -411,7 +443,7 @@ export default function EventLanding() {
 
             {/* Thumbnail Gallery */}
             {event.imagenes.length > 1 && (
-              <div className="flex gap-2 overflow-x pb-2">
+              <div className="flex gap-2 overflow-x-auto pb-2">
                 {event.imagenes.map((img: any, i: number) => (
                   <button
                     key={i}
@@ -491,7 +523,7 @@ export default function EventLanding() {
             {/* Detalles de la locación */}
               <Card className="bg-card/80 backdrop-blur-sm">
                 <CardHeader className="flex items-start gap-4">
-                  <div className="flex-1 text-left">
+                  <div className="flex-1 text-left w-full">
                     <CardTitle className="text-lg">Ubicación</CardTitle>
                     <p className="mt-2">
                       {event.sitio?.nombre_sitio || "Lugar por confirmar"}
@@ -499,6 +531,40 @@ export default function EventLanding() {
                     <p className="text-sm text-muted-foreground">
                       {event.sitio?.direccion} — {event.municipio?.nombre_municipio}
                     </p>
+
+                    {hasMapCoords && (
+                      <button
+                        type="button"
+                        onClick={() => setShowMap((prev) => !prev)}
+                        className="mt-3 flex items-center gap-1.5 text-sm font-medium text-primary hover:opacity-75 transition-opacity"
+                      >
+                        <MapPin className="h-4 w-4" />
+                        {showMap ? "Ocultar mapa" : "Ver en el mapa"}
+                        <ChevronDown
+                          className={`h-4 w-4 transition-transform duration-200 ${
+                            showMap ? "rotate-180" : ""
+                          }`}
+                        />
+                      </button>
+                    )}
+
+                    <div
+                      className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                        showMap && hasMapCoords ? "max-h-[320px] mt-3 opacity-100" : "max-h-0 opacity-0"
+                      }`}
+                    >
+                      {showMap && hasMapCoords && (
+                        <div className="h-[300px] w-full rounded-xl overflow-hidden border border-border">
+                          <LeafletMap
+                            center={{ lat: sitioLat!, lng: sitioLng! }}
+                            zoom={16}
+                            selectedCoords={{ lat: sitioLat!, lng: sitioLng! }}
+                            onMapClick={() => {}}
+                          />
+                        </div>
+                      )}
+                    </div>
+
                     <div className="mt-3 space-y-2">
                       <p className="text-sm font-medium">Accesibilidad</p>
                       <p className="text-sm text-muted-foreground">

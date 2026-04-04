@@ -61,6 +61,8 @@ BEGIN
       u.apellidos AS creador_apellidos,
       s.nombre_sitio,
       s.direccion AS sitio_direccion,
+      s.latitud AS sitio_latitud,
+      s.longitud AS sitio_longitud,
       m.id_municipio,
       m.nombre_municipio,
       ce.id_categoria_evento AS evento_categoria_id,
@@ -187,6 +189,8 @@ BEGIN
             'id_sitio', eb.id_sitio,
             'nombre_sitio', eb.nombre_sitio,
             'direccion', eb.sitio_direccion,
+            'latitud', eb.sitio_latitud,
+            'longitud', eb.sitio_longitud,
             'acceso_discapacidad', EXISTS (
               SELECT 1
               FROM tabla_sitios_discapacitados sdx

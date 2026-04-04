@@ -1,6 +1,13 @@
+import { jwtVerify } from "jose";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { extractBearerOrCookieToken, isPublicApiRoute } from "@/lib/api-route-policy";
 import { verifyToken } from "@/lib/jwt";
+import { resolveJwtSecret } from "@/lib/jwt-secret";
+
+function apiAuthJsonResponse(message: string, status: number) {
+  return NextResponse.json({ ok: false, message }, { status });
+}
 
 // ── Roles ────────────────────────────────────────────────────────────────────
 const ROL_USUARIO = 1;
@@ -45,6 +52,40 @@ function redirectLogin(request: NextRequest, pathname: string) {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // ── API: JWT obligatorio salvo lista explícita de rutas públicas ───────────
+  if (pathname.startsWith("/api/")) {
+    if (isPublicApiRoute(request.method, pathname)) {
+      return NextResponse.next();
+    }
+
+    const token = extractBearerOrCookieToken(request);
+    if (!token) {
+      return apiAuthJsonResponse("Not authenticated", 401);
+    }
+
+    let secretBytes: Uint8Array;
+    try {
+      secretBytes = new TextEncoder().encode(resolveJwtSecret());
+    } catch {
+      console.error("[middleware] JWT_SECRET / BETTER_AUTH_SECRET no configurado (API)");
+      return apiAuthJsonResponse("Authentication is not configured", 503);
+    }
+
+    try {
+      const { payload } = await jwtVerify(token, secretBytes, {
+        algorithms: ["HS256"],
+      });
+      const idUser = payload.id_usuario;
+      if (idUser == null || String(idUser).length === 0) {
+        return apiAuthJsonResponse("Invalid token", 401);
+      }
+      return NextResponse.next();
+    } catch {
+      const isBearer = (request.headers.get("authorization") || "").startsWith("Bearer ");
+      return apiAuthJsonResponse(isBearer ? "Invalid token" : "Not authenticated", 401);
+    }
+  }
+
   const ruta = RUTAS_PROTEGIDAS.find(({ pattern }) => pattern.test(pathname));
   if (!ruta) {
     return NextResponse.next();
@@ -75,6 +116,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/api/:path*",
     "/docs/:path*",
     "/dashboard/:path*",
     "/eventos/crear/:path*",

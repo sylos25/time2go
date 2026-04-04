@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter, usePathname } from "next/navigation"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import {
@@ -24,39 +24,38 @@ import type { JSX } from "react"
 
 interface HeaderProps {
   onAuthClick?: (isLogin: boolean) => void
+  /** Solo mientras la primera validación /api/me no termina (p. ej. perfil con sesión por cookie). */
   isLoggedIn?: boolean
-  isAdmin?: boolean
   userName?: string
 }
 
 export function Header({
   onAuthClick,
   isLoggedIn = false,
-  isAdmin = false,
   userName = "Usuario",
 }: HeaderProps): JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false)
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
   const router = useRouter()
-  const pathname = usePathname()
-  const { user, performLogout } = useHeaderSession(pathname)
+  const { user, performLogout, sessionResolved } = useHeaderSession()
 
-  // derive login state and display name from local user state (fallback to props)
-  const loggedIn = Boolean(user) || isLoggedIn
+  const loggedIn = Boolean(user) || (isLoggedIn && !sessionResolved)
   const displayName = (user?.name || user?.firstName || userName) as string
 
-  // Determine role only from deterministic sources during render.
-  const userRole = user?.role !== undefined ? Number(user.role) : isAdmin ? 2 : 0
-  const isRegularUser = userRole === 1
-  
-  // Verificar permisos usando el sistema de accesibilidad
+  const permissionsKnown = sessionResolved && Boolean(user)
+  const roleForPermissions =
+    user?.role !== undefined && Number.isFinite(Number(user.role))
+      ? Number(user.role)
+      : undefined
+  const isRegularUser = permissionsKnown && roleForPermissions === 1
+
   const { hasAccess: canCreate } = usePermission(
-    loggedIn ? PERMISSIONS.CREAR_EVENTOS : null,
-    userRole,
+    permissionsKnown ? PERMISSIONS.CREAR_EVENTOS : null,
+    roleForPermissions,
   )
   const { hasAccess: canDashboard } = usePermission(
-    loggedIn ? PERMISSIONS.VER_DASHBOARD : null,
-    userRole,
+    permissionsKnown ? PERMISSIONS.VER_DASHBOARD : null,
+    roleForPermissions,
   )
 
   const navigationItems: NavigationItem[] = [
