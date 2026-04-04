@@ -1,101 +1,120 @@
 # Time2Go
 
-Este es un proyecto [Next.js](https://nextjs.org) - Plataforma de eventos.
+Plataforma web para **descubrir y gestionar eventos** (culturales, deportivos y entretenimiento). Stack monolítico **Next.js** (App Router): interfaz en React y API en los mismos route handlers, con **PostgreSQL** como fuente de verdad.
 
-## 📚 Documentación
+---
 
-Para consultar la documentación del proyecto, incluyendo la configuración de reset de contraseña y la guía de inserción de datos:
+## Documentación técnica
 
-👉 **[Ver documentación en la carpeta `/docs`](./docs/README.md)**
+La referencia principal de **arquitectura, flujos, integraciones, variables de entorno y manejo de credenciales** está aquí:
 
-### 📖 Guías Disponibles
-- [Email Validation Guide](./docs/EMAIL_VALIDATION_GUIDE.md)
-- [Gmail Setup Guide](./docs/GMAIL_SETUP_GUIDE.md)
-- [Insert Data Guide](./docs/INSERT_DATA_GUIDE.md) - **Nuevo: Módulo de inserción de datos en dashboard**
-- [Login Validation Guide](./docs/LOGIN_VALIDATION_GUIDE.md)
-- [Reset Password Configuration](./docs/RESET_PASSWORD_CONFIG.md)
-- [Setup Checklist](./docs/SETUP_CHECKLIST.md)
-- [Cloudflare R2 Storage Guide](./docs/R2_STORAGE_GUIDE.md) - **Nuevo: almacenamiento de imágenes y PDF**
+**[→ `docs/ARQUITECTURA-Y-OPERACION.md`](./docs/ARQUITECTURA-Y-OPERACION.md)** · [Índice `docs/`](./docs/README.md)
 
-## 🆕 Módulo de Inserción de Datos
+Puedes añadir más guías (email, R2, reset password, etc.) bajo la carpeta `docs/` y enlazarlas desde este README.
 
-Se ha agregado un nuevo módulo al dashboard que permite insertar datos en la base de datos de forma segura:
+---
 
-**Acceso:** Dashboard → Menú → "Insertar Datos"
+## Requisitos
 
-**Características:**
-- ✅ 6 tablas disponibles (Países, Sitios, Municipios, Usuarios, Categorías, Tipos de Eventos)
-- ✅ Validación automática de integridad referencial
-- ✅ Hash seguro de contraseñas (bcrypt)
-- ✅ Mensajes de error claros y específicos
-- ✅ Formularios dinámicos adaptados a cada tabla
+- **Node.js** compatible con Next.js 16 (ver `package.json`)
+- **PostgreSQL** (cadena en `DATABASE_URL`)
+- Opcional según funcionalidades: cuenta **S3/R2**, **Wompi**, **Google OAuth**, **Cloudflare Turnstile**, **Upstash Redis**, credenciales **SMTP**
 
-Para más detalles: [Guía de Inserción de Datos](./docs/INSERT_DATA_GUIDE.md)
+---
 
-## Getting Started
+## Puesta en marcha
 
-First, run the development server:
+1. Clona el repositorio e instala dependencias:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+   ```bash
+   npm install
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Copia la plantilla de entorno y complétala:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+   ```bash
+   cp .env.example .env.local
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+   En **PowerShell** (Windows): `Copy-Item .env.example .env.local`
 
-## Learn More
+   Mínimo habitual en desarrollo: `DATABASE_URL`, `JWT_SECRET` o `BETTER_AUTH_SECRET`. Detalle de todas las variables en [`.env.example`](./.env.example) y en la doc de arquitectura.
 
-To learn more about Next.js, take a look at the following resources:
+3. Aplica el esquema y datos necesarios en PostgreSQL (scripts en `scripts SQL/`).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. Arranca el servidor de desarrollo:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   ```bash
+   npm run dev
+   ```
 
-## Deploy on Vercel
+5. Abre [http://localhost:3000](http://localhost:3000).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+El proyecto usa **Turbopack** en `dev` (`next dev --turbopack`). La entrada de la app está en `src/app/page.tsx`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
 
-## Cookies y sesión
+## Scripts
 
-Se añade soporte de sesión mediante cookies HttpOnly para mayor seguridad. Cambios relevantes:
+| Comando        | Descripción              |
+|----------------|--------------------------|
+| `npm run dev`  | Desarrollo con Turbopack |
+| `npm run build`| Compilación producción   |
+| `npm run start`| Servidor tras `build`    |
+| `npm run lint` | ESLint                   |
 
-- `POST /api/login` ahora devuelve el JWT en JSON y además establece una cookie HttpOnly `token` con el JWT.
-- `POST /api/logout` limpia la cookie de sesión en el servidor.
-- El helper `src/lib/get-session.ts` busca el token también en la cookie cuando se ejecuta en el servidor.
+Despliegue habitual: **`next build`** + **`next start`** en un entorno Node (no se asume Vercel u otro host concreto).
 
-Notas de uso:
+---
 
-- El token en la cookie es HttpOnly: el cliente no puede leerla desde JavaScript. La app mantiene `localStorage` histórico para compatibilidad pero debe migrarse a depender sólo de la cookie cuando sea posible.
-- Para el cierre de sesión se llama a `/api/logout` y se limpia también el estado cliente.
+## Estructura relevante
 
-## Login resiliente (Turnstile)
+| Ruta | Contenido |
+|------|-----------|
+| `src/app/` | Páginas (`page.tsx`) y API (`api/**/route.ts`) |
+| `src/components/` | UI, formularios, dashboard |
+| `src/hooks/` | Sesión de cabecera, permisos, login |
+| `src/lib/` | BD, JWT, cookies, almacenamiento, email, etc. |
+| `middleware.ts` | JWT en `/api` y protección por rol en rutas UI |
+| `public/docs/` | Archivos servidos a admins vía `/api/docs/*` |
 
-El login soporta modo de degradación controlada para incidentes del proveedor captcha.
+---
 
-Variables de entorno:
+## Autenticación y sesión (resumen)
 
-- `CLOUDFLARE_TURNSTILE_MODE=strict|degraded|disabled`
-	- `strict`: exige captcha y falla si el proveedor no responde.
-	- `degraded`: si el proveedor falla, permite login con controles antiabuso (rate limit + bloqueo temporal).
-	- `disabled`: desactiva verificación captcha.
-- `CLOUDFLARE_TURNSTILE_SECRET`: secreto de validación server-side.
-- `NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY`: llave pública para renderizar widget en cliente.
-- `NEXT_PUBLIC_TURNSTILE_STRICT_MODE=true|false`: controla si el frontend exige token antes de enviar login.
+- Tras el login, el servidor fija cookies **HttpOnly** (`token`, `refresh_token`). El cliente también guarda el access en **`localStorage`** para enviar `Authorization: Bearer` en muchas peticiones; conviene mitigar **XSS** (CSP, sanitización). Detalle en la doc de arquitectura.
+- **`POST /api/refresh`** renueva tokens (con comprobación de `Origin`).
+- **`POST /api/logout`** limpia cookies y el cliente debe limpiar `localStorage`.
+- Utilidades de sesión en servidor: p. ej. `src/lib/auth-request.ts`, `src/lib/get-session.ts`.
 
-Recomendación operativa:
+---
 
-- Producción normal: `CLOUDFLARE_TURNSTILE_MODE=strict` y `NEXT_PUBLIC_TURNSTILE_STRICT_MODE=true`.
-- Contingencia por incidente: `CLOUDFLARE_TURNSTILE_MODE=degraded` y `NEXT_PUBLIC_TURNSTILE_STRICT_MODE=false`.
+## Cloudflare Turnstile (login)
 
+Variables típicas:
+
+- `CLOUDFLARE_TURNSTILE_SECRET` — validación en servidor (`siteverify`).
+- `NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY` — widget en cliente.
+- `CLOUDFLARE_TURNSTILE_MODE` — `strict` | `degraded` | `disabled`.
+- `NEXT_PUBLIC_TURNSTILE_STRICT_MODE` — si el front exige token antes de enviar login.
+
+Recomendación: producción normal `strict` + strict en front; en contingencia, `degraded` y relajar el front según tu política.
+
+---
+
+## Dashboard e inserción de datos
+
+El **dashboard** (`/dashboard`) agrupa resumen, eventos, ingreso y consulta de datos maestros, usuarios, mapa de sitios y paneles para roles con permiso. El módulo de **inserción de datos** vive en la UI del dashboard y las APIs bajo `src/app/api/admin/`; la matriz de permisos viene de PostgreSQL (`tabla_accesibilidad_menu_x_rol`).
+
+---
+
+## Más sobre Next.js
+
+- [Documentación Next.js](https://nextjs.org/docs)
+- [Despliegue](https://nextjs.org/docs/app/building-your-application/deploying)
+
+---
+
+## Licencia y créditos
+
+Revisa el archivo de licencia del repositorio si existe. Las fotografías de fondo en la pantalla de auth incluyen atribución en la propia UI.
