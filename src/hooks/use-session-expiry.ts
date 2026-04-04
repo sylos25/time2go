@@ -22,8 +22,8 @@ export function useSessionExpiry() {
   }, [])
 
   useEffect(() => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-    if (!token) {
+    const userPublicId = typeof window !== "undefined" ? localStorage.getItem("userPublicId") : null
+    if (!userPublicId) {
       setIsSessionExpired(false)
       return
     }

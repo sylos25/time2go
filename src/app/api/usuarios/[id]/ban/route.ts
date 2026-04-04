@@ -4,7 +4,7 @@ import { getRequesterIdLenient } from "@/lib/auth-request"
 import { sendBanNotificationEmail, sendUnbanNotificationEmail } from "@/lib/email"
 
 async function getRequester(req: Request, client: any) {
-  const userId = getRequesterIdLenient(req)
+  const userId = await getRequesterIdLenient(req)
   if (!userId) return null
 
   const roleRes = await client.query(

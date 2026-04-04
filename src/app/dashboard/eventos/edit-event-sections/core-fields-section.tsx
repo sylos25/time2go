@@ -10,11 +10,9 @@ interface CoreFieldsSectionProps {
   eventTypes: TipoEvento[]
   sites: Sitio[]
   busquedaSitio: string
-  busquedaMunicipio: string
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void
   onSitioInputChange: (value: string) => void
   onSelectSitio: (sitio: Sitio) => void
-  onMunicipioChange: (value: string) => void
 }
 
 export function CoreFieldsSection({
@@ -24,11 +22,9 @@ export function CoreFieldsSection({
   eventTypes,
   sites,
   busquedaSitio,
-  busquedaMunicipio,
   onInputChange,
   onSitioInputChange,
   onSelectSitio,
-  onMunicipioChange,
 }: CoreFieldsSectionProps) {
   return (
     <>
@@ -106,42 +102,29 @@ export function CoreFieldsSection({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2 relative">
-          <Label htmlFor="sitio">Sitio</Label>
-          <Input
-            id="sitio"
-            value={busquedaSitio}
-            onChange={(e) => onSitioInputChange(e.target.value)}
-            placeholder="Escribe el nombre del sitio donde sera el evento"
-            className="rounded-lg"
-          />
-          {formErrors.id_sitio && <p className="text-xs text-red-600 mt-1">{formErrors.id_sitio}</p>}
-          {busquedaSitio.trim().length >= 2 && !formData.id_sitio && sites.length > 0 && (
-            <ul className="absolute z-10 bg-card border border-border rounded-lg mt-1 w-full max-h-60 overflow-y-auto shadow-lg">
-              {sites.map((sitio) => (
-                <li
-                  key={sitio.id_sitio || sitio.id}
-                  onClick={() => onSelectSitio(sitio)}
-                  className="px-4 py-2 hover:bg-accent cursor-pointer"
-                >
-                  {sitio.nombre_sitio || sitio.nombre}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="municipio">Municipio</Label>
-          <Input
-            id="municipio"
-            value={busquedaMunicipio}
-            onChange={(e) => onMunicipioChange(e.target.value)}
-            readOnly={!!formData.id_sitio}
-            placeholder="Ciudad del lugar donde se hara el evento."
-            className="rounded-lg cursor-default"
-          />
-        </div>
+      <div className="space-y-2 relative">
+        <Label htmlFor="sitio">Sitio</Label>
+        <Input
+          id="sitio"
+          value={busquedaSitio}
+          onChange={(e) => onSitioInputChange(e.target.value)}
+          placeholder="Escribe el nombre del sitio donde sera el evento"
+          className="rounded-lg"
+        />
+        {formErrors.id_sitio && <p className="text-xs text-red-600 mt-1">{formErrors.id_sitio}</p>}
+        {busquedaSitio.trim().length >= 2 && !formData.id_sitio && sites.length > 0 && (
+          <ul className="absolute z-10 bg-card border border-border rounded-lg mt-1 w-full max-h-60 overflow-y-auto shadow-lg">
+            {sites.map((sitio) => (
+              <li
+                key={sitio.id_sitio || sitio.id}
+                onClick={() => onSelectSitio(sitio)}
+                className="px-4 py-2 hover:bg-accent cursor-pointer"
+              >
+                {sitio.nombre_sitio || sitio.nombre}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div className="space-y-2">

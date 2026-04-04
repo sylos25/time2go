@@ -91,11 +91,30 @@ export async function GET(req: NextRequest) {
       [key]
     );
 
-    if (!byKeyRes.rows || byKeyRes.rows.length === 0) {
+    if (byKeyRes.rows && byKeyRes.rows.length > 0) {
+      return serveImageRow(byKeyRes.rows[0] as ImageRow);
+    }
+
+    // Fallback: allow home hero images stored in tabla_inicio_hero_imagenes.
+    const heroByKeyRes = await pool.query(
+      `SELECT id_inicio_hero_imagen,
+              url_imagen AS url_imagen_evento,
+              storage_provider,
+              storage_key,
+              mime_type,
+              original_filename
+       FROM tabla_inicio_hero_imagenes
+       WHERE storage_key = $1
+         AND activo = TRUE
+       LIMIT 1`,
+      [key]
+    );
+
+    if (!heroByKeyRes.rows || heroByKeyRes.rows.length === 0) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
 
-    return serveImageRow(byKeyRes.rows[0] as ImageRow);
+    return serveImageRow(heroByKeyRes.rows[0] as ImageRow);
   } catch (err) {
     console.error("Error proxying image:", err);
     return NextResponse.json({ error: "Error proxying image" }, { status: 500 });

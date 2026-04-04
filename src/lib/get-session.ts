@@ -15,7 +15,7 @@ export type Session = { user: SessionUser };
  */
 export async function getSession(): Promise<Session | null> {
   const hdrs = await headers();
-  const payload = getJwtPayloadFromHeaders(hdrs.get("authorization"), hdrs.get("cookie"));
+  const payload = await getJwtPayloadFromHeaders(hdrs.get("authorization"), hdrs.get("cookie"));
   if (!payload?.id_usuario) {
     return null;
   }

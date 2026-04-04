@@ -152,6 +152,7 @@ export interface FormDataState {
   id_sitio: string
   telefono_1: string
   telefono_2: string
+  telefono_principal: "1" | "2"
   gratis_pago: boolean
   reservar_anticipado: boolean
 }
@@ -176,6 +177,8 @@ export interface FormErrors {
   id_tipo_evento?: string
   id_sitio?: string
   boletas?: string
+  imagenes?: string
+  documento?: string
   general?: string
 }
 
@@ -201,16 +204,24 @@ export interface UseEditEventModalReturn {
   eventTypes: TipoEvento[]
   sites: Sitio[]
   busquedaSitio: string
-  busquedaMunicipio: string
+  showTelefono2: boolean
   boletas: Boleta[]
   informacionAdicionalItems: EventoInfoItem[]
   images: File[]
+  newPrincipalImageIndex: number | null
+  documento: File | null
   existingImages: ImagenEvento[]
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void
   handleSitioInputChange: (value: string) => void
   handleSelectSitio: (sitio: Sitio) => void
-  setBusquedaMunicipio: (value: string) => void
+  setShowTelefono2: (value: boolean) => void
+  setPagoEventType: (isPaid: boolean) => void
+  setReservaAnticipada: (value: boolean) => void
+  clearFieldError: (field: keyof FormErrors) => void
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void
+  setDocumento: (file: File | null) => void
+  setExistingPrincipalImage: (imageId: number) => void
+  setNewPrincipalImage: (index: number) => void
   removeNewImage: (index: number) => void
   removeExistingImage: (imagenId: number) => void
   updateBoleta: (index: number, field: string, value: string) => void
@@ -232,6 +243,7 @@ export interface EditEventModalProps {
   event: Evento
   onSave: (updatedEvent: Evento) => Promise<void>
 }
+
 
 
 

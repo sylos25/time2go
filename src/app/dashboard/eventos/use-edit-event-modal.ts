@@ -39,6 +39,7 @@ const initialFormData: FormDataState = {
   id_sitio: "",
   telefono_1: "",
   telefono_2: "",
+  telefono_principal: "1",
   gratis_pago: false,
   reservar_anticipado: false,
 }
@@ -51,14 +52,16 @@ const sanitizeTextWithPunct = (value: string) =>
 
 export function useEditEventModal({ isOpen, event, onClose, onSave }: UseEditEventModalArgs): UseEditEventModalReturn {
   const [formData, setFormData] = useState<FormDataState>(initialFormData)
+  const [showTelefono2, setShowTelefono2] = useState(false)
   const [images, setImages] = useState<File[]>([])
+  const [documento, setDocumento] = useState<File | null>(null)
   const [existingImages, setExistingImages] = useState<ImagenEvento[]>([])
+  const [newPrincipalImageIndex, setNewPrincipalImageIndex] = useState<number | null>(null)
   const [imagesToDelete, setImagesToDelete] = useState<number[]>([])
   const [categories, setCategories] = useState<Categoria[]>([])
   const [eventTypes, setEventTypes] = useState<TipoEvento[]>([])
   const [sites, setSites] = useState<Sitio[]>([])
   const [busquedaSitio, setBusquedaSitio] = useState<string>("")
-  const [busquedaMunicipio, setBusquedaMunicipio] = useState<string>("")
   const [loading, setLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [boletas, setBoletas] = useState<BoleteDefinition[]>([
@@ -78,6 +81,7 @@ export function useEditEventModal({ isOpen, event, onClose, onSave }: UseEditEve
   }
 
   const mapEventToForm = (source: Evento) => {
+    const telefono2 = source.telefono_2 || ""
     setFormData({
       nombre_evento: source.nombre_evento || source.name || "",
       pulep_evento: source.pulep_evento || "",
@@ -92,14 +96,20 @@ export function useEditEventModal({ isOpen, event, onClose, onSave }: UseEditEve
       id_tipo_evento: String(source.id_tipo_evento || source.evento_tipo_id || "") || "",
       id_sitio: String(source.id_sitio || "") || "",
       telefono_1: source.telefono_1 || "",
-      telefono_2: source.telefono_2 || "",
+      telefono_2: telefono2,
+      telefono_principal: telefono2 ? "2" : "1",
       gratis_pago: source.gratis_pago || false,
       reservar_anticipado: source.reservar_anticipado || false,
     })
+    setShowTelefono2(Boolean(telefono2))
 
-    setExistingImages(source.imagenes || [])
+    const initialImages = (source.imagenes || []).map((img, index) => ({
+      ...img,
+      principal: Boolean(img.principal || img.principale || (index === 0 && !(source.imagenes || []).some((i) => i.principal || i.principale))),
+      orden: Number(img.orden || img.order || index + 1),
+    }))
+    setExistingImages(initialImages)
     setBusquedaSitio(source.sitio?.nombre_sitio || source.nombre_sitio || source.nombre || "")
-    setBusquedaMunicipio(source.municipio?.nombre_municipio || source.nombre_municipio || "")
 
     if (source.valores && Array.isArray(source.valores) && source.valores.length > 0) {
       setBoletas(
@@ -150,6 +160,8 @@ export function useEditEventModal({ isOpen, event, onClose, onSave }: UseEditEve
       }
 
       setImages([])
+      setDocumento(null)
+      setNewPrincipalImageIndex(null)
       setImagesToDelete([])
     } catch (err) {
       console.error("Error loading event data", err)
@@ -206,28 +218,6 @@ export function useEditEventModal({ isOpen, event, onClose, onSave }: UseEditEve
   }, [busquedaSitio, formData.id_sitio])
 
   useEffect(() => {
-    const fetchMunicipio = async () => {
-      if (!formData.id_sitio) {
-        setBusquedaMunicipio("")
-        return
-      }
-      try {
-        const res = await fetch(`/api/municipios?sitioId=${formData.id_sitio}`)
-        const data = (await res.json()) as Array<{ nombre_municipio: string }>
-        if (Array.isArray(data) && data.length > 0) {
-          setBusquedaMunicipio(data[0].nombre_municipio || "")
-        } else {
-          setBusquedaMunicipio("")
-        }
-      } catch {
-        setBusquedaMunicipio("")
-      }
-    }
-
-    void fetchMunicipio()
-  }, [formData.id_sitio])
-
-  useEffect(() => {
     const fetchTypes = async () => {
       try {
         const catId = formData.id_categoria_evento
@@ -251,10 +241,13 @@ export function useEditEventModal({ isOpen, event, onClose, onSave }: UseEditEve
     let nextValue = value
 
     if (name === "nombre_evento" || name === "responsable_evento") {
-      nextValue = sanitizeAlphanumSpace(value)
+      nextValue = sanitizeAlphanumSpace(value).slice(0, 40)
       clearFieldError(name)
+    } else if (name === "pulep_evento") {
+      nextValue = String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8)
+      clearFieldError("pulep_evento")
     } else if (name === "descripcion") {
-      nextValue = sanitizeTextWithPunct(value)
+      nextValue = sanitizeTextWithPunct(value).slice(0, 100)
       clearFieldError("descripcion")
     } else if (name === "telefono_1" || name === "telefono_2") {
       nextValue = String(value || "").replace(/[^0-9]/g, "").slice(0, 10)
@@ -266,10 +259,18 @@ export function useEditEventModal({ isOpen, event, onClose, onSave }: UseEditEve
       clearFieldError(name as keyof FormErrors)
     }
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : nextValue,
-    }))
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : nextValue,
+      }
+
+      if (name === "telefono_2" && nextValue === "" && prev.telefono_principal === "2") {
+        updated.telefono_principal = "1"
+      }
+
+      return updated
+    })
   }
 
   const handleSitioInputChange = (value: string) => {
@@ -286,18 +287,80 @@ export function useEditEventModal({ isOpen, event, onClose, onSave }: UseEditEve
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
-    if (files) {
-      setImages((prev) => [...prev, ...Array.from(files)])
+    if (!files) return
+
+    const selected = Array.from(files)
+    const totalCount = existingImages.length + images.length + selected.length
+    if (totalCount > 8) {
+      setFieldError("imagenes", "Puedes tener maximo 8 imagenes en total por evento.")
+      e.target.value = ""
+      return
     }
+
+    clearFieldError("imagenes")
+    setImages((prev) => [...prev, ...selected])
+    setNewPrincipalImageIndex((prev) => (prev === null ? 0 : prev))
   }
 
   const removeNewImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index))
+    clearFieldError("imagenes")
+    setImages((prev) => {
+      const next = prev.filter((_, i) => i !== index)
+      setNewPrincipalImageIndex((current) => {
+        if (current === null) return next.length ? 0 : null
+        if (next.length === 0) return null
+        if (current === index) return 0
+        if (current > index) return current - 1
+        return Math.min(current, next.length - 1)
+      })
+      return next
+    })
   }
 
   const removeExistingImage = (imageId: number) => {
+    clearFieldError("imagenes")
     setImagesToDelete((prev) => [...prev, imageId])
-    setExistingImages((prev) => prev.filter((img) => img.id_imagen_evento !== imageId))
+    setExistingImages((prev) => {
+      const filtered = prev.filter((img) => img.id_imagen_evento !== imageId)
+      if (filtered.length > 0 && !filtered.some((img) => img.principal)) {
+        filtered[0] = { ...filtered[0], principal: true }
+      }
+      return filtered
+    })
+  }
+
+  const setExistingPrincipalImage = (imageId: number) => {
+    setNewPrincipalImageIndex(null)
+    setExistingImages((prev) =>
+      prev.map((img) => ({
+        ...img,
+        principal: img.id_imagen_evento === imageId,
+      })),
+    )
+  }
+
+  const setNewPrincipalImage = (index: number) => {
+    setNewPrincipalImageIndex(index)
+    if (existingImages.length > 0) {
+      setExistingImages((prev) => prev.map((img) => ({ ...img, principal: false })))
+    }
+  }
+
+  const setPagoEventType = (isPaid: boolean) => {
+    clearFieldError("boletas")
+    setFormData((prev) => ({
+      ...prev,
+      gratis_pago: isPaid,
+      reservar_anticipado: false,
+    }))
+
+    if (!isPaid) {
+      setBoletas([{ nombre_boleto: "", precio_boleto: "", servicio: "" }])
+    }
+  }
+
+  const setReservaAnticipada = (value: boolean) => {
+    setFormData((prev) => ({ ...prev, reservar_anticipado: value }))
   }
 
   const updateBoleta = (index: number, field: string, value: string) => {
@@ -364,8 +427,8 @@ export function useEditEventModal({ isOpen, event, onClose, onSave }: UseEditEve
       const cupoValue = Number(String(formData.cupo || ""))
       const infoValidItems = (informacionAdicionalItems || []).filter((item) => item.detalle?.trim())
 
-      if (!nombreEvento || nombreEvento.length < 6 || !ALPHANUM_SPACE_REGEX.test(nombreEvento)) {
-        setFieldError("nombre_evento", "El nombre del evento debe tener al menos 6 caracteres y solo usar letras y numeros.")
+      if (!nombreEvento || nombreEvento.length < 6 || nombreEvento.length > 40 || !ALPHANUM_SPACE_REGEX.test(nombreEvento)) {
+        setFieldError("nombre_evento", "El nombre del evento debe tener entre 6 y 40 caracteres y solo usar letras y numeros.")
         return
       }
 
@@ -374,13 +437,13 @@ export function useEditEventModal({ isOpen, event, onClose, onSave }: UseEditEve
         return
       }
 
-      if (!responsable || responsable.length < 6 || !ALPHANUM_SPACE_REGEX.test(responsable)) {
-        setFieldError("responsable_evento", "El responsable debe tener al menos 6 caracteres y solo usar letras y numeros.")
+      if (!responsable || responsable.length < 6 || responsable.length > 40 || !ALPHANUM_SPACE_REGEX.test(responsable)) {
+        setFieldError("responsable_evento", "El responsable debe tener entre 6 y 40 caracteres y solo usar letras y numeros.")
         return
       }
 
-      if (!descripcion || descripcion.length < 10 || !TEXT_WITH_PUNCT_REGEX.test(descripcion)) {
-        setFieldError("descripcion", "La descripcion debe tener minimo 10 caracteres y solo usar caracteres permitidos.")
+      if (!descripcion || descripcion.length < 10 || descripcion.length > 100 || !TEXT_WITH_PUNCT_REGEX.test(descripcion)) {
+        setFieldError("descripcion", "La descripcion debe tener entre 10 y 100 caracteres y solo usar caracteres permitidos.")
         return
       }
 
@@ -406,6 +469,11 @@ export function useEditEventModal({ isOpen, event, onClose, onSave }: UseEditEve
 
       if (formData.telefono_2 && (String(formData.telefono_2).length !== 10 || Number(formData.telefono_2) <= 2999999999)) {
         setFieldError("telefono_2", "El telefono 2 debe tener 10 digitos y ser valido.")
+        return
+      }
+
+      if (formData.telefono_principal === "2" && !formData.telefono_2) {
+        setFieldError("telefono_2", "Debes registrar el telefono 2 para marcarlo como principal.")
         return
       }
 
@@ -436,8 +504,8 @@ export function useEditEventModal({ isOpen, event, onClose, onSave }: UseEditEve
 
       for (const infoItem of infoValidItems) {
         const detalle = String(infoItem.detalle || "").trim()
-        if (detalle.length < 5 || !TEXT_WITH_PUNCT_REGEX.test(detalle)) {
-          setFieldError("informacion_adicional_items", "Cada item debe tener minimo 5 caracteres y solo usar caracteres permitidos.")
+        if (detalle.length < 10 || detalle.length > 40 || !TEXT_WITH_PUNCT_REGEX.test(detalle)) {
+          setFieldError("informacion_adicional_items", "Cada item debe tener entre 10 y 40 caracteres y solo usar caracteres permitidos.")
           return
         }
       }
@@ -492,6 +560,7 @@ export function useEditEventModal({ isOpen, event, onClose, onSave }: UseEditEve
       submitFormData.append("id_sitio", String(formData.id_sitio || 0))
       submitFormData.append("telefono_1", formData.telefono_1 || "")
       submitFormData.append("telefono_2", formData.telefono_2 || "")
+      submitFormData.append("telefono_principal", formData.telefono_2 ? formData.telefono_principal : "1")
       submitFormData.append("gratis_pago", String(Boolean(formData.gratis_pago)))
       submitFormData.append("reservar_anticipado", String(Boolean(formData.reservar_anticipado)))
 
@@ -507,6 +576,10 @@ export function useEditEventModal({ isOpen, event, onClose, onSave }: UseEditEve
       images.forEach((img) => {
         submitFormData.append("additionalImages", img)
       })
+
+      if (documento) {
+        submitFormData.append("documento", documento)
+      }
 
       submitFormData.append(
         "boletas",
@@ -534,7 +607,14 @@ export function useEditEventModal({ isOpen, event, onClose, onSave }: UseEditEve
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}))
         const message = String(payload?.message || "Error al guardar los cambios del evento")
-        setFormErrors((prev) => ({ ...prev, general: message }))
+        const lowerMessage = message.toLowerCase()
+        if (lowerMessage.includes("imagen")) {
+          setFormErrors((prev) => ({ ...prev, imagenes: message }))
+        } else if (lowerMessage.includes("document")) {
+          setFormErrors((prev) => ({ ...prev, documento: message }))
+        } else {
+          setFormErrors((prev) => ({ ...prev, general: message }))
+        }
         return
       }
 
@@ -558,16 +638,24 @@ export function useEditEventModal({ isOpen, event, onClose, onSave }: UseEditEve
     eventTypes,
     sites,
     busquedaSitio,
-    busquedaMunicipio,
+    showTelefono2,
     boletas,
     informacionAdicionalItems,
     images,
+    newPrincipalImageIndex,
+    documento,
     existingImages,
     handleInputChange,
     handleSitioInputChange,
     handleSelectSitio,
-    setBusquedaMunicipio,
+    setShowTelefono2,
+    setPagoEventType,
+    setReservaAnticipada,
+    clearFieldError,
     handleImageUpload,
+    setDocumento,
+    setExistingPrincipalImage,
+    setNewPrincipalImage,
     removeNewImage,
     removeExistingImage,
     updateBoleta,

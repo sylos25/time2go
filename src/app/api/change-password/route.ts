@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     }
 
     const authHeader = req.headers.get("authorization") || "";
-    const userId = getRequesterIdFromRequest(req);
+    const userId = await getRequesterIdFromRequest(req);
     if (!userId) {
       const message = authHeader.startsWith("Bearer ") ? "Token inválido" : "No autorizado";
       return NextResponse.json({ ok: false, message }, { status: 401 });

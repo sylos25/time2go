@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 import pool from "@/lib/db";
 import { serializeCookie } from "@/lib/cookies";
+import { signToken } from "@/lib/jwt";
 
 type LoginLimiter = {
   requests: number[];
@@ -340,21 +340,31 @@ export async function POST(req: Request) {
 
     clearSuccessfulAuth(ip, normalizedEmail);
 
-    const secret =
-      process.env.BETTER_AUTH_SECRET || process.env.JWT_SECRET || "dev-secret";
-    const expiresIn = 60 * 60 * 12;
-    const token = jwt.sign(
+    const accessExpiresIn = 15 * 60;
+    const refreshExpiresIn = 7 * 24 * 60 * 60;
+
+    const accessToken = await signToken(
       {
         id_usuario: user.id_usuario,
+        id_rol: user.id_rol,
         name: user.nombres || user.correo.split("@")[0],
       },
-      secret,
-      { expiresIn }
+      accessExpiresIn
+    );
+
+    const refreshToken = await signToken(
+      {
+        id_usuario: user.id_usuario,
+        id_rol: user.id_rol,
+        name: user.nombres || user.correo.split("@")[0],
+        token_type: "refresh",
+      },
+      refreshExpiresIn
     );
 
     const secure = process.env.NODE_ENV === "production";
-    const cookie = serializeCookie("token", token, {
-      maxAge: expiresIn,
+    const accessCookie = serializeCookie("token", accessToken, {
+      maxAge: accessExpiresIn,
       httpOnly: true,
       secure,
       sameSite: "lax",
@@ -362,22 +372,30 @@ export async function POST(req: Request) {
       domain: process.env.COOKIE_DOMAIN,
     });
 
-    return NextResponse.json(
+    const refreshCookie = serializeCookie("refresh_token", refreshToken, {
+      maxAge: refreshExpiresIn,
+      httpOnly: true,
+      secure,
+      sameSite: "strict",
+      path: "/",
+      domain: process.env.COOKIE_DOMAIN,
+    });
+
+    const response = NextResponse.json(
       {
         success: true,
-        token,
         id_publico: user.id_publico,
         id_rol: user.id_rol,
-        expiresAt: Math.floor(Date.now() / 1000) + expiresIn,
+        expiresAt: Math.floor(Date.now() / 1000) + accessExpiresIn,
         name: user.nombres || user.correo.split("@")[0],
       },
-      {
-        status: 200,
-        headers: {
-          "Set-Cookie": cookie,
-        },
-      }
+      { status: 200 }
     );
+
+    response.headers.append("Set-Cookie", accessCookie);
+    response.headers.append("Set-Cookie", refreshCookie);
+
+    return response;
   } catch (err) {
     console.error("Login error:", err);
     return NextResponse.json({ message: "Error interno" }, { status: 500 });

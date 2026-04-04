@@ -5,7 +5,7 @@ import { getRequesterIdLenient } from "@/lib/auth-request";
 const TEXT_WITH_PUNCT_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]+$/;
 
 async function getAuthenticatedUser(req: Request) {
-  const userId = getRequesterIdLenient(req);
+  const userId = await getRequesterIdLenient(req);
   if (!userId) return null;
 
   const userQuery = await pool.query(

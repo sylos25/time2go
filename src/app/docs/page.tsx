@@ -13,23 +13,16 @@ import {
 function useAdminGuard() {
   const router = useRouter()
   const [allowed, setAllowed] = useState<boolean | null>(null)
-  const [token, setToken] = useState("")
 
   useEffect(() => {
     const check = async () => {
-      const storedToken = localStorage.getItem("token") ?? ""
       const role = Number(localStorage.getItem("userRole") ?? 0)
-      if (!storedToken) { router.replace("/auth"); return }
       if (role !== 4) { router.replace("/"); return }
       try {
-        const res = await fetch("/api/me", {
-          headers: { Authorization: `Bearer ${storedToken}` },
-          credentials: "include",
-        })
+        const res = await fetch("/api/me", { credentials: "include" })
         if (!res.ok) { router.replace("/auth"); return }
         const data = await res.json()
         if (!data?.ok || Number(data.user?.id_rol) !== 4) { router.replace("/"); return }
-        setToken(storedToken)
         setAllowed(true)
       } catch {
         router.replace("/")
@@ -38,7 +31,7 @@ function useAdminGuard() {
     check()
   }, [router])
 
-  return { allowed, token }
+  return { allowed }
 }
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
@@ -109,7 +102,7 @@ function CodeBlock({ children }: { children: string }) {
 }
 
 // ── Visor de archivos ────────────────────────────────────────────────────────
-function FileBrowser({ token }: { token: string }) {
+function FileBrowser() {
   const [files, setFiles] = useState<DocFile[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -122,7 +115,6 @@ function FileBrowser({ token }: { token: string }) {
     try {
       const res = await fetch("/api/docs/files", {
         credentials: "include",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
       })
       if (!res.ok) { setError("No se pudieron cargar los archivos"); return }
       const data = await res.json()
@@ -253,7 +245,7 @@ function FileBrowser({ token }: { token: string }) {
 
 // ── Página principal ─────────────────────────────────────────────────────────
 export default function DocsPage() {
-  const { allowed, token } = useAdminGuard()
+  const { allowed } = useAdminGuard()
 
   if (allowed === null) {
     return (
@@ -288,7 +280,7 @@ export default function DocsPage() {
 
         {/* ── Archivos del proyecto ── */}
         <Section icon={FolderOpen} title="Archivos del Proyecto" color="bg-green-600" defaultOpen={true}>
-          <FileBrowser token={token} />
+          <FileBrowser />
         </Section>
 
         {/* ── Diagrama BD ── */}

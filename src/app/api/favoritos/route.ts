@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { getRequesterIdLenient } from "@/lib/auth-request";
 
-function getUserIdNumber(req: Request): number | null {
-  const raw = getRequesterIdLenient(req);
+async function getUserIdNumber(req: Request): Promise<number | null> {
+  const raw = await getRequesterIdLenient(req);
   return raw ? Number(raw) : null;
 }
 
 export async function GET(req: Request) {
   try {
-    const userId = getUserIdNumber(req);
+    const userId = await getUserIdNumber(req);
     if (!userId) {
       return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
     }
@@ -34,7 +34,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const userId = getUserIdNumber(req);
+    const userId = await getUserIdNumber(req);
     if (!userId) {
       return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
     }

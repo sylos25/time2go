@@ -3,8 +3,8 @@ import pool from "@/lib/db";
 import { getJwtPayloadLenient } from "@/lib/auth-request";
 import { dbErrorResponse } from "@/lib/api-error-response";
 
-function getAuthenticatedUser(req: Request) {
-  const payload = getJwtPayloadLenient(req);
+async function getAuthenticatedUser(req: Request) {
+  const payload = await getJwtPayloadLenient(req);
   if (!payload?.id_usuario) return null;
   return { id_usuario: Number(payload.id_usuario), name: payload.name };
 }
@@ -15,7 +15,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = getAuthenticatedUser(req);
+    const user = await getAuthenticatedUser(req);
     if (!user)
       return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
 
@@ -46,7 +46,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = getAuthenticatedUser(req);
+    const user = await getAuthenticatedUser(req);
     if (!user)
       return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
 
@@ -84,7 +84,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = getAuthenticatedUser(req);
+    const user = await getAuthenticatedUser(req);
     if (!user)
       return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
 

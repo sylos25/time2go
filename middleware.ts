@@ -1,7 +1,6 @@
-import { jwtVerify } from "jose";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { resolveJwtSecret } from "@/lib/jwt-secret";
+import { verifyToken } from "@/lib/jwt";
 
 // ── Roles ────────────────────────────────────────────────────────────────────
 const ROL_USUARIO = 1;
@@ -56,18 +55,11 @@ export async function middleware(request: NextRequest) {
     return redirectLogin(request, pathname);
   }
 
-  let secretBytes: Uint8Array;
   try {
-    secretBytes = new TextEncoder().encode(resolveJwtSecret());
-  } catch {
-    console.error("[middleware] JWT_SECRET / BETTER_AUTH_SECRET no configurado");
-    return redirectLogin(request, pathname);
-  }
-
-  try {
-    const { payload } = await jwtVerify(token, secretBytes, {
-      algorithms: ["HS256"],
-    });
+    const payload = await verifyToken(token, "access");
+    if (!payload) {
+      return NextResponse.redirect(new URL("/auth", request.url));
+    }
 
     const userRole = roleFromPayload(payload.id_rol);
 

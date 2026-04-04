@@ -5,7 +5,7 @@ import { getRequesterIdFromRequest } from "@/lib/auth-request";
 export async function GET(req: Request) {
   try {
     const authHeader = req.headers.get("authorization") || "";
-    const userId = getRequesterIdFromRequest(req);
+    const userId = await getRequesterIdFromRequest(req);
     if (!userId) {
       const message = authHeader.startsWith("Bearer ") ? "Invalid token" : "No authenticated user";
       return NextResponse.json({ ok: false, message }, { status: 401 });

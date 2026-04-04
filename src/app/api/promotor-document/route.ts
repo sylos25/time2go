@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   const client = await pool.connect()
 
   try {
-    const userId = getRequesterIdLenient(req)
+    const userId = await getRequesterIdLenient(req)
     if (!userId) {
       return NextResponse.json({ ok: false, message: "No autenticado" }, { status: 401 })
     }

@@ -24,7 +24,7 @@ export async function GET(req: Request) {
     // Si no se proporciona id_rol, obtenerlo del usuario autenticado
     if (!idRol) {
       const authHeader = req.headers.get("authorization") || "";
-      const userId = getRequesterIdFromRequest(req);
+      const userId = await getRequesterIdFromRequest(req);
       if (!userId) {
         const message = authHeader.startsWith("Bearer ") ? "Token inválido" : "Usuario no autenticado";
         return NextResponse.json({ ok: false, message }, { status: 401 });

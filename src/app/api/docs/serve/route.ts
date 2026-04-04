@@ -8,7 +8,7 @@ export const runtime = "nodejs"
 
 // ── Verificar rol admin ──────────────────────────────────────────────────────
 async function ensureAdminRole(req: NextRequest): Promise<boolean> {
-  const userId = getRequesterIdLenient(req)
+  const userId = await getRequesterIdLenient(req)
   if (!userId) return false
 
   const roleRes = await pool.query(

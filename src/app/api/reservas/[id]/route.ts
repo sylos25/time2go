@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { getRequesterIdLenient } from "@/lib/auth-request";
 
-function getAuthenticatedUserId(req: Request) {
-  return getRequesterIdLenient(req);
+async function getAuthenticatedUserId(req: Request) {
+  return await getRequesterIdLenient(req);
 }
 
 export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {

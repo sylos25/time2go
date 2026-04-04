@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Dialog,
   DialogContent,
@@ -338,7 +337,18 @@ export default function CrearEventoPage() {
               />
 
               <div className="space-y-2">
-                <Label htmlFor="telefono1">Teléfono del organizador del evento</Label>
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="telefono1">Teléfono del organizador del evento</Label>
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newEvent.telefono_principal === "1"}
+                      onChange={() => setNewEvent({ ...newEvent, telefono_principal: "1" })}
+                      className="w-4 h-4"
+                    />
+                    Teléfono principal
+                  </label>
+                </div>
                 <Input
                   id="telefono1"
                   value={newEvent.telefono1}
@@ -372,7 +382,18 @@ export default function CrearEventoPage() {
 
               {showTelefono2 && (
                 <div className="space-y-2">
-                  <Label htmlFor="telefono2">Segundo teléfono del organizador del evento</Label>
+                  <div className="flex items-center justify-between gap-3">
+                    <Label htmlFor="telefono2">Segundo teléfono del organizador del evento</Label>
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={newEvent.telefono_principal === "2"}
+                        onChange={() => setNewEvent({ ...newEvent, telefono_principal: "2" })}
+                        className="w-4 h-4"
+                      />
+                      Teléfono principal
+                    </label>
+                  </div>
                   <Input
                     id="telefono2"
                     value={newEvent.telefono2 || ""}
@@ -392,30 +413,6 @@ export default function CrearEventoPage() {
                   {formErrors.telefono2 && (
                     <p className="text-xs text-red-600">{formErrors.telefono2}</p>
                   )}
-
-                  <div className="space-y-1">
-                    <Label className="text-sm font-medium">Teléfono principal</Label>
-                    <RadioGroup
-                      value={newEvent.telefono_principal}
-                      onValueChange={(value: "1" | "2") =>
-                        setNewEvent({ ...newEvent, telefono_principal: value })
-                      }
-                      className="flex gap-6"
-                    >
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem value="1" id="principal-tel1" />
-                        <Label htmlFor="principal-tel1" className="cursor-pointer text-sm">
-                          Teléfono 1
-                        </Label>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem value="2" id="principal-tel2" />
-                        <Label htmlFor="principal-tel2" className="cursor-pointer text-sm">
-                          Teléfono 2
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
 
                   <Button
                     type="button"

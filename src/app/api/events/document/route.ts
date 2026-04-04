@@ -6,7 +6,7 @@ import { getRequesterIdLenient } from "@/lib/auth-request"
 export const runtime = "nodejs"
 
 async function ensureAdminRole(req: NextRequest) {
-  const userId = getRequesterIdLenient(req)
+  const userId = await getRequesterIdLenient(req)
   if (!userId) return false
 
   const roleRes = await pool.query(

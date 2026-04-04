@@ -3,7 +3,7 @@ import pool from "@/lib/db";
 import { getRequesterIdLenient } from "@/lib/auth-request";
 
 async function getAuthenticatedUser(req: Request, client: any) {
-  const userId = getRequesterIdLenient(req);
+  const userId = await getRequesterIdLenient(req);
   if (!userId) return null;
 
   const roleRes = await client.query(

@@ -11,7 +11,7 @@ const TIPOS_DOCUMENTO_VALIDOS = [
 type TipoDocumento = (typeof TIPOS_DOCUMENTO_VALIDOS)[number];
 
 async function getAuthenticatedUser(req: Request) {
-  const userId = getRequesterIdLenient(req);
+  const userId = await getRequesterIdLenient(req);
   if (!userId) return null;
 
   const userRes = await pool.query(

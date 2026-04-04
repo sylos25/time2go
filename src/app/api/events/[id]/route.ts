@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   const client = await pool.connect();
   try {
     const authHeader = req.headers.get("authorization") || "";
-    const requesterId = getRequesterIdFromRequest(req);
+    const requesterId = await getRequesterIdFromRequest(req);
     if (!requesterId) {
       const message = authHeader.startsWith("Bearer ") ? "Invalid token" : "Not authenticated";
       return NextResponse.json({ ok: false, message }, { status: 401 });
@@ -335,7 +335,7 @@ export async function GET(req: Request) {
 
     let requesterId: string | null = null;
     if (onlyMine || includeAll) {
-      requesterId = getRequesterIdLenient(req);
+      requesterId = await getRequesterIdLenient(req);
 
       if (!requesterId) {
         return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });

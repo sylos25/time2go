@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 
 export interface HeaderUser {
-  token?: string
   name?: string
   firstName?: string
   id_publico?: string
@@ -21,15 +20,7 @@ export function useHeaderSession(pathname: string) {
   const router = useRouter()
   const [user, setUser] = useState<HeaderUser | null>(null)
   const logoutTimerRef = useRef<number | null>(null)
-
-  const parseJwtExp = useCallback((token: string) => {
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]))
-      return payload.exp as number | undefined
-    } catch {
-      return undefined
-    }
-  }, [])
+  const ACCESS_EXP_KEY = "accessExpiresAt"
 
   const clearSessionState = useCallback(
     async ({
@@ -46,6 +37,7 @@ export function useHeaderSession(pathname: string) {
       }
 
       localStorage.removeItem("token")
+      localStorage.removeItem(ACCESS_EXP_KEY)
       localStorage.removeItem("userName")
       localStorage.removeItem("userRole")
       localStorage.removeItem("userPublicId")
@@ -64,7 +56,7 @@ export function useHeaderSession(pathname: string) {
         router.push("/")
       }
     },
-    [router],
+    [router, ACCESS_EXP_KEY],
   )
 
   const performLogout = useCallback(async () => {
@@ -79,6 +71,26 @@ export function useHeaderSession(pathname: string) {
     await clearSessionState()
   }, [clearSessionState])
 
+  const refreshAccessToken = useCallback(async (): Promise<number | null> => {
+    try {
+      const res = await fetch("/api/refresh", {
+        method: "POST",
+        credentials: "include",
+      })
+      if (!res.ok) return null
+      const data = await res.json()
+      const nextExp = data?.expiresAt ? Number(data.expiresAt) : null
+      if (nextExp && Number.isFinite(nextExp)) {
+        localStorage.setItem(ACCESS_EXP_KEY, String(nextExp))
+        return nextExp
+      }
+      return null
+    } catch (err) {
+      console.error("refresh token error", err)
+      return null
+    }
+  }, [ACCESS_EXP_KEY])
+
   const scheduleAutoLogout = useCallback(
     (expiresAtSec?: number) => {
       if (logoutTimerRef.current) {
@@ -88,106 +100,65 @@ export function useHeaderSession(pathname: string) {
 
       if (!expiresAtSec) return
 
-      const ms = expiresAtSec * 1000 - Date.now()
+      const refreshLeadMs = 60 * 1000
+      const ms = expiresAtSec * 1000 - Date.now() - refreshLeadMs
       if (ms <= 0) {
-        void performLogout()
+        void (async () => {
+          const nextExp = await refreshAccessToken()
+          if (nextExp) {
+            scheduleAutoLogout(nextExp)
+            return
+          }
+          await performLogout()
+        })()
         return
       }
 
       logoutTimerRef.current = window.setTimeout(() => {
-        void performLogout()
+        void (async () => {
+          const nextExp = await refreshAccessToken()
+          if (nextExp) {
+            scheduleAutoLogout(nextExp)
+            return
+          }
+          await performLogout()
+        })()
       }, ms)
     },
-    [performLogout],
+    [performLogout, refreshAccessToken],
   )
 
   useEffect(() => {
     const syncFromStorage = () => {
-      const token = localStorage.getItem("token")
       const storedName = localStorage.getItem("userName")
       const storedUserPublicId = localStorage.getItem("userPublicId")
       const storedRole = localStorage.getItem("userRole")
+      const storedAccessExp = Number(localStorage.getItem(ACCESS_EXP_KEY) || "0")
 
-      if (!token) return
+      if (!storedName && !storedUserPublicId && !storedRole) return
 
-      const exp = parseJwtExp(token)
       setUser({
-        token,
         name: storedName || undefined,
         id_publico: storedUserPublicId || undefined,
         role: storedRole ? Number(storedRole) : undefined,
       })
 
-      if (exp) scheduleAutoLogout(exp)
+      if (Number.isFinite(storedAccessExp) && storedAccessExp > 0) {
+        scheduleAutoLogout(storedAccessExp)
+      }
     }
 
     const validateSession = async () => {
       try {
-        const token = localStorage.getItem("token")
-
-        if (token) {
-          const exp = parseJwtExp(token)
-          if (exp && exp * 1000 <= Date.now()) {
-            await performLogout()
-            return
+        let res = await fetch("/api/me", { credentials: "include" })
+        if (!res.ok && res.status === 401) {
+          const nextExp = await refreshAccessToken()
+          if (nextExp) {
+            scheduleAutoLogout(nextExp)
+            res = await fetch("/api/me", { credentials: "include" })
           }
-
-          const storedName = localStorage.getItem("userName")
-          setUser({ token, name: storedName || undefined })
-          if (exp) scheduleAutoLogout(exp)
-
-          try {
-            const res = await fetch("/api/me", {
-              headers: { Authorization: `Bearer ${token}` },
-              credentials: "include",
-            })
-
-            if (!res.ok) {
-              await clearSessionSilent()
-              return
-            }
-
-            const data = await res.json()
-            if (data?.ok && data.user) {
-              const name =
-                data.user.nombres ||
-                data.user.correo ||
-                storedName ||
-                localStorage.getItem("userName") ||
-                undefined
-              const userPublicId =
-                data.user.id_publico ||
-                localStorage.getItem("userPublicId") ||
-                undefined
-              const roleNumber =
-                data.user.id_rol !== undefined
-                  ? Number(data.user.id_rol)
-                  : undefined
-
-              if (userPublicId) {
-                localStorage.setItem("userPublicId", String(userPublicId))
-              }
-              if (roleNumber !== undefined) {
-                localStorage.setItem("userRole", String(roleNumber))
-              }
-
-              setUser({
-                token,
-                name,
-                id_publico: userPublicId,
-                role: roleNumber,
-              })
-            } else {
-              await clearSessionSilent()
-            }
-          } catch (err) {
-            console.error("validateSession server check error", err)
-          }
-
-          return
         }
 
-        const res = await fetch("/api/me", { credentials: "include" })
         if (!res.ok) {
           await clearSessionSilent()
           return
@@ -200,7 +171,6 @@ export function useHeaderSession(pathname: string) {
             data.user.correo ||
             localStorage.getItem("userName") ||
             undefined
-          const tokenFromStorage = localStorage.getItem("token") || undefined
           const userPublicId =
             data.user.id_publico || localStorage.getItem("userPublicId") || undefined
           const roleNumber =
@@ -214,16 +184,15 @@ export function useHeaderSession(pathname: string) {
           }
 
           setUser({
-            token: tokenFromStorage,
             name,
             id_publico: userPublicId,
             role: roleNumber,
           })
 
-          const expFromToken = tokenFromStorage
-            ? parseJwtExp(tokenFromStorage)
-            : undefined
-          if (expFromToken) scheduleAutoLogout(expFromToken)
+          const expFromStorage = Number(localStorage.getItem(ACCESS_EXP_KEY) || "0")
+          if (Number.isFinite(expFromStorage) && expFromStorage > 0) {
+            scheduleAutoLogout(expFromStorage)
+          }
         } else {
           await clearSessionSilent()
         }
@@ -238,7 +207,6 @@ export function useHeaderSession(pathname: string) {
     const onLogin = (e: Event) => {
       const ev = e as CustomEvent
       const detail = ev.detail ?? {}
-      const token = detail.token || localStorage.getItem("token")
       const name =
         detail.name ||
         detail.nombre ||
@@ -249,7 +217,6 @@ export function useHeaderSession(pathname: string) {
       const roleNumber =
         detail.id_rol !== undefined ? Number(detail.id_rol) : undefined
 
-      if (token) localStorage.setItem("token", token)
       if (name) localStorage.setItem("userName", name)
       if (userPublicId) {
         localStorage.setItem("userPublicId", String(userPublicId))
@@ -257,21 +224,20 @@ export function useHeaderSession(pathname: string) {
       if (roleNumber !== undefined) {
         localStorage.setItem("userRole", String(roleNumber))
       }
+      if (detail.expiresAt) {
+        localStorage.setItem(ACCESS_EXP_KEY, String(detail.expiresAt))
+      }
 
-      setUser({ token, name, id_publico: userPublicId, role: roleNumber })
+      setUser({ name, id_publico: userPublicId, role: roleNumber })
 
-      const exp = detail.expiresAt || parseJwtExp(token || "")
+      const exp = detail.expiresAt
       if (exp) scheduleAutoLogout(exp)
     }
 
     const onStorage = (e: StorageEvent) => {
-      if (e.key === "token") {
-        if (!e.newValue) {
-          void performLogout()
-        } else {
-          syncFromStorage()
-          void validateSession()
-        }
+      if (e.key === ACCESS_EXP_KEY) {
+        syncFromStorage()
+        void validateSession()
       }
 
       if (e.key === "userName") {
@@ -303,10 +269,11 @@ export function useHeaderSession(pathname: string) {
     }
   }, [
     pathname,
-    parseJwtExp,
     scheduleAutoLogout,
     clearSessionSilent,
     performLogout,
+    refreshAccessToken,
+    ACCESS_EXP_KEY,
   ])
 
   return {

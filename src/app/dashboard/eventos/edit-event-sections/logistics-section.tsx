@@ -1,19 +1,43 @@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
 import type { FormDataState, FormErrors } from "@/types/event-edit"
 
 interface LogisticsSectionProps {
-  formData: Pick<FormDataState, "telefono_1" | "telefono_2" | "fecha_inicio" | "fecha_fin" | "hora_inicio" | "hora_final" | "gratis_pago" | "reservar_anticipado" | "cupo">
+  formData: Pick<FormDataState, "telefono_1" | "telefono_2" | "telefono_principal" | "fecha_inicio" | "fecha_fin" | "hora_inicio" | "hora_final" | "cupo">
   formErrors: Partial<FormErrors>
+  showTelefono2: boolean
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void
+  onShowTelefono2: (value: boolean) => void
 }
 
-export function LogisticsSection({ formData, formErrors, onInputChange }: LogisticsSectionProps) {
+export function LogisticsSection({
+  formData,
+  formErrors,
+  showTelefono2,
+  onInputChange,
+  onShowTelefono2,
+}: LogisticsSectionProps) {
   return (
     <>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="space-y-3">
         <div>
-          <Label htmlFor="telefono_1">Telefono del organizador del evento</Label>
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor="telefono_1">Telefono del organizador del evento</Label>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.telefono_principal === "1"}
+                onChange={() =>
+                  onInputChange({
+                    target: { name: "telefono_principal", value: "1", type: "text" },
+                  } as React.ChangeEvent<HTMLInputElement>)
+                }
+                className="w-4 h-4"
+              />
+              Telefono principal
+            </label>
+          </div>
           <Input
             id="telefono_1"
             name="telefono_1"
@@ -27,21 +51,64 @@ export function LogisticsSection({ formData, formErrors, onInputChange }: Logist
           />
           {formErrors.telefono_1 && <p className="text-xs text-red-600 mt-1">{formErrors.telefono_1}</p>}
         </div>
-        <div>
-          <Label htmlFor="telefono_2">Telefono 2 (opcional)</Label>
-          <Input
-            id="telefono_2"
-            name="telefono_2"
-            type="tel"
-            value={formData.telefono_2}
-            onChange={onInputChange}
-            placeholder="Telefono 2"
-            className="rounded-xl"
-            maxLength={10}
-            inputMode="numeric"
-          />
-          {formErrors.telefono_2 && <p className="text-xs text-red-600 mt-1">{formErrors.telefono_2}</p>}
-        </div>
+
+        {!showTelefono2 && (
+          <Button
+            type="button"
+            onClick={() => onShowTelefono2(true)}
+            className="cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-green-700 to-lime-500 text-white text-sm hover:bg-gradient-to-tr hover:from-green-600 hover:to-lime-400 hover:scale-102 w-45 text-center"
+          >
+            + Agregar otro telefono
+          </Button>
+        )}
+
+        {showTelefono2 && (
+          <div className="space-y-3">
+            <div>
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="telefono_2">Segundo telefono del organizador del evento</Label>
+                <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.telefono_principal === "2"}
+                    onChange={() =>
+                      onInputChange({
+                        target: { name: "telefono_principal", value: "2", type: "text" },
+                      } as React.ChangeEvent<HTMLInputElement>)
+                    }
+                    className="w-4 h-4"
+                  />
+                  Telefono principal
+                </label>
+              </div>
+              <Input
+                id="telefono_2"
+                name="telefono_2"
+                type="tel"
+                value={formData.telefono_2}
+                onChange={onInputChange}
+                placeholder="Telefono 2"
+                className="rounded-xl"
+                maxLength={10}
+                inputMode="numeric"
+              />
+              {formErrors.telefono_2 && <p className="text-xs text-red-600 mt-1">{formErrors.telefono_2}</p>}
+            </div>
+
+            <Button
+              type="button"
+              onClick={() => {
+                onShowTelefono2(false)
+                onInputChange({
+                  target: { name: "telefono_2", value: "", type: "text" },
+                } as React.ChangeEvent<HTMLInputElement>)
+              }}
+              className="cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white text-sm hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-400 hover:scale-102 w-45 text-center"
+            >
+              - Quitar telefono
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
@@ -97,35 +164,6 @@ export function LogisticsSection({ formData, formErrors, onInputChange }: Logist
           {formErrors.hora_final && <p className="text-xs text-red-600 mt-1">{formErrors.hora_final}</p>}
         </div>
       </div>
-
-      <div className="flex items-center gap-4">
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            name="gratis_pago"
-            checked={formData.gratis_pago}
-            onChange={onInputChange}
-            className="rounded border-border"
-          />
-          <span className="text-sm font-medium">Evento de Pago</span>
-        </label>
-      </div>
-
-      {!formData.gratis_pago && (
-        <div className="flex items-center gap-2 p-3 bg-muted/40 rounded-lg border border-border">
-          <input
-            id="reservar_anticipado"
-            name="reservar_anticipado"
-            type="checkbox"
-            checked={formData.reservar_anticipado}
-            onChange={onInputChange}
-            className="w-4 h-4 cursor-pointer"
-          />
-          <label htmlFor="reservar_anticipado" className="cursor-pointer text-sm font-medium">
-            Asistencia unicamente con reserva anticipada?
-          </label>
-        </div>
-      )}
 
       <div className="space-y-2">
         <Label htmlFor="cupo">Aforo del evento</Label>

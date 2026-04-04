@@ -25,7 +25,7 @@ export async function checkUserPermission(
 ): Promise<PermissionCheckResult> {
   try {
     const authHeader = req.headers.get("authorization") || "";
-    const userId = getRequesterIdFromRequest(req);
+    const userId = await getRequesterIdFromRequest(req);
 
     if (!userId) {
       if (authHeader.startsWith("Bearer ")) {

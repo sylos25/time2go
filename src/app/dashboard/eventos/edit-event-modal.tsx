@@ -3,8 +3,9 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Loader } from "lucide-react"
-import { AdditionalInfoSection } from "./edit-event-sections/additional-info-section"
-import { BoletasSection } from "./edit-event-sections/boletas-section"
+import { AdditionalInfoSection } from "@/components/events/create-event/additional-info-section"
+import { TicketSection } from "@/components/events/create-event/ticket-section"
+import { sanitizeAlphanumSpace, sanitizeTextWithPunct } from "@/hooks/use-create-event-form"
 import { ImagesSection } from "./edit-event-sections/images-section"
 import { CoreFieldsSection } from "./edit-event-sections/core-fields-section"
 import { LogisticsSection } from "./edit-event-sections/logistics-section"
@@ -21,16 +22,24 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
     eventTypes,
     sites,
     busquedaSitio,
-    busquedaMunicipio,
+    showTelefono2,
     boletas,
     informacionAdicionalItems,
     images,
+    newPrincipalImageIndex,
+    documento,
     existingImages,
     handleInputChange,
     handleSitioInputChange,
     handleSelectSitio,
-    setBusquedaMunicipio,
+    setShowTelefono2,
+    setPagoEventType,
+    setReservaAnticipada,
+    clearFieldError,
     handleImageUpload,
+    setDocumento,
+    setExistingPrincipalImage,
+    setNewPrincipalImage,
     removeNewImage,
     removeExistingImage,
     updateBoleta,
@@ -50,7 +59,7 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
+      <DialogContent className="w-[98vw] sm:w-[96vw] !max-w-[98vw] sm:!max-w-[94vw] lg:!max-w-[1400px] max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Evento: {formData.nombre_evento}</DialogTitle>
         </DialogHeader>
@@ -67,11 +76,9 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
             eventTypes={eventTypes}
             sites={sites}
             busquedaSitio={busquedaSitio}
-            busquedaMunicipio={busquedaMunicipio}
             onInputChange={handleInputChange}
             onSitioInputChange={handleSitioInputChange}
             onSelectSitio={handleSelectSitio}
-            onMunicipioChange={setBusquedaMunicipio}
           />
 
           <AdditionalInfoSection
@@ -80,31 +87,46 @@ export function EditEventModal({ isOpen, onClose, event, onSave }: EditEventModa
             onAdd={addInfoItem}
             onUpdate={updateInfoItem}
             onRemove={removeInfoItem}
+            onClearError={() => clearFieldError("informacion_adicional_items")}
+            sanitizeText={sanitizeTextWithPunct}
           />
 
           <LogisticsSection
             formData={formData}
             formErrors={formErrors}
+            showTelefono2={showTelefono2}
             onInputChange={handleInputChange}
+            onShowTelefono2={setShowTelefono2}
           />
 
-          {formData.gratis_pago && (
-            <BoletasSection
-              boletas={boletas}
-              error={formErrors.boletas}
-              onUpdateBoleta={updateBoleta}
-              onAddBoleta={addBoletaField}
-              onRemoveBoleta={removeBoletaField}
-              onRemoveAllBoletas={removeAllBoletas}
-            />
-          )}
+          <TicketSection
+            pago={formData.gratis_pago}
+            reservarAnticipado={formData.reservar_anticipado}
+            boletas={boletas as Array<{ nombre_boleto: string; precio_boleto: string; servicio: string }>}
+            error={formErrors.boletas}
+            onTogglePago={setPagoEventType}
+            onToggleReserva={setReservaAnticipada}
+            onAddBoleta={addBoletaField}
+            onUpdateBoleta={(index, field, value) => updateBoleta(index, field, value)}
+            onRemoveBoleta={removeBoletaField}
+            onRemoveAllBoletas={removeAllBoletas}
+            onClearError={() => clearFieldError("boletas")}
+            sanitizeAlphanum={sanitizeAlphanumSpace}
+          />
 
           {formErrors.general && <p className="text-sm text-red-600">{formErrors.general}</p>}
 
           <ImagesSection
             existingImages={existingImages}
             newImages={images}
+            newPrincipalImageIndex={newPrincipalImageIndex}
+            documento={documento}
+            imagenesError={formErrors.imagenes}
+            documentoError={formErrors.documento}
             onUpload={handleImageUpload}
+            onSetDocumento={setDocumento}
+            onSetExistingPrincipal={setExistingPrincipalImage}
+            onSetNewPrincipal={setNewPrincipalImage}
             onRemoveExisting={removeExistingImage}
             onRemoveNew={removeNewImage}
           />

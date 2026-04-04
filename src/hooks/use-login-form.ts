@@ -25,6 +25,7 @@ function readCookieConsent(): string | null {
 
 function resetStoredSessionData() {
   localStorage.removeItem("token")
+  localStorage.removeItem("accessExpiresAt")
   localStorage.removeItem("userPublicId")
   localStorage.removeItem("userName")
   localStorage.removeItem("userRole")
@@ -136,10 +137,10 @@ export function useLoginForm(onSuccess: () => void) {
       const userRole = data.id_rol !== undefined ? Number(data.id_rol) : undefined
 
       if (consent !== "rejected") {
-        if (data.token) localStorage.setItem("token", data.token)
         if (data.id_publico) localStorage.setItem("userPublicId", String(data.id_publico))
         localStorage.setItem("userName", name)
         if (userRole !== undefined) localStorage.setItem("userRole", String(userRole))
+        if (data.expiresAt) localStorage.setItem("accessExpiresAt", String(data.expiresAt))
 
         if (rememberMe) {
           localStorage.setItem("rememberedEmail", sanitizedEmail)
@@ -153,7 +154,6 @@ export function useLoginForm(onSuccess: () => void) {
       window.dispatchEvent(
         new CustomEvent("user:login", {
           detail: {
-            token: consent !== "rejected" ? data.token : undefined,
             name,
             expiresAt: data.expiresAt,
             id_publico: data.id_publico,

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
 import pool from "@/lib/db";
 import { serializeCookie } from "@/lib/cookies";
-import { getJwtSecret } from "@/lib/jwt";
+import { signToken } from "@/lib/jwt";
 
 const GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo";
 
@@ -213,21 +212,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "No fue posible resolver el usuario" }, { status: 500 });
     }
 
-    const expiresIn = 60 * 60 * 12;
+    const accessExpiresIn = 15 * 60;
+    const refreshExpiresIn = 7 * 24 * 60 * 60;
     const userId = String(user.id_usuario);
-    const token = jwt.sign(
+    const accessToken = await signToken(
       {
         id_usuario: userId,
         id_rol: user.id_rol,
         name: user.nombres || email.split("@")[0],
       },
-      getJwtSecret(),
-      { expiresIn }
+      accessExpiresIn
+    );
+
+    const refreshToken = await signToken(
+      {
+        id_usuario: userId,
+        id_rol: user.id_rol,
+        name: user.nombres || email.split("@")[0],
+        token_type: "refresh",
+      },
+      refreshExpiresIn
     );
 
     const secure = process.env.NODE_ENV === "production";
-    const cookie = serializeCookie("token", token, {
-      maxAge: expiresIn,
+    const accessCookie = serializeCookie("token", accessToken, {
+      maxAge: accessExpiresIn,
       httpOnly: true,
       secure,
       sameSite: "lax",
@@ -235,22 +244,30 @@ export async function POST(req: Request) {
       domain: process.env.COOKIE_DOMAIN,
     });
 
-    return NextResponse.json(
+    const refreshCookie = serializeCookie("refresh_token", refreshToken, {
+      maxAge: refreshExpiresIn,
+      httpOnly: true,
+      secure,
+      sameSite: "strict",
+      path: "/",
+      domain: process.env.COOKIE_DOMAIN,
+    });
+
+    const response = NextResponse.json(
       {
         success: true,
-        token,
         id_publico: user.id_publico,
         id_rol: user.id_rol,
-        expiresAt: Math.floor(Date.now() / 1000) + expiresIn,
+        expiresAt: Math.floor(Date.now() / 1000) + accessExpiresIn,
         name: user.nombres || email.split("@")[0],
       },
-      {
-        status: 200,
-        headers: {
-          "Set-Cookie": cookie,
-        },
-      }
+      { status: 200 }
     );
+
+    response.headers.append("Set-Cookie", accessCookie);
+    response.headers.append("Set-Cookie", refreshCookie);
+
+    return response;
   } catch (err) {
     console.error("Login Google error:", err);
     return NextResponse.json({ message: "Error interno" }, { status: 500 });
