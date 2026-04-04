@@ -266,7 +266,7 @@ const formatEventPrice = (price: number | string): string => {
     // This effect is moved to crear page
   }, []);
 
-//Para traer el nombre del usuario que esta en login al campo nombre del promotor.
+// Para traer el nombre del usuario en sesión al campo nombre del organizador.
 
 
   

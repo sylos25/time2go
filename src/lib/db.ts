@@ -1,7 +1,16 @@
 import { Pool, type PoolConfig } from "pg";
 
 function buildConfig(): PoolConfig {
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = process.env.DATABASE_URL?.trim() || undefined;
+  if (
+    process.env.NODE_ENV === "production" &&
+    !connectionString &&
+    process.env.SKIP_DATABASE_URL_CHECK !== "true"
+  ) {
+    throw new Error(
+      "DATABASE_URL es obligatorio en producción. En build/CI sin base de datos, define SKIP_DATABASE_URL_CHECK=true (solo si no importas módulos que ejecuten queries en build).",
+    );
+  }
   const max = Math.min(100, Math.max(1, Number(process.env.PGPOOL_MAX || 20)));
   const idleTimeoutMillis = Number(process.env.PG_IDLE_TIMEOUT_MS || 30_000);
   const connectionTimeoutMillis = Number(process.env.PG_CONNECTION_TIMEOUT_MS || 10_000);

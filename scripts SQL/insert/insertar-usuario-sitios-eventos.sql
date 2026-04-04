@@ -1,7 +1,7 @@
 -- Cargar en tabla_roles.
 INSERT INTO tabla_roles (id_rol, nombre_rol)
 		    VALUES  (1,'Usuario'),
-				    (2,'Promotor'),
+				    (2,'Organizador'),
 				    (3,'Moderador'),
 				    (4,'Administrador');
 
@@ -51,13 +51,13 @@ INSERT INTO tabla_accesibilidad_menu_x_rol (id_accesibilidad_menu_x_rol, id_acce
 -- Cargar en tabla_usuarios.
 INSERT INTO tabla_usuarios (id_rol, nombres, apellidos, id_pais, telefono_persona, terminos_condiciones, estado_usuario)
 			VALUES (1, 'Usuario', 'Prueba', 6, 3001234567, TRUE, TRUE),
-				   (2, 'Promotor', 'Prueba', 6, 3007654321, TRUE, TRUE),
+				   (2, 'Organizador', 'Prueba', 6, 3007654321, TRUE, TRUE),
 				   (3, 'Moderador', 'Prueba', 6, 3001122334, TRUE, TRUE),
 				   (4, 'Administrador', 'Prueba', 6, 3009876543, TRUE, TRUE);
 
 INSERT INTO tabla_usuarios_credenciales (id_usuario, correo_usuario, contrasena_hash, validacion_correo)
     		VALUES (1, 'usuario_prueba@correo.com', crypt('Usuario123.', gen_salt('bf', 12)), TRUE),
-				   (2, 'promotor_prueba@correo.com', crypt('Promotor123.', gen_salt('bf', 12)), TRUE),
+				   (2, 'organizador_prueba@correo.com', crypt('Organizador123.', gen_salt('bf', 12)), TRUE),
 				   (3, 'moderador_prueba@correo.com', crypt('Moderador123.', gen_salt('bf', 12)), TRUE),
 				   (4, 'administrador_prueba@correo.com', crypt('Administrador123.', gen_salt('bf', 12)), TRUE);
 

@@ -1,4 +1,3 @@
-import { jwtVerify } from "jose";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { extractBearerOrCookieToken, isPublicApiRoute } from "@/lib/api-route-policy";
@@ -11,7 +10,7 @@ function apiAuthJsonResponse(message: string, status: number) {
 
 // ── Roles ────────────────────────────────────────────────────────────────────
 const ROL_USUARIO = 1;
-const ROL_PROMOTOR = 2;
+const ROL_ORGANIZADOR = 2;
 const ROL_MODERADOR = 3;
 const ROL_ADMIN = 4;
 
@@ -19,16 +18,28 @@ const ROL_ADMIN = 4;
 const RUTAS_PROTEGIDAS: { pattern: RegExp; rolesPermitidos: number[] }[] = [
   { pattern: /^\/docs(\/.*)?$/, rolesPermitidos: [ROL_ADMIN] },
   { pattern: /^\/dashboard(\/.*)?$/, rolesPermitidos: [ROL_MODERADOR, ROL_ADMIN] },
-  { pattern: /^\/eventos\/crear(\/.*)?$/, rolesPermitidos: [ROL_PROMOTOR, ROL_MODERADOR, ROL_ADMIN] },
-  { pattern: /^\/mis-eventos(\/.*)?$/, rolesPermitidos: [ROL_PROMOTOR, ROL_MODERADOR, ROL_ADMIN] },
+  { pattern: /^\/eventos\/crear(\/.*)?$/, rolesPermitidos: [ROL_ORGANIZADOR, ROL_MODERADOR, ROL_ADMIN] },
+  { pattern: /^\/mis-eventos(\/.*)?$/, rolesPermitidos: [ROL_ORGANIZADOR, ROL_MODERADOR, ROL_ADMIN] },
   { pattern: /^\/mis-reservas(\/.*)?$/, rolesPermitidos: [ROL_USUARIO] },
   {
     pattern: /^\/perfil(\/.*)?$/,
-    rolesPermitidos: [ROL_USUARIO, ROL_PROMOTOR, ROL_MODERADOR, ROL_ADMIN],
+    rolesPermitidos: [ROL_USUARIO, ROL_ORGANIZADOR, ROL_MODERADOR, ROL_ADMIN],
   },
   {
     pattern: /^\/configuracion(\/.*)?$/,
-    rolesPermitidos: [ROL_USUARIO, ROL_PROMOTOR, ROL_MODERADOR, ROL_ADMIN],
+    rolesPermitidos: [ROL_USUARIO, ROL_ORGANIZADOR, ROL_MODERADOR, ROL_ADMIN],
+  },
+  {
+    pattern: /^\/mis-favoritos(\/.*)?$/,
+    rolesPermitidos: [ROL_USUARIO, ROL_ORGANIZADOR, ROL_MODERADOR, ROL_ADMIN],
+  },
+  {
+    pattern: /^\/mis-valoraciones(\/.*)?$/,
+    rolesPermitidos: [ROL_USUARIO, ROL_ORGANIZADOR, ROL_MODERADOR, ROL_ADMIN],
+  },
+  {
+    pattern: /^\/cambiar-contrasena(\/.*)?$/,
+    rolesPermitidos: [ROL_USUARIO, ROL_ORGANIZADOR, ROL_MODERADOR, ROL_ADMIN],
   },
 ];
 
@@ -63,27 +74,19 @@ export async function middleware(request: NextRequest) {
       return apiAuthJsonResponse("Not authenticated", 401);
     }
 
-    let secretBytes: Uint8Array;
     try {
-      secretBytes = new TextEncoder().encode(resolveJwtSecret());
+      resolveJwtSecret();
     } catch {
       console.error("[middleware] JWT_SECRET / BETTER_AUTH_SECRET no configurado (API)");
       return apiAuthJsonResponse("Authentication is not configured", 503);
     }
 
-    try {
-      const { payload } = await jwtVerify(token, secretBytes, {
-        algorithms: ["HS256"],
-      });
-      const idUser = payload.id_usuario;
-      if (idUser == null || String(idUser).length === 0) {
-        return apiAuthJsonResponse("Invalid token", 401);
-      }
-      return NextResponse.next();
-    } catch {
+    const payload = await verifyToken(token, "access");
+    if (!payload?.id_usuario) {
       const isBearer = (request.headers.get("authorization") || "").startsWith("Bearer ");
       return apiAuthJsonResponse(isBearer ? "Invalid token" : "Not authenticated", 401);
     }
+    return NextResponse.next();
   }
 
   const ruta = RUTAS_PROTEGIDAS.find(({ pattern }) => pattern.test(pathname));
@@ -124,5 +127,8 @@ export const config = {
     "/mis-reservas/:path*",
     "/perfil/:path*",
     "/configuracion/:path*",
+    "/mis-favoritos/:path*",
+    "/mis-valoraciones/:path*",
+    "/cambiar-contrasena/:path*",
   ],
 };

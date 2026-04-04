@@ -9,26 +9,30 @@ import {
   Download, Eye, RefreshCw, FolderOpen
 } from "lucide-react"
 
-// ── Guard de acceso ──────────────────────────────────────────────────────────
+// ── Guard de acceso (solo servidor vía /api/me; coherente con middleware) ────
 function useAdminGuard() {
   const router = useRouter()
   const [allowed, setAllowed] = useState<boolean | null>(null)
 
   useEffect(() => {
     const check = async () => {
-      const role = Number(localStorage.getItem("userRole") ?? 0)
-      if (role !== 4) { router.replace("/"); return }
       try {
         const res = await fetch("/api/me", { credentials: "include" })
-        if (!res.ok) { router.replace("/auth"); return }
+        if (!res.ok) {
+          router.replace("/auth")
+          return
+        }
         const data = await res.json()
-        if (!data?.ok || Number(data.user?.id_rol) !== 4) { router.replace("/"); return }
+        if (!data?.ok || Number(data.user?.id_rol) !== 4) {
+          router.replace("/")
+          return
+        }
         setAllowed(true)
       } catch {
-        router.replace("/")
+        router.replace("/auth")
       }
     }
-    check()
+    void check()
   }, [router])
 
   return { allowed }
@@ -182,10 +186,12 @@ function FileBrowser() {
           <FolderOpen className="h-10 w-10" />
           <p className="text-sm">
             {filter === "Todos"
-              ? "No hay archivos en la carpeta /docs/"
+              ? "No hay archivos en public/docs/"
               : `No hay archivos de tipo "${filter}"`}
           </p>
-          <p className="text-xs text-gray-300">Agrega archivos a la carpeta <code className="bg-gray-100 px-1 rounded">/docs/</code> en la raíz del proyecto</p>
+          <p className="text-xs text-gray-300">
+            Agrega archivos en <code className="bg-gray-100 px-1 rounded">public/docs/</code> (relativo a la raíz del repo)
+          </p>
         </div>
       )}
 
@@ -237,7 +243,7 @@ function FileBrowser() {
       )}
 
       <p className="text-xs text-gray-400 pt-2">
-        Los archivos se leen desde <code className="bg-gray-100 px-1 rounded text-xs">/docs/</code> en la raíz del proyecto. Solo los admins pueden acceder.
+        Origen: <code className="bg-gray-100 px-1 rounded text-xs">public/docs/</code>. Solo administradores (API y middleware).
       </p>
     </div>
   )
@@ -305,7 +311,7 @@ export default function DocsPage() {
                 { label: "Motor",          value: "PostgreSQL" },
                 { label: "Autenticación",  value: "JWT + HttpOnly" },
                 { label: "Cifrado",        value: "bcrypt (bf, 12)" },
-                { label: "Imágenes",       value: "Cloudinary" },
+                { label: "Archivos evento", value: "S3 / R2" },
                 { label: "ORM / Query",    value: "SQL nativo" },
                 { label: "Roles",          value: "4 niveles" },
               ].map((item) => (
@@ -325,12 +331,12 @@ export default function DocsPage() {
               <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Stack tecnológico</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
-                  { layer: "Frontend",            tech: "Next.js 14 (App Router)", icon: "🖥️" },
+                  { layer: "Frontend",            tech: "Next.js 16 (App Router)", icon: "🖥️" },
                   { layer: "Estilos",             tech: "Tailwind CSS + shadcn/ui", icon: "🎨" },
                   { layer: "Backend",             tech: "Next.js API Routes (Node.js)", icon: "⚙️" },
-                  { layer: "Base de datos",        tech: "PostgreSQL (local)", icon: "🗄️" },
-                  { layer: "Autenticación",        tech: "JWT + cookies HttpOnly", icon: "🔐" },
-                  { layer: "Almacenamiento",       tech: "Cloudinary (imágenes)", icon: "☁️" },
+                  { layer: "Base de datos",        tech: "PostgreSQL", icon: "🗄️" },
+                  { layer: "Autenticación",        tech: "JWT + cookies", icon: "🔐" },
+                  { layer: "Almacenamiento",       tech: "S3/R2 (eventos, documentos)", icon: "☁️" },
                   { layer: "Acceso remoto",        tech: "Cloudflare Tunnel", icon: "🌐" },
                   { layer: "Control de versiones", tech: "Git + GitHub", icon: "📦" },
                 ].map((item) => (
@@ -349,31 +355,23 @@ export default function DocsPage() {
               <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Estructura de carpetas</h4>
               <pre className="bg-gray-900 text-green-400 rounded-xl p-4 text-xs font-mono leading-relaxed overflow-x-auto">
 {`time2go/
-├── app/
-│   ├── (pages)/          # Rutas públicas
-│   ├── admin/            # Rutas protegidas (rol 4)
-│   ├── api/              # API Routes (backend)
-│   │   ├── me/
-│   │   ├── login/
-│   │   ├── logout/
-│   │   ├── docs/
-│   │   │   ├── files/    # Lista archivos de /docs/
-│   │   │   └── serve/    # Sirve archivos de /docs/
+├── src/
+│   ├── app/                    # App Router (páginas + API)
+│   │   ├── api/
+│   │   │   ├── docs/
+│   │   │   │   ├── files/      # Lista archivos de public/docs
+│   │   │   │   └── serve/      # Sirve archivos de public/docs
+│   │   │   └── ...
+│   │   ├── docs/               # UI /docs (admin)
 │   │   └── ...
-│   └── layout.tsx
-├── components/
-│   ├── ui/               # shadcn/ui
-│   ├── layout/           # Header, Footer
-│   └── shared/           # Componentes reutilizables
-├── docs/                 # ← Archivos de documentación
-│   ├── diagrama-bd.png
-│   ├── requerimientos.xlsx
-│   └── manual-usuario.docx
-├── hooks/
-├── lib/
+│   ├── components/
+│   ├── hooks/
+│   └── lib/
 ├── public/
+│   ├── docs/                   # ← Documentación adjunta (PDF, xlsx, etc.)
 │   └── images/
-└── middleware.ts`}
+├── middleware.ts
+└── .env.example`}
               </pre>
             </div>
 
@@ -382,7 +380,7 @@ export default function DocsPage() {
               <div className="space-y-2">
                 {[
                   { rol: 1, nombre: "Usuario regular",  permisos: "Ver eventos, reservar, gestionar perfil y reservas" },
-                  { rol: 2, nombre: "Promotor",          permisos: "Todo lo anterior + crear y gestionar sus propios eventos" },
+                  { rol: 2, nombre: "Organizador",       permisos: "Todo lo anterior + crear y gestionar sus propios eventos" },
                   { rol: 3, nombre: "Moderador",         permisos: "Revisar y aprobar eventos, gestionar reportes" },
                   { rol: 4, nombre: "Administrador",     permisos: "Acceso total, incluyendo dashboard y documentación técnica" },
                 ].map((r) => (
@@ -423,20 +421,17 @@ npm install`}</CodeBlock>
 
             <div>
               <h4 className="text-sm font-semibold text-gray-700 mb-1 uppercase tracking-wide">2 · Variables de entorno</h4>
-              <p className="text-sm text-gray-500 mb-1">Crea <code className="bg-gray-100 px-1 rounded text-xs">.env.local</code> en la raíz:</p>
-              <CodeBlock>{`# Base de datos local
+              <p className="text-sm text-gray-500 mb-1">
+                Copia <code className="bg-gray-100 px-1 rounded text-xs">.env.example</code> a{" "}
+                <code className="bg-gray-100 px-1 rounded text-xs">.env</code> o{" "}
+                <code className="bg-gray-100 px-1 rounded text-xs">.env.local</code> y completa los valores.
+              </p>
+              <CodeBlock>{`# Mínimo para desarrollo local:
 DATABASE_URL=postgresql://user:password@localhost:5432/time2go
+JWT_SECRET=tu_secreto_seguro
+# o BETTER_AUTH_SECRET=...
 
-# JWT
-JWT_SECRET=tu_secreto_muy_seguro_min_64_chars
-JWT_EXPIRES_IN=8h
-
-# Cloudinary
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
-
-# URL local
+# Ver .env.example para S3/R2, email, Redis, etc.
 NEXT_PUBLIC_APP_URL=http://localhost:3000`}</CodeBlock>
             </div>
 

@@ -51,11 +51,11 @@ const softwareFeatures = [
 const faqs = [
   {
     question: "¿Cómo puedo crear un evento en Time2Go?",
-    answer: "Inicia sesión con tu perfil de promotor y en el menú encontraras una opción llamada 'Crear Evento'.",
+    answer: "Inicia sesión con tu perfil de organizador y en el menú encontrarás una opción llamada 'Crear Evento'.",
   },
   {
-    question: "¿Cómo puedo ser un promotor?",
-    answer: "Crea una cuenta, entra al perfil y envia el formulario para ser validado como promotor, nosotro nos encargamos del resto.",
+    question: "¿Cómo puedo ser organizador?",
+    answer: "Crea una cuenta, entra al perfil y envía el formulario para ser validado como organizador; nosotros nos encargamos del resto.",
   },
 ]
 

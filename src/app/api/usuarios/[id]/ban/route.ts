@@ -53,7 +53,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
     const targetRole = Number(userCheck.rows[0].id_rol)
     if (targetRole !== 1 && targetRole !== 2) {
       return NextResponse.json(
-        { ok: false, message: "Solo se puede bannear/desbannear usuarios y promotores" },
+        { ok: false, message: "Solo se puede bannear/desbannear usuarios y organizadores" },
         { status: 403 }
       )
     }

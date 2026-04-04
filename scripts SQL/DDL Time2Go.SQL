@@ -400,7 +400,7 @@ CREATE TABLE tabla_favoritos (
 CREATE TABLE IF NOT EXISTS tabla_cambio_rol_usuario (
     id_cambio_rol_usuario                   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     id_usuario                              INT                          NOT NULL,
-    id_rol_solicitado                       INT                          NOT NULL       DEFAULT 2,                                -- 2: Rol de Promotor
+    id_rol_solicitado                       INT                          NOT NULL       DEFAULT 2,                                -- 2: Rol de Organizador
     url_documento_usuario                   VARCHAR,
     proveedor_pago                          VARCHAR                      NOT NULL       DEFAULT 'wompi' CHECK (proveedor_pago IN ('wompi')),
     referencia_pago                         VARCHAR                      NOT NULL       UNIQUE,

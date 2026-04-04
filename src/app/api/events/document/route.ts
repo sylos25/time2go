@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
     const pathname = (() => {
       try {
         return new URL(url).pathname
-      } catch (e) {
+      } catch {
         // fallback
         const m = url.split("/")
         return m[m.length - 1] || "document.pdf"

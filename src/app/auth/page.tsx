@@ -25,16 +25,17 @@ function AuthPageContent() {
   const [currentIndex, setCurrentIndex] = useState(0); 
 
   useEffect(() => {
-    const registered = searchParams?.get("registered")
-    if (registered === "true") {
+    if (searchParams?.get("registered") !== "true") return
+    const showTimer = window.setTimeout(() => {
       setShowRegistrationSuccess(true)
       setStep("choice")
-
-      const timer = setTimeout(() => {
-        setShowRegistrationSuccess(false)
-      }, 5000)
-      
-      return () => clearTimeout(timer)
+    }, 0)
+    const hideTimer = window.setTimeout(() => {
+      setShowRegistrationSuccess(false)
+    }, 5000)
+    return () => {
+      window.clearTimeout(showTimer)
+      window.clearTimeout(hideTimer)
     }
   }, [searchParams])
 
@@ -89,8 +90,11 @@ function AuthPageContent() {
           {step === "choice" && (
             <div className="w-100 bg-card/95 text-card-foreground rounded-lg shadow-lg p-8 border border-border">
               <div className="flex flex-col items-center mb-6">
-                <img src="/images/logo_color.png" 
-                    className="mb-3 max-w-[350px] max-h-[350px] object-contain" />
+                <img
+                  src="/images/logo_color.png"
+                  alt="Time2Go"
+                  className="mb-3 max-w-[350px] max-h-[350px] object-contain"
+                />
                 <p className="mt-6 text-muted-foreground -mt-6">
                   Los eventos de tu ciudad, justo donde estás. 
                 </p>

@@ -50,19 +50,19 @@ const sections = [
       },
       {
         subtitle: "Descripción del servicio",
-        text: "Time2Go es una plataforma de descubrimiento y gestión de eventos culturales, deportivos y de entretenimiento. Actuamos como intermediarios entre promotores de eventos y el público asistente.",
+        text: "Time2Go es una plataforma de descubrimiento y gestión de eventos culturales, deportivos y de entretenimiento. Actuamos como intermediarios entre organizadores de eventos y el público asistente.",
       },
       {
         subtitle: "Obligaciones del usuario",
         text: "El usuario se compromete a: (i) proporcionar información veraz en el registro; (ii) no usar la plataforma para fines ilícitos; (iii) respetar los derechos de otros usuarios y de los organizadores de eventos; (iv) no interferir con el funcionamiento técnico de la plataforma.",
       },
       {
-        subtitle: "Obligaciones del promotor",
-        text: "Los promotores son responsables de la veracidad de la información de los eventos publicados, de contar con los permisos necesarios para su realización, y de dar cumplimiento a la normativa vigente aplicable a cada evento.",
+        subtitle: "Obligaciones del organizador",
+        text: "Los organizadores son responsables de la veracidad de la información de los eventos publicados, de contar con los permisos necesarios para su realización, y de dar cumplimiento a la normativa vigente aplicable a cada evento.",
       },
       {
         subtitle: "Limitación de responsabilidad",
-        text: "Time2Go no se hace responsable de la cancelación, modificación o incumplimiento de los eventos por parte de los promotores, ni de daños derivados del uso de la plataforma más allá de lo establecido por la ley colombiana aplicable.",
+        text: "Time2Go no se hace responsable de la cancelación, modificación o incumplimiento de los eventos por parte de los organizadores, ni de daños derivados del uso de la plataforma más allá de lo establecido por la ley colombiana aplicable.",
       },
       {
         subtitle: "Modificaciones",

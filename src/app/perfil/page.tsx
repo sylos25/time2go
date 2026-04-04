@@ -28,6 +28,7 @@ import {
   Database,
   ArrowLeft,
 } from "lucide-react"
+import { getRoleBadgeClass } from "@/lib/role-badge"
 
 interface UserData {
   id_usuario: string
@@ -53,10 +54,10 @@ export default function PerfilPage() {
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
-  // Promotor
-  const [isPromotorDialogOpen, setIsPromotorDialogOpen] = useState(false)
+  // Organizador (rol id 2)
+  const [isOrganizadorDialogOpen, setIsOrganizadorDialogOpen] = useState(false)
   const [selectedPdf, setSelectedPdf] = useState<File | null>(null)
-  const [promotorError, setPromotorError] = useState<string | null>(null)
+  const [organizadorError, setOrganizadorError] = useState<string | null>(null)
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
 
   // Desactivar cuenta
@@ -65,21 +66,12 @@ export default function PerfilPage() {
   const [deactivating,    setDeactivating]    = useState(false)
   const [deactivateError, setDeactivateError] = useState<string | null>(null)
 
-  const getRoleBadgeClass = (roleName?: string) => {
-    const role = roleName?.toLowerCase().trim() || "usuario"
-    if (role === "admin" || role === "administrador") return "bg-gradient-to-tr from-red-400 to-rose-500"
-    if (role === "moderador") return "bg-gradient-to-tr from-red-600 to-fuchsia-700"
-    if (role === "promotor")  return "bg-gradient-to-tr from-emerald-600 to-lime-500"
-    if (role === "cliente")   return "bg-gradient-to-tr from-blue-600 to-sky-400"
-    return "bg-gradient-to-tr from-amber-500 to-yellow-400"
-  }
-
   useEffect(() => { fetchUserData() }, [])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get("pago") === "resultado") {
-      setSuccessMessage("¡Pago recibido! Tu rol de Promotor se activará en breve. Si no cambia en unos minutos, recarga la página.")
+      setSuccessMessage("¡Pago recibido! Tu rol de Organizador se activará en breve. Si no cambia en unos minutos, recarga la página.")
       window.history.replaceState({}, "", "/perfil")
     }
   }, [])
@@ -105,38 +97,38 @@ export default function PerfilPage() {
     }
   }
 
-  // ── Promotor ──────────────────────────────────────────────────────────────
-  const handleOpenPromotorDialog = () => {
-    setPromotorError(null); setSelectedPdf(null); setIsPromotorDialogOpen(true)
+  // ── Organizador (pago Wompi) ─────────────────────────────────────────────
+  const handleOpenOrganizadorDialog = () => {
+    setOrganizadorError(null); setSelectedPdf(null); setIsOrganizadorDialogOpen(true)
   }
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    setPromotorError(null)
+    setOrganizadorError(null)
     if (!file) { setSelectedPdf(null); return }
     const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")
-    if (!isPdf) { setPromotorError("Solo se permite formato PDF"); setSelectedPdf(null); event.target.value = ""; return }
-    if (file.size > MAX_PDF_SIZE_BYTES) { setPromotorError("El archivo supera el máximo de 5 MB"); setSelectedPdf(null); event.target.value = ""; return }
+    if (!isPdf) { setOrganizadorError("Solo se permite formato PDF"); setSelectedPdf(null); event.target.value = ""; return }
+    if (file.size > MAX_PDF_SIZE_BYTES) { setOrganizadorError("El archivo supera el máximo de 5 MB"); setSelectedPdf(null); event.target.value = ""; return }
     setSelectedPdf(file)
   }
 
   const handlePayWithWompi = async () => {
-    setIsProcessingPayment(true); setPromotorError(null)
+    setIsProcessingPayment(true); setOrganizadorError(null)
     try {
       const token = localStorage.getItem("token")
       const formData = new FormData()
       if (selectedPdf) formData.append("document", selectedPdf)
-      const res = await fetch("/api/promotor-document", {
+      const res = await fetch("/api/organizador-document", {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
         credentials: "include",
       })
       const data = await res.json()
-      if (!res.ok || !data?.ok) { setPromotorError(data?.message || "No se pudo iniciar el pago"); return }
+      if (!res.ok || !data?.ok) { setOrganizadorError(data?.message || "No se pudo iniciar el pago"); return }
       window.location.href = data.checkout_url
     } catch {
-      setPromotorError("Ocurrió un error al iniciar el pago")
+      setOrganizadorError("Ocurrió un error al iniciar el pago")
       setIsProcessingPayment(false)
     }
   }
@@ -241,13 +233,13 @@ export default function PerfilPage() {
                             Registrado el {new Date(user.fecha_registro).toLocaleDateString("es-ES")}
                           </span>
                         )}
-                        <span className={`inline-block px-3 py-1 ${getRoleBadgeClass(user.nombre_rol)} text-white text-sm font-medium rounded-full`}>
+                        <span className={`inline-block px-3 py-1 ${getRoleBadgeClass(user.nombre_rol, user.id_rol)} text-white text-sm font-medium rounded-full`}>
                           {user.nombre_rol || "Usuario"}
                         </span>
                       </div>
                     </div>
                     {user.id_rol === 1 && (
-                      <Button type="button" variant="outline" onClick={handleOpenPromotorDialog}
+                      <Button type="button" variant="outline" onClick={handleOpenOrganizadorDialog}
                         className="border-green-500 text-green-700 hover:scale-103 hover:bg-green-50 hover:text-green-800">
                         Organiza tus eventos
                       </Button>
@@ -345,13 +337,13 @@ export default function PerfilPage() {
         </div>
       </div>
 
-      {/* ── Dialog Promotor / Pago Wompi ── */}
-      <Dialog open={isPromotorDialogOpen} onOpenChange={(open) => { if (!isProcessingPayment) setIsPromotorDialogOpen(open) }}>
+      {/* ── Dialog Organizador / Pago Wompi ── */}
+      <Dialog open={isOrganizadorDialogOpen} onOpenChange={(open) => { if (!isProcessingPayment) setIsOrganizadorDialogOpen(open) }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl">Organiza tus eventos</DialogTitle>
             <DialogDescription>
-              Convértete en Promotor y empieza a publicar eventos en Time2Go
+              Convértete en organizador y empieza a publicar eventos en Time2Go
             </DialogDescription>
           </DialogHeader>
 
@@ -359,7 +351,7 @@ export default function PerfilPage() {
           <div className="space-y-2 py-1">
             {[
               "Crea y gestiona tus propios eventos",
-              "Accede al panel exclusivo de Promotor",
+              "Accede al panel exclusivo de organizador",
               "Gestiona reservas y boletaría",
               "Publica tus eventos para toda la comunidad",
             ].map((benefit, i) => (
@@ -374,7 +366,11 @@ export default function PerfilPage() {
           <div className="rounded-xl border border-green-200 dark:border-green-900/60 bg-green-50 dark:bg-green-950/30 p-4">
             <p className="text-3xl font-bold text-green-700 dark:text-green-400">
               {new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(
-                Number(process.env.NEXT_PUBLIC_PROMOTOR_PRICE_COP ?? "50000")
+                Number(
+                  process.env.NEXT_PUBLIC_ORGANIZADOR_PRICE_COP ??
+                    process.env.NEXT_PUBLIC_PROMOTOR_PRICE_COP ??
+                    "50000",
+                )
               )}
             </p>
             <p className="text-xs text-green-600 dark:text-green-500 mt-1">Pago único de activación · Sin cuotas ni suscripciones</p>
@@ -393,14 +389,14 @@ export default function PerfilPage() {
             )}
           </div>
 
-          {promotorError && (
+          {organizadorError && (
             <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-md border border-red-200 dark:border-red-900">
-              <AlertCircle className="h-4 w-4 shrink-0" /><span>{promotorError}</span>
+              <AlertCircle className="h-4 w-4 shrink-0" /><span>{organizadorError}</span>
             </div>
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsPromotorDialogOpen(false)} disabled={isProcessingPayment}>
+            <Button variant="outline" onClick={() => setIsOrganizadorDialogOpen(false)} disabled={isProcessingPayment}>
               Cancelar
             </Button>
             <Button onClick={handlePayWithWompi} disabled={isProcessingPayment}
@@ -487,7 +483,7 @@ export default function PerfilPage() {
               <p className="text-sm font-semibold text-foreground">{user.nombres} {user.apellidos}</p>
               <p className="text-xs text-muted-foreground">{user.correo}</p>
               {user.nombre_rol && (
-                <span className={`inline-block mt-1 px-2 py-0.5 ${getRoleBadgeClass(user.nombre_rol)} text-white text-xs font-medium rounded-full`}>
+                <span className={`inline-block mt-1 px-2 py-0.5 ${getRoleBadgeClass(user.nombre_rol, user.id_rol)} text-white text-xs font-medium rounded-full`}>
                   {user.nombre_rol}
                 </span>
               )}

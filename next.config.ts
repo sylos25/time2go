@@ -1,12 +1,11 @@
 import type { NextConfig } from "next";
 
+/** Despliegue habitual: `next build` + `next start`. Export estático requiere `output: "export"` (ver docs de Next.js). */
 const nextConfig: NextConfig = {
-//output: "export", // 👈 reemplaza el "next export"
   images: {
-    unoptimized: true, // GitHub Pages no soporta optimización de imágenes
+    /** Necesario si sirves sin el optimizador de imágenes de Next (p. ej. export estático o CDN propio). */
+    unoptimized: true,
   },
-//  basePath: "/time2go", // 👈 nombre de tu repo en GitHub
-// assetPrefix: "/time2go/",
 };
 
 export default nextConfig;

@@ -1,9 +1,15 @@
 import type { NextRequest } from "next/server";
 
 /**
- * Token para rutas API: si hay `Authorization: Bearer`, solo se usa ese valor
+ * Rutas públicas alineadas con los route handlers bajo src/app/api (catalogación, auth,
+ * lectura pública de eventos, organizador, valoraciones GET, reset-password, webhooks).
+ * Si añades un endpoint anónimo, actualiza esta lista; si no, el middleware responderá 401.
+ */
+
+/**
+ * Token para rutas API: si hay cabecera Authorization con esquema Bearer, solo se usa ese valor
  * (alineado con getRequesterIdFromRequest / getJwtPayloadStrict).
- * Si no hay Bearer, se usa la cookie `token`.
+ * Si no hay Bearer, se usa la cookie de nombre "token".
  */
 export function extractBearerOrCookieToken(request: NextRequest): string | null {
   const auth = request.headers.get("authorization") || "";
@@ -33,17 +39,17 @@ const PUBLIC_POST_PATHS = new Set([
   "/api/login",
   "/api/login-google",
   "/api/logout",
-  /** Renueva access con `refresh_token` en cookie; el access en `token` puede estar expirado. */
+  // POST /api/refresh: público; usa cookie refresh_token aunque el access (cookie token) esté expirado.
   "/api/refresh",
   "/api/send-validation-email",
   "/api/usuario_formulario",
   "/api/wompi/webhook",
 ]);
 
-/** GET/HEAD en rutas que suelen ser solo POST: evita 401 si el cliente o un proxy hace HEAD. */
+// GET/HEAD en rutas que suelen ser solo POST: evita 401 si el cliente o un proxy hace HEAD.
 const PUBLIC_READ_AUTH_FLOW_PATHS = new Set(["/api/auth", "/api/login", "/api/logout"]);
 
-/** GET, POST y PUT usados en el flujo de recuperación de contraseña */
+// GET, POST y PUT usados en el flujo de recuperación de contraseña
 const RESET_PASSWORD_PATH = "/api/reset-password";
 
 function isReadLike(method: string): boolean {
@@ -51,9 +57,8 @@ function isReadLike(method: string): boolean {
 }
 
 /**
- * Rutas bajo `/api` que no exigen JWT en el middleware.
+ * Rutas bajo la ruta /api que no exigen JWT en el middleware.
  * El resto debe presentar token válido antes de llegar al route handler.
- *
  * La autorización fina (roles, IDOR) sigue en cada ruta; aquí solo hay autenticación.
  */
 export function isPublicApiRoute(method: string, pathname: string): boolean {
