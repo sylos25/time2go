@@ -168,10 +168,10 @@ export function CreateSiteModal({ open, onOpenChange, onCreated }: CreateSiteMod
         setMapZoom(17)
         setDireccion(data[0].display_name.split(",")[0] || searchAddress)
       } else {
-        setMessage({ type: "error", text: "No se encontro la direccion" })
+        setMessage({ type: "error", text: "No se encontró la dirección" })
       }
     } catch {
-      setMessage({ type: "error", text: "Error buscando la direccion" })
+      setMessage({ type: "error", text: "Error buscando la dirección" })
     } finally {
       setIsSearching(false)
     }
@@ -241,7 +241,7 @@ export function CreateSiteModal({ open, onOpenChange, onCreated }: CreateSiteMod
     }
 
     if (!direccion.trim() || direccion.length < 6) {
-      setMessage({ type: "error", text: "La direccion debe tener al menos 6 caracteres" })
+      setMessage({ type: "error", text: "La dirección debe tener al menos 6 caracteres" })
       setLoading(false)
       return
     }
@@ -299,7 +299,7 @@ export function CreateSiteModal({ open, onOpenChange, onCreated }: CreateSiteMod
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="z-[120] w-[96vw] sm:w-[94vw] max-w-[1400px] sm:max-w-[1400px] h-[88vh] overflow-hidden overflow-x-hidden p-0">
         <DialogHeader className="border-b px-6 py-4">
-          <DialogTitle>Agregar sitio del evento</DialogTitle>
+          <DialogTitle className="text-pink-600">Agregar sitio del evento</DialogTitle>
         </DialogHeader>
 
         {loadingData ? (
@@ -346,17 +346,17 @@ export function CreateSiteModal({ open, onOpenChange, onCreated }: CreateSiteMod
                     <MapPin className="mr-1 inline h-4 w-4" />
                     {selectedCoords
                       ? `Coordenadas: ${selectedCoords.lat.toFixed(6)}, ${selectedCoords.lng.toFixed(6)}`
-                      : "Haz clic en el mapa para seleccionar ubicacion"}
+                      : "Haz clic en el mapa para seleccionar ubicación"}
                   </div>
                 </div>
               </div>
 
               <div className="min-w-0 space-y-4">
                 <div className="rounded-xl border p-4">
-                  <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-green-700">Ubicacion</h4>
+                  <h4 className="mb-3 text-sm font-bold uppercase tracking-wide text-green-700">Ubicación</h4>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label>Departamento</Label>
+                      <Label className="text-green-700">Departamento</Label>
                       <Select value={selectedDepartamento} onValueChange={handleDepartamentoChange}>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecciona departamento" />
@@ -371,7 +371,7 @@ export function CreateSiteModal({ open, onOpenChange, onCreated }: CreateSiteMod
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Municipio</Label>
+                      <Label className="text-green-700">Municipio</Label>
                       <Select
                         value={selectedMunicipio}
                         onValueChange={setSelectedMunicipio}
@@ -392,7 +392,7 @@ export function CreateSiteModal({ open, onOpenChange, onCreated }: CreateSiteMod
                   </div>
 
                   <div className="mt-4 space-y-2">
-                    <Label>Buscar direccion</Label>
+                    <Label className="text-green-700">Buscar dirección</Label>
                     <div className="flex gap-2">
                       <Input
                         value={searchAddress}
@@ -400,7 +400,13 @@ export function CreateSiteModal({ open, onOpenChange, onCreated }: CreateSiteMod
                         placeholder="Ej: Carrera 7 #32-16"
                         onKeyDown={(e) => e.key === "Enter" && handleSearchAddress()}
                       />
-                      <Button type="button" onClick={handleSearchAddress} disabled={isSearching}>
+                      <Button
+                        type="button"
+                        onClick={handleSearchAddress}
+                        disabled={isSearching}
+                        className="border border-black bg-white text-black hover:bg-gray-100"
+                        aria-label="Buscar dirección"
+                      >
                         {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                       </Button>
                     </div>
@@ -408,10 +414,10 @@ export function CreateSiteModal({ open, onOpenChange, onCreated }: CreateSiteMod
                 </div>
 
                 <div className="rounded-xl border p-4">
-                  <h4 className="mb-4 text-sm font-semibold uppercase tracking-wide text-green-700">Datos del Sitio</h4>
+                  <h4 className="mb-4 text-sm font-bold uppercase tracking-wide text-green-700">Datos del Sitio</h4>
                   <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Tipo de Sitio *</Label>
+                    <Label className="text-green-700">Tipo de sitio</Label>
                     <Select value={selectedTipoSitio} onValueChange={setSelectedTipoSitio}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecciona tipo de sitio" />
@@ -427,7 +433,7 @@ export function CreateSiteModal({ open, onOpenChange, onCreated }: CreateSiteMod
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Nombre del Sitio *</Label>
+                    <Label className="text-green-700">Nombre del sitio</Label>
                     <Input
                       value={nombreSitio}
                       onChange={(e) => setNombreSitio(e.target.value)}
@@ -438,7 +444,7 @@ export function CreateSiteModal({ open, onOpenChange, onCreated }: CreateSiteMod
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Direccion *</Label>
+                    <Label className="text-green-700">Dirección</Label>
                     <Input
                       value={direccion}
                       onChange={(e) => setDireccion(e.target.value)}
@@ -450,18 +456,18 @@ export function CreateSiteModal({ open, onOpenChange, onCreated }: CreateSiteMod
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Latitud</Label>
+                      <Label className="text-green-700">Latitud</Label>
                       <Input value={selectedCoords?.lat.toFixed(8) || ""} readOnly placeholder="Selecciona en el mapa" />
                     </div>
                     <div className="space-y-2">
-                      <Label>Longitud</Label>
+                      <Label className="text-green-700">Longitud</Label>
                       <Input value={selectedCoords?.lng.toFixed(8) || ""} readOnly placeholder="Selecciona en el mapa" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Telefono 1</Label>
+                      <Label className="text-green-700">Teléfono 1</Label>
                       <Input
                         value={telefono1}
                         onChange={(e) => setTelefono1(e.target.value.replace(/\D/g, "").slice(0, 10))}
@@ -470,7 +476,7 @@ export function CreateSiteModal({ open, onOpenChange, onCreated }: CreateSiteMod
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Telefono 2</Label>
+                      <Label className="text-green-700">Teléfono 2</Label>
                       <Input
                         value={telefono2}
                         onChange={(e) => setTelefono2(e.target.value.replace(/\D/g, "").slice(0, 10))}
@@ -481,7 +487,7 @@ export function CreateSiteModal({ open, onOpenChange, onCreated }: CreateSiteMod
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Sitio Web</Label>
+                    <Label className="text-green-700">Sitio web</Label>
                     <Input
                       value={sitioWeb}
                       onChange={(e) => setSitioWeb(e.target.value)}
@@ -490,7 +496,7 @@ export function CreateSiteModal({ open, onOpenChange, onCreated }: CreateSiteMod
                     />
                   </div>
 
-                    <Button type="submit" disabled={loading || !selectedCoords} className="w-full bg-green-600 hover:bg-green-700">
+                    <Button type="submit" disabled={loading || !selectedCoords} className="w-full bg-gradient-to-tr from-green-700 to-lime-500 hover:from-green-600 hover:to-lime-400">
                       {loading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />

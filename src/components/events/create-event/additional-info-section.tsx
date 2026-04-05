@@ -1,5 +1,6 @@
 "use client"
 
+import { Plus, Trash2 } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -30,7 +31,7 @@ export function AdditionalInfoSection({
   return (
     <div className="space-y-4 p-4 border border-border bg-muted/20 rounded-lg shadow-md">
       <div>
-        <Label>Informacion adicional del evento</Label>
+        <Label className="font-semibold text-green-700">Informacion adicional del evento</Label>
         <p className="text-xs text-muted-foreground mt-1">
           Registra los datos clave del evento por items para mejorar la lectura y la escalabilidad.
         </p>
@@ -39,7 +40,7 @@ export function AdditionalInfoSection({
       {items.map((item, index) => (
         <div key={index} className="space-y-3 p-3 bg-muted/40 rounded-lg border border-border">
           <div className="space-y-2">
-            <Label className="text-xs">Detalle importante</Label>
+            <Label className="text-xs font-semibold text-green-700">Detalle importante</Label>
             <Textarea
               value={item.detalle}
               onChange={(e) => {
@@ -71,9 +72,12 @@ export function AdditionalInfoSection({
               <button
                 type="button"
                 onClick={() => onRemove(index)}
-                className="cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white text-sm hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-400 hover:scale-102 w-30 text-center"
+                aria-label="Quitar item"
+                title="Quitar item"
+                className="inline-flex items-center gap-2 cursor-pointer rounded-md border px-3 py-2 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white text-sm hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-400"
               >
-                Quitar
+                <Trash2 className="h-4 w-4" />
+                <span>Quitar</span>
               </button>
             )}
           </div>
@@ -85,13 +89,16 @@ export function AdditionalInfoSection({
           type="button"
           onClick={onAdd}
           disabled={items.length >= 20}
+          aria-label="Agregar item"
+          title="Agregar item"
           className={`px-3 py-1.5 rounded-md text-white text-sm ${
             items.length >= 20
               ? "bg-gray-300 cursor-not-allowed"
-              : "cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-green-700 to-lime-500 text-white text-sm hover:bg-gradient-to-tr hover:from-green-600 hover:to-lime-400 hover:scale-102 w-45 text-center"
+              : "inline-flex items-center gap-2 cursor-pointer rounded-md border px-3 py-2 bg-gradient-to-tr from-green-700 to-lime-500 text-white text-sm hover:bg-gradient-to-tr hover:from-green-600 hover:to-lime-400"
           }`}
         >
-          + Anadir item
+          <Plus className="h-4 w-4" />
+          <span>Añadir</span>
         </button>
         <span className="text-sm text-muted-foreground">{items.length}/20 items</span>
       </div>

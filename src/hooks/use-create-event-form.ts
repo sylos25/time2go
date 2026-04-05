@@ -722,3 +722,5 @@ export function useCreateEventForm() {
     handleAddEvent,
   }
 }
+
+export type UseCreateEventFormReturn = ReturnType<typeof useCreateEventForm>

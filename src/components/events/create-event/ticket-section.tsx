@@ -1,5 +1,6 @@
 "use client"
 
+import { Plus, TicketX, Trash2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { NumericFormat } from "react-number-format"
@@ -72,16 +73,17 @@ export function TicketSection({
 
       {pago && (
         <div className="space-y-4 p-4 border border-border rounded-lg shadow-md bg-muted/20">
-          <h2 className="text-lg font-semibold cursor-default">Tipos de Boletas y Precios</h2>
+          <h2 className="text-lg font-semibold text-green-700 cursor-default">Tipos de Boletas y Precios</h2>
           <p className="text-xs text-muted-foreground italic -translate-y-3 cursor-default">
-            Define los diferentes tipos de boletas disponibles para tu evento con sus precios.
+            Define los diferentes tipos de boletas disponibles para el evento con sus precios.
           </p>
           {error && <p className="text-xs text-red-600">{error}</p>}
 
           {boletas.map((boleta, index) => (
             <div key={index} className="space-y-3 p-3 bg-muted/40 rounded-lg border border-border">
               <div className="space-y-2">
-                <Label className="text-xs">Nombre de la boleta</Label>
+                <Label className="text-xs font-semibold text-green-700">Nombre de la boleta</Label>
+                <p className="text-xs text-muted-foreground">Nombre visible para identificar el tipo de entrada.</p>
                 <Input
                   type="text"
                   value={boleta.nombre_boleto}
@@ -101,8 +103,10 @@ export function TicketSection({
 
               <div className="grid md:grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label className="text-xs">Precio</Label>
+                  <Label className="text-xs font-semibold text-green-700">Precio</Label>
+                  <p className="text-xs text-muted-foreground">Valor base de la boleta en pesos colombianos.</p>
                   <NumericFormat
+                    customInput={Input}
                     value={boleta.precio_boleto}
                     prefix="$"
                     thousandSeparator="."
@@ -112,12 +116,16 @@ export function TicketSection({
                     isAllowed={(values) => values.floatValue === undefined || values.floatValue <= 500000000}
                     onValueChange={(values) => onUpdateBoleta(index, "precio_boleto", values.value)}
                     placeholder="$0"
-                    className="rounded-xl border px-2 py-1 w-full text-sm"
+                    className="rounded-xl"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs">Cargo por servicio (opcional)</Label>
+                  <Label className="text-xs font-semibold text-green-700">
+                    Cargo por servicio <span className="text-gray-400 font-normal">(opcional)</span>
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Cargo adicional por procesamiento/plataforma</p>
                   <NumericFormat
+                    customInput={Input}
                     value={boleta.servicio}
                     prefix="$"
                     thousandSeparator="."
@@ -127,9 +135,8 @@ export function TicketSection({
                     isAllowed={(values) => values.floatValue === undefined || values.floatValue <= 500000000}
                     onValueChange={(values) => onUpdateBoleta(index, "servicio", values.value)}
                     placeholder="$0"
-                    className="rounded-xl border px-2 py-1 w-full text-sm"
+                    className="rounded-xl"
                   />
-                  <p className="text-xs text-muted-foreground">Cargo adicional por procesamiento/plataforma</p>
                 </div>
               </div>
 
@@ -138,9 +145,12 @@ export function TicketSection({
                   <button
                     type="button"
                     onClick={() => onRemoveBoleta(index)}
-                    className="cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white text-sm hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-400 hover:scale-102 w-30 text-center"
+                    aria-label="Quitar boleta"
+                    title="Quitar boleta"
+                    className="inline-flex items-center gap-2 cursor-pointer rounded-md border px-3 py-2 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white text-sm hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-400"
                   >
-                    Quitar
+                    <Trash2 className="h-4 w-4" />
+                    <span>Quitar boleta</span>
                   </button>
                 </div>
               )}
@@ -153,21 +163,27 @@ export function TicketSection({
                 type="button"
                 onClick={onAddBoleta}
                 disabled={boletas.length >= 12}
+                aria-label="Agregar tipo de boleta"
+                title="Agregar tipo de boleta"
                 className={`px-3 py-1.5 rounded-md text-white text-sm ${
                   boletas.length >= 12
                     ? "bg-gray-300 cursor-not-allowed"
-                    : "cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-green-700 to-lime-500 text-white text-sm hover:bg-gradient-to-tr hover:from-green-600 hover:to-lime-400 hover:scale-102 w-45 text-center"
+                    : "inline-flex items-center gap-2 cursor-pointer rounded-md border px-3 py-2 bg-gradient-to-tr from-green-700 to-lime-500 text-white text-sm hover:bg-gradient-to-tr hover:from-green-600 hover:to-lime-400"
                 }`}
               >
-                + Anadir tipo de boleta
+                <Plus className="h-4 w-4" />
+                <span>Agregar boleta</span>
               </button>
               {boletas.length >= 2 && (
                 <button
                   type="button"
                   onClick={onRemoveAllBoletas}
-                  className="cursor-pointer rounded-md border px-2 py-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white text-sm hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-400 hover:scale-102 w-45 text-center"
+                  aria-label="Eliminar todas las boletas"
+                  title="Eliminar todas las boletas"
+                  className="inline-flex items-center gap-2 cursor-pointer rounded-md border px-3 py-2 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white text-sm hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-400"
                 >
-                  Eliminar todas
+                  <TicketX className="h-4 w-4" />
+                  <span>Eliminar todas</span>
                 </button>
               )}
             </div>

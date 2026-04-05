@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useMemo } from "react"
-import { ChevronDown, ChevronUp, Star } from "lucide-react"
+import { useEffect, useMemo, useRef } from "react"
+import { ChevronDown, ChevronUp, FileUp, Images, Star, Trash2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
@@ -40,6 +40,8 @@ export function MediaSection({
   onSetDocumentError,
   onClearDocumentError,
 }: MediaSectionProps) {
+  const documentInputRef = useRef<HTMLInputElement | null>(null)
+
   const imagePreviews = useMemo(
     () =>
       (imagenes || []).map((file) => ({
@@ -58,7 +60,10 @@ export function MediaSection({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="imagenes_evento">Fotos del evento</Label>
+        <Label htmlFor="imagenes_evento" className="font-semibold text-green-700">Fotos del evento</Label>
+        <p className="text-xs text-muted-foreground">
+          Cargar entre 1 y 8 imágenes en formato JPG, PNG o WEBP. Deben corresponder al mismo evento.
+        </p>
         <Input
           ref={imageInputRef}
           id="imagenes_evento"
@@ -67,16 +72,27 @@ export function MediaSection({
           multiple
           onChange={(e) => {
             const files = Array.from(e.target.files || [])
-            if (files.length > 8) {
-              onSetImagesError("Puedes cargar maximo 8 imagenes.")
+            const existing = imagenes || []
+
+            if (existing.length >= 8) {
+              onSetImagesError("Ya se alcanzó el máximo de 8 imágenes.")
               e.currentTarget.value = ""
-              onUpdateImages([])
               return
             }
-            onClearImagesError()
-            onUpdateImages(files.slice(0, 8))
+
+            const availableSlots = 8 - existing.length
+            const nextFiles = [...existing, ...files.slice(0, availableSlots)]
+
+            if (files.length > availableSlots) {
+              onSetImagesError("Solo se agregaron imágenes hasta completar el máximo de 8.")
+            } else {
+              onClearImagesError()
+            }
+
+            onUpdateImages(nextFiles)
+            e.currentTarget.value = ""
           }}
-          className="rounded-xl"
+          className="hidden"
         />
         {imagenesError && <p className="text-xs text-red-600">{imagenesError}</p>}
         {(imagenes || []).length > 1 && (
@@ -84,6 +100,14 @@ export function MediaSection({
             Advertencia: estas cargando mas de una imagen. Verifica que todas correspondan al mismo evento.
           </p>
         )}
+        <button
+          type="button"
+          onClick={() => imageInputRef.current?.click()}
+          className="inline-flex items-center gap-2 rounded-md border px-3 py-2 bg-gradient-to-tr from-green-700 to-lime-500 text-white text-sm hover:from-green-600 hover:to-lime-400 cursor-pointer"
+        >
+          <Images className="h-4 w-4" />
+          <span>Agregar fotos</span>
+        </button>
 
         {imagePreviews.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
@@ -95,44 +119,46 @@ export function MediaSection({
                   <button
                     type="button"
                     onClick={() => onSetPrincipalImage(index)}
-                    className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${
+                    className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs cursor-pointer ${
                       imagenPrincipalIndex === index
                         ? "border-amber-400 bg-amber-50 text-amber-800"
                         : "text-muted-foreground hover:bg-muted"
                     }`}
                   >
                     <Star className="h-3.5 w-3.5" />
-                    {imagenPrincipalIndex === index ? "Principal" : "Marcar principal"}
+                    {imagenPrincipalIndex === index ? "Principal" : "Marcar"}
                   </button>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      title="Subir"
-                      onClick={() => onMoveImage(index, "up")}
-                      disabled={index === 0}
-                      className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-30"
-                    >
-                      <ChevronUp className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      title="Bajar"
-                      onClick={() => onMoveImage(index, "down")}
-                      disabled={index === imagePreviews.length - 1}
-                      className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-30"
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onRemoveImage(index)}
+                    aria-label="Quitar imagen"
+                    title="Quitar imagen"
+                    className="inline-flex items-center justify-center rounded-md p-1.5 text-red-600 hover:bg-red-50 cursor-pointer"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => onRemoveImage(index)}
-                  className="mt-2 w-full rounded-md border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                >
-                  Quitar
-                </button>
-                <p className="mt-1 text-[11px] text-muted-foreground text-center">Orden: {index + 1}</p>
+                <div className="mt-1 flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
+                  <span>Orden: {index + 1}</span>
+                  <button
+                    type="button"
+                    title="Subir"
+                    onClick={() => onMoveImage(index, "up")}
+                    disabled={index === 0}
+                    className="rounded p-0.5 text-muted-foreground hover:bg-muted disabled:opacity-30 cursor-pointer"
+                  >
+                    <ChevronUp className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Bajar"
+                    onClick={() => onMoveImage(index, "down")}
+                    disabled={index === imagePreviews.length - 1}
+                    className="rounded p-0.5 text-muted-foreground hover:bg-muted disabled:opacity-30 cursor-pointer"
+                  >
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -141,8 +167,22 @@ export function MediaSection({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="documento_evento">Documento del evento (opcional)</Label>
+        <Label htmlFor="documento_evento" className="font-semibold text-green-700">
+          Documento del evento <span className="text-gray-400 font-normal">(opcional)</span>
+        </Label>
+        <p className="text-xs text-muted-foreground">
+          Cargar un único archivo PDF de máximo 5 MB para soporte o validación del evento.
+        </p>
+        <button
+          type="button"
+          onClick={() => documentInputRef.current?.click()}
+          className="inline-flex items-center gap-2 rounded-md border px-3 py-2 bg-gradient-to-tr from-green-700 to-lime-500 text-white text-sm hover:from-green-600 hover:to-lime-400 cursor-pointer"
+        >
+          <FileUp className="h-4 w-4" />
+          <span>Agregar documento</span>
+        </button>
         <Input
+          ref={documentInputRef}
           id="documento_evento"
           type="file"
           accept="application/pdf,.pdf"
@@ -172,7 +212,7 @@ export function MediaSection({
             onClearDocumentError()
             onUpdateDocument(file)
           }}
-          className="rounded-xl"
+          className="hidden"
         />
         {documentoError && <p className="text-xs text-red-600">{documentoError}</p>}
         {documento && (
@@ -185,9 +225,11 @@ export function MediaSection({
               <button
                 type="button"
                 onClick={() => onUpdateDocument(null)}
-                className="rounded-md border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                aria-label="Quitar documento"
+                title="Quitar documento"
+                className="inline-flex items-center justify-center rounded-md border p-1.5 text-red-600 hover:bg-red-50 cursor-pointer"
               >
-                Quitar
+                <Trash2 className="h-4 w-4" />
               </button>
             </div>
           </div>
