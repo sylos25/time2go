@@ -1,671 +1,73 @@
 "use client"
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Header } from "@/components/header";
-import { Footer } from "@/components/footer";
-import { AuthModal } from "@/components/auth-modal";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Calendar, MapPin, Users, Search, Filter, Heart, Share2, Star, X, Clock, Info, Check } from "lucide-react";
-import { NumericFormat } from "react-number-format";
-import imageCompression from "browser-image-compression";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 
-interface ImagenEvento {
-  id_imagen_evento: number;
-  url_imagen_evento: string;
-}
+import { useRouter } from "next/navigation"
 
-interface Event {
-  id_evento: number;                // PK del evento
-  nombre_evento: string;
-  descripcion: string;
-  fecha_inicio: string;
-  fecha_fin: string;                // corregido: antes tenías fecha_final
-  hora_inicio: string;
-  hora_final: string;
-  id_usuario?: string;
-  id_categoria_evento: number;
-  id_tipo_evento: number;
-  id_municipio: number;
-  id_sitio: number;
-  telefono_1: string;               // corregido: antes tenías telefono1
-  telefono_2?: string;              // opcional
-  costo: number;
-  cupo: number | "";
-  estado: boolean;
-  imagenes: {                       // relación con tabla_imagenes_eventos
-    id_imagen_evento: number;
-    url_imagen_evento: string;
-  }[];
-}
+import { AuthModal } from "@/components/auth-modal"
+import { Footer } from "@/components/footer"
+import { Header } from "@/components/header"
 
-interface CategoriaEvento {
-  id_categoria_evento: number;
-  nombre: string;
-}
-
-// Esto es para mostrar los eventos debajo del buscador --- En proceso
-  const initialEvents: Event[] = []
+import { EventExpandedModal } from "@/app/eventos/components/event-expanded-modal"
+import { EventsGrid } from "@/app/eventos/components/events-grid"
+import { EventsSearchFilters } from "@/app/eventos/components/events-search-filters"
+import { useEventsPage } from "@/app/eventos/hooks/use-events-page"
 
 export default function EventosPage() {
-  const [events, setEvents] = useState<any[]>(initialEvents)
-  const [categories, setCategories] = useState<CategoriaEvento[]>([])
-  const [selectedImageByEvent, setSelectedImageByEvent] = useState<Record<number, number>>({})
-  const [favoriteIds, setFavoriteIds] = useState<number[]>([])
-  const [favoritePendingIds, setFavoritePendingIds] = useState<number[]>([])
-  const [authModalOpen, setAuthModalOpen] = useState(false)
-  const [isLogin, setIsLogin] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("all")
-  const [isSearchFocused, setIsSearchFocused] = useState(false)
-  const [expandedEventId, setExpandedEventId] = useState<number | null>(null)
-  const [copiedEventId, setCopiedEventId] = useState<number | null>(null)
+  const router = useRouter()
 
-  const router = useRouter();
+  const {
+    categories,
+    selectedImageByEvent,
+    favoriteIds,
+    favoritePendingIds,
+    authModalOpen,
+    isLogin,
+    searchTerm,
+    selectedCategory,
+    isSearchFocused,
+    expandedEventId,
+    copiedEventId,
+    filteredEvents,
+    topRatedEvents,
+    expandedEvent,
+    setSelectedImageByEvent,
+    setAuthModalOpen,
+    setIsLogin,
+    setSearchTerm,
+    setSelectedCategory,
+    setIsSearchFocused,
+    setExpandedEventId,
+    openAuthModal,
+    toggleFavorite,
+    handleShareEvent,
+  } = useEventsPage()
 
-// handler para el campo `cupo`
-const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const value = e.target.value;
-  // This function is kept for potential future use
-};
-
-// Generar rango de fechas entre fecha_inicio y fecha_final (retorna Date objects)
-const generarRangoDias = (inicio: Date | null, fin: Date | null): Date[] => {
-  if (!inicio || !fin) return [];
-  const diasArray: Date[] = [];
-  const current = new Date(inicio);
-  current.setHours(0, 0, 0, 0); // resetea a medianoche
-  const end = new Date(fin);
-  end.setHours(0, 0, 0, 0);
-  
-  while (current <= end) {
-    diasArray.push(new Date(current));
-    current.setDate(current.getDate() + 1);
-  }
-  return diasArray;
-};
-
-// Toggle selección de un día (Date object)
-const toggleDiaSeleccionado = (fecha: Date) => {
-  // This function is moved to crear page
-};
-
-// Helper para formatear fecha a día completo/mes (acepta Date object)
-const formatDia = (date: Date): string => {
-  const opciones: Intl.DateTimeFormatOptions = { weekday: "long", day: "numeric", month: "numeric" };
-  return date.toLocaleDateString("es-ES", opciones);
-};
-
-const formatEventPrice = (price: number | string): string => {
-  if (typeof price === "number") {
-    return `$${price.toLocaleString("es-CO")}`;
-  }
-  return String(price);
-};
-
-  // Fetch and normalize events for the UI
-  const fetchEventos = async () => {
-    try {
-      const res = await fetch("/api/events");
-      const data = await res.json();
-      const rawEvents = (data && data.ok && Array.isArray(data.eventos)) ? data.eventos : Array.isArray(data) ? data : [];
-      const visibleEvents = rawEvents.filter((e: any) => e?.estado === true);
-
-      const normalized = visibleEvents.map((e: any) => {
-        // determine first image
-        const firstImage = e.imagenes && e.imagenes.length ? e.imagenes[0].url_imagen_evento : null;
-
-        // determine price (show min ticket price if paid, otherwise 'Gratis')
-        let price: number | string = 0;
-        if (!e.gratis_pago) {
-          price = "Gratis";
-        } else if (Array.isArray(e.valores) && e.valores.length > 0) {
-          const ticketPrices = e.valores
-            .map((v: any) => Number(v?.precio_boleto ?? v?.valor ?? 0))
-            .filter((value: number) => Number.isFinite(value) && value > 0);
-          price = ticketPrices.length > 0 ? Math.min(...ticketPrices) : 0;
-        } else {
-          price = 0;
-        }
-
-        const siteName = String(e?.sitio?.nombre_sitio || e?.nombre_sitio || "").trim();
-        const municipalityName = String(e?.municipio?.nombre_municipio || e?.nombre_municipio || "").trim();
-        const location = siteName || municipalityName || "Sitio por confirmar";
-
-        // date/time formatting
-        const date = e.fecha_inicio ? new Date(e.fecha_inicio).toLocaleDateString("es-CO") : "";
-        const time = e.hora_inicio ? `${e.hora_inicio}${e.hora_final ? ` - ${e.hora_final}` : ""}` : "";
-
-        return {
-          id_evento: e.id_evento,
-          title: e.nombre_evento,
-          category: e.categoria?.nombre || e.categoria_nombre || "Sin categoría",
-          description: e.descripcion,
-          image: firstImage || "/placeholder.svg",
-          date,
-          time,
-          location,
-          attendees: e.cupo ?? 0,
-          id_categoria_evento: Number(e.id_categoria_evento || e.evento_categoria_id || e.categoria?.id_categoria_evento || 0),
-          price,
-          raw: e, // keep original for details
-        };
-      });
-
-      setEvents(normalized);
-    } catch (err) {
-      console.error("Error fetching events:", err);
-      setEvents([]);
-    }
-  };
-
-  useEffect(() => {
-    fetchEventos();
-  }, []);
-
-  const fetchFavoritos = async () => {
-    try {
-      const res = await fetch("/api/favoritos", { credentials: "include" });
-      if (res.status === 401) {
-        setFavoriteIds([]);
-        return;
-      }
-
-      const data = await res.json();
-      if (res.ok && data?.ok && Array.isArray(data.favoritos)) {
-        setFavoriteIds(
-          data.favoritos
-            .map((value: unknown) => Number(value))
-            .filter((value: number) => Number.isFinite(value))
-        );
-        return;
-      }
-
-      setFavoriteIds([]);
-    } catch (error) {
-      console.error("Error fetching favorites:", error);
-      setFavoriteIds([]);
-    }
-  };
-
-  useEffect(() => {
-    fetchFavoritos();
-
-    const onLogin = () => {
-      fetchFavoritos();
-    };
-
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === "token") {
-        if (event.newValue) {
-          fetchFavoritos();
-        } else {
-          setFavoriteIds([]);
-        }
-      }
-    };
-
-    window.addEventListener("user:login", onLogin);
-    window.addEventListener("storage", onStorage);
-
-    return () => {
-      window.removeEventListener("user:login", onLogin);
-      window.removeEventListener("storage", onStorage);
-    };
-  }, []);
-
-  const fetchCategorias = async () => {
-    try {
-      const res = await fetch("/api/categoria_evento");
-      const data = await res.json();
-      const list = Array.isArray(data) ? data : [];
-      const normalized = list
-        .map((c: any) => ({
-          id_categoria_evento: Number(c?.id_categoria_evento || 0),
-          nombre: String(c?.nombre || "").trim(),
-        }))
-        .filter((c: CategoriaEvento) => c.id_categoria_evento > 0 && c.nombre.length > 0);
-
-      setCategories(normalized);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      setCategories([]);
-    }
-  };
-
-  useEffect(() => {
-    fetchCategorias();
-  }, []);
-
-
-//Para llamar los sitios de la base de datos.
-  useEffect(() => {
-    // This effect is moved to crear page
-  }, []);
-
-//Para llamar los municipios de la base de datos.
-  useEffect(() => {
-    // This effect is moved to crear page
-  }, []);
-
-
-//Para llamar la categría (evento) de la base de datos.
-  useEffect(() => {
-    // This effect is moved to crear page
-  }, []);
-
-//Para cargar las categorías de boletos de la base de datos.
-  useEffect(() => {
-    // This effect is moved to crear page
-  }, []);
-
-// Para traer el nombre del usuario en sesión al campo nombre del organizador.
-
-
-  
-//Para llamar el tipo (evento) de la base de datos.
-  useEffect(() => {
-    // This effect is moved to crear page
-  }, []);
-  
-
-  const openAuthModal = (loginMode = true) => {
-    setIsLogin(loginMode)
-    setAuthModalOpen(true)
-  }
-
-  const handleEventExpand = (eventId: number) => {
-    setExpandedEventId(expandedEventId === eventId ? null : eventId)
-  }
-
-  const toggleFavorite = async (eventId: number) => {
-    if (!Number.isFinite(eventId) || eventId <= 0) {
-      return;
-    }
-
-    if (favoritePendingIds.includes(eventId)) {
-      return;
-    }
-
-    const isFavorite = favoriteIds.includes(eventId);
-    setFavoritePendingIds((prev) => [...prev, eventId]);
-    setFavoriteIds((prev) =>
-      isFavorite ? prev.filter((id) => id !== eventId) : [...prev, eventId]
-    );
-
-    try {
-      const res = await fetch(
-        isFavorite ? `/api/favoritos?id_evento=${eventId}` : "/api/favoritos",
-        {
-          method: isFavorite ? "DELETE" : "POST",
-          credentials: "include",
-          headers: isFavorite ? undefined : { "Content-Type": "application/json" },
-          body: isFavorite ? undefined : JSON.stringify({ id_evento: eventId }),
-        }
-      );
-
-      if (res.status === 401) {
-        setFavoriteIds((prev) => prev.filter((id) => id !== eventId));
-        openAuthModal(true);
-        return;
-      }
-
-      const data = await res.json();
-      if (!res.ok || !data?.ok) {
-        throw new Error(data?.message || "No se pudo actualizar favoritos");
-      }
-    } catch (error) {
-      console.error("Error updating favorite:", error);
-      setFavoriteIds((prev) =>
-        isFavorite ? [...prev, eventId] : prev.filter((id) => id !== eventId)
-      );
-    } finally {
-      setFavoritePendingIds((prev) => prev.filter((id) => id !== eventId));
-    }
-  };
-
-const handleAddEvent = async () => {
-  // This function is moved to crear page
-};
-  
-  // Funciones de mapeo
-  function mapLocationToMunicipioId(location: string): number {
-    const municipios: Record<string, number> = {
-      Bogotá: 1,
-      Medellín: 2,
-      Bucaramanga: 3,
-      Cali: 4,
-      Cartagena: 5,
-    };
-    return municipios[location] || 0;
-  }
-
-  const handleShareEvent = async (event: any) => {
-    const id = event.id_evento ?? event.id
-    if (!id) return
-
-    const relativePath = `/eventos/${id}?returnTo=${encodeURIComponent("/eventos#eventos-disponibles")}`
-    const shareUrl = `${window.location.origin}${relativePath}`
-    const eventTitle = String(event.nombre_evento ?? event.title ?? "Evento en Time2Go")
-
-    try {
-      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-        try {
-          await navigator.share({
-            title: eventTitle,
-            text: `Mira este evento: ${eventTitle}`,
-            url: shareUrl,
-          })
-          return
-        } catch (shareError: any) {
-          if (shareError?.name === "AbortError") {
-            return
-          }
-          // Fallback to clipboard if native share fails.
-        }
-      }
-
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(shareUrl)
-      } else {
-        const textarea = document.createElement("textarea")
-        textarea.value = shareUrl
-        textarea.setAttribute("readonly", "")
-        textarea.style.position = "fixed"
-        textarea.style.left = "-9999px"
-        document.body.appendChild(textarea)
-        textarea.select()
-        document.execCommand("copy")
-        document.body.removeChild(textarea)
-      }
-
-      const copiedId = Number(id)
-      setCopiedEventId(copiedId)
-      window.setTimeout(() => {
-        setCopiedEventId((current) => (current === copiedId ? null : current))
-      }, 2000)
-    } catch (error) {
-      console.error("No se pudo copiar el enlace del evento", error)
-      alert("No se pudo copiar el enlace del evento")
-    }
-  }
-  
-  
-  // Funciones comentadas - usar cuando sea necesario
-
-  // Fix implicit any in maps elsewhere
-  // examples in render: ensure callbacks have typed params
-  
-  // Filtro visual (puedes mantenerlo si usas tarjetas de eventos)
-  const filteredEvents = events
-    .filter((event) => {
-      const name = String(event.nombre_evento ?? event.title ?? event.raw?.nombre_evento ?? "").toLowerCase();
-      const descr = String(event.descripcion ?? event.description ?? event.raw?.descripcion ?? "").toLowerCase();
-      const matchesSearch = name.includes(searchTerm.toLowerCase()) || descr.includes(searchTerm.toLowerCase());
-
-      const eventCategoryId = Number(
-        event.id_categoria_evento ??
-        event.raw?.id_categoria_evento ??
-        event.raw?.evento_categoria_id ??
-        event.raw?.categoria?.id_categoria_evento ??
-        0
-      );
-      const matchesCategory = selectedCategory === "all" || String(eventCategoryId) === selectedCategory;
-      return matchesSearch && matchesCategory;
-    })
-    .sort((a, b) => {
-      const toTime = (x: any) => {
-        const maybe = x.raw?.fecha_inicio ?? x.fecha_inicio ?? x.date;
-        const t = Date.parse(String(maybe));
-        return isNaN(t) ? 0 : t;
-      };
-
-      return toTime(a) - toTime(b);
-    });
-  
-  // Eventos destacados (si decides mantener rating visual)
-  const topRatedEvents = events.slice(0, 3); // puedes ordenar por cupo o costo si no usas rating
-  
-  // Evento expandido: support backend `id_evento` or frontend `id`
-  const expandedEvent = expandedEventId
-    ? events.find((e: any) => (e.id_evento ?? e.id) === expandedEventId)
-    : null;
-  
-
-  
   return (
     <main className="min-h-screen bg-background">
       <Header onAuthClick={openAuthModal} />
 
-      {/* Hero Section */}
       <section className="pt-16 lg:pt-20 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          {/* Enhanced Search and Filters */}
-          <div className="mt-20 bg-card/90 backdrop-blur-md rounded-3xl p-8 shadow-xl border border-border mb-12 relative">
-            <div className="flex flex-col lg:flex-row gap-6 items-center">
-              <div className="flex-1 relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-6 w-6" />
-                <Input
-                  placeholder="¿Qué evento buscas hoy?"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                  className="pl-12 h-14 text-lg rounded-2xl border-2 border-gray-200 focus:border-blue-500 transition-all duration-300"
-                />
-
-                {isSearchFocused && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-popover text-popover-foreground rounded-2xl shadow-2xl border border-border z-[60] overflow-hidden">
-                    <div className="p-4 border-b border-gray-100">
-                      <h3 className="text-sm font-semibold text-foreground mb-3">Eventos mejor valorados</h3>
-                      <div className="space-y-3">
-                        {topRatedEvents.map((event) => (
-                          <div
-                            key={event.id_evento ?? event.id}
-                            className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
-                          >
-                            <img
-                              src={event.image || "/placeholder.svg"}
-                              alt={event.title}
-                              className="w-12 h-12 rounded-lg object-cover"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-foreground truncate">{event.title}</h4>
-                              <div className="flex items-center gap-2 mt-1">
-                                <div className="flex items-center gap-1">
-                                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                  <span className="text-xs font-medium text-muted-foreground">{event.rating}</span>
-                                </div>
-                                <Badge variant="outline" className="text-xs">
-                                  {event.category}
-                                </Badge>
-                              </div>
-                            </div>
-                            <div className="text-sm font-bold text-blue-600">{formatEventPrice(event.price)}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-full lg:w-64 h-14 rounded-2xl border-2 border-gray-200">
-                  <SelectValue placeholder="Categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas las categorías</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem
-                      key={category.id_categoria_evento}
-                      value={String(category.id_categoria_evento)}
-                    >
-                      {category.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <EventsSearchFilters
+            searchTerm={searchTerm}
+            selectedCategory={selectedCategory}
+            isSearchFocused={isSearchFocused}
+            topRatedEvents={topRatedEvents}
+            categories={categories}
+            onSearchChange={setSearchTerm}
+            onCategoryChange={setSelectedCategory}
+            onSearchFocus={() => setIsSearchFocused(true)}
+            onSearchBlur={() => window.setTimeout(() => setIsSearchFocused(false), 200)}
+          />
         </div>
       </section>
 
-      {/* Modal removed - use /eventos/crear route instead */}
-
       {expandedEvent && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card rounded-3xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="relative">
-              <Button
-                onClick={() => setExpandedEventId(null)}
-                className="absolute top-4 right-4 z-10 bg-card/90 hover:bg-card text-foreground rounded-full h-10 w-10 p-0"
-                variant="ghost"
-              >
-                <X className="h-5 w-5" />
-              </Button>
-
-              <div className="grid lg:grid-cols-2 gap-8 p-8">
-                {/* Left Column - Images */}
-                <div className="space-y-4">
-                  {/* Expanded gallery: show main and thumbnails from raw.imagenes */}
-                  {expandedEvent && expandedEvent.raw && expandedEvent.raw.imagenes && expandedEvent.raw.imagenes.length ? (
-                    <>
-                      <img
-                        src={expandedEvent.raw.imagenes[0].url_imagen_evento}
-                        alt={expandedEvent.title}
-                        className="w-full h-80 object-cover rounded-2xl"
-                      />
-                      <div className="grid grid-cols-3 gap-3">
-                        {expandedEvent.raw.imagenes.map((imgObj: any, index: number) => (
-                          <img
-                            key={index}
-                            src={imgObj.url_imagen_evento || "/placeholder.svg"}
-                            alt={`${expandedEvent.title} ${index + 1}`}
-                            className="w-full h-24 object-cover rounded-xl"
-                          />
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <img
-                      src="/placeholder.svg"
-                      alt={expandedEvent.title}
-                      className="w-full h-80 object-cover rounded-2xl"
-                    />
-                  )}
-
-                  {/* Badge: PAGO / GRATIS */}
-                  <span className={`inline-block text-sm font-semibold px-3 py-1 rounded-full ${typeof expandedEvent.price === 'number' ? 'bg-red-600 text-white' : 'bg-green-400 text-white'}`}>
-                    {typeof expandedEvent.price === 'number' ? 'PAGO' : 'GRATIS'}
-                  </span>
-                </div>
-
-                {/* Right Column - Details */}
-                <div className="space-y-6">
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <Badge variant="outline" className="rounded-full text-sm px-3 py-1">
-                        {expandedEvent.category}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h1 className="text-3xl lg:text-4xl font-bold text-foreground">{expandedEvent.title}</h1>
-                      <div className="flex items-center gap-2 bg-yellow-50 px-4 py-2 rounded-xl">
-                        <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
-                        <span className="text-xl font-bold text-foreground">{expandedEvent.rating}</span>
-                        <span className="text-sm text-muted-foreground">/ 5.0</span>
-                      </div>
-                    </div>
-                    <p className="text-lg text-muted-foreground leading-relaxed">{expandedEvent.fullDescription}</p>
-                  </div>
-
-                  {/* Event Details Grid */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                      <Calendar className="h-5 w-5 text-blue-600" />
-                      <div>
-                        <div className="font-semibold text-foreground">{expandedEvent.date}</div>
-                        <div className="text-sm text-muted-foreground">{expandedEvent.time}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                      <Clock className="h-5 w-5 text-blue-600" />
-                      <div>
-                        <div className="font-semibold text-foreground">Duración</div>
-                        <div className="text-sm text-muted-foreground">{expandedEvent.duration}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                      <MapPin className="h-5 w-5 text-blue-600" />
-                      <div>
-                        <div className="font-semibold text-foreground">Ubicación</div>
-                        <div className="text-sm text-muted-foreground">{expandedEvent.location}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                      <Users className="h-5 w-5 text-blue-600" />
-                      <div>
-                        <div className="font-semibold text-foreground">Asistentes</div>
-                        <div className="text-sm text-muted-foreground">{expandedEvent.attendees.toLocaleString("es-CO")}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Highlights */}
-                  <div>
-                    <h3 className="text-xl font-bold text-foreground mb-3">Lo que incluye</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      {expandedEvent.highlights.map((highlight: string, index: number) => (
-                        <div key={index} className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                          <span className="text-foreground">{highlight}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Organizer */}
-                  <div className="p-4 bg-blue-50 rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <Info className="h-5 w-5 text-blue-600" />
-                      <div>
-                        <div className="font-semibold text-foreground">Organizado por</div>
-                        <div className="text-blue-600">{expandedEvent.organizer}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Price and Actions */}
-                  <div className="border-t pt-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-3xl font-bold text-blue-600">{formatEventPrice(expandedEvent.price)}</span>
-                        <span className="text-muted-foreground">por persona</span>
-                      </div>
-                      <div className="flex gap-3">
-                        <Button className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-700 hover:to-cyan-700 rounded-xl px-15 py-8 text-lg font-semibold text-white">
-                          compra tu entrada
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <EventExpandedModal
+          event={expandedEvent}
+          onClose={() => setExpandedEventId(null)}
+        />
       )}
 
-      {/* Tarjetas de presentación de los eventos */}
       <section id="eventos-disponibles" className="pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
@@ -674,151 +76,24 @@ const handleAddEvent = async () => {
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredEvents.map((event) => {
-              const eventId = Number(event.id_evento ?? event.id)
-              const eventImages = Array.isArray(event.raw?.imagenes) ? event.raw.imagenes : []
-              const selectedImageIndex = selectedImageByEvent[eventId] ?? 0
-              const safeSelectedIndex = eventImages[selectedImageIndex] ? selectedImageIndex : 0
-              const isFavorite = favoriteIds.includes(eventId)
-              const isFavoritePending = favoritePendingIds.includes(eventId)
-              const isLinkCopied = copiedEventId === eventId
-
-              return (
-              <Card
-                key={event.id_evento ?? event.id}
-                className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-card/90 backdrop-blur-sm border-border rounded-2xl overflow-hidden"
-              >
-                <div className="relative overflow-hidden">
-                  <div className="w-full h-52 bg-gray-100">
-                    {eventImages.length ? (
-                      <>
-                        <img
-                          src={eventImages[safeSelectedIndex].url_imagen_evento}
-                          alt={event.title}
-                          className="w-full h-52 object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                        <div className="absolute bottom-2 left-2 right-2 flex gap-2 overflow-x-auto p-1">
-                          {eventImages.map((imgObj: any, i: number) => (
-                            <img
-                              key={i}
-                              src={imgObj.url_imagen_evento}
-                              alt={`${event.title} ${i + 1}`}
-                              onClick={() =>
-                                setSelectedImageByEvent((prev) => ({
-                                  ...prev,
-                                  [eventId]: i,
-                                }))
-                              }
-                              className={`h-10 w-16 object-cover rounded-md border shadow-sm cursor-pointer transition ${
-                                safeSelectedIndex === i
-                                  ? "border-white ring-2 ring-white/90"
-                                  : "border-border opacity-90 hover:opacity-100"
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </>
-                    ) : (
-                      <img
-                        src="/placeholder.svg"
-                        alt={event.title}
-                        className="w-full h-52 object-cover"
-                      />
-                    )}
-
-                    {/* Badge: PAGO / GRATIS */}
-                    <span className={`absolute top-4 left-4 text-xs font-semibold px-2 py-1 rounded-full ${typeof event.price === 'number' ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'}`}>
-                      {typeof event.price === 'number' ? 'PAGO' : 'GRATIS'}
-                    </span>
-                  </div>
-
-                  <div className="absolute top-4 right-4 flex gap-2">
-                    <Button
-                      size="icon"
-                      variant="secondary"
-                      type="button"
-                      className="h-9 w-9 bg-card/90 backdrop-blur-sm rounded-full hover:bg-card"
-                      onClick={() => toggleFavorite(eventId)}
-                      disabled={isFavoritePending}
-                      aria-label={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
-                    >
-                      <Heart className={`h-4 w-4 transition-colors ${isFavorite ? "fill-red-500 text-red-500" : "text-foreground"}`} />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="secondary"
-                      type="button"
-                      className="h-9 w-9 bg-card/90 backdrop-blur-sm rounded-full hover:bg-card"
-                      onClick={() => handleShareEvent(event)}
-                      aria-label={isLinkCopied ? "Enlace copiado" : "Copiar enlace del evento"}
-                      title={isLinkCopied ? "Enlace copiado" : "Copiar enlace del evento"}
-                    >
-                      {isLinkCopied ? <Check className="h-4 w-4 text-green-600" /> : <Share2 className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
-                
-                <CardContent className="p-6">
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Calendar className="h-4 w-4 mr-3" />
-                      {event.date} • {event.time}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between mb-3">
-                    <Badge variant="outline" className="rounded-full">
-                      {event.category}
-                    </Badge>
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm font-medium">{event.rating}</span>
-                    </div>
-                  </div>
-
-                  <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-lime-500 transition-colors">
-                    {event.title}
-                  </h3>
-                  <p className="text-muted-foreground mb-4 line-clamp-2">{event.description}</p>
-                  <div className="space-y-2 mb-6">
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4 mr-3" />
-                      {event.location}
-                    </div>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Users className="h-4 w-4 mr-3" />
-                      Aforo para {Number(event.attendees ?? event.cupo ?? 0).toLocaleString("es-CO")}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold text-lime-500">{formatEventPrice(event.price)}</div>
-                    <Button
-                      type="button"
-                      onClick={() =>
-                        router.push(
-                          `/eventos/${event.id_evento ?? event.id}?returnTo=${encodeURIComponent("/eventos#eventos-disponibles")}`
-                        )
-                      }
-                      className="bg-gradient-to-tr from-fuchsia-500 to-red-600 hover:from-fuchsia-600 hover:to-red-700 rounded-xl px-6"
-                    >
-                      Detalles
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-              )
-            })}
-          </div>
-
-          {filteredEvents.length === 0 && (
-            <div className="text-center py-16">
-              <div className="text-8xl mb-6">🔍</div>
-              <h3 className="text-2xl font-bold text-foreground mb-3">No se encontraron eventos</h3>
-              <p className="text-lg text-muted-foreground">Intenta con otros términos de búsqueda o filtros</p>
-            </div>
-          )}
+          <EventsGrid
+            events={filteredEvents}
+            selectedImageByEvent={selectedImageByEvent}
+            favoriteIds={favoriteIds}
+            favoritePendingIds={favoritePendingIds}
+            copiedEventId={copiedEventId}
+            onSelectImage={(eventId, index) =>
+              setSelectedImageByEvent((prev) => ({
+                ...prev,
+                [eventId]: index,
+              }))
+            }
+            onToggleFavorite={toggleFavorite}
+            onShareEvent={handleShareEvent}
+            onViewDetails={(eventId) =>
+              router.push(`/eventos/${eventId}?returnTo=${encodeURIComponent("/eventos#eventos-disponibles")}`)
+            }
+          />
         </div>
       </section>
 
@@ -828,7 +103,7 @@ const handleAddEvent = async () => {
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         isLogin={isLogin}
-        onToggleMode={() => setIsLogin(!isLogin)}
+        onToggleMode={() => setIsLogin((prev) => !prev)}
       />
     </main>
   )

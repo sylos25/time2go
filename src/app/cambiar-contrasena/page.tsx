@@ -1,159 +1,42 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   AlertCircle,
   Lock,
   Loader2,
-  CheckCircle,
-  Eye,
-  EyeOff,
   ArrowLeft,
   Rat,
 } from "lucide-react"
 import { getRoleBadgeClass } from "@/lib/role-badge"
-
-interface UserData {
-  id_usuario: string
-  nombres: string
-  apellidos: string
-  correo: string
-  id_rol: number
-  id_pais: number
-  nombre_pais?: string
-  nombre_rol?: string
-  telefono?: string
-  validacion_correo?: boolean
-  fecha_registro?: string
-}
-
-const PASSWORD_MIN_LENGTH = 8
-const PASSWORD_MAX_LENGTH = 20
-
-const validatePassword = (password: string): { isValid: boolean; errors: string[] } => {
-  const errors: string[] = []
-  if (password.length < PASSWORD_MIN_LENGTH || password.length > PASSWORD_MAX_LENGTH)
-    errors.push(`La contraseña debe tener entre ${PASSWORD_MIN_LENGTH} y ${PASSWORD_MAX_LENGTH} caracteres`)
-  if (!/[a-zA-Z]/.test(password)) errors.push("Debe incluir al menos una letra")
-  if (!/[0-9]/.test(password)) errors.push("Debe incluir al menos un número")
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) errors.push("Debe incluir al menos un carácter especial")
-  return { isValid: errors.length === 0, errors }
-}
+import { PasswordInputField } from "@/components/shared/password/password-input-field"
+import { PasswordPolicyHint } from "@/components/shared/password/password-policy-hint"
+import { StatusMessage } from "@/components/shared/password/status-message"
+import { useChangePasswordPage } from "@/hooks/use-change-password-page"
 
 export default function CambiarContrasenaPage() {
   const router = useRouter()
-  const [user, setUser] = useState<UserData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [currentPassword, setCurrentPassword] = useState("")
-  const [newPassword, setNewPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false })
-  const [saving, setSaving] = useState(false)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  const [passwordError, setPasswordError] = useState<string | null>(null)
-
-  useEffect(() => {
-    fetchUserData()
-  }, [])
-
-  const fetchUserData = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const token = localStorage.getItem("token")
-
-      const res = await fetch("/api/me", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      })
-
-      if (!res.ok) {
-        if (res.status === 401) {
-          router.push("/auth")
-          return
-        }
-        throw new Error("No se pudo cargar los datos del usuario")
-      }
-
-      const data = await res.json()
-      if (data.ok && data.user) {
-        setUser(data.user)
-      } else {
-        setError("Error al cargar los datos")
-      }
-    } catch (err) {
-      console.error("Error fetching user data:", err)
-      setError(err instanceof Error ? err.message : "Error desconocido")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setPasswordError(null)
-
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordError("Todos los campos son requeridos")
-      return
-    }
-
-    if (newPassword !== confirmPassword) {
-      setPasswordError("Las contraseñas nuevas no coinciden")
-      return
-    }
-
-    const passwordValidation = validatePassword(newPassword)
-    if (!passwordValidation.isValid) {
-      setPasswordError(passwordValidation.errors.join(". "))
-      return
-    }
-
-    try {
-      setSaving(true)
-      const token = localStorage.getItem("token")
-
-      const res = await fetch("/api/change-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          currentPassword,
-          newPassword,
-          confirmPassword,
-        }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        setPasswordError(data.message || "Error al cambiar la contraseña")
-        return
-      }
-
-      setSuccessMessage("Contraseña actualizada correctamente")
-      setCurrentPassword("")
-      setNewPassword("")
-      setConfirmPassword("")
-
-      setTimeout(() => {
-        setSuccessMessage(null)
-      }, 3000)
-    } catch (err) {
-      console.error("Error changing password:", err)
-      setPasswordError("Error al cambiar la contraseña")
-    } finally {
-      setSaving(false)
-    }
-  }
+  const {
+    user,
+    loading,
+    error,
+    currentPassword,
+    newPassword,
+    confirmPassword,
+    showPasswords,
+    saving,
+    successMessage,
+    passwordError,
+    passwordMaxLength,
+    setCurrentPassword,
+    setNewPassword,
+    setConfirmPassword,
+    togglePasswordVisibility,
+    handleSubmit,
+  } = useChangePasswordPage(router)
 
   if (loading) {
     return (
@@ -207,12 +90,7 @@ export default function CambiarContrasenaPage() {
           </button>
 
           {/* Success Message */}
-          {successMessage && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center gap-3">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <p className="text-green-700">{successMessage}</p>
-            </div>
-          )}
+          <StatusMessage message={successMessage} variant="success" className="mb-6 p-4" />
 
           {/* Contenedor Principal */}
           <Card className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
@@ -256,88 +134,53 @@ export default function CambiarContrasenaPage() {
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-lime-500">Cambiar Contraseña</h2>
 
-                {passwordError && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
-                    <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
-                    <p className="text-red-700">{passwordError}</p>
-                  </div>
-                )}
+                <StatusMessage message={passwordError} className="p-4" />
 
-                <form onSubmit={handleChangePassword} className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-5">
                   {/* Contraseña Actual */}
-                  <div className="space-y-2">
-                    <Label className="text-green-700 font-medium">Contraseña Actual</Label>
-                    <div className="relative">
-                      <Input
-                        type={showPasswords.current ? "text" : "password"}
-                        value={currentPassword}
-                        maxLength={PASSWORD_MAX_LENGTH}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        className="border-input text-foreground pr-10"
-                        placeholder="Ingresa tu contraseña actual"
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setShowPasswords((prev) => ({ ...prev, current: !prev.current }))
-                        }
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
+                  <PasswordInputField
+                    id="current-password"
+                    label="Contraseña Actual"
+                    value={currentPassword}
+                    maxLength={passwordMaxLength}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    showPassword={showPasswords.current}
+                    onToggleVisibility={() => togglePasswordVisibility("current")}
+                    labelClassName="text-green-700"
+                    inputClassName="border-input text-foreground"
+                    placeholder="Ingresa tu contraseña actual"
+                  />
 
                   {/* Contraseña Nueva */}
-                  <div className="space-y-2">
-                    <Label className="text-green-700 font-medium">Contraseña Nueva</Label>
-                    <div className="relative">
-                      <Input
-                        type={showPasswords.new ? "text" : "password"}
-                        value={newPassword}
-                        maxLength={PASSWORD_MAX_LENGTH}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        className="border-input text-foreground pr-10"
-                        placeholder="Ingresa tu nueva contraseña"
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setShowPasswords((prev) => ({ ...prev, new: !prev.new }))
-                        }
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
+                  <PasswordInputField
+                    id="new-password"
+                    label="Contraseña Nueva"
+                    value={newPassword}
+                    maxLength={passwordMaxLength}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    showPassword={showPasswords.new}
+                    onToggleVisibility={() => togglePasswordVisibility("new")}
+                    labelClassName="text-green-700"
+                    inputClassName="border-input text-foreground"
+                    placeholder="Ingresa tu nueva contraseña"
+                  />
 
                   {/* Confirmar Contraseña */}
-                  <div className="space-y-2">
-                    <Label className="text-green-700 font-medium">Confirmar Contraseña</Label>
-                    <div className="relative">
-                      <Input
-                        type={showPasswords.confirm ? "text" : "password"}
-                        value={confirmPassword}
-                        maxLength={PASSWORD_MAX_LENGTH}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="border-input text-foreground pr-10"
-                        placeholder="Confirma tu nueva contraseña"
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setShowPasswords((prev) => ({ ...prev, confirm: !prev.confirm }))
-                        }
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
+                  <PasswordInputField
+                    id="confirm-password"
+                    label="Confirmar Contraseña"
+                    value={confirmPassword}
+                    maxLength={passwordMaxLength}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    showPassword={showPasswords.confirm}
+                    onToggleVisibility={() => togglePasswordVisibility("confirm")}
+                    labelClassName="text-green-700"
+                    inputClassName="border-input text-foreground"
+                    placeholder="Confirma tu nueva contraseña"
+                  />
 
                   {/* Botones */}
-                  <div className="mt-8 grid grid-cols-2 gap-50">
+                  <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Button
                       type="submit"
                       disabled={saving}
@@ -367,14 +210,15 @@ export default function CambiarContrasenaPage() {
                 </form>
 
                 {/* Información adicional */}
-                <div className="bg-muted/40 border border-border rounded-lg p-4 mt-6">
+                <div className="mt-6">
                   <h3 className="font-semibold text-foreground mb-2">Recomendaciones de Seguridad:</h3>
                   <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li>• Usa exactamente 8 caracteres</li>
+                    <li>• Usa entre 8 y 20 caracteres</li>
                     <li>• Incluye al menos una letra, un número y un carácter especial</li>
                     <li>• Evita usar información personal (nombre, fecha de nacimiento)</li>
                     <li>• No compartas tu contraseña con nadie</li>
                   </ul>
+                  <PasswordPolicyHint className="mt-3 p-4" />
                 </div>
               </div>
             </div>
