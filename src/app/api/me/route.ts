@@ -14,6 +14,8 @@ export async function GET(req: Request) {
     const result = await pool.query(
       `SELECT 
         u.id_publico,
+        u.tipo_documento,
+        u.numero_documento,
         u.nombres, 
         u.apellidos, 
         c.correo_usuario AS correo, 

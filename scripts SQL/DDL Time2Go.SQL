@@ -466,12 +466,11 @@ CREATE TABLE IF NOT EXISTS tabla_denuncia_eventos (
     FOREIGN KEY (id_categoria_denuncia, id_motivo_denuncia)
     REFERENCES  tabla_motivos_denuncia_eventos(id_categoria_denuncia, id_motivo_denuncia)
 );
+
 CREATE TABLE IF NOT EXISTS tabla_reserva_eventos (
     id_reserva_evento                       INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     id_usuario                              INT                      	 NOT NULL,
     id_evento                               INT                          NOT NULL,
-    tipo_documento                          tip_doc                      NOT NULL,
-    numero_documento                        VARCHAR                      NOT NULL,
     fecha_reserva                           TIMESTAMP                    NOT NULL        DEFAULT CURRENT_TIMESTAMP,
     estado                                  BOOLEAN                      NOT NULL        DEFAULT 'TRUE',
     fecha_actualizacion                     TIMESTAMP                    NOT NULL        DEFAULT CURRENT_TIMESTAMP,
@@ -481,15 +480,18 @@ CREATE TABLE IF NOT EXISTS tabla_reserva_eventos (
 );
 
 CREATE TABLE IF NOT EXISTS tabla_reserva_asistentes (
-    id_reserva_asistente                     INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    id_reserva_evento                        INT                          NOT NULL,
-    nombre_asistente                         VARCHAR                      NOT NULL        CHECK (char_length(nombre_asistente) >= 3),
-    tipo_documento                           tip_doc                      NOT NULL,
-    numero_documento                         VARCHAR                      NOT NULL,
-    fecha_creacion                           TIMESTAMP   WITH TIME ZONE   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion                      TIMESTAMP   WITH TIME ZONE                   DEFAULT CURRENT_TIMESTAMP,
+    id_reserva_asistente                    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_reserva_evento                       INT                          NOT NULL,
+    tipo_documento                          tip_doc                      NOT NULL,
+    numero_documento                        VARCHAR                      NOT NULL,
+    nombres                                 VARCHAR                      NOT NULL        CHECK (char_length(nombres) >= 3),
+    apellidos                               VARCHAR                      NOT NULL        CHECK (char_length(apellidos) >= 3),
+    telefono                                DECIMAL(10,0)               NOT NULL        CHECK (telefono > 2999999999),
+    correo                                  VARCHAR                      NOT NULL,
+    fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                   DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_reserva_asistente_doc UNIQUE (id_reserva_evento, numero_documento),
-    FOREIGN KEY (id_reserva_evento)          REFERENCES  tabla_reserva_eventos(id_reserva_evento)
+    FOREIGN KEY (id_reserva_evento)         REFERENCES  tabla_reserva_eventos(id_reserva_evento)
 );
 
 CREATE TABLE IF NOT EXISTS tabla_boleteria (

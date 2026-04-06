@@ -1,0 +1,48 @@
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+type ReservationCancelDialogProps = {
+  open: boolean;
+  isCancelling: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+};
+
+export function ReservationCancelDialog({
+  open,
+  isCancelling,
+  onClose,
+  onConfirm,
+}: ReservationCancelDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Confirmar cancelación de reserva</DialogTitle>
+          <DialogDescription>
+            ¿Estás seguro que deseas cancelar esta reserva? Esta acción cambiará su estado y podrás volver a reservar el evento después.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" className="hover:scale-103" onClick={onClose} disabled={isCancelling}>
+            No, conservar reserva
+          </Button>
+          <Button
+            onClick={onConfirm}
+            className="bg-gradient-to-tr from-fuchsia-700 to-red-500 hover:scale-103 hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-500 text-white"
+            disabled={isCancelling}
+          >
+            {isCancelling ? "Cancelando..." : "Sí, cancelar reserva"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
