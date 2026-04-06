@@ -238,7 +238,7 @@ BEGIN
 
   RETURN jsonb_build_object(
     'ok', TRUE
-  );
+  );x
 EXCEPTION
   WHEN invalid_text_representation
     OR numeric_value_out_of_range THEN

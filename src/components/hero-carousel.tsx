@@ -95,7 +95,7 @@ function useSwipe(onNext: () => void, onPrev: () => void) {
 
 // ─── Dimensiones responsive compartidas ──────────────────────────────────────
 
-const viewportClass = "relative w-full aspect-[16/9] sm:aspect-[2/1] lg:aspect-[21/10] overflow-hidden"
+const viewportClass = "relative w-full aspect-[16/9] overflow-hidden"
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ESTILO A — Fade Editorial
@@ -111,7 +111,7 @@ export function HeroCarouselFade({ slides, interval = 5000 }: CarouselProps) {
 
   return (
     <div
-      className="group mx-auto w-full max-w-[2520px] overflow-hidden rounded-2xl shadow-xl"
+      className="group mx-auto w-full max-w-[1280px] overflow-hidden rounded-2xl shadow-xl"
       onMouseEnter={pauseHover}
       onMouseLeave={resumeHover}
       role="region"
@@ -217,14 +217,14 @@ export function HeroCarouselFade({ slides, interval = 5000 }: CarouselProps) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 export function HeroCarouselSlide({ slides, interval = 5000 }: CarouselProps) {
-  const { current, prev, direction, go, next, back, pauseHover, resumeHover } = useCarousel(slides.length, interval)
+  const { current, prev, direction, next, back, pauseHover, resumeHover } = useCarousel(slides.length, interval)
   const swipe = useSwipe(next, back)
 
   if (slides.length === 0) return null
 
   return (
     <div
-      className="mx-auto w-full max-w-[2520px]"
+      className="mx-auto w-full max-w-[1280px]"
       onMouseEnter={pauseHover}
       onMouseLeave={resumeHover}
       role="region"
@@ -318,32 +318,6 @@ export function HeroCarouselSlide({ slides, interval = 5000 }: CarouselProps) {
           {current + 1} / {slides.length}
         </div>
       </div>
-
-      {/* Numeración debajo (tomada del estilo C) */}
-      {slides.length > 1 && (
-        <div className="mt-4 flex items-center justify-center gap-2">
-          {slides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => go(i, i > current ? "next" : "prev")}
-              aria-label={`Ir a imagen ${i + 1}`}
-              className="rounded-full flex items-center justify-center font-semibold transition-all duration-300"
-              style={{
-                width: i === current ? "34px" : "28px",
-                height: i === current ? "34px" : "28px",
-                fontSize: i === current ? "12px" : "11px",
-                background: i === current ? "rgb(101,163,13)" : "rgba(148,163,184,0.2)",
-                color: i === current ? "white" : "rgb(71,85,105)",
-                boxShadow: i === current ? "0 0 16px rgba(101,163,13,0.45)" : "none",
-                border: i === current ? "2px solid rgba(255,255,255,0.7)" : "1.5px solid rgba(100,116,139,0.3)",
-                transform: i === current ? "translateY(-1px)" : "translateY(0)",
-              }}
-            >
-              {i + 1}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   )
 }
@@ -363,7 +337,7 @@ export function HeroCarouselZoom({ slides, interval = 5000 }: CarouselProps) {
 
   return (
     <div
-      className="mx-auto w-full max-w-[2520px] rounded-2xl overflow-hidden shadow-2xl"
+      className="mx-auto w-full max-w-[1280px] rounded-2xl overflow-hidden shadow-2xl"
       onMouseEnter={pauseHover}
       onMouseLeave={resumeHover}
       role="region"

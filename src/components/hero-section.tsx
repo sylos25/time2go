@@ -60,8 +60,8 @@ export function HeroSection() {
   if (loading) {
     return (
       <section className="overflow-hidden px-3 pt-16 pb-12 sm:px-4 lg:px-6 lg:pt-20 lg:pb-20">
-        <div className="mx-auto mt-8 w-full max-w-[2520px]">
-          <div className="w-full aspect-[16/9] sm:aspect-[2/1] lg:aspect-[21/10] rounded-2xl bg-muted animate-pulse" />
+        <div className="mx-auto mt-8 w-full max-w-[1280px]">
+          <div className="w-full aspect-[16/9] rounded-2xl bg-muted animate-pulse" />
         </div>
       </section>
     )
@@ -71,7 +71,7 @@ export function HeroSection() {
 
   return (
     <section className="overflow-hidden px-3 pt-16 pb-12 sm:px-4 lg:px-6 lg:pt-20 lg:pb-20">
-      <div className="mx-auto mt-8 w-full max-w-[2520px]">
+      <div className="mx-auto mt-8 w-full max-w-[1280px]">
         {/* Variantes disponibles en hero-carousel.tsx: Fade, Slide, Zoom */}
         <HeroCarouselSlide slides={slides} />
       </div>
