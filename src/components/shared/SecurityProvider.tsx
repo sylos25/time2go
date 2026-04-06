@@ -1,106 +1,88 @@
 "use client"
 
-import { useEffect, useState, useRef, useCallback } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { RefreshCw, ShieldAlert } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
-const DEVTOOLS_THRESHOLD = 160   // px - umbral más alto para evitar falsos positivos
-const BLOCK_AFTER_SECONDS = 2    // segundos continuos hasta bloquear
-const CHECK_INTERVAL_MS = 500    // chequeo periódico de respaldo
+/** Diferencia outer/inner típica con DevTools acoplado; un poco alta para reducir falsos positivos. */
+const DEVTOOLS_THRESHOLD_PX = 180
+/** Tiempo sostenido antes de mostrar la capa (evita parpadeos al redimensionar). */
+const BLOCK_AFTER_SECONDS = 2.5
+const CHECK_INTERVAL_MS = 400
+const INIT_DELAY_MS = 800
 
-function DevToolsBlocker() {
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 999999,
-        background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: "system-ui, sans-serif",
-        userSelect: "none",
-      }}
-    >
-      <div style={{ marginBottom: "24px" }}>
-        <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
-            fill="#f87171"
-          />
-        </svg>
-      </div>
-
-      <h1 style={{
-        color: "#f1f5f9",
-        fontSize: "clamp(20px, 3vw, 28px)",
-        fontWeight: 700,
-        margin: "0 0 12px",
-        textAlign: "center",
-        letterSpacing: "-0.5px",
-      }}>
-        Acceso restringido
-      </h1>
-
-      <p style={{
-        color: "#94a3b8",
-        fontSize: "clamp(13px, 2vw, 15px)",
-        margin: "0 0 8px",
-        textAlign: "center",
-        maxWidth: "360px",
-        lineHeight: 1.6,
-        padding: "0 24px",
-      }}>
-        Las herramientas de desarrollo están bloqueadas en esta plataforma.
-      </p>
-
-      <p style={{
-        color: "#64748b",
-        fontSize: "clamp(11px, 1.5vw, 13px)",
-        margin: 0,
-        textAlign: "center",
-      }}>
-        Cierra el inspector para continuar navegando.
-      </p>
-
-      <div style={{ marginTop: "36px", display: "flex", gap: "8px", alignItems: "center" }}>
-        {[0, 1, 2].map((i) => (
-          <div key={i} style={{
-            width: "8px", height: "8px", borderRadius: "50%", background: "#6366f1",
-            animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite`,
-          }} />
-        ))}
-      </div>
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 0.3; transform: scale(0.8); }
-          50%       { opacity: 1;   transform: scale(1.2); }
-        }
-      `}</style>
-    </div>
-  )
+function isTypingTarget(el: EventTarget | null): boolean {
+  if (!(el instanceof HTMLElement)) return false
+  if (el.isContentEditable) return true
+  const tag = el.tagName
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT"
 }
 
-function checkDevToolsOpen(): boolean {
-  // Método 1: Diferencia de tamaño de ventana
+function isDevToolsShortcut(e: KeyboardEvent): boolean {
+  if (e.code === "F12") return true
+  if (e.ctrlKey && e.shiftKey && (e.code === "KeyI" || e.code === "KeyJ" || e.code === "KeyC")) {
+    return true
+  }
+  if (e.metaKey && e.altKey && (e.code === "KeyI" || e.code === "KeyJ")) {
+    return true
+  }
+  return false
+}
+
+function checkDevToolsOpenBySize(): boolean {
   const widthDiff = window.outerWidth - window.innerWidth
   const heightDiff = window.outerHeight - window.innerHeight
-  
-  // Solo considerar si la diferencia es significativa (DevTools suele ocupar >160px)
-  const sizeCheck = widthDiff > DEVTOOLS_THRESHOLD || heightDiff > DEVTOOLS_THRESHOLD
-  
-  return sizeCheck
+  return widthDiff > DEVTOOLS_THRESHOLD_PX || heightDiff > DEVTOOLS_THRESHOLD_PX
+}
+
+function DevToolsBlocker({ onRecheck }: { onRecheck: () => void }) {
+  return (
+    <div
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="security-overlay-title"
+      aria-describedby="security-overlay-desc"
+      className="fixed inset-0 z-999999 flex flex-col items-center justify-center bg-linear-to-br from-green-950 via-slate-950 to-emerald-950 px-6 py-10 text-center"
+    >
+      <div className="mb-6 rounded-2xl bg-white/5 p-5 ring-1 ring-lime-400/25 shadow-lg shadow-black/20">
+        <ShieldAlert className="mx-auto size-14 text-lime-400" aria-hidden />
+      </div>
+      <h1
+        id="security-overlay-title"
+        className="mb-3 max-w-md text-balance text-2xl font-bold tracking-tight text-white"
+      >
+        Panel de desarrollo detectado
+      </h1>
+      <p
+        id="security-overlay-desc"
+        className="mb-2 max-w-md text-pretty text-sm leading-relaxed text-slate-300"
+      >
+        Cierra las herramientas de desarrollador del navegador (inspector) para seguir usando Time2Go con normalidad.
+      </p>
+      <p className="mb-8 max-w-md text-pretty text-xs leading-relaxed text-slate-500">
+        Si no las abriste tú, suele ser un falso positivo: maximiza la ventana, reduce barras laterales o extensiones que
+        estrechan la página, y pulsa &quot;Verificar de nuevo&quot;.
+      </p>
+      <Button
+        type="button"
+        variant="outline"
+        className="border-lime-500/40 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+        onClick={onRecheck}
+      >
+        <RefreshCw className="size-4" aria-hidden />
+        Verificar de nuevo
+      </Button>
+    </div>
+  )
 }
 
 export default function SecurityProvider({ children }: { children: React.ReactNode }) {
   const [blocked, setBlocked] = useState(false)
   const secondsRef = useRef(0)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const initializedRef = useRef(false)
+  const intervalRef = useRef<number | null>(null)
 
   const evaluate = useCallback(() => {
-    if (checkDevToolsOpen()) {
+    if (checkDevToolsOpenBySize()) {
       secondsRef.current += CHECK_INTERVAL_MS / 1000
       if (secondsRef.current >= BLOCK_AFTER_SECONDS) {
         setBlocked(true)
@@ -111,102 +93,39 @@ export default function SecurityProvider({ children }: { children: React.ReactNo
     }
   }, [])
 
-  useEffect(() => {
-    // Evitar múltiples inicializaciones
-    if (initializedRef.current) return
-    initializedRef.current = true
+  const handleRecheck = useCallback(() => {
+    secondsRef.current = 0
+    if (checkDevToolsOpenBySize()) {
+      secondsRef.current = BLOCK_AFTER_SECONDS
+      setBlocked(true)
+    } else {
+      setBlocked(false)
+    }
+  }, [])
 
+  useEffect(() => {
     const isLocal =
       window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1" ||
       window.location.hostname.startsWith("192.168.")
 
-    // Desactivar en entorno local para desarrollo
     if (isLocal) return
 
-    // Esperar un momento antes de empezar a detectar para evitar falsos positivos al cargar
-    const initTimeout = setTimeout(() => {
-      // ── Bloqueos de teclado ──────────────────────────────────────────────
-      const handleContextMenu = (e: MouseEvent) => e.preventDefault()
+    let disposed = false
+    let cleanupListeners: (() => void) | undefined
+
+    const initTimeout = window.setTimeout(() => {
+      if (disposed) return
 
       const handleKeyDown = (e: KeyboardEvent) => {
-        // Bloquear DevTools
-        if (
-          e.key === "F12" ||
-          (e.ctrlKey && e.shiftKey && e.key === "I") ||
-          (e.ctrlKey && e.shiftKey && e.key === "i") ||
-          (e.ctrlKey && e.shiftKey && e.key === "J") ||
-          (e.ctrlKey && e.shiftKey && e.key === "j") ||
-          (e.ctrlKey && e.shiftKey && e.key === "C") ||
-          (e.ctrlKey && e.shiftKey && e.key === "c") ||
-          (e.ctrlKey && e.key === "U") ||
-          (e.ctrlKey && e.key === "u")
-        ) {
-          e.preventDefault()
-          e.stopPropagation()
-          return false
-        }
-
-        // Bloquear cerrar pestaña/ventana (Ctrl+W, Alt+F4)
-        if (
-          (e.ctrlKey && e.key === "w") ||
-          (e.ctrlKey && e.key === "W") ||
-          (e.altKey && e.key === "F4")
-        ) {
-          e.preventDefault()
-          e.stopPropagation()
-          return false
-        }
-
-        // Bloquear navegación con teclado (Alt+Izquierda, Alt+Derecha, Backspace para navegar)
-        if (
-          (e.altKey && e.key === "ArrowLeft") ||
-          (e.altKey && e.key === "ArrowRight") ||
-          (e.key === "Backspace" && (e.target as HTMLElement).tagName !== "INPUT" && (e.target as HTMLElement).tagName !== "TEXTAREA")
-        ) {
-          e.preventDefault()
-          e.stopPropagation()
-          return false
-        }
+        if (isTypingTarget(e.target)) return
+        if (!isDevToolsShortcut(e)) return
+        e.preventDefault()
+        e.stopPropagation()
       }
 
-      // Bloquear navegación hacia atrás/adelante con el mouse
-      const handleMouseNav = (e: MouseEvent) => {
-        // Botones 3 y 4 del mouse son "atrás" y "adelante"
-        if (e.button === 3 || e.button === 4) {
-          e.preventDefault()
-          e.stopPropagation()
-        }
-      }
-
-      // Bloquear el evento beforeunload para evitar navegación accidental
-      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-        // Solo mostrar advertencia si está bloqueado
-        if (blocked) {
-          e.preventDefault()
-          e.returnValue = ""
-          return ""
-        }
-      }
-
-      // Bloquear navegación con popstate (botones atrás/adelante del navegador)
-      const handlePopState = (e: PopStateEvent) => {
-        // Volver a la página actual para bloquear la navegación
-        window.history.pushState(null, "", window.location.href)
-      }
-
-      // Inicializar el historial para poder interceptar popstate
-      window.history.pushState(null, "", window.location.href)
-
-      document.addEventListener("contextmenu", handleContextMenu)
-      document.addEventListener("keydown", handleKeyDown, true)
-      document.addEventListener("mousedown", handleMouseNav)
-      window.addEventListener("beforeunload", handleBeforeUnload)
-      window.addEventListener("popstate", handlePopState)
-
-      // ── Detección reactiva al resize ───────────────────────────────────
-      const handleResize = () => {
-        if (checkDevToolsOpen()) {
+      const bumpOnResize = () => {
+        if (checkDevToolsOpenBySize()) {
           secondsRef.current += 0.5
           if (secondsRef.current >= BLOCK_AFTER_SECONDS) {
             setBlocked(true)
@@ -217,39 +136,34 @@ export default function SecurityProvider({ children }: { children: React.ReactNo
         }
       }
 
-      window.addEventListener("resize", handleResize)
+      document.addEventListener("keydown", handleKeyDown, true)
+      window.addEventListener("resize", bumpOnResize)
+      intervalRef.current = window.setInterval(evaluate, CHECK_INTERVAL_MS)
 
-      // ── Chequeo periódico de respaldo ──────────────────────────────────
-      intervalRef.current = setInterval(evaluate, CHECK_INTERVAL_MS)
-
-      // Cleanup function guardada para el return
-      const cleanup = () => {
-        document.removeEventListener("contextmenu", handleContextMenu)
+      cleanupListeners = () => {
         document.removeEventListener("keydown", handleKeyDown, true)
-        document.removeEventListener("mousedown", handleMouseNav)
-        window.removeEventListener("beforeunload", handleBeforeUnload)
-        window.removeEventListener("popstate", handlePopState)
-        window.removeEventListener("resize", handleResize)
-        if (intervalRef.current) clearInterval(intervalRef.current)
+        window.removeEventListener("resize", bumpOnResize)
+        if (intervalRef.current != null) {
+          window.clearInterval(intervalRef.current)
+          intervalRef.current = null
+        }
       }
-
-      // Guardar cleanup en ref para usarlo en el return del useEffect
-      ;(window as any).__securityCleanup = cleanup
-    }, 1000) // Esperar 1 segundo antes de iniciar detección
+    }, INIT_DELAY_MS)
 
     return () => {
-      clearTimeout(initTimeout)
-      if ((window as any).__securityCleanup) {
-        (window as any).__securityCleanup()
-        delete (window as any).__securityCleanup
+      disposed = true
+      window.clearTimeout(initTimeout)
+      cleanupListeners?.()
+      if (intervalRef.current != null) {
+        window.clearInterval(intervalRef.current)
+        intervalRef.current = null
       }
-      if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [evaluate, blocked])
+  }, [evaluate])
 
   return (
     <>
-      {blocked && <DevToolsBlocker />}
+      {blocked ? <DevToolsBlocker onRecheck={handleRecheck} /> : null}
       {children}
     </>
   )

@@ -128,7 +128,7 @@ BEGIN
         CASE
           WHEN p_only_mine = TRUE THEN e.id_usuario = p_id_usuario_solicitante
           WHEN p_include_all = TRUE THEN TRUE
-          ELSE e.estado = TRUE
+          ELSE e.estado = TRUE AND COALESCE(e.proceso, FALSE) = FALSE
         END
       )
       AND (p_id_evento IS NULL OR e.id_evento = p_id_evento)

@@ -13,6 +13,9 @@ export type ReservaAsistente = Readonly<{
 
 export type ReservaDetalle = Readonly<{
   id_reserva_evento: Nullable<number>;
+  /** Para enlaces (p. ej. PDF /eventos/{slug}). */
+  id_evento: Nullable<number>;
+  id_publico_evento: Nullable<string>;
   nombre_evento: Nullable<string>;
   url_imagen_evento: Nullable<string>;
   categoria_nombre: Nullable<string>;

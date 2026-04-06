@@ -63,6 +63,8 @@ export const normalizeReservaDetalle = (value: unknown): ReservaDetalle | null =
 
   return {
     id_reserva_evento: asNumber(record.id_reserva_evento),
+    id_evento: asNumber(record.id_evento),
+    id_publico_evento: asString(record.id_publico_evento),
     nombre_evento: asString(record.nombre_evento),
     url_imagen_evento: asString(record.url_imagen_evento),
     categoria_nombre: asString(record.categoria_nombre),

@@ -33,6 +33,21 @@ function buildConfig(): PoolConfig {
   };
 }
 
-const pool = new Pool(buildConfig());
+/**
+ * Un solo Pool por proceso Node (HMR en dev y warm instances en serverless reutilizan globalThis).
+ * Sigue siendo necesario un pooler (PgBouncer) y PGPOOL_MAX bajo por instancia si hay mucha concurrencia.
+ */
+const globalForPool = globalThis as typeof globalThis & {
+  __time2goPgPool?: Pool;
+};
+
+function getOrCreatePool(): Pool {
+  if (!globalForPool.__time2goPgPool) {
+    globalForPool.__time2goPgPool = new Pool(buildConfig());
+  }
+  return globalForPool.__time2goPgPool;
+}
+
+const pool = getOrCreatePool();
 
 export default pool;

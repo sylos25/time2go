@@ -101,7 +101,11 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       }
 
       const motivoBanRes = await client.query(
-        "SELECT id_motivo_ban, motivo_ban FROM tabla_motivos_ban WHERE id_motivo_ban = $1 LIMIT 1",
+        `SELECT m.id_motivo_ban, m.motivo_ban, c.nombre_categoria AS nombre_categoria_ban
+         FROM tabla_motivos_ban m
+         INNER JOIN tabla_categoria_ban c ON c.id_categoria_ban = m.id_categoria_ban
+         WHERE m.id_motivo_ban = $1
+         LIMIT 1`,
         [motivoBanId]
       )
       if (!motivoBanRes.rows || motivoBanRes.rows.length === 0) {
@@ -109,6 +113,7 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       }
 
       const motivoBanDescripcion = String(motivoBanRes.rows[0].motivo_ban)
+      const nombreCategoriaBan = String(motivoBanRes.rows[0].nombre_categoria_ban || "")
 
       await client.query("BEGIN")
 
@@ -136,7 +141,9 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       )
       const correo = correoRes.rows[0]?.correo
       if (correo) {
-        await sendBanNotificationEmail(correo, motivoBanDescripcion, inicioBan, finBan)
+        await sendBanNotificationEmail(correo, motivoBanDescripcion, inicioBan, finBan, {
+          categoriaBan: nombreCategoriaBan,
+        })
       }
 
       return NextResponse.json({
@@ -162,7 +169,6 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
         [userIdToToggle]
       )
       const correo = correoRes.rows[0]?.correo
-      console.log("Correo desbaneo:", correo)
       if (correo) {
         await sendUnbanNotificationEmail(correo)
       }

@@ -126,6 +126,16 @@ export function TermsConditionsModal({ open, onAccept, onReject }: TermsConditio
             </div>
           </div>
 
+          <div className="flex gap-3">
+            <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-lime-100 text-xs font-bold text-lime-800">5</div>
+            <div>
+              <p className="mb-1 text-sm font-semibold text-gray-800">Reporte de eventos</p>
+              <p className="text-sm leading-relaxed text-gray-600">
+                Podrás reportar eventos usando categorías y motivos definidos por la plataforma. Solo se admite un reporte por usuario y evento. El uso abusivo o en mala fe de los reportes puede conllevar medidas sobre tu cuenta. El equipo revisará los casos según las condiciones del servicio.
+              </p>
+            </div>
+          </div>
+
           <div className="rounded-xl border border-green-100 bg-green-50 p-3">
             <p className="text-xs leading-relaxed text-gray-500">
               Para más información consulta nuestra <a href="/legal#privacidad" target="_blank" className="cursor-pointer font-medium text-green-600 hover:underline">Política de Privacidad completa</a> disponible en el sitio web.

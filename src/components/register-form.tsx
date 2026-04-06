@@ -184,6 +184,10 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             <Button type="button" variant="link" className="text-green-600 hover:text-lime-500 p-0 h-auto cursor-pointer" onClick={openTermsModal}>
               términos y condiciones de servicio
             </Button>
+            <span className="text-sm text-muted-foreground">
+              {" "}
+              (incluye privacidad, baneos y reporte de eventos).
+            </span>
           </div>
           {touchedTerminosCondiciones && !terminosCondiciones && <p className="text-red-500 text-xs">Debe aceptar los términos y condiciones</p>}
         </div>

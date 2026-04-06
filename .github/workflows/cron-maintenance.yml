@@ -1,0 +1,33 @@
+# Ejecuta tareas de mantenimiento vía POST /api/cron/maintenance (misma imagen que la app desplegada).
+# Configura en GitHub → Settings → Secrets:
+#   CRON_SECRET       — mismo valor que en el servidor (.env)
+#   MAINTENANCE_URL   — URL absoluta, ej. https://tudominio.com/api/cron/maintenance
+#
+# Puedes disparar el workflow manualmente (workflow_dispatch) o activar el schedule.
+
+name: Cron maintenance
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 06:15 UTC diario (~1:15 AM Bogotá según horario de verano)
+    - cron: "15 6 * * *"
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST maintenance
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          MAINTENANCE_URL: ${{ secrets.MAINTENANCE_URL }}
+        run: |
+          if [ -z "$CRON_SECRET" ] || [ -z "$MAINTENANCE_URL" ]; then
+            echo "Omitido: define CRON_SECRET y MAINTENANCE_URL en los secretos del repositorio."
+            exit 0
+          fi
+          curl -sS -X POST "$MAINTENANCE_URL" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            -d '{}' \
+            -w "\nHTTP %{http_code}\n"

@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { getRequesterIdLenient } from "@/lib/auth-request";
+import { sendEventApprovedEmail } from "@/lib/email";
+
+function appBaseUrl(): string {
+  return (
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.APP_URL ||
+    process.env.BETTER_AUTH_URL ||
+    "http://localhost:3000"
+  );
+}
 
 async function getAuthenticatedUser(req: Request, client: any) {
   const userId = await getRequesterIdLenient(req);
@@ -36,7 +46,10 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
       return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
     }
 
-    const eventCheck = await client.query("SELECT estado, destacado FROM tabla_eventos WHERE id_evento = $1", [eventId]);
+    const eventCheck = await client.query(
+      "SELECT estado, destacado, id_usuario, nombre_evento FROM tabla_eventos WHERE id_evento = $1",
+      [eventId]
+    );
     if (!eventCheck.rows || eventCheck.rows.length === 0) {
       return NextResponse.json({ ok: false, message: "Event not found" }, { status: 404 });
     }
@@ -113,6 +126,25 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
 
     if (!result.rows || result.rows.length === 0) {
       return NextResponse.json({ ok: false, message: "Event not found" }, { status: 404 });
+    }
+
+    if (requestedStatus && eventCheck.rows[0].estado !== true) {
+      const orgId = Number(eventCheck.rows[0].id_usuario);
+      if (Number.isFinite(orgId) && orgId > 0) {
+        const mailRes = await client.query(
+          "SELECT correo_usuario AS correo FROM tabla_usuarios_credenciales WHERE id_usuario = $1 LIMIT 1",
+          [orgId]
+        );
+        const correoOrg = mailRes.rows[0]?.correo;
+        if (correoOrg) {
+          void sendEventApprovedEmail(
+            String(correoOrg),
+            String(result.rows[0].nombre_evento || eventCheck.rows[0].nombre_evento || "Tu evento"),
+            appBaseUrl(),
+            eventId
+          );
+        }
+      }
     }
 
     return NextResponse.json({

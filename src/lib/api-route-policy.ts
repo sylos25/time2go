@@ -23,6 +23,8 @@ export function extractBearerOrCookieToken(request: NextRequest): string | null 
 const PUBLIC_GET_PATHS = new Set([
   "/api/categoria_boleto",
   "/api/categoria_evento",
+  /** Catálogo de categorías/motivos para denunciar eventos (lectura pública). */
+  "/api/denuncias-eventos/catalogo",
   "/api/departamentos",
   "/api/home-config",
   "/api/llamar_pais",
@@ -44,6 +46,8 @@ const PUBLIC_POST_PATHS = new Set([
   "/api/send-validation-email",
   "/api/usuario_formulario",
   "/api/wompi/webhook",
+  /** Mantenimiento programado: el handler exige CRON_SECRET (Bearer o cabecera dedicada). */
+  "/api/cron/maintenance",
 ]);
 
 // GET/HEAD en rutas que suelen ser solo POST: evita 401 si el cliente o un proxy hace HEAD.

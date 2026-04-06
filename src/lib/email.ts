@@ -213,11 +213,75 @@ export async function sendContactMessageEmail({
   }
 }
 
+function sanitizeEmailHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br/>")
+}
+
+export async function sendEventApprovedEmail(
+  email: string,
+  eventName: string,
+  baseUrl: string,
+  eventId: number
+): Promise<boolean> {
+  try {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      console.error("Email no configurado: falta EMAIL_USER o EMAIL_PASSWORD")
+      return false
+    }
+
+    const bannerUrl = "https://res.cloudinary.com/dljthy97e/image/upload/v1770842202/banner_top_azaedp.jpg"
+    const eventUrl = `${baseUrl.replace(/\/$/, "")}/eventos/${eventId}`
+    const safeName = sanitizeEmailHtml(eventName)
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: `Time2Go - Evento aprobado: ${eventName.replace(/\s+/g, " ").slice(0, 120)}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; font-size: 15px;">
+          <img src="${bannerUrl}" alt="Banner" style="width: 100%; border-radius: 8px 8px 0 0; display: block;" />
+          <div style="background: linear-gradient(to bottom left, #a21caf, #dc2626); padding: 20px; border-radius: 0; color: white; text-align: center;">
+            <h2 style="margin: 0; font-size: 22px;">Evento aprobado</h2>
+          </div>
+          <div style="padding: 24px; background: #FBFEFF; border-radius: 0 0 8px 8px;">
+            <p style="font-size: 15px;">¡Hola!</p>
+            <p style="font-size: 15px;">Tu evento en <strong>Time2Go</strong> ya fue <strong>aprobado</strong> y puede mostrarse en el catálogo público.</p>
+            <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #15803d; margin: 20px 0;">
+              <p style="margin: 0; color: #111827; font-size: 16px; font-weight: bold;">${safeName}</p>
+            </div>
+            <div style="text-align: center; margin: 28px 0;">
+              <a href="${eventUrl}" style="background: linear-gradient(to top right, #15803d, #84cc16); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 15px;">
+                Ver evento
+              </a>
+            </div>
+            <p style="color: #666; font-size: 14px;">O abre este enlace en tu navegador:</p>
+            <p style="background: white; padding: 10px; border-radius: 4px; word-break: break-all; font-size: 12px; color: #15803d;">${eventUrl}</p>
+            <hr style="border: none; border-top: 1px solid #F7FCFF; margin: 20px 0;">
+            <p style="font-size: 12px; color: #999;">Este es un correo automático, por favor no respondas directamente a este mensaje.</p>
+          </div>
+        </div>
+      `,
+    }
+
+    const info = await transporter.sendMail(mailOptions)
+    console.log("Correo de evento aprobado enviado:", info.response)
+    return true
+  } catch (error) {
+    console.error("Error enviando correo de evento aprobado:", error)
+    return false
+  }
+}
+
 export async function sendBanNotificationEmail(
   email: string,
   motivo: string,
   inicioBan?: Date,
-  finBan?: Date
+  finBan?: Date,
+  extra?: { categoriaBan?: string }
 ): Promise<boolean> {
   try {
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
@@ -227,11 +291,10 @@ export async function sendBanNotificationEmail(
 
     const bannerUrl = "https://res.cloudinary.com/dljthy97e/image/upload/v1770842202/banner_top_azaedp.jpg"
 
-    const sanitizedMotivo = motivo
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/\n/g, "<br/>")
+    const categoria = (extra?.categoriaBan || "").trim()
+    const sanitizedCategoria = categoria ? sanitizeEmailHtml(categoria) : ""
+
+    const sanitizedMotivo = sanitizeEmailHtml(motivo)
 
     const formatDate = (date: Date) =>
       date.toLocaleString("es-CO", {
@@ -259,8 +322,17 @@ export async function sendBanNotificationEmail(
           </div>
           <div style="padding: 24px; background: #FBFEFF; border-radius: 0 0 8px 8px;">
             <p style="font-size: 15px;">¡Hola!</p>
-            <p style="font-size: 15px;">Te informamos que tu cuenta en <strong>Time2Go</strong> ha sido <strong>desactivada</strong> por el siguiente motivo:</p>
+            <p style="font-size: 15px;">Te informamos que tu cuenta en <strong>Time2Go</strong> ha sido <strong>desactivada</strong> según el registro de moderación:</p>
+            ${
+              sanitizedCategoria
+                ? `<div style="background: #fef2f2; padding: 12px 15px; border-radius: 6px; margin: 16px 0 0 0;">
+              <p style="margin: 0; color: #991b1b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: bold;">Categoría</p>
+              <p style="margin: 6px 0 0 0; color: #111827; font-size: 15px;">${sanitizedCategoria}</p>
+            </div>`
+                : ""
+            }
             <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #dc2626; margin: 20px 0;">
+              <p style="margin: 0 0 8px 0; color: #991b1b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: bold;">Motivo</p>
               <p style="margin: 0; color: #111827; font-size: 15px;">
                 ${sanitizedMotivo}
               </p>

@@ -1,9 +1,19 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { CheckCircle, ChevronDown, Loader2, Search, Users, UserX } from "lucide-react"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { CheckCircle, Loader2, Search, ShieldBan, Users, UserX } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 // Categorías y motivos de ban hardcodeados
 const CATEGORIAS_BAN = [
@@ -80,22 +90,34 @@ export default function DashboardUsersPage() {
     id_usuario: 0,
     id_categoria: 0,
     id_motivo_ban: 0,
+    inicio_ban: "",
     fin_ban: "",
   })
   const [banUserName, setBanUserName] = useState("")
+  const [banMessage, setBanMessage] = useState<{ type: "error" | "success"; text: string } | null>(null)
 
   const formatDateTimeLocal = (date: Date) => {
     const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
     return local.toISOString().slice(0, 16)
   }
 
+  const addDaysToDateTimeLocal = (dateTimeLocal: string, days: number) => {
+    const d = new Date(dateTimeLocal)
+    if (Number.isNaN(d.getTime())) return formatDateTimeLocal(new Date(Date.now() + days * 86400000))
+    d.setTime(d.getTime() + days * 86400000)
+    return formatDateTimeLocal(d)
+  }
+
   const openBanModal = (user: any) => {
-    const fin = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    const inicio = formatDateTimeLocal(new Date())
+    const fin = formatDateTimeLocal(new Date(Date.now() + 7 * 86400000))
+    setBanMessage(null)
     setBanForm({
       id_usuario: user.id_usuario,
       id_categoria: 0,
       id_motivo_ban: 0,
-      fin_ban: formatDateTimeLocal(fin),
+      inicio_ban: inicio,
+      fin_ban: fin,
     })
     setBanUserName(`${user.nombres} ${user.apellidos}`)
     setBanModalOpen(true)
@@ -168,20 +190,32 @@ export default function DashboardUsersPage() {
     const idUsuario = banForm.id_usuario
     const responsable = meUser?.id_usuario
 
+    setBanMessage(null)
+
     if (!Number.isFinite(idUsuario) || idUsuario <= 0) {
-      alert("ID de usuario inválido")
+      setBanMessage({ type: "error", text: "ID de usuario inválido" })
       return
     }
     if (!banForm.id_motivo_ban || banForm.id_motivo_ban <= 0) {
-      alert("Debes seleccionar un motivo de ban")
+      setBanMessage({ type: "error", text: "Selecciona categoría y motivo de suspensión." })
       return
     }
-    if (!banForm.fin_ban) {
-      alert("Debes seleccionar la fecha final del ban")
+    if (!banForm.inicio_ban || !banForm.fin_ban) {
+      setBanMessage({ type: "error", text: "Indica fecha de inicio y fecha final." })
+      return
+    }
+    const inicio = new Date(banForm.inicio_ban)
+    const fin = new Date(banForm.fin_ban)
+    if (Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime())) {
+      setBanMessage({ type: "error", text: "Las fechas no son válidas." })
+      return
+    }
+    if (fin <= inicio) {
+      setBanMessage({ type: "error", text: "La fecha final debe ser posterior al inicio." })
       return
     }
     if (!Number.isFinite(responsable) || responsable <= 0) {
-      alert("No se pudo identificar al responsable del ban")
+      setBanMessage({ type: "error", text: "No se pudo identificar al responsable del ban." })
       return
     }
 
@@ -199,6 +233,7 @@ export default function DashboardUsersPage() {
           action: "ban",
           id_usuario: idUsuario,
           motivo_ban: banForm.id_motivo_ban,
+          inicio_ban: banForm.inicio_ban,
           fin_ban: banForm.fin_ban,
           responsable,
         }),
@@ -206,15 +241,16 @@ export default function DashboardUsersPage() {
 
       const data = await res.json().catch(() => ({}))
       if (!res.ok || !data?.ok) {
-        alert(data?.message || "No se pudo bannear el usuario")
+        setBanMessage({ type: "error", text: data?.message || "No se pudo suspender la cuenta." })
         return
       }
 
       setUsers((prev) => prev.map((item) => (item.id_usuario === idUsuario ? { ...item, estado: false } : item)))
       setBanModalOpen(false)
+      setBanMessage(null)
     } catch (error) {
       console.error("Error banneando usuario", error)
-      alert("No se pudo bannear el usuario")
+      setBanMessage({ type: "error", text: "No se pudo suspender la cuenta. Intenta de nuevo." })
     } finally {
       setBanSubmitting(false)
       setUpdatingUserId(null)
@@ -319,27 +355,45 @@ export default function DashboardUsersPage() {
                   <td className="px-6 py-4 text-center text-sm text-green-900 dark:text-emerald-100/90">{u.telefono || "-"}</td>
                   <td className="px-6 py-4 text-center text-sm text-green-900 dark:text-emerald-100/90">{u.correo}</td>
                   <td className="px-6 py-4 text-center text-sm text-green-900 dark:text-emerald-100/90">{u.validacion_correo ? "Sí" : "No"}</td>
-                  <td className="px-6 py-4 text-center text-sm text-green-900 dark:text-emerald-100/90">{u.estado ? "Activo" : "Inactivo"}</td>
+                  <td className="px-6 py-4 text-center">
+                    {u.estado ? (
+                      <Badge
+                        variant="outline"
+                        className="border-lime-400/80 bg-lime-100/90 text-green-900 shadow-none dark:border-emerald-600/60 dark:bg-emerald-900/50 dark:text-emerald-100"
+                      >
+                        Activo
+                      </Badge>
+                    ) : (
+                      <Badge variant="destructive" className="shadow-none">
+                        Suspendido
+                      </Badge>
+                    )}
+                  </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <button
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="destructive"
                         onClick={() => openBanModal(u)}
                         disabled={updatingUserId === u.id_usuario || !u.estado}
-                        title="Bannear usuario"
-                        aria-label="Bannear usuario"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Suspender cuenta"
+                        aria-label="Suspender cuenta"
+                        className="h-9 w-9 shrink-0"
                       >
                         {updatingUserId === u.id_usuario ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserX className="h-4 w-4" />}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon"
                         onClick={() => validateUser(u.id_usuario)}
                         disabled={updatingUserId === u.id_usuario || u.estado}
-                        title="Validar usuario"
-                        aria-label="Validar usuario"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white bg-green-700 hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Reactivar cuenta"
+                        aria-label="Reactivar cuenta"
+                        className="h-9 w-9 shrink-0 bg-green-700 text-white hover:bg-green-800 disabled:opacity-50"
                       >
                         {updatingUserId === u.id_usuario ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                      </button>
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -382,115 +436,183 @@ export default function DashboardUsersPage() {
         )}
       </div>
 
-      <Dialog open={banModalOpen} onOpenChange={setBanModalOpen}>
-        <DialogContent className="max-w-lg w-full">
-          <DialogHeader>
-            <DialogTitle className="text-red-600">Registrar Ban de Usuario</DialogTitle>
+      <Dialog
+        open={banModalOpen}
+        onOpenChange={(open) => {
+          setBanModalOpen(open)
+          if (!open) setBanMessage(null)
+        }}
+      >
+        <DialogContent className="max-h-[min(90vh,720px)] w-full max-w-lg overflow-y-auto sm:max-w-xl">
+          <DialogHeader className="space-y-1 text-left">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300">
+                <ShieldBan className="h-5 w-5" aria-hidden />
+              </div>
+              <div className="min-w-0 flex-1">
+                <DialogTitle className="text-lg text-foreground">Suspender cuenta</DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground">
+                  El usuario no podrá iniciar sesión hasta la fecha de fin. Se registra el motivo y queda constancia del responsable.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Info del usuario a banear */}
-            <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-sm text-red-800 dark:text-red-200">
-                <span className="font-medium">Usuario a banear:</span> {banUserName}
-              </p>
-              <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                ID: {banForm.id_usuario}
-              </p>
-            </div>
+            <Card className="gap-0 border-red-200/70 bg-linear-to-br from-red-50/90 to-rose-50/30 py-4 shadow-none dark:border-red-900/50 dark:from-red-950/35 dark:to-rose-950/20">
+              <CardHeader className="px-4 pb-2 pt-0">
+                <CardTitle className="text-sm font-medium text-red-900 dark:text-red-200">Cuenta afectada</CardTitle>
+                <CardDescription className="text-red-800/90 dark:text-red-300/90">
+                  {banUserName}
+                  <span className="mt-1 block font-mono text-xs text-red-700/80 dark:text-red-400/90">ID {banForm.id_usuario}</span>
+                </CardDescription>
+              </CardHeader>
+            </Card>
 
-            {/* Selector de categoría */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Categoría del motivo</label>
-              <div className="relative">
-                <select
-                  value={banForm.id_categoria}
-                  onChange={(e) => {
-                    setBanForm((prev) => ({ 
-                      ...prev, 
-                      id_categoria: Number(e.target.value),
-                      id_motivo_ban: 0 // Resetear motivo al cambiar categoría
-                    }))
-                  }}
-                  className="w-full appearance-none border border-border bg-card text-foreground rounded-md px-3 py-2.5 pr-10 cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500"
-                >
-                  <option value={0}>Selecciona una categoría</option>
-                  {CATEGORIAS_BAN.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.nombre}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              </div>
-            </div>
-
-            {/* Selector de motivo */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Motivo específico</label>
-              <div className="relative">
-                <select
-                  value={banForm.id_motivo_ban}
-                  onChange={(e) => setBanForm((prev) => ({ ...prev, id_motivo_ban: Number(e.target.value) }))}
-                  disabled={!banForm.id_categoria}
-                  className="w-full appearance-none border border-border bg-card text-foreground rounded-md px-3 py-2.5 pr-10 cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <option value={0}>
-                    {banForm.id_categoria ? "Selecciona un motivo" : "Primero selecciona una categoría"}
-                  </option>
-                  {motivosFiltrados.map((motivo) => (
-                    <option key={motivo.id} value={motivo.id}>
-                      {motivo.motivo}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              </div>
-            </div>
-
-            {/* Mostrar motivo seleccionado */}
-            {banForm.id_motivo_ban > 0 && (
-              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-                <p className="text-sm text-amber-800 dark:text-amber-200">
-                  <span className="font-medium">Motivo seleccionado:</span>{" "}
-                  {MOTIVOS_BAN.find((m) => m.id === banForm.id_motivo_ban)?.motivo}
-                </p>
+            {banMessage?.type === "error" && (
+              <div
+                role="alert"
+                className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              >
+                {banMessage.text}
               </div>
             )}
 
-            {/* Fecha fin del ban */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Fecha final del ban</label>
-              <input
-                type="datetime-local"
-                value={banForm.fin_ban}
-                onChange={(e) => setBanForm((prev) => ({ ...prev, fin_ban: e.target.value }))}
-                className="w-full border border-border bg-card text-foreground rounded-md px-3 py-2"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Por defecto se establece 7 días a partir de ahora
-              </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="ban-categoria">Categoría</Label>
+                <Select
+                  value={banForm.id_categoria ? String(banForm.id_categoria) : undefined}
+                  onValueChange={(v) =>
+                    setBanForm((prev) => ({
+                      ...prev,
+                      id_categoria: Number(v),
+                      id_motivo_ban: 0,
+                    }))
+                  }
+                >
+                  <SelectTrigger id="ban-categoria" className="h-11 w-full">
+                    <SelectValue placeholder="Elige una categoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIAS_BAN.map((cat) => (
+                      <SelectItem key={cat.id} value={String(cat.id)}>
+                        {cat.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="ban-motivo">Motivo</Label>
+                <Select
+                  value={banForm.id_motivo_ban ? String(banForm.id_motivo_ban) : undefined}
+                  onValueChange={(v) => setBanForm((prev) => ({ ...prev, id_motivo_ban: Number(v) }))}
+                  disabled={!banForm.id_categoria}
+                >
+                  <SelectTrigger id="ban-motivo" className="h-11 w-full min-w-0">
+                    <SelectValue
+                      placeholder={
+                        banForm.id_categoria ? "Selecciona el motivo concreto" : "Primero elige una categoría"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {motivosFiltrados.map((motivo) => (
+                      <SelectItem key={motivo.id} value={String(motivo.id)} className="whitespace-normal py-2">
+                        {motivo.motivo}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            {/* Info del responsable */}
-            <div className="p-3 bg-muted/50 border border-border rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium">Responsable del ban:</span>{" "}
-                {meUser?.nombres} {meUser?.apellidos} (ID: {meUser?.id_usuario})
-              </p>
+            {banForm.id_motivo_ban > 0 && (
+              <div className="rounded-lg border border-amber-200/80 bg-amber-50/80 px-3 py-2.5 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/25 dark:text-amber-100">
+                <span className="font-medium text-amber-900 dark:text-amber-200">Resumen: </span>
+                {MOTIVOS_BAN.find((m) => m.id === banForm.id_motivo_ban)?.motivo}
+              </div>
+            )}
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="ban-inicio">Inicio</Label>
+                <input
+                  id="ban-inicio"
+                  type="datetime-local"
+                  value={banForm.inicio_ban}
+                  onChange={(e) => setBanForm((prev) => ({ ...prev, inicio_ban: e.target.value }))}
+                  className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ban-fin">Fin</Label>
+                <input
+                  id="ban-fin"
+                  type="datetime-local"
+                  value={banForm.fin_ban}
+                  onChange={(e) => setBanForm((prev) => ({ ...prev, fin_ban: e.target.value }))}
+                  className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                />
+              </div>
             </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Duración desde el inicio</p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { days: 7, label: "7 días" },
+                  { days: 14, label: "14 días" },
+                  { days: 30, label: "30 días" },
+                  { days: 90, label: "90 días" },
+                ].map(({ days, label }) => (
+                  <Button
+                    key={days}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="border-lime-200/80 text-green-900 hover:bg-lime-50 dark:border-emerald-800 dark:text-emerald-100 dark:hover:bg-emerald-950/50"
+                    onClick={() =>
+                      setBanForm((prev) => ({
+                        ...prev,
+                        fin_ban: addDaysToDateTimeLocal(prev.inicio_ban || formatDateTimeLocal(new Date()), days),
+                      }))
+                    }
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <Card className="gap-0 border-border/80 bg-muted/30 py-3 shadow-none">
+              <CardContent className="px-4 py-0 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Responsable: </span>
+                {meUser?.nombres} {meUser?.apellidos}
+                <span className="mt-0.5 block font-mono text-xs">ID {meUser?.id_usuario}</span>
+              </CardContent>
+            </Card>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setBanModalOpen(false)} disabled={banSubmitting}>
               Cancelar
             </Button>
-            <Button 
-              className="bg-red-600 hover:bg-red-700 text-white" 
-              onClick={submitBan} 
-              disabled={banSubmitting || !banForm.id_motivo_ban}
+            <Button
+              className="bg-red-600 text-white hover:bg-red-700"
+              onClick={submitBan}
+              disabled={banSubmitting || !banForm.id_categoria || !banForm.id_motivo_ban}
             >
-              {banSubmitting ? "Guardando..." : "Confirmar Ban"}
+              {banSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Guardando…
+                </>
+              ) : (
+                "Confirmar suspensión"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -24,6 +24,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import Valoraciones from "./valoraciones";
+import { EventoReportarDialog } from "@/components/evento-reportar-dialog";
 
 const LeafletMap = dynamic(() => import("@/components/leaflet-map"), {
   ssr: false,
@@ -56,6 +57,8 @@ export default function EventLanding() {
   const [loading, setLoading] = useState(true);
   const [creatorMode, setCreatorMode] = useState(false);
   const [userRole, setUserRole] = useState<number | null>(null);
+  const [meUserId, setMeUserId] = useState<number | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
   const [checkingReservation, setCheckingReservation] = useState(false);
   const [alreadyReserved, setAlreadyReserved] = useState(false);
@@ -213,14 +216,21 @@ export default function EventLanding() {
 
         if (!meRes.ok) {
           setUserRole(null);
+          setMeUserId(null);
+          setIsAuthenticated(false);
           return;
         }
 
         const meJson = await meRes.json().catch(() => ({}));
         const role = Number(meJson?.user?.id_rol || 0);
         setUserRole(Number.isFinite(role) && role > 0 ? role : null);
+        const uid = Number(meJson?.user?.id_usuario);
+        setMeUserId(Number.isFinite(uid) && uid > 0 ? uid : null);
+        setIsAuthenticated(true);
       } catch {
         setUserRole(null);
+        setMeUserId(null);
+        setIsAuthenticated(false);
       }
     };
 
@@ -713,6 +723,16 @@ export default function EventLanding() {
                 <Valoraciones eventId={event.id_evento} />
               </CardContent>
             </Card>
+
+            <EventoReportarDialog
+              eventId={Number(event.id_evento)}
+              isAuthenticated={isAuthenticated}
+              creatorMode={creatorMode}
+              isOwnEvent={
+                meUserId != null &&
+                Number(event.id_usuario) === meUserId
+              }
+            />
           </div>
           <div className="space-y-6">
             <Card className="border-blue-200 bg-card/80 backdrop-blur-sm shadow-lg">

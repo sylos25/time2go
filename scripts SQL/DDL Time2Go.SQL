@@ -21,6 +21,9 @@ DROP TABLE IF EXISTS tabla_evento_informacion_importante;
 DROP TABLE IF EXISTS tabla_valores;
 DROP TABLE IF EXISTS tabla_categoria_boletos;
 DROP TABLE IF EXISTS tabla_cambio_rol_usuario;
+DROP TABLE IF EXISTS tabla_denuncia_eventos;
+DROP TABLE IF EXISTS tabla_motivos_denuncia_eventos;
+DROP TABLE IF EXISTS tabla_categoria_denuncia_evento;
 DROP TABLE IF EXISTS tabla_valoraciones;
 DROP TABLE IF EXISTS tabla_imagenes_eventos;
 DROP TABLE IF EXISTS tabla_eventos_x_dias;
@@ -431,19 +434,19 @@ CREATE TABLE IF NOT EXISTS tabla_valoraciones (
 );
 
 CREATE TABLE IF NOT EXISTS tabla_categoria_denuncia_evento (
-    id_categoria_denuncia                   INT                          PRIMARY KEY,
+    id_categoria_denuncia                   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     nombre_categoria_denuncia               VARCHAR                      NOT NULL       UNIQUE  CHECK (char_length(nombre_categoria_denuncia) >= 3),
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS tabla_motivos_denuncia_eventos (
+    id_motivo_denuncia_evento               INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     id_categoria_denuncia                   INT                          NOT NULL,
-    id_motivo_denuncia                      INT                          NOT NULL,
-    descripcion_motivo                      VARCHAR                      NOT NULL       UNIQUE  CHECK (char_length(descripcion_motivo) >= 10),
+    nombre_motivo                           VARCHAR                      NOT NULL       UNIQUE  CHECK (char_length(nombre_motivo) >= 3),
+    descripcion_motivo                      VARCHAR                      NULL           CHECK (descripcion_motivo IS NULL OR char_length(descripcion_motivo) >= 10),
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id_categoria_denuncia, id_motivo_denuncia),                            -- PK compuesta correcta
     FOREIGN KEY (id_categoria_denuncia)     REFERENCES  tabla_categoria_denuncia_evento(id_categoria_denuncia)
 );
 
@@ -451,20 +454,18 @@ CREATE TABLE IF NOT EXISTS tabla_denuncia_eventos (
     id_denuncia_evento                      INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     id_usuario                              INT                          NOT NULL,
     id_evento                               INT                          NOT NULL,
-    id_categoria_denuncia                   INT                          NOT NULL,       -- Necesaria para la FK compuesta
-    id_motivo_denuncia                      INT                          NOT NULL,
-    descripcion_adicional                   TEXT,                                        -- El usuario puede dar contexto extra (opcional)
+    id_motivo_denuncia_evento               INT                          NOT NULL,
+    descripcion_adicional                   TEXT,
     estado                                  VARCHAR(20)                  NOT NULL       DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'revisando', 'resuelta', 'desestimada')),
-    revisada_por                            INT,                                         -- Moderador que la revisó
+    revisada_por                            INT,
     fecha_resolucion                        TIMESTAMP   WITH TIME ZONE,
     fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_denuncia_usuario_evento   UNIQUE (id_usuario, id_evento),              -- Un usuario solo puede denunciar un evento una vez
+    CONSTRAINT uq_denuncia_usuario_evento   UNIQUE (id_usuario, id_evento),
     FOREIGN KEY (id_usuario)                REFERENCES  tabla_usuarios(id_usuario),
     FOREIGN KEY (id_evento)                 REFERENCES  tabla_eventos(id_evento),
     FOREIGN KEY (revisada_por)              REFERENCES  tabla_usuarios(id_usuario),
-    FOREIGN KEY (id_categoria_denuncia, id_motivo_denuncia)
-    REFERENCES  tabla_motivos_denuncia_eventos(id_categoria_denuncia, id_motivo_denuncia)
+    FOREIGN KEY (id_motivo_denuncia_evento) REFERENCES  tabla_motivos_denuncia_eventos(id_motivo_denuncia_evento)
 );
 
 CREATE TABLE IF NOT EXISTS tabla_reserva_eventos (

@@ -61,6 +61,14 @@ const sections = [
         text: "Los organizadores son responsables de la veracidad de la información de los eventos publicados, de contar con los permisos necesarios para su realización, y de dar cumplimiento a la normativa vigente aplicable a cada evento.",
       },
       {
+        subtitle: "Reporte de eventos por usuarios",
+        text: "Los usuarios autenticados pueden reportar un evento publicado cuando consideren que incumple las normas, eligiendo una categoría y un motivo predefinidos en la plataforma. Cada usuario puede enviar como máximo un reporte por evento. Los reportes deben hacerse de buena fe: el uso indebido o reiterado de la herramienta de reporte puede ser considerado una infracción y tratarse según las reglas de la comunidad y estas condiciones.",
+      },
+      {
+        subtitle: "Tratamiento de reportes por el equipo Time2Go",
+        text: "El personal autorizado (moderación y administración) revisará los reportes, podrá cambiar su estado (pendiente, en revisión, resuelto o desestimado) y registrará la actuación correspondiente. La decisión sobre la visibilidad del evento o medidas adicionales corresponde a Time2Go conforme a sus políticas internas y a la ley aplicable.",
+      },
+      {
         subtitle: "Limitación de responsabilidad",
         text: "Time2Go no se hace responsable de la cancelación, modificación o incumplimiento de los eventos por parte de los organizadores, ni de daños derivados del uso de la plataforma más allá de lo establecido por la ley colombiana aplicable.",
       },
@@ -92,7 +100,7 @@ const sections = [
       },
       {
         subtitle: "Finalidad del tratamiento",
-        text: "Los datos se tratan para: (i) gestionar el registro y autenticación del usuario; (ii) permitir la reserva y gestión de eventos; (iii) enviar comunicaciones relacionadas con el servicio; (iv) cumplir obligaciones legales.",
+        text: "Los datos se tratan para: (i) gestionar el registro y autenticación del usuario; (ii) permitir la reserva y gestión de eventos; (iii) enviar comunicaciones relacionadas con el servicio; (iv) gestionar reportes de eventos (incluida la categoría y el motivo elegidos, el texto opcional del usuario y el estado del trámite ante el equipo autorizado); (v) cumplir obligaciones legales.",
       },
       {
         subtitle: "Base legal",
@@ -186,9 +194,9 @@ export default function LegalPage() {
               </div>
               <DialogTitle className="text-center text-xl">Aviso Legal Importante</DialogTitle>
               <DialogDescription className="text-center text-gray-600 mt-2">
-                Al utilizar la plataforma Time2Go, aceptas cumplir con nuestras condiciones del servicio, 
-                política de privacidad y demás términos legales aquí descritos. Te recomendamos leer 
-                detenidamente cada sección antes de continuar.
+                Al utilizar la plataforma Time2Go, aceptas cumplir con nuestras condiciones del servicio,
+                política de privacidad y demás términos legales aquí descritos, incluidas las reglas sobre
+                reportes de eventos y moderación. Te recomendamos leer detenidamente cada sección antes de continuar.
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-center mt-4">

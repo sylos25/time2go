@@ -16,6 +16,7 @@ import {
   Menu,
   Search,
   ShieldCheck,
+  Flag,
   Users,
 } from "lucide-react"
 import { SessionMonitor } from "@/components/session-monitor"
@@ -44,6 +45,7 @@ export default function DashboardLayout({
   const [meUser, setMeUser] = useState<DashboardUser | null>(null)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const isAdmin = Number(meUser?.id_rol) === 4
+  const isModOrAdmin = Number(meUser?.id_rol) === 3 || Number(meUser?.id_rol) === 4
 
   useEffect(() => {
     const syncTheme = () => {
@@ -156,9 +158,10 @@ export default function DashboardLayout({
       { href: "/dashboard/sitios-mapa", name: "Sitios (Mapa)", icon: MapPin },
       { href: "/dashboard/ver-datos", name: "Ver Datos", icon: Search },
       { href: "/dashboard/usuarios", name: "Usuarios", icon: Users },
+      ...(isModOrAdmin ? [{ href: "/dashboard/denuncias-eventos", name: "Reportes de eventos", icon: Flag }] : []),
       ...(isAdmin ? [{ href: "/dashboard/administrador", name: "Administrador", icon: ShieldCheck }] : []),
     ],
-    [canManageEvents, isAdmin]
+    [canManageEvents, isAdmin, isModOrAdmin]
   )
 
   if (loading || authorized === null) {
