@@ -41,7 +41,7 @@ export function CreateEventContactScheduleSection({ form }: CreateEventContactSc
                 }
               }}
               placeholder="Teléfono 1"
-              className="rounded-xl"
+              className="rounded-xl focus-visible:border-green-500 focus-visible:ring-green-500"
               maxLength={10}
               inputMode="numeric"
               pattern="\d*"
@@ -73,7 +73,7 @@ export function CreateEventContactScheduleSection({ form }: CreateEventContactSc
                   }
                 }}
                 placeholder="Teléfono 2"
-                className="rounded-xl"
+                className="rounded-xl focus-visible:border-green-500 focus-visible:ring-green-500"
                 maxLength={10}
                 inputMode="numeric"
                 pattern="\d*"
@@ -138,7 +138,7 @@ export function CreateEventContactScheduleSection({ form }: CreateEventContactSc
             dateFormat="dd/MM/yyyy"
             minDate={today ?? undefined}
             placeholderText="01/01/2025"
-            className="cursor-pointer w-75 rounded-xl border-border bg-card text-foreground shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+            className="cursor-pointer w-75 rounded-xl border-border bg-card text-foreground shadow-sm focus:border-green-500 focus:ring-green-500 p-2"
           />
           {formErrors.fecha_inicio && <p className="text-xs text-red-600">{formErrors.fecha_inicio}</p>}
         </div>
@@ -159,7 +159,7 @@ export function CreateEventContactScheduleSection({ form }: CreateEventContactSc
             dateFormat="dd/MM/yyyy"
             minDate={newEvent.fecha_inicio || today || undefined}
             placeholderText="31/12/2025"
-            className="cursor-pointer w-75 rounded-xl border-border bg-card text-foreground shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+            className="cursor-pointer w-75 rounded-xl border-border bg-card text-foreground shadow-sm focus:border-green-500 focus:ring-green-500 p-2"
           />
           {formErrors.fecha_final && <p className="text-xs text-red-600">{formErrors.fecha_final}</p>}
         </div>
@@ -177,7 +177,7 @@ export function CreateEventContactScheduleSection({ form }: CreateEventContactSc
               clearFieldError("hora_inicio")
               setNewEvent({ ...newEvent, hora_inicio: e.target.value })
             }}
-            className="w-75 rounded-xl"
+            className="w-75 rounded-xl focus-visible:border-green-500 focus-visible:ring-green-500"
           />
           {formErrors.hora_inicio && <p className="text-xs text-red-600">{formErrors.hora_inicio}</p>}
         </div>
@@ -193,7 +193,7 @@ export function CreateEventContactScheduleSection({ form }: CreateEventContactSc
               clearFieldError("hora_final")
               setNewEvent({ ...newEvent, hora_final: e.target.value })
             }}
-            className="w-75 rounded-xl"
+            className="w-75 rounded-xl focus-visible:border-green-500 focus-visible:ring-green-500"
           />
           {formErrors.hora_final && <p className="text-xs text-red-600">{formErrors.hora_final}</p>}
         </div>

@@ -3,6 +3,8 @@ export interface CategoriaEvento {
   nombre: string
 }
 
+export type EventFilterType = "category" | "time" | "price" | "access"
+
 export interface RawEventImage {
   id_imagen_evento?: number
   url_imagen_evento?: string

@@ -49,7 +49,7 @@ export function AdditionalInfoSection({
                 onUpdate(index, "detalle", value)
               }}
               placeholder="Ej: Ingreso desde las 7:00 PM, no se permite reingreso"
-              className="rounded-xl min-h-[90px]"
+              className="rounded-xl min-h-[90px] focus-visible:border-green-500 focus-visible:ring-green-500"
               maxLength={50}
             />
             <p className="text-xs text-muted-foreground">

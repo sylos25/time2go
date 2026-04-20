@@ -58,20 +58,74 @@ export function EventsGrid({
         const isFavorite = favoriteIds.includes(eventId)
         const isFavoritePending = favoritePendingIds.includes(eventId)
         const isLinkCopied = copiedEventId === eventId
+        const rawEventType = event.raw?.tipo_evento ?? event.raw?.tipo
+        let eventType = "Tipo no especificado"
+        if (typeof rawEventType === "string" && rawEventType.trim().length > 0) {
+          eventType = rawEventType.trim()
+        } else if (rawEventType && typeof rawEventType === "object") {
+          const eventTypeObj = rawEventType as Record<string, unknown>
+          const candidate =
+            eventTypeObj.nombre ?? eventTypeObj.tipo ?? eventTypeObj.descripcion ?? eventTypeObj.label
+          if (typeof candidate === "string" && candidate.trim().length > 0) {
+            eventType = candidate.trim()
+          }
+        }
+
+        const formatDateLabel = (value: unknown, fallback = "Por confirmar") => {
+          if (!value) return fallback
+          const date = new Date(String(value))
+          if (Number.isNaN(date.getTime())) return fallback
+          return new Intl.DateTimeFormat("es-CO", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          }).format(date)
+        }
+
+        const formatTimeLabel = (value: unknown, fallback = "Por confirmar") => {
+          if (!value || typeof value !== "string") return fallback
+          const match = value.match(/^(\d{1,2}):(\d{2})/)
+          if (!match) return fallback
+          let hours = Number(match[1])
+          const minutes = match[2]
+          if (!Number.isFinite(hours) || hours < 0 || hours > 23) return fallback
+          const period = hours >= 12 ? "p.m." : "a.m."
+          hours = hours % 12 || 12
+          return `${hours}:${minutes} ${period}`
+        }
+
+        const startDate = formatDateLabel(event.raw?.fecha_inicio)
+        const endDate = formatDateLabel(event.raw?.fecha_final, startDate)
+        const startTime = formatTimeLabel(event.raw?.hora_inicio)
+        const endTime = formatTimeLabel(event.raw?.hora_final)
+        const rawRatingCandidates = [
+          event.raw?.promedio_valoracion,
+          event.raw?.promedioValoracion,
+          event.raw?.valoracion_promedio,
+          event.raw?.calificacion_promedio,
+          event.raw?.rating_promedio,
+          event.raw?.rating,
+          event.raw?.valoracion,
+        ]
+        const numericRating = rawRatingCandidates
+          .map((value) => Number(value))
+          .find((value) => Number.isFinite(value) && value >= 0)
+        const rating = typeof numericRating === "number" ? numericRating : 0
+        const ratingLabel = rating > 0 ? rating.toFixed(1) : "0"
 
         return (
           <Card
             key={event.id_evento}
-            className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-card/90 backdrop-blur-sm border-border rounded-2xl overflow-hidden"
+            className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-card/90 dark:bg-card/80 backdrop-blur-sm border border-border/70 dark:border-border/50 rounded-2xl overflow-hidden"
           >
             <div className="relative overflow-hidden">
-              <div className="w-full h-52 bg-gray-100">
+              <div className="w-full h-44 bg-slate-100 dark:bg-slate-800/70">
                 {eventImages.length > 0 ? (
                   <>
                     <img
                       src={eventImages[safeSelectedIndex].url_imagen_evento || "/placeholder.svg"}
                       alt={event.title}
-                      className="w-full h-52 object-cover group-hover:scale-110 transition-transform duration-500"
+                      className="w-full h-44 object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                     <div className="absolute bottom-2 left-2 right-2 flex gap-2 overflow-x-auto p-1">
                       {eventImages.map((image, index) => (
@@ -93,7 +147,7 @@ export function EventsGrid({
                   <img
                     src="/placeholder.svg"
                     alt={event.title}
-                    className="w-full h-52 object-cover"
+                    className="w-full h-44 object-cover"
                   />
                 )}
 
@@ -107,7 +161,7 @@ export function EventsGrid({
                   size="icon"
                   variant="secondary"
                   type="button"
-                  className="h-9 w-9 bg-card/90 backdrop-blur-sm rounded-full hover:bg-card"
+                  className="h-9 w-9 bg-card/90 dark:bg-slate-800/90 dark:text-slate-100 backdrop-blur-sm rounded-full hover:bg-card dark:hover:bg-slate-700"
                   onClick={() => onToggleFavorite(eventId)}
                   disabled={isFavoritePending}
                   aria-label={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
@@ -118,7 +172,7 @@ export function EventsGrid({
                   size="icon"
                   variant="secondary"
                   type="button"
-                  className="h-9 w-9 bg-card/90 backdrop-blur-sm rounded-full hover:bg-card"
+                  className="h-9 w-9 bg-card/90 dark:bg-slate-800/90 dark:text-slate-100 backdrop-blur-sm rounded-full hover:bg-card dark:hover:bg-slate-700"
                   onClick={() => onShareEvent(event)}
                   aria-label={isLinkCopied ? "Enlace copiado" : "Copiar enlace del evento"}
                   title={isLinkCopied ? "Enlace copiado" : "Copiar enlace del evento"}
@@ -128,45 +182,57 @@ export function EventsGrid({
               </div>
             </div>
 
-            <CardContent className="p-6">
-              <div className="space-y-2 mb-4">
+            <CardContent className="px-6 pt-2 pb-6">
+              <div className="space-y-2 mb-6">
+                <h3
+                  title={event.title}
+                  className="text-2xl leading-tight font-bold text-green-700 dark:text-lime-400 group-hover:text-lime-500 dark:group-hover:text-lime-500 transition-colors line-clamp-2"
+                >
+                  {event.title}
+                </h3>
+
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <Badge className="rounded-full bg-emerald-500 text-white">
+                    {event.category}
+                  </Badge>
+                  <Badge className="rounded-full bg-teal-500 text-white">
+                    {eventType}
+                  </Badge>
+                  <div className="ml-auto flex items-center gap-1 text-amber-500">
+                    <Star className="h-4 w-4 fill-amber-500" />
+                    <span className="text-sm font-semibold text-foreground">{ratingLabel}</span>
+                  </div>
+                </div>
+
+                <p className="text-muted-foreground line-clamp-2">{event.description}</p>
+
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4 mr-3" />
-                  {event.date} • {event.time}
+                  {startDate} - {endDate}
                 </div>
-              </div>
 
-              <div className="flex items-center justify-between mb-3">
-                <Badge variant="outline" className="rounded-full">
-                  {event.category}
-                </Badge>
-                <div className="flex items-center gap-1">
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="text-sm font-medium">4.8</span>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Calendar className="h-4 w-4 mr-3" />
+                  {startTime} - {endTime}
                 </div>
-              </div>
 
-              <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-lime-500 transition-colors">
-                {event.title}
-              </h3>
-              <p className="text-muted-foreground mb-4 line-clamp-2">{event.description}</p>
-              <div className="space-y-2 mb-6">
                 <div className="flex items-center text-sm text-muted-foreground">
                   <MapPin className="h-4 w-4 mr-3" />
-                  {event.location}
+                  Lugar: {event.location}
                 </div>
+
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Users className="h-4 w-4 mr-3" />
-                  Aforo para {Number(event.attendees).toLocaleString("es-CO")}
+                  Aforo: {Number(event.attendees).toLocaleString("es-CO")}
                 </div>
               </div>
 
               <div className="flex items-center justify-between">
-                <div className="text-2xl font-bold text-lime-500">{formatEventPrice(event.price)}</div>
+                <div className="text-2xl font-bold text-green-600 dark:text-emerald-400">{formatEventPrice(event.price)}</div>
                 <Button
                   type="button"
                   onClick={() => onViewDetails(event.id_evento)}
-                  className="bg-gradient-to-tr from-fuchsia-500 to-red-600 hover:from-fuchsia-600 hover:to-red-700 rounded-xl px-6"
+                  className="bg-rose-600 hover:bg-rose-500 dark:bg-rose-500 dark:hover:bg-rose-600 hover:scale-103 rounded-xl px-6 text-white"
                 >
                   Detalles
                 </Button>

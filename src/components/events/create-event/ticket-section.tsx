@@ -93,7 +93,7 @@ export function TicketSection({
                     onUpdateBoleta(index, "nombre_boleto", valor)
                   }}
                   placeholder="Ej: General, VIP, Early Bird, etc."
-                  className="rounded-xl text-sm"
+                  className="rounded-xl text-sm focus-visible:border-green-500 focus-visible:ring-green-500"
                   maxLength={30}
                 />
                 <p className="text-xs text-muted-foreground">
@@ -116,7 +116,7 @@ export function TicketSection({
                     isAllowed={(values) => values.floatValue === undefined || values.floatValue <= 500000000}
                     onValueChange={(values) => onUpdateBoleta(index, "precio_boleto", values.value)}
                     placeholder="$0"
-                    className="rounded-xl"
+                    className="rounded-xl focus-visible:border-green-500 focus-visible:ring-green-500"
                   />
                 </div>
                 <div className="space-y-2">
@@ -135,7 +135,7 @@ export function TicketSection({
                     isAllowed={(values) => values.floatValue === undefined || values.floatValue <= 500000000}
                     onValueChange={(values) => onUpdateBoleta(index, "servicio", values.value)}
                     placeholder="$0"
-                    className="rounded-xl"
+                    className="rounded-xl focus-visible:border-green-500 focus-visible:ring-green-500"
                   />
                 </div>
               </div>

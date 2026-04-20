@@ -65,7 +65,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               id="firstname" type="text" value={formData.firstName}
               onChange={(e) => handleNameChange("firstName", e)} onBlur={() => handleBlur("firstName")}
               maxLength={MAX_NAME_LENGTH}
-              className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${touchedFields.firstName && !formData.firstName ? "border-red-500 ring-red-500" : "border-gray-300"}`}
+              className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-green-500 ${touchedFields.firstName && !formData.firstName ? "border-red-500 ring-red-500" : "border-gray-300"}`}
               placeholder="Ingrese sus nombres"
             />
             {touchedFields.firstName && !formData.firstName && <p className="text-red-500 text-xs -mt-0.5">Este campo es obligatorio</p>}
@@ -76,7 +76,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               id="lastName" type="text" value={formData.lastName}
               onChange={(e) => handleNameChange("lastName", e)} onBlur={() => handleBlur("lastName")}
               maxLength={MAX_NAME_LENGTH}
-              className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${touchedFields.lastName && !formData.lastName ? "border-red-500 ring-red-500" : "border-gray-300"}`}
+              className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-green-500 ${touchedFields.lastName && !formData.lastName ? "border-red-500 ring-red-500" : "border-gray-300"}`}
               placeholder="Ingrese sus apellidos"
             />
             {touchedFields.lastName && !formData.lastName && <p className="text-red-500 text-xs -mt-0.5">Este campo es obligatorio</p>}
@@ -104,7 +104,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             id="telefono" type="tel" placeholder="1234567890" value={formData.telefono}
             onChange={handlePhoneChange}
             onBlur={handlePhoneBlur}
-            className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${(touchedFields.telefono && !formData.telefono) || phoneError ? "border-red-500 ring-red-500" : "border-gray-300"}`}
+            className={`w-full border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-green-500 ${(touchedFields.telefono && !formData.telefono) || phoneError ? "border-red-500 ring-red-500" : "border-gray-300"}`}
           />
           {phoneError && <p className="text-red-500 text-xs mt-0.5">{phoneError}</p>}
           {touchedFields.telefono && !formData.telefono && <p className="text-red-500 text-xs mt-0.5">Este campo es obligatorio</p>}
@@ -169,34 +169,35 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
 
         {/* Accept Terms */}
         <div className="space-y-1">
-          <div className="flex items-start space-x-2">
+          <div className="flex items-start gap-2">
             <Checkbox
-              className="cursor-pointer mt-1"
+              className="cursor-pointer mt-1 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
               id="terminosCondiciones"
               checked={terminosCondiciones}
               onCheckedChange={(checked) => {
                 handleTermsCheckedChange(Boolean(checked))
               }}
             />
-            <Label htmlFor="terminosCondiciones" className="text-sm text-muted-foreground cursor-pointer">
-              Acepto los{" "}
-            </Label>
-            <Button type="button" variant="link" className="text-green-600 hover:text-lime-500 p-0 h-auto cursor-pointer" onClick={openTermsModal}>
-              términos y condiciones de servicio
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              {" "}
-              (incluye privacidad, baneos y reporte de eventos).
-            </span>
+            <div className="flex-1 text-sm text-muted-foreground leading-relaxed">
+              <div className="flex items-center gap-1">
+                <Label htmlFor="terminosCondiciones" className="cursor-pointer">
+                  Acepto los
+                </Label>
+                <Button type="button" variant="link" className="text-green-600 hover:text-lime-500 p-0 h-auto cursor-pointer align-baseline" onClick={openTermsModal}>
+                  términos y condiciones de servicio
+                </Button>
+              </div>
+              <p>(incluye privacidad, baneos y reporte de eventos).</p>
+            </div>
           </div>
           {touchedTerminosCondiciones && !terminosCondiciones && <p className="text-red-500 text-xs">Debe aceptar los términos y condiciones</p>}
         </div>
 
-        {registroError && <p className="text-red-500 text-sm">{registroError}</p>}
+        {registroError && <p className="w-80 mx-auto text-center text-red-500 text-sm">{registroError}</p>}
         <div className="flex flex-col items-center space-y-4">
           <Button
             type="submit"
-            className="w-80 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white font-medium py-6 rounded-sm text-lg transition-all duration-300 ease-in-out hover:scale-103 hover:from-fuchsia-600 hover:to-red-500 hover:text-white">
+            className="w-80 bg-rose-600 text-white font-medium py-6 rounded-sm text-lg transition-all duration-300 ease-in-out hover:scale-103 hover:bg-rose-500 hover:text-white">
             Crear Cuenta
           </Button>
         </div>

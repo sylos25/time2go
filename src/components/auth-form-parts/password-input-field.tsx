@@ -47,7 +47,7 @@ export function PasswordInputField({
           onChange={onChange}
           onBlur={onBlur}
           maxLength={maxLength}
-          className={`w-full rounded-md border py-2 pl-10 pr-10 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+          className={`w-full rounded-md border py-2 pl-10 pr-10 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-green-500 ${
             hasError ? "border-red-500 ring-red-500" : "border-gray-300"
           }`}
         />

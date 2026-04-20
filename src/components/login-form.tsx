@@ -85,7 +85,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         <Button 
           type="button"
           variant="link" 
-          className="text-sm text-green-600 hover:text-lime-500 p-0 cursor-pointer"
+          className="text-sm text-green-600 hover:text-green-500 p-0 cursor-pointer"
           onClick={() => setResetPasswordOpen(true)}
         >
           ¿Olvidaste tu contraseña?
@@ -172,7 +172,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
       <Button
         type="submit"
-        className="w-80 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white font-medium py-6 rounded-sm text-lg transition-all duration-300 ease-in-out hover:scale-103 hover:from-fuchsia-600 hover:to-red-500 hover:text-white"
+        className="w-80 bg-rose-600 text-white font-medium py-6 rounded-sm text-lg transition-all duration-300 ease-in-out hover:scale-103 hover:bg-rose-500 hover:text-white"
       >
         Iniciar Sesión
       </Button>

@@ -1,4 +1,9 @@
-import type { EventCardItem, RawEvent, RawTicketValue } from "./events-page-types"
+import type {
+  EventCardItem,
+  EventFilterType,
+  RawEvent,
+  RawTicketValue,
+} from "./events-page-types"
 
 export function formatEventPrice(price: number | string): string {
   if (typeof price === "number") {
@@ -65,24 +70,92 @@ export function normalizeEvent(event: RawEvent): EventCardItem {
 export function filterAndSortEvents(
   events: EventCardItem[],
   searchTerm: string,
-  selectedCategory: string
+  selectedFilterType: EventFilterType,
+  selectedFilterValue: string
 ): EventCardItem[] {
-  return events
-    .filter((event) => {
-      const query = searchTerm.toLowerCase()
-      const name = String(event.raw?.nombre_evento || event.title).toLowerCase()
-      const description = String(event.raw?.descripcion || event.description).toLowerCase()
-      const matchesSearch = name.includes(query) || description.includes(query)
-      const matchesCategory =
-        selectedCategory === "all" || String(event.id_categoria_evento) === selectedCategory
+  const query = searchTerm.toLowerCase()
 
-      return matchesSearch && matchesCategory
+  const toMinutes = (value: unknown): number | null => {
+    if (typeof value !== "string") return null
+    const match = value.match(/^(\d{1,2}):(\d{2})/)
+    if (!match) return null
+    const hours = Number(match[1])
+    const minutes = Number(match[2])
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null
+    return hours * 60 + minutes
+  }
+
+  const isFreeEvent = (event: EventCardItem): boolean => {
+    if (typeof event.price === "string") {
+      return event.price.toLowerCase().includes("gratis")
+    }
+    return Number(event.price) <= 0
+  }
+
+  const toNumericPrice = (event: EventCardItem): number => {
+    if (typeof event.price === "number" && Number.isFinite(event.price)) {
+      return event.price
+    }
+    return 0
+  }
+
+  let result = events.filter((event) => {
+    const name = String(event.raw?.nombre_evento || event.title).toLowerCase()
+    const description = String(event.raw?.descripcion || event.description).toLowerCase()
+    return name.includes(query) || description.includes(query)
+  })
+
+  if (selectedFilterType === "category") {
+    if (selectedFilterValue !== "all") {
+      result = result.filter(
+        (event) => String(event.id_categoria_evento) === selectedFilterValue
+      )
+    }
+  }
+
+  if (selectedFilterType === "time") {
+    result = result.filter((event) => {
+      const startMinutes = toMinutes(event.raw?.hora_inicio)
+      if (startMinutes === null) return false
+
+      if (selectedFilterValue === "diurno") {
+        return startMinutes >= 6 * 60 && startMinutes < 17 * 60
+      }
+
+      if (selectedFilterValue === "nocturno") {
+        return startMinutes >= 17 * 60 || startMinutes < 6 * 60
+      }
+
+      return true
     })
-    .sort((left, right) => {
-      const leftTime = Date.parse(String(left.raw?.fecha_inicio || left.date))
-      const rightTime = Date.parse(String(right.raw?.fecha_inicio || right.date))
-      const safeLeft = Number.isNaN(leftTime) ? 0 : leftTime
-      const safeRight = Number.isNaN(rightTime) ? 0 : rightTime
-      return safeLeft - safeRight
+  }
+
+  if (selectedFilterType === "access") {
+    if (selectedFilterValue === "gratis") {
+      result = result.filter((event) => isFreeEvent(event))
+    } else if (selectedFilterValue === "pago") {
+      result = result.filter((event) => !isFreeEvent(event))
+    }
+  }
+
+  if (selectedFilterType === "price") {
+    result = [...result].sort((left, right) => {
+      const leftPrice = toNumericPrice(left)
+      const rightPrice = toNumericPrice(right)
+      return selectedFilterValue === "desc"
+        ? rightPrice - leftPrice
+        : leftPrice - rightPrice
     })
+
+    return result
+  }
+
+  return [...result].sort((left, right) => {
+    const leftTime = Date.parse(String(left.raw?.fecha_inicio || left.date))
+    const rightTime = Date.parse(String(right.raw?.fecha_inicio || right.date))
+    const safeLeft = Number.isNaN(leftTime) ? 0 : leftTime
+    const safeRight = Number.isNaN(rightTime) ? 0 : rightTime
+    return safeLeft - safeRight
+  })
 }

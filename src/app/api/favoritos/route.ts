@@ -64,7 +64,7 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const userId = getUserIdNumber(req);
+    const userId = await getUserIdNumber(req);
     if (!userId) {
       return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
     }

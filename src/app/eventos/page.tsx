@@ -22,7 +22,8 @@ export default function EventosPage() {
     authModalOpen,
     isLogin,
     searchTerm,
-    selectedCategory,
+    selectedFilterType,
+    selectedFilterValue,
     isSearchFocused,
     expandedEventId,
     copiedEventId,
@@ -33,9 +34,10 @@ export default function EventosPage() {
     setAuthModalOpen,
     setIsLogin,
     setSearchTerm,
-    setSelectedCategory,
+    setSelectedFilterValue,
     setIsSearchFocused,
     setExpandedEventId,
+    handleFilterTypeChange,
     openAuthModal,
     toggleFavorite,
     handleShareEvent,
@@ -49,12 +51,14 @@ export default function EventosPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <EventsSearchFilters
             searchTerm={searchTerm}
-            selectedCategory={selectedCategory}
+            selectedFilterType={selectedFilterType}
+            selectedFilterValue={selectedFilterValue}
             isSearchFocused={isSearchFocused}
             topRatedEvents={topRatedEvents}
             categories={categories}
             onSearchChange={setSearchTerm}
-            onCategoryChange={setSelectedCategory}
+            onFilterTypeChange={handleFilterTypeChange}
+            onFilterValueChange={setSelectedFilterValue}
             onSearchFocus={() => setIsSearchFocused(true)}
             onSearchBlur={() => window.setTimeout(() => setIsSearchFocused(false), 200)}
           />

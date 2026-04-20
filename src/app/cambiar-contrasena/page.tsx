@@ -147,7 +147,7 @@ export default function CambiarContrasenaPage() {
                     showPassword={showPasswords.current}
                     onToggleVisibility={() => togglePasswordVisibility("current")}
                     labelClassName="text-green-700"
-                    inputClassName="border-input text-foreground"
+                    inputClassName="border-input text-foreground focus-visible:border-green-500 focus-visible:ring-green-500"
                     placeholder="Ingresa tu contraseña actual"
                   />
 
@@ -161,7 +161,7 @@ export default function CambiarContrasenaPage() {
                     showPassword={showPasswords.new}
                     onToggleVisibility={() => togglePasswordVisibility("new")}
                     labelClassName="text-green-700"
-                    inputClassName="border-input text-foreground"
+                    inputClassName="border-input text-foreground focus-visible:border-green-500 focus-visible:ring-green-500"
                     placeholder="Ingresa tu nueva contraseña"
                   />
 
@@ -175,7 +175,7 @@ export default function CambiarContrasenaPage() {
                     showPassword={showPasswords.confirm}
                     onToggleVisibility={() => togglePasswordVisibility("confirm")}
                     labelClassName="text-green-700"
-                    inputClassName="border-input text-foreground"
+                    inputClassName="border-input text-foreground focus-visible:border-green-500 focus-visible:ring-green-500"
                     placeholder="Confirma tu nueva contraseña"
                   />
 

@@ -103,7 +103,7 @@ function AuthPageContent() {
               <div className="flex flex-col items-center space-y-4">
                 <Button
                   onClick={() => setStep("login")}
-                  className="w-80 bg-gradient-to-tr from-fuchsia-700 to-red-500 text-white font-medium py-6 rounded-sm text-lg transition-all duration-300 ease-in-out hover:scale-103 hover:from-fuchsia-600 hover:to-red-500 hover:text-white"
+                  className="w-80 bg-rose-600 text-white font-medium py-6 rounded-sm text-lg transition-all duration-300 ease-in-out hover:scale-103 hover:bg-rose-500 hover:text-white"
                 >
                   Iniciar Sesión
                 </Button>
@@ -111,7 +111,7 @@ function AuthPageContent() {
                 <Button
                   onClick={() => setStep("register")}
                   variant="outline"
-                  className="w-80 border-2 border-lime-500 text-green-600 hover:scale-103 hover:bg-teal-50 hover:text-lime-600 font-medium py-6 rounded-sm text-lg"
+                  className="w-80 border-2 border-lime-500 text-lime-600 hover:scale-103 hover:bg-teal-50 hover:text-lime-600 font-medium py-6 rounded-sm text-lg"
                 >
                   Crear Cuenta
                 </Button>

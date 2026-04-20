@@ -54,7 +54,7 @@ export function DesktopNav({
       {!loggedIn ? (
         <Button
           onClick={onJoinClick}
-          className="bg-gradient-to-tr from-fuchsia-700 to-red-600 text-white font-medium shadow-lg rounded-sm transition-all duration-300 hover:scale-105 hover:from-fuchsia-600 hover:to-red-450 hover:shadow-md"
+          className="bg-rose-600 text-white font-medium shadow-lg rounded-sm transition-all duration-300 hover:scale-105 hover:bg-rose-500 hover:shadow-md"
         >
           Únete
         </Button>

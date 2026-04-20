@@ -54,7 +54,7 @@ export function CreateEventBasicDetailsSection({
                 setNewEvent({ ...newEvent, nombre_evento: value })
               }}
               placeholder="Nombre del evento"
-              className="rounded-xl"
+              className="rounded-xl focus-visible:border-green-500 focus-visible:ring-green-500"
               maxLength={50}
             />
             {formErrors.nombre_evento && <p className="text-xs text-red-600">{formErrors.nombre_evento}</p>}
@@ -76,7 +76,7 @@ export function CreateEventBasicDetailsSection({
                 setNewEvent({ ...newEvent, pulep_evento: value })
               }}
               placeholder="Código PULEP"
-              className="rounded-xl"
+              className="rounded-xl focus-visible:border-green-500 focus-visible:ring-green-500"
               maxLength={8}
             />
             {formErrors.pulep_evento && <p className="text-xs text-red-600">{formErrors.pulep_evento}</p>}
@@ -98,7 +98,7 @@ export function CreateEventBasicDetailsSection({
                 setNewEvent({ ...newEvent, responsable_evento: value })
               }}
               placeholder="Nombre de la entidad responsable"
-              className="rounded-xl"
+              className="rounded-xl focus-visible:border-green-500 focus-visible:ring-green-500"
               maxLength={40}
             />
             {formErrors.responsable_evento && (
@@ -120,7 +120,7 @@ export function CreateEventBasicDetailsSection({
                 handleCupoChange(e.target.value)
               }}
               placeholder="100"
-              className="rounded-xl"
+              className="rounded-xl focus-visible:border-green-500 focus-visible:ring-green-500"
             />
             {formErrors.cupo && <p className="text-xs text-red-600">{formErrors.cupo}</p>}
           </div>
@@ -204,7 +204,7 @@ export function CreateEventBasicDetailsSection({
                 setIsSitiosOpen(true)
               }}
               placeholder="Nombre del sitio del evento"
-              className="rounded-xl"
+              className="rounded-xl focus-visible:border-green-500 focus-visible:ring-green-500"
               maxLength={50}
             />
             <Button
@@ -284,7 +284,7 @@ export function CreateEventBasicDetailsSection({
             setNewEvent({ ...newEvent, descripcion: value })
           }}
           placeholder="Descripción breve del evento"
-          className="rounded-xl min-h-[100px]"
+          className="rounded-xl min-h-[100px] focus-visible:border-green-500 focus-visible:ring-green-500"
           maxLength={200}
         />
         {formErrors.descripcion && <p className="text-xs text-red-600">{formErrors.descripcion}</p>}

@@ -6,9 +6,17 @@ import {
 } from "@/app/eventos/lib/events-page-utils"
 import type {
   CategoriaEvento,
+  EventFilterType,
   EventCardItem,
   RawEvent,
 } from "@/app/eventos/lib/events-page-types"
+
+const FILTER_DEFAULTS: Record<EventFilterType, string> = {
+  category: "all",
+  time: "diurno",
+  price: "asc",
+  access: "gratis",
+}
 
 export function useEventsPage() {
   const [events, setEvents] = useState<EventCardItem[]>([])
@@ -19,10 +27,16 @@ export function useEventsPage() {
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [isLogin, setIsLogin] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("all")
+  const [selectedFilterType, setSelectedFilterType] = useState<EventFilterType>("category")
+  const [selectedFilterValue, setSelectedFilterValue] = useState(FILTER_DEFAULTS.category)
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [expandedEventId, setExpandedEventId] = useState<number | null>(null)
   const [copiedEventId, setCopiedEventId] = useState<number | null>(null)
+
+  const handleFilterTypeChange = useCallback((value: EventFilterType) => {
+    setSelectedFilterType(value)
+    setSelectedFilterValue(FILTER_DEFAULTS[value])
+  }, [])
 
   const fetchEventos = useCallback(async () => {
     try {
@@ -220,8 +234,8 @@ export function useEventsPage() {
   }, [])
 
   const filteredEvents = useMemo(
-    () => filterAndSortEvents(events, searchTerm, selectedCategory),
-    [events, searchTerm, selectedCategory]
+    () => filterAndSortEvents(events, searchTerm, selectedFilterType, selectedFilterValue),
+    [events, searchTerm, selectedFilterType, selectedFilterValue]
   )
 
   const topRatedEvents = useMemo(() => events.slice(0, 3), [events])
@@ -240,7 +254,8 @@ export function useEventsPage() {
     authModalOpen,
     isLogin,
     searchTerm,
-    selectedCategory,
+    selectedFilterType,
+    selectedFilterValue,
     isSearchFocused,
     expandedEventId,
     copiedEventId,
@@ -251,9 +266,10 @@ export function useEventsPage() {
     setAuthModalOpen,
     setIsLogin,
     setSearchTerm,
-    setSelectedCategory,
+    setSelectedFilterValue,
     setIsSearchFocused,
     setExpandedEventId,
+    handleFilterTypeChange,
     openAuthModal,
     toggleFavorite,
     handleShareEvent,

@@ -60,7 +60,7 @@ export function ResetPasswordDialog({ open, onOpenChange }: ResetPasswordDialogP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Restablecer Contraseña</DialogTitle>
+          <DialogTitle className="text-green-700" >Restablecer Contraseña</DialogTitle>
           <DialogDescription>
             Ingresa tu correo electrónico y te enviaremos un enlace para restablecerla.
           </DialogDescription>
@@ -75,7 +75,7 @@ export function ResetPasswordDialog({ open, onOpenChange }: ResetPasswordDialogP
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="reset-email" className="text-sm font-medium">
+              <Label htmlFor="reset-email" className="text-sm font-medium text-green-700">
                 Correo Electrónico
               </Label>
               <Input
@@ -101,7 +101,7 @@ export function ResetPasswordDialog({ open, onOpenChange }: ResetPasswordDialogP
               </Button>
               <Button
                 type="submit"
-                className="bg-gradient-to-br from-amber-300 via-amber-300 to-amber-300 hover:from-amber-300 hover:via-yellow-300 hover:to-amber-300 text-amber-700 font-medium"
+                className="bg-green-700 hover:bg-green-600 text-white font-medium hover:scale-102 hover:bg-green-600"
                 disabled={loading}
               >
                 {loading ? "Enviando..." : "Enviar Correo"}
