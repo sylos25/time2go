@@ -120,7 +120,7 @@ export function EventsTable({
                     <button
                       onClick={() => onDeleteEvent(eventItem.id)}
                       className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50"
-                      title="Eliminar evento"
+                        title="Desactivar evento"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

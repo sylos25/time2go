@@ -1,28 +1,23 @@
-  -- Funcion para crear un nuevo usuario con sus credenciales y datos personales.
--- ─────────────────────────────────────────────────────────────────────────────
--- fn_auth_crear_usuario
--- Crea un usuario con sus credenciales y datos personales.
--- Respuesta: { ok: true,  id_usuario, id_publico }
---            { ok: false, error_code, sqlstate, error }
--- ─────────────────────────────────────────────────────────────────────────────
+-- Función para crear un nuevo usuario con validaciones y manejo de errores
+
 CREATE OR REPLACE FUNCTION app_api.fn_auth_crear_usuario(
-  p_email           tabla_usuarios_credenciales.correo_usuario%TYPE,
-  p_contrasena_hash tabla_usuarios_credenciales.contrasena_hash%TYPE,
-  p_nombres         tabla_usuarios.nombres%TYPE   DEFAULT NULL,
-  p_apellidos       tabla_usuarios.apellidos%TYPE DEFAULT NULL,
-  p_id_pais         tabla_usuarios.id_pais%TYPE   DEFAULT NULL,
-  p_id_rol          tabla_usuarios.id_rol%TYPE    DEFAULT 1
+  p_email           public.tabla_usuarios_credenciales.correo_usuario%TYPE,
+  p_contrasena_hash public.tabla_usuarios_credenciales.contrasena_hash%TYPE,
+  p_nombres         public.tabla_usuarios.nombres%TYPE         DEFAULT NULL,
+  p_apellidos       public.tabla_usuarios.apellidos%TYPE       DEFAULT NULL,
+  p_id_pais         public.tabla_usuarios.id_pais%TYPE         DEFAULT NULL,
+  p_id_rol          public.tabla_usuarios.id_rol%TYPE          DEFAULT 1
 )
 RETURNS JSONB
 LANGUAGE plpgsql
-SET search_path = public, app_api, pg_temp
+SECURITY INVOKER
 AS $$
 DECLARE
-  v_id_usuario tabla_usuarios.id_usuario%TYPE;
-  v_id_publico tabla_usuarios.id_publico%TYPE;
+  v_id_usuario public.tabla_usuarios.id_usuario%TYPE;
+  v_id_publico public.tabla_usuarios.id_publico%TYPE;
 BEGIN
-  -- ── 1. Validaciones de entrada ────────────────────────────────────────────
-  IF NULLIF(BTRIM(COALESCE(p_email, '')), '') IS NULL THEN
+  -- Validar email no vacío
+  IF TRIM(p_email) IS NULL THEN
     RETURN jsonb_build_object(
       'ok',         FALSE,
       'error_code', 'AUTH_EMAIL_REQUIRED',
@@ -31,17 +26,18 @@ BEGIN
     );
   END IF;
 
-  IF NULLIF(BTRIM(COALESCE(p_contrasena_hash, '')), '') IS NULL THEN
+  -- Validar contraseña no vacía
+  IF TRIM(p_contrasena_hash) IS NULL THEN
     RETURN jsonb_build_object(
       'ok',         FALSE,
       'error_code', 'AUTH_PASSWORD_REQUIRED',
       'sqlstate',   '22023',
-      'error',      'La contrasena es obligatoria'
+      'error',      'La contraseña es obligatoria'
     );
   END IF;
 
-  -- ── 2. Crear usuario base ─────────────────────────────────────────────────
-  INSERT INTO tabla_usuarios (
+  -- Insertar datos personales del usuario
+  INSERT INTO public.tabla_usuarios (
     nombres,
     apellidos,
     id_pais,
@@ -50,19 +46,19 @@ BEGIN
     estado_usuario,
     fecha_actualizacion
   ) VALUES (
-    NULLIF(BTRIM(p_nombres), ''),
-    NULLIF(BTRIM(p_apellidos), ''),
+    NULLIF(TRIM(p_nombres), ''),   -- Convierte cadena vacía a NULL
+    NULLIF(TRIM(p_apellidos), ''),
     p_id_pais,
-    COALESCE(p_id_rol, 1),
+    COALESCE(p_id_rol, 1),         -- Asegura valor por defecto si viene NULL
     TRUE,
     TRUE,
-    NOW()
+    CURRENT_TIMESTAMP
   )
   RETURNING id_usuario, id_publico
   INTO v_id_usuario, v_id_publico;
 
-  -- ── 3. Credenciales ───────────────────────────────────────────────────────
-  INSERT INTO tabla_usuarios_credenciales (
+  -- Insertar credenciales
+  INSERT INTO public.tabla_usuarios_credenciales (
     id_usuario,
     correo_usuario,
     contrasena_hash
@@ -72,29 +68,23 @@ BEGIN
     p_contrasena_hash
   );
 
-  -- ── 4. Retorno exitoso ────────────────────────────────────────────────────
+  -- Retorno exitoso
   RETURN jsonb_build_object(
     'ok',          TRUE,
     'id_usuario',  v_id_usuario,
     'id_publico',  v_id_publico
   );
+
 EXCEPTION
-  WHEN invalid_text_representation
-    OR numeric_value_out_of_range THEN
-    RETURN jsonb_build_object(
-      'ok',         FALSE,
-      'error_code', 'AUTH_INVALID_FIELD_TYPE',
-      'sqlstate',   SQLSTATE,
-      'error',      SQLERRM
-    );
   WHEN unique_violation THEN
     RETURN jsonb_build_object(
       'ok',         FALSE,
       'error_code', 'AUTH_EMAIL_ALREADY_EXISTS',
       'sqlstate',   SQLSTATE,
-      'error',      'El correo ya esta registrado'
+      'error',      'El correo ya está registrado'
     );
   WHEN OTHERS THEN
+    -- En producción, considera registrar el error en una tabla de logs
     RETURN jsonb_build_object(
       'ok',         FALSE,
       'error_code', 'DB_ERROR',

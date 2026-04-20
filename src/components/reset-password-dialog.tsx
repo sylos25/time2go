@@ -101,7 +101,7 @@ export function ResetPasswordDialog({ open, onOpenChange }: ResetPasswordDialogP
               </Button>
               <Button
                 type="submit"
-                className="bg-green-700 hover:bg-green-600 text-white font-medium hover:scale-102 hover:bg-green-600"
+                className="bg-green-600 hover:bg-green-500 text-white font-medium hover:scale-102"
                 disabled={loading}
               >
                 {loading ? "Enviando..." : "Enviar Correo"}

@@ -7,10 +7,12 @@ import { Footer } from "@/components/footer"
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-background">
+    <main className="flex min-h-screen flex-col bg-background">
       <Header />
-      <HeroSection />
-      <EventsPreview />
+      <div className="flex-1">
+        <HeroSection />
+        <EventsPreview />
+      </div>
       <Footer />
     </main>
   )

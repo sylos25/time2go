@@ -481,4 +481,64 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ ok: false, message: "Error obteniendo eventos" }, { status: 500 });
   }
+  }
+
+  export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
+    const client = await pool.connect();
+    try {
+      const requesterId = await getRequesterIdFromRequest(req);
+      if (!requesterId) {
+        return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
+      }
+
+      const roleRes = await client.query(
+        "SELECT id_rol FROM tabla_usuarios WHERE id_usuario = $1 LIMIT 1",
+        [requesterId]
+      );
+      const role = roleRes.rows && roleRes.rows[0] ? Number(roleRes.rows[0].id_rol) : null;
+      if (!role) {
+        return NextResponse.json({ ok: false, message: "User role not found" }, { status: 403 });
+      }
+
+      const permissionRes = await client.query(
+        `SELECT id_accesibilidad_menu_x_rol
+         FROM tabla_accesibilidad_menu_x_rol
+         WHERE id_accesibilidad = $1 AND id_rol = $2
+         LIMIT 1`,
+        [PERMISSION_IDS.GESTIONAR_EVENTOS, role]
+      );
+
+      if (!permissionRes.rows || permissionRes.rows.length === 0) {
+        return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
+      }
+
+      const { id } = await context.params;
+      const idParam = id;
+      const id_evento = idParam ? Number(idParam) : null;
+
+      if (!id_evento || !Number.isFinite(id_evento) || Number.isNaN(id_evento)) {
+        return NextResponse.json({ ok: false, message: "Invalid event ID" }, { status: 400 });
+      }
+
+      const deactivateResult = await client.query(
+        `UPDATE tabla_eventos
+         SET estado = FALSE,
+             fecha_desactivacion = CURRENT_TIMESTAMP,
+             fecha_actualizacion = CURRENT_TIMESTAMP
+         WHERE id_evento = $1
+         RETURNING id_evento`,
+        [id_evento]
+      );
+
+      if (!deactivateResult.rows || deactivateResult.rows.length === 0) {
+        return NextResponse.json({ ok: false, message: "Evento no encontrado" }, { status: 404 });
+      }
+
+      return NextResponse.json({ ok: true, message: "Evento desactivado correctamente" });
+    } catch (err) {
+      console.error(err);
+      return NextResponse.json({ ok: false, message: "Error desactivando evento" }, { status: 500 });
+    } finally {
+      client.release();
+    }
 }

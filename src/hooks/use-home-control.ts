@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, type ChangeEvent } from "react"
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react"
 
 import type { CategoryOption, HeroImage, HomeControlResponse, MoveDirection } from "../components/dashboard/home-control/types"
 import {
@@ -47,6 +47,7 @@ export function useHomeControl() {
   const [removedHeroImageIds, setRemovedHeroImageIds] = useState<number[]>([])
   const [newHeroImages, setNewHeroImages] = useState<File[]>([])
   const [newHeroImagePreviews, setNewHeroImagePreviews] = useState<string[]>([])
+  const latestPreviewUrlsRef = useRef<string[]>([])
   const [maxHeroImages, setMaxHeroImages] = useState(7)
 
   const remainingSlots = useMemo(
@@ -122,10 +123,14 @@ export function useHomeControl() {
   }, [])
 
   useEffect(() => {
-    return () => {
-      newHeroImagePreviews.forEach((previewUrl) => URL.revokeObjectURL(previewUrl))
-    }
+    latestPreviewUrlsRef.current = newHeroImagePreviews
   }, [newHeroImagePreviews])
+
+  useEffect(() => {
+    return () => {
+      latestPreviewUrlsRef.current.forEach((previewUrl) => URL.revokeObjectURL(previewUrl))
+    }
+  }, [])
 
   useEffect(() => {
     setCategoryPage((prevPage) => Math.min(Math.max(prevPage, 1), totalCategoryPages))

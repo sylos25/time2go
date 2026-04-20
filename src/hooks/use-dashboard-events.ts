@@ -186,7 +186,7 @@ export function useDashboardEvents() {
         await refreshEvents()
       } catch (error) {
         console.error("Error eliminando evento", error)
-        window.alert(toMessage(error, "Error eliminando evento"))
+          window.alert(toMessage(error, "Error desactivando evento"))
       }
     },
     [refreshEvents]

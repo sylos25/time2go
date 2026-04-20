@@ -10,5 +10,5 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE TRIGGER trg_generar_id_publico BEFORE INSERT ON tabla_eventos
+CREATE TRIGGER trg_generar_id_publico_evento BEFORE INSERT ON tabla_eventos
 FOR EACH ROW EXECUTE FUNCTION generar_id_publico_evento();

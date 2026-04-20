@@ -172,7 +172,6 @@ export function EventsPreview() {
           events: featuredEvents.filter((event) => event.categoryId === category.id),
           delay: 4000 + index * 500,
         }))
-        .filter((section) => section.events.length > 0)
     }
 
     return Object.entries(featuredByCategory)
@@ -245,6 +244,15 @@ export function EventsPreview() {
     </Card>
   )
 
+  const EmptyCarouselSection = ({ title }: { title: string }) => (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+      <div className="rounded-sm border border-border bg-card/70 p-6 text-center text-muted-foreground">
+        <p className="text-sm font-medium">{title}</p>
+        <p className="text-xs mt-2">No hay eventos destacados en esta categoría aún.</p>
+      </div>
+    </div>
+  )
+
   const CarouselSection = ({
     title,
     events,
@@ -255,7 +263,6 @@ export function EventsPreview() {
     delay: number
   }) => (
     <>
-      {/* Título de sección más grande y estilizado */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
         <div className="flex items-center gap-4">
           {/* Línea decorativa izquierda */}
@@ -300,14 +307,18 @@ export function EventsPreview() {
           <p className="text-center text-muted-foreground">Cargando eventos destacados...</p>
         </div>
       ) : categorySections.length > 0 ? (
-        categorySections.map((section) => (
-          <CarouselSection
-            key={section.title}
-            title={section.title}
-            events={section.events}
-            delay={section.delay}
-          />
-        ))
+        categorySections.map((section) =>
+          section.events.length === 0 ? (
+            <EmptyCarouselSection key={section.title} title={section.title} />
+          ) : (
+            <CarouselSection
+              key={section.title}
+              title={section.title}
+              events={section.events}
+              delay={section.delay}
+            />
+          )
+        )
       ) : (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-14">
           <div className="rounded-sm border border-border bg-card/70 p-6 text-center text-muted-foreground">

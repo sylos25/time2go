@@ -11,34 +11,36 @@ DROP TABLE IF EXISTS tabla_recuperacion_contrasena_tokens;
 DROP TABLE IF EXISTS tabla_validacion_email_tokens;
 DROP TABLE IF EXISTS tabla_reserva_asistentes;
 DROP TABLE IF EXISTS tabla_reserva_eventos;
-DROP TABLE IF EXISTS tabla_eventos_telefonos;
-DROP TABLE IF EXISTS tabla_sitios_telefonos;
-DROP TABLE IF EXISTS tabla_auditoria_pk;
-DROP TABLE IF EXISTS tabla_auditoria_detalle;
-DROP TABLE IF EXISTS tabla_auditoria_bd;
 DROP TABLE IF EXISTS tabla_links;
-DROP TABLE IF EXISTS tabla_evento_informacion_importante;
-DROP TABLE IF EXISTS tabla_valores;
-DROP TABLE IF EXISTS tabla_categoria_boletos;
-DROP TABLE IF EXISTS tabla_cambio_rol_usuario;
+DROP TABLE IF EXISTS tabla_boleteria;
 DROP TABLE IF EXISTS tabla_denuncia_eventos;
 DROP TABLE IF EXISTS tabla_motivos_denuncia_eventos;
 DROP TABLE IF EXISTS tabla_categoria_denuncia_evento;
 DROP TABLE IF EXISTS tabla_valoraciones;
+DROP TABLE IF EXISTS tabla_cambio_rol_usuario;
+DROP TABLE IF EXISTS tabla_favoritos;
 DROP TABLE IF EXISTS tabla_imagenes_eventos;
-DROP TABLE IF EXISTS tabla_eventos_x_dias;
+DROP TABLE IF EXISTS tabla_evento_informacion_importante;
+DROP TABLE IF EXISTS tabla_eventos_telefonos;
 DROP TABLE IF EXISTS tabla_eventos;
 DROP TABLE IF EXISTS tabla_tipo_eventos;
 DROP TABLE IF EXISTS tabla_inicio_categorias;
 DROP TABLE IF EXISTS tabla_inicio_hero_imagenes;
 DROP TABLE IF EXISTS tabla_categoria_eventos;
 DROP TABLE IF EXISTS tabla_baneados;
+DROP TABLE IF EXISTS tabla_motivos_ban;
+DROP TABLE IF EXISTS tabla_categoria_ban;
+DROP TABLE IF EXISTS tabla_accesibilidad_menu_x_rol;
+DROP TABLE IF EXISTS tabla_accesibilidad_menu;
+DROP TABLE IF EXISTS tabla_auditoria_pk;
+DROP TABLE IF EXISTS tabla_auditoria_detalle;
+DROP TABLE IF EXISTS tabla_auditoria_bd;
 DROP TABLE IF EXISTS tabla_usuarios_credenciales;
-DROP TABLE IF EXISTS tabla_personas;
 DROP TABLE IF EXISTS tabla_usuarios;
 DROP TABLE IF EXISTS tabla_roles;
-DROP TABLE IF EXISTS tabla_sitios_disc;
-DROP TABLE IF EXISTS tabla_tipo_infraest_disc;
+DROP TABLE IF EXISTS tabla_sitios_discapacitados;
+DROP TABLE IF EXISTS tabla_tipo_infraestructura_discapacitados;
+DROP TABLE IF EXISTS tabla_sitios_telefonos;
 DROP TABLE IF EXISTS tabla_sitios;
 DROP TABLE IF EXISTS tabla_tipo_sitios;
 DROP TABLE IF EXISTS tabla_municipios;
@@ -178,7 +180,7 @@ CREATE TABLE IF NOT EXISTS tabla_auditoria_bd (
     id_usuario                              INT,
     usuario_bd                              VARCHAR                      NOT NULL        DEFAULT CURRENT_USER,
     fecha_evento                            TIMESTAMP   WITH TIME ZONE   NOT NULL        DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_usuario)                            REFERENCES       tabla_usuarios(id_usuario) ON DELETE SET NULL
+    FOREIGN KEY (id_usuario)                            REFERENCES       tabla_usuarios(id_usuario)
 );
 
 CREATE TABLE IF NOT EXISTS tabla_auditoria_pk (
@@ -317,25 +319,25 @@ CREATE TABLE IF NOT EXISTS tabla_eventos (
     pulep_evento                            VARCHAR                                     UNIQUE  CHECK (char_length(pulep_evento) >= 6),   
     nombre_evento                           VARCHAR                      NOT NULL               CHECK (char_length(nombre_evento) >= 6),
     responsable_evento                      VARCHAR                      NOT NULL               CHECK (char_length(responsable_evento) >= 6),
-    id_usuario                              INT                          NOT NULL,                                                   -- ID del usuario que crea el evento.
+    id_usuario                              INT                          NOT NULL,
     id_categoria_evento                     INT                          NOT NULL,
     id_tipo_evento                          INT                          NOT NULL,
-    id_sitio                                INT                          NOT NULL,                                                   -- ID del lugar (dentro del municipio) donde se realiza el evento.
+    id_sitio                                INT                          NOT NULL,
     descripcion                             TEXT                         NOT NULL               CHECK (char_length(descripcion) >= 10),
     fecha_inicio                            DATE                         NOT NULL,
     fecha_fin                               DATE                         NOT NULL,   
     hora_inicio                             TIME                         NOT NULL,
     hora_final                              TIME                         NOT NULL,
-    gratis_pago                             BOOLEAN                      NOT NULL       DEFAULT FALSE,                              -- FALSE: GRATIS and TRUE: PAGO.
-    cupo                                    INT                          NOT NULL       DEFAULT 0 CHECK (cupo >= 0),                -- Numero de invitados (No debe ser menor a 0 y mayor a 5000).
-    reservar_anticipado                     BOOLEAN                      NOT NULL       DEFAULT FALSE,                              -- FALSE: No requiere reserva anticipada and TRUE: Requiere reserva anticipada.
-    estado                                  BOOLEAN                      NOT NULL       DEFAULT FALSE,                              -- FALSE: Pendiente por validar and TRUE: Aprobado.
-    motivo_rechazo                          TEXT,                                                                                   -- Detalle del motivo de rechazo en caso de que el evento sea rechazado por un moderador o administrador.
-    rechazo_por                             INT,                                                                                    -- ID del usuario que rechaza el evento. Debe ser un moderador o administrador.
-    destacado                               BOOLEAN                      NOT NULL       DEFAULT FALSE,                              -- FALSE: No destacado and TRUE: Destacado.
-    destacado_por_usuario                   INT,                                                                                    -- ID del usuario que destaca el evento. Debe ser un moderador o administrador.
-    fecha_destacado                         TIMESTAMP   WITH TIME ZONE,                                                             -- Fecha en la que se destacó el evento.
-    Proceso                                 BOOLEAN                      NOT NULL       DEFAULT FALSE,                              -- FALSE: el evento no ha ocurrido and TRUE: el evento ha ocurrido.
+    gratis_pago                             BOOLEAN                      NOT NULL       DEFAULT FALSE,
+    cupo                                    INT                          NOT NULL       DEFAULT 0 CHECK (cupo >= 0),
+    reservar_anticipado                     BOOLEAN                      NOT NULL       DEFAULT FALSE,
+    estado                                  BOOLEAN                      NOT NULL       DEFAULT FALSE,
+    motivo_rechazo                          TEXT,
+    rechazo_por                             INT,
+    destacado                               BOOLEAN                      NOT NULL       DEFAULT FALSE,
+    destacado_por_usuario                   INT,
+    fecha_destacado                         TIMESTAMP   WITH TIME ZONE,
+    Proceso                                 BOOLEAN                      NOT NULL       DEFAULT FALSE,
     url_documento_evento                    VARCHAR                                     UNIQUE,
     documento_storage_provider              VARCHAR                      NOT NULL       DEFAULT 'legacy_url',
     documento_storage_key                   TEXT,

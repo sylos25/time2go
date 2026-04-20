@@ -88,9 +88,9 @@ export function TermsConditionsModal({ open, onAccept, onReject }: TermsConditio
       }}
     >
       <div ref={modalRef} onClick={(event) => event.stopPropagation()} className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="bg-gradient-to-r from-green-600 to-lime-500 px-6 py-5">
-          <h2 id="policy-title" className="text-lg font-bold leading-tight text-white">Términos y Condiciones</h2>
-          <p className="mt-0.5 text-xs text-white/80">Time2Go · Ley 1581 de 2012</p>
+        <div className="bg-green-600 px-6 py-5">
+          <h2 id="policy-title" className="text-lg text-center font-bold leading-tight text-white">Términos y Condiciones</h2>
+          <p className="mt-0.5 text-xs text-center text-white/80">Time2Go · Ley 1581 de 2012</p>
         </div>
 
         <div id="policy-body" className="max-h-[50vh] space-y-4 overflow-y-auto px-6 py-5">
@@ -138,7 +138,7 @@ export function TermsConditionsModal({ open, onAccept, onReject }: TermsConditio
 
           <div className="rounded-xl border border-green-100 bg-green-50 p-3">
             <p className="text-xs leading-relaxed text-gray-500">
-              Para más información consulta nuestra <a href="/legal#privacidad" target="_blank" className="cursor-pointer font-medium text-green-600 hover:underline">Política de Privacidad completa</a> disponible en el sitio web.
+              Para más información consulta las <a href="/legal#privacidad" target="_blank" className="cursor-pointer font-medium text-green-600 hover:underline">Políticas de Privacidad</a>, disponible en el sitio web.
             </p>
           </div>
         </div>
@@ -150,7 +150,7 @@ export function TermsConditionsModal({ open, onAccept, onReject }: TermsConditio
           <Button
             ref={acceptButtonRef}
             onClick={onAccept}
-            className="cursor-pointer bg-gradient-to-r from-green-600 to-lime-500 font-semibold text-white hover:from-green-700 hover:to-lime-600"
+            className="cursor-pointer bg-green-600 font-semibold text-white hover:bg-green-500"
           >
             Aceptar y continuar
           </Button>

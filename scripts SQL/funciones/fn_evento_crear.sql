@@ -1,13 +1,15 @@
---Funcion para crear un nuevo evento, con sus datos principales y relaciones.
 -- ─────────────────────────────────────────────────────────────────────────────
 -- fn_evento_crear
 -- Inserta un nuevo evento y todas sus relaciones en una sola transacción.
--- Toda la lógica de relaciones usa CTEs set-based para minimizar round-trips.
+-- Toda la lógica de relaciones usa CTEs set‑based para minimizar round‑trips.
 -- Respuesta: { ok: true,  id_evento, id_publico_evento }
 --            { ok: false, error_code, sqlstate, error }
 -- ─────────────────────────────────────────────────────────────────────────────
+
+-- Funcion para crear un nuevo evento.
+
 CREATE OR REPLACE FUNCTION app_api.fn_evento_crear(
-  p_id_usuario      tabla_eventos.id_usuario%TYPE,
+  p_id_usuario      public.tabla_eventos.id_usuario%TYPE,
   p_evento          JSONB,
   p_telefonos       JSONB DEFAULT '[]'::JSONB,
   p_info_importante JSONB DEFAULT '[]'::JSONB,
@@ -18,13 +20,13 @@ CREATE OR REPLACE FUNCTION app_api.fn_evento_crear(
 )
 RETURNS JSONB
 LANGUAGE plpgsql
-SET search_path = public, app_api, pg_temp
+SECURITY INVOKER
 AS $$
 DECLARE
-  v_id_evento         tabla_eventos.id_evento%TYPE;
-  v_id_publico_evento tabla_eventos.id_publico_evento%TYPE;
-  v_info_detalle      tabla_evento_informacion_importante.detalle%TYPE     := '';
-  v_info_obligatorio  tabla_evento_informacion_importante.obligatorio%TYPE := FALSE;
+  v_id_evento         public.tabla_eventos.id_evento%TYPE;
+  v_id_publico_evento public.tabla_eventos.id_publico_evento%TYPE;
+  v_info_detalle      public.tabla_evento_informacion_importante.detalle%TYPE;
+  v_info_obligatorio  public.tabla_evento_informacion_importante.obligatorio%TYPE;
 BEGIN
   -- ── 1. Validación del payload ─────────────────────────────────────────────
   IF p_evento IS NULL OR COALESCE(jsonb_typeof(p_evento), '') <> 'object' THEN
@@ -36,8 +38,26 @@ BEGIN
     );
   END IF;
 
-  -- ── 2. INSERT principal ───────────────────────────────────────────────────
-  INSERT INTO tabla_eventos (
+  -- ── 2. Preparar datos del documento (si existe) ───────────────────────────
+  WITH doc AS (
+    SELECT
+      CASE WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
+           THEN NULLIF(TRIM(p_documento->>'url_documento_evento'), '') END AS url,
+      CASE WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
+           THEN COALESCE(NULLIF(TRIM(p_documento->>'storage_provider'), ''), 'legacy_url')
+           ELSE 'legacy_url' END AS provider,
+      CASE WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
+           THEN NULLIF(TRIM(p_documento->>'storage_key'), '') END AS key,
+      CASE WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
+           THEN COALESCE(NULLIF(TRIM(p_documento->>'mime_type'), ''), 'application/pdf')
+           ELSE 'application/pdf' END AS mime,
+      CASE WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
+           THEN NULLIF(p_documento->>'bytes', '')::BIGINT END AS bytes,
+      CASE WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
+           THEN NULLIF(TRIM(p_documento->>'original_filename'), '') END AS original_name
+  )
+  -- ── 3. INSERT principal ───────────────────────────────────────────────────
+  INSERT INTO public.tabla_eventos (
     nombre_evento,
     pulep_evento,
     responsable_evento,
@@ -60,9 +80,10 @@ BEGIN
     cupo,
     reservar_anticipado,
     estado
-  ) VALUES (
+  )
+  SELECT
     p_evento->>'nombre_evento',
-    NULLIF(BTRIM(p_evento->>'pulep_evento'), ''),
+    NULLIF(TRIM(p_evento->>'pulep_evento'), ''),
     p_evento->>'responsable_evento',
     p_id_usuario,
     (p_evento->>'id_categoria_evento')::INT,
@@ -74,148 +95,128 @@ BEGIN
     (p_evento->>'hora_inicio')::TIME,
     (p_evento->>'hora_final')::TIME,
     COALESCE((p_evento->>'gratis_pago')::BOOLEAN, FALSE),
-    CASE WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
-         THEN NULLIF(BTRIM(p_documento->>'url_documento_evento'), '')     ELSE NULL END,
-    CASE WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
-         THEN COALESCE(NULLIF(BTRIM(p_documento->>'storage_provider'), ''), 'legacy_url')
-         ELSE 'legacy_url' END,
-    CASE WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
-         THEN NULLIF(BTRIM(p_documento->>'storage_key'), '')               ELSE NULL END,
-    CASE WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
-         THEN COALESCE(NULLIF(BTRIM(p_documento->>'mime_type'), ''), 'application/pdf')
-         ELSE 'application/pdf' END,
-    CASE WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
-         THEN NULLIF(p_documento->>'bytes', '')::BIGINT                    ELSE NULL END,
-    CASE WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
-         THEN NULLIF(BTRIM(p_documento->>'original_filename'), '')         ELSE NULL END,
+    doc.url,
+    doc.provider,
+    doc.key,
+    doc.mime,
+    doc.bytes,
+    doc.original_name,
     COALESCE((p_evento->>'cupo')::INT, 0),
     COALESCE((p_evento->>'reservar_anticipado')::BOOLEAN, FALSE),
     COALESCE((p_evento->>'estado')::BOOLEAN, FALSE)
-  )
+  FROM doc
   RETURNING id_evento, id_publico_evento
   INTO v_id_evento, v_id_publico_evento;
 
-  -- ── 3. Teléfonos: dedup payload + insert ─────────────────────────────────
-  -- [^0-9] descarta no-dígitos; GROUP BY deduplica teléfonos repetidos en payload.
+  -- ── 4. Teléfonos: dedup payload + insert ─────────────────────────────────
   IF COALESCE(jsonb_typeof(p_telefonos), 'array') = 'array' THEN
     WITH telefonos_raw AS (
-      SELECT
-        NULLIF(
-          regexp_replace(COALESCE(v.value->>'telefono', ''), '[^0-9]', '', 'g'),
-          ''
-        )::NUMERIC(10,0) AS telefono,
-        COALESCE((v.value->>'es_principal')::BOOLEAN, FALSE)              AS es_principal
+      SELECT DISTINCT
+        NULLIF(REGEXP_REPLACE(TRIM(v.value->>'telefono'), '[^0-9]', '', 'g'), '')::NUMERIC(10,0) AS telefono,
+        COALESCE((v.value->>'es_principal')::BOOLEAN, FALSE) AS es_principal
       FROM jsonb_array_elements(p_telefonos) AS v(value)
+      WHERE TRIM(v.value->>'telefono') IS NOT NULL
     )
-    INSERT INTO tabla_eventos_telefonos (id_evento, telefono, es_principal)
-    SELECT v_id_evento, telefono, bool_or(es_principal)
-    FROM   telefonos_raw
-    WHERE  telefono IS NOT NULL
-    GROUP  BY telefono
+    INSERT INTO public.tabla_eventos_telefonos (id_evento, telefono, es_principal)
+    SELECT v_id_evento, telefono, es_principal
+    FROM telefonos_raw
     ON CONFLICT (id_evento, telefono) DO UPDATE
       SET es_principal = EXCLUDED.es_principal;
   END IF;
 
-  -- ── 4. Información importante ─────────────────────────────────────────────
-  -- WITH ORDINALITY preserva el orden original; string_agg construye el detalle.
+  -- ── 5. Información importante: consolida ítems en fila única ──────────────
   IF COALESCE(jsonb_typeof(p_info_importante), 'array') = 'array' THEN
     WITH info_src AS (
       SELECT
-        row_number() OVER (ORDER BY v.ord) AS linea,
-        BTRIM(v.value->>'detalle')                          AS detalle,
+        ROW_NUMBER() OVER (ORDER BY v.ord) AS linea,
+        TRIM(v.value->>'detalle') AS detalle,
         COALESCE((v.value->>'obligatorio')::BOOLEAN, FALSE) AS obligatorio
       FROM jsonb_array_elements(p_info_importante) WITH ORDINALITY AS v(value, ord)
-      WHERE char_length(COALESCE(BTRIM(v.value->>'detalle'), '')) >= 5
+      WHERE LENGTH(TRIM(v.value->>'detalle')) >= 5
     )
     SELECT
-      COALESCE(string_agg(linea::TEXT || '. ' || detalle, E'\n' ORDER BY linea), ''),
-      COALESCE(bool_or(obligatorio), FALSE)
+      COALESCE(STRING_AGG(linea::TEXT || '. ' || detalle, E'\n' ORDER BY linea), ''),
+      COALESCE(BOOL_OR(obligatorio), FALSE)
     INTO v_info_detalle, v_info_obligatorio
     FROM info_src;
+
+    IF LENGTH(v_info_detalle) >= 5 THEN
+      INSERT INTO public.tabla_evento_informacion_importante (id_evento, detalle, obligatorio)
+      VALUES (v_id_evento, v_info_detalle, v_info_obligatorio);
+    END IF;
   END IF;
 
-  IF char_length(v_info_detalle) >= 5 THEN
-    INSERT INTO tabla_evento_informacion_importante (id_evento, detalle, obligatorio)
-    VALUES (v_id_evento, v_info_detalle, v_info_obligatorio);
-  END IF;
-
-  -- ── 5. Boletería ──────────────────────────────────────────────────────────
-  -- nombre_key en lower para deduplicar case-insensitive dentro del payload.
+  -- ── 6. Boletería ──────────────────────────────────────────────────────────
   IF COALESCE(jsonb_typeof(p_boleteria), 'array') = 'array' THEN
     WITH boletos_raw AS (
-      SELECT
-        lower(BTRIM(v.value->>'nombre_boleto'))                                                AS nombre_key,
-              BTRIM(v.value->>'nombre_boleto')                                                 AS nombre_boleto,
+      SELECT DISTINCT ON (LOWER(TRIM(v.value->>'nombre_boleto')))
+        TRIM(v.value->>'nombre_boleto') AS nombre_boleto,
         COALESCE(NULLIF(v.value->>'precio_boleto', '')::NUMERIC(9,2), 0) AS precio_boleto,
-        COALESCE(NULLIF(v.value->>'servicio',       '')::NUMERIC(9,2), 0) AS servicio
+        COALESCE(NULLIF(v.value->>'servicio', '')::NUMERIC(9,2), 0) AS servicio
       FROM jsonb_array_elements(p_boleteria) AS v(value)
-      WHERE char_length(BTRIM(COALESCE(v.value->>'nombre_boleto', ''))) >= 1
+      WHERE LENGTH(TRIM(v.value->>'nombre_boleto')) >= 1
+      ORDER BY LOWER(TRIM(v.value->>'nombre_boleto'))
     )
-    INSERT INTO tabla_boleteria (id_evento, nombre_boleto, precio_boleto, servicio)
-    SELECT v_id_evento, min(nombre_boleto), precio_boleto, servicio
-    FROM   boletos_raw
-    GROUP  BY nombre_key, precio_boleto, servicio;
+    INSERT INTO public.tabla_boleteria (id_evento, nombre_boleto, precio_boleto, servicio)
+    SELECT v_id_evento, nombre_boleto, precio_boleto, servicio
+    FROM boletos_raw;
   END IF;
 
-  -- ── 6. Links ──────────────────────────────────────────────────────────────
-  -- links_raw evalúa la variante (string/object) una sola vez en el CTE.
+  -- ── 7. Links ──────────────────────────────────────────────────────────────
   IF COALESCE(jsonb_typeof(p_links), 'array') = 'array' THEN
     WITH links_raw AS (
-      SELECT
+      SELECT DISTINCT
         CASE
           WHEN jsonb_typeof(v.value) = 'string' THEN TRIM(BOTH '"' FROM v.value::TEXT)
-          WHEN jsonb_typeof(v.value) = 'object' THEN v.value->>'link'
+          WHEN jsonb_typeof(v.value) = 'object' THEN TRIM(v.value->>'link')
           ELSE NULL
-        END AS raw_link
+        END AS link
       FROM jsonb_array_elements(p_links) AS v(value)
+      WHERE LENGTH(COALESCE(TRIM(CASE WHEN jsonb_typeof(v.value) = 'string' THEN v.value::TEXT ELSE v.value->>'link' END), '')) > 0
     )
-    INSERT INTO tabla_links (id_evento, link)
-    SELECT DISTINCT v_id_evento, BTRIM(raw_link)::TEXT
-    FROM   links_raw
-    WHERE  char_length(COALESCE(BTRIM(raw_link), '')) > 0;
+    INSERT INTO public.tabla_links (id_evento, link)
+    SELECT v_id_evento, link
+    FROM links_raw;
   END IF;
 
-  -- ── 7. Imágenes: DISTINCT ON dedup por clave de almacenamiento ────────────
+  -- ── 8. Imágenes: DISTINCT ON dedup por clave de almacenamiento ────────────
   IF COALESCE(jsonb_typeof(p_imagenes), 'array') = 'array' THEN
     WITH imagenes_payload AS (
       SELECT DISTINCT ON (
         COALESCE(
-          NULLIF(BTRIM(v.value->>'storage_key'),       ''),
-          NULLIF(BTRIM(v.value->>'url_imagen_evento'), '')
+          NULLIF(TRIM(v.value->>'storage_key'), ''),
+          NULLIF(TRIM(v.value->>'url_imagen_evento'), '')
         )
       )
-        NULLIF(BTRIM(v.value->>'url_imagen_evento'),  '')::VARCHAR AS url_imagen_evento,
-        COALESCE(NULLIF(BTRIM(v.value->>'storage_provider'), ''), 'legacy_url')                         AS storage_provider,
-        NULLIF(BTRIM(v.value->>'storage_key'),        '')::TEXT       AS storage_key,
-        COALESCE(NULLIF(BTRIM(v.value->>'mime_type'), ''), 'image/jpeg')                                 AS mime_type,
-        NULLIF(v.value->>'bytes', '')::BIGINT                                 AS bytes,
-        NULLIF(BTRIM(v.value->>'original_filename'),  '')                                                AS original_filename
+        NULLIF(TRIM(v.value->>'url_imagen_evento'), '')::VARCHAR AS url_imagen_evento,
+        COALESCE(NULLIF(TRIM(v.value->>'storage_provider'), ''), 'legacy_url') AS storage_provider,
+        NULLIF(TRIM(v.value->>'storage_key'), '')::TEXT AS storage_key,
+        COALESCE(NULLIF(TRIM(v.value->>'mime_type'), ''), 'image/jpeg') AS mime_type,
+        NULLIF(v.value->>'bytes', '')::BIGINT AS bytes,
+        NULLIF(TRIM(v.value->>'original_filename'), '') AS original_filename
       FROM jsonb_array_elements(p_imagenes) AS v(value)
-      WHERE NULLIF(BTRIM(v.value->>'url_imagen_evento'), '') IS NOT NULL
-      ORDER BY COALESCE(
-        NULLIF(BTRIM(v.value->>'storage_key'),       ''),
-        NULLIF(BTRIM(v.value->>'url_imagen_evento'), '')
-      )
+      WHERE NULLIF(TRIM(v.value->>'url_imagen_evento'), '') IS NOT NULL
+      ORDER BY COALESCE(NULLIF(TRIM(v.value->>'storage_key'), ''), NULLIF(TRIM(v.value->>'url_imagen_evento'), ''))
     )
-    INSERT INTO tabla_imagenes_eventos (
+    INSERT INTO public.tabla_imagenes_eventos (
       url_imagen_evento, id_evento, storage_provider,
       storage_key, mime_type, bytes, original_filename
     )
     SELECT
-      ip.url_imagen_evento, v_id_evento, ip.storage_provider,
-      ip.storage_key, ip.mime_type, ip.bytes, ip.original_filename
-    FROM imagenes_payload ip;
+      url_imagen_evento, v_id_evento, storage_provider,
+      storage_key, mime_type, bytes, original_filename
+    FROM imagenes_payload;
   END IF;
 
-  -- ── 8. Retorno exitoso ────────────────────────────────────────────────────
+  -- ── 9. Retorno exitoso ────────────────────────────────────────────────────
   RETURN jsonb_build_object(
     'ok',                TRUE,
     'id_evento',         v_id_evento,
     'id_publico_evento', v_id_publico_evento
   );
+
 EXCEPTION
-  WHEN invalid_text_representation
-    OR numeric_value_out_of_range THEN
+  WHEN invalid_text_representation OR numeric_value_out_of_range THEN
     RETURN jsonb_build_object(
       'ok',         FALSE,
       'error_code', 'EVENT_INVALID_FIELD_TYPE',
@@ -228,6 +229,13 @@ EXCEPTION
       'error_code', 'EVENT_DUPLICATE_RESOURCE',
       'sqlstate',   SQLSTATE,
       'error',      SQLERRM
+    );
+  WHEN foreign_key_violation THEN
+    RETURN jsonb_build_object(
+      'ok',         FALSE,
+      'error_code', 'EVENT_INVALID_REFERENCE',
+      'sqlstate',   SQLSTATE,
+      'error',      'Uno de los identificadores referenciados (categoría, tipo, sitio, usuario) no existe'
     );
   WHEN OTHERS THEN
     RETURN jsonb_build_object(
