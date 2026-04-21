@@ -73,23 +73,40 @@ export function useHeaderSession() {
     await clearSessionState()
   }, [clearSessionState])
 
-  const refreshAccessToken = useCallback(async (): Promise<number | null> => {
+  const handleSessionReplaced = useCallback(async () => {
+    localStorage.setItem("sessionTerminationReason", "session_replaced")
+    window.dispatchEvent(new CustomEvent("session:replaced"))
+    await clearSessionState({
+      notify: true,
+      redirectToHome: false,
+      callServerLogout: false,
+    })
+    router.push("/auth?session_replaced=1")
+  }, [clearSessionState, router])
+
+  const refreshAccessToken = useCallback(async (): Promise<{ expiresAt: number | null; sessionReplaced: boolean }> => {
     try {
       const res = await fetch("/api/refresh", {
         method: "POST",
         credentials: "include",
       })
-      if (!res.ok) return null
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null)
+        if (payload?.code === "session_replaced") {
+          return { expiresAt: null, sessionReplaced: true }
+        }
+        return { expiresAt: null, sessionReplaced: false }
+      }
       const data = await res.json()
       const nextExp = data?.expiresAt ? Number(data.expiresAt) : null
       if (nextExp && Number.isFinite(nextExp)) {
         localStorage.setItem(ACCESS_EXP_KEY, String(nextExp))
-        return nextExp
+        return { expiresAt: nextExp, sessionReplaced: false }
       }
-      return null
+      return { expiresAt: null, sessionReplaced: false }
     } catch (err) {
       console.error("refresh token error", err)
-      return null
+      return { expiresAt: null, sessionReplaced: false }
     }
   }, [ACCESS_EXP_KEY])
 
@@ -106,9 +123,13 @@ export function useHeaderSession() {
       const ms = expiresAtSec * 1000 - Date.now() - refreshLeadMs
       if (ms <= 0) {
         void (async () => {
-          const nextExp = await refreshAccessToken()
-          if (nextExp) {
-            scheduleAutoLogout(nextExp)
+          const refreshResult = await refreshAccessToken()
+          if (refreshResult.expiresAt) {
+            scheduleAutoLogout(refreshResult.expiresAt)
+            return
+          }
+          if (refreshResult.sessionReplaced) {
+            await handleSessionReplaced()
             return
           }
           await performLogout()
@@ -118,16 +139,20 @@ export function useHeaderSession() {
 
       logoutTimerRef.current = window.setTimeout(() => {
         void (async () => {
-          const nextExp = await refreshAccessToken()
-          if (nextExp) {
-            scheduleAutoLogout(nextExp)
+          const refreshResult = await refreshAccessToken()
+          if (refreshResult.expiresAt) {
+            scheduleAutoLogout(refreshResult.expiresAt)
+            return
+          }
+          if (refreshResult.sessionReplaced) {
+            await handleSessionReplaced()
             return
           }
           await performLogout()
         })()
       }, ms)
     },
-    [performLogout, refreshAccessToken],
+    [handleSessionReplaced, performLogout, refreshAccessToken],
   )
 
   useEffect(() => {
@@ -154,9 +179,13 @@ export function useHeaderSession() {
       try {
         let res = await fetch("/api/me", { credentials: "include" })
         if (!res.ok && res.status === 401) {
-          const nextExp = await refreshAccessToken()
-          if (nextExp) {
-            scheduleAutoLogout(nextExp)
+          const refreshResult = await refreshAccessToken()
+          if (refreshResult.sessionReplaced) {
+            await handleSessionReplaced()
+            return
+          }
+          if (refreshResult.expiresAt) {
+            scheduleAutoLogout(refreshResult.expiresAt)
             res = await fetch("/api/me", { credentials: "include" })
           }
         }
@@ -276,6 +305,7 @@ export function useHeaderSession() {
   }, [
     scheduleAutoLogout,
     clearSessionSilent,
+    handleSessionReplaced,
     performLogout,
     refreshAccessToken,
     ACCESS_EXP_KEY,

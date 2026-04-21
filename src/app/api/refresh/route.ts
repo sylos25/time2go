@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { parseCookies, serializeCookie } from "@/lib/cookies";
-import { signToken, verifyToken } from "@/lib/jwt";
+import { clearCookieHeader, parseCookies, serializeCookie } from "@/lib/cookies";
+import { signToken, verifyTokenDetailed } from "@/lib/jwt";
 import { revokeTokenJti } from "@/lib/token-revocation";
+import { touchActiveSession } from "@/lib/active-session";
 
 const ACCESS_EXPIRES_IN = 15 * 60;
 const REFRESH_EXPIRES_IN = 7 * 24 * 60 * 60;
@@ -26,9 +27,70 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, message: "Refresh token missing" }, { status: 401 });
     }
 
-    const payload = await verifyToken(refreshToken, "refresh");
+    const verification = await verifyTokenDetailed(refreshToken, "refresh");
+    const payload = verification.payload;
     if (!payload?.id_usuario) {
-      return NextResponse.json({ ok: false, message: "Invalid refresh token" }, { status: 401 });
+      const secure = process.env.NODE_ENV === "production";
+      const domain = process.env.COOKIE_DOMAIN;
+
+      const expiredAccess = clearCookieHeader("token", {
+        path: "/",
+        httpOnly: true,
+        secure,
+        sameSite: "lax",
+        domain,
+      });
+      const expiredRefresh = clearCookieHeader("refresh_token", {
+        path: "/",
+        httpOnly: true,
+        secure,
+        sameSite: "strict",
+        domain,
+      });
+
+      const message = verification.reason === "session_replaced"
+        ? "Session replaced by a new login"
+        : "Invalid refresh token";
+      const code = verification.reason === "session_replaced" ? "session_replaced" : "invalid_refresh_token";
+
+      const denied = NextResponse.json({ ok: false, message, code }, { status: 401 });
+      denied.headers.append("Set-Cookie", expiredAccess);
+      denied.headers.append("Set-Cookie", expiredRefresh);
+      return denied;
+    }
+
+    if (payload.sid) {
+      const touched = await touchActiveSession(
+        String(payload.id_usuario),
+        String(payload.sid),
+        REFRESH_EXPIRES_IN
+      );
+      if (!touched) {
+        const secure = process.env.NODE_ENV === "production";
+        const domain = process.env.COOKIE_DOMAIN;
+        const expiredAccess = clearCookieHeader("token", {
+          path: "/",
+          httpOnly: true,
+          secure,
+          sameSite: "lax",
+          domain,
+        });
+        const expiredRefresh = clearCookieHeader("refresh_token", {
+          path: "/",
+          httpOnly: true,
+          secure,
+          sameSite: "strict",
+          domain,
+        });
+
+        const denied = NextResponse.json(
+          { ok: false, message: "Session replaced by a new login", code: "session_replaced" },
+          { status: 401 }
+        );
+        denied.headers.append("Set-Cookie", expiredAccess);
+        denied.headers.append("Set-Cookie", expiredRefresh);
+        return denied;
+      }
     }
 
     if (payload.jti) {
@@ -40,6 +102,7 @@ export async function POST(req: Request) {
         id_usuario: payload.id_usuario,
         id_rol: payload.id_rol,
         name: payload.name,
+        sid: payload.sid,
         token_type: "access",
       },
       ACCESS_EXPIRES_IN
@@ -50,6 +113,7 @@ export async function POST(req: Request) {
         id_usuario: payload.id_usuario,
         id_rol: payload.id_rol,
         name: payload.name,
+        sid: payload.sid,
         token_type: "refresh",
       },
       REFRESH_EXPIRES_IN

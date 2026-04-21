@@ -2,18 +2,26 @@
 
 import { useEffect, useState, useCallback } from "react"
 
+export type SessionEndReason = "expired" | "session_replaced"
+
 export function useSessionExpiry() {
   const [isSessionExpired, setIsSessionExpired] = useState(false)
+  const [reason, setReason] = useState<SessionEndReason>("expired")
 
   const checkSessionValidity = useCallback(async () => {
     try {
-      const response = await fetch("/api/me")
+      const response = await fetch("/api/me", { credentials: "include" })
       
       if (response.status === 401) {
-        // Token ha vencido
+        const payload = await response.json().catch(() => null)
+        if (payload?.code === "session_replaced") {
+          setReason("session_replaced")
+        } else {
+          setReason("expired")
+        }
         setIsSessionExpired(true)
       } else if (response.ok) {
-        // Token sigue siendo válido
+        setReason("expired")
         setIsSessionExpired(false)
       }
     } catch (error) {
@@ -41,11 +49,18 @@ export function useSessionExpiry() {
       }
     }
 
+    const handleSessionReplaced = () => {
+      setReason("session_replaced")
+      setIsSessionExpired(true)
+    }
+
     document.addEventListener("visibilitychange", handleVisibilityChange)
+    window.addEventListener("session:replaced", handleSessionReplaced)
 
     return () => {
       clearInterval(interval)
       document.removeEventListener("visibilitychange", handleVisibilityChange)
+      window.removeEventListener("session:replaced", handleSessionReplaced)
     }
   }, [checkSessionValidity])
 
@@ -53,5 +68,5 @@ export function useSessionExpiry() {
     setIsSessionExpired(false)
   }, [])
 
-  return { isSessionExpired, checkSessionValidity, resetExpiry }
+  return { isSessionExpired, reason, checkSessionValidity, resetExpiry }
 }

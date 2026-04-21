@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import pool from "@/lib/db";
 import { serializeCookie } from "@/lib/cookies";
 import { signToken } from "@/lib/jwt";
+import { setActiveSession } from "@/lib/active-session";
 
 type LoginLimiter = {
   requests: number[];
@@ -342,12 +343,15 @@ export async function POST(req: Request) {
 
     const accessExpiresIn = 15 * 60;
     const refreshExpiresIn = 7 * 24 * 60 * 60;
+    const sessionId = crypto.randomUUID();
+    await setActiveSession(String(user.id_usuario), sessionId, refreshExpiresIn);
 
     const accessToken = await signToken(
       {
         id_usuario: user.id_usuario,
         id_rol: user.id_rol,
         name: user.nombres || user.correo.split("@")[0],
+        sid: sessionId,
       },
       accessExpiresIn
     );
@@ -357,6 +361,7 @@ export async function POST(req: Request) {
         id_usuario: user.id_usuario,
         id_rol: user.id_rol,
         name: user.nombres || user.correo.split("@")[0],
+        sid: sessionId,
         token_type: "refresh",
       },
       refreshExpiresIn

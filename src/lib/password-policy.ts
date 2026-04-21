@@ -10,6 +10,26 @@ export type PasswordValidationResult = {
   errors: string[]
 }
 
+export function hasPasswordLetter(password: string): boolean {
+  return PASSWORD_LETTER_REGEX.test(password)
+}
+
+export function hasPasswordNumber(password: string): boolean {
+  return PASSWORD_NUMBER_REGEX.test(password)
+}
+
+export function hasPasswordSpecial(password: string): boolean {
+  return PASSWORD_SPECIAL_REGEX.test(password)
+}
+
+export function isPasswordLengthValid(
+  password: string,
+  minLength = PASSWORD_MIN_LENGTH,
+  maxLength = PASSWORD_MAX_LENGTH
+): boolean {
+  return password.length >= minLength && password.length <= maxLength
+}
+
 export function validatePasswordPolicy(
   password: string,
   minLength = PASSWORD_MIN_LENGTH,
@@ -20,9 +40,9 @@ export function validatePasswordPolicy(
   if (password.length < minLength || password.length > maxLength) {
     errors.push(`La contraseña debe tener entre ${minLength} y ${maxLength} caracteres`)
   }
-  if (!PASSWORD_LETTER_REGEX.test(password)) errors.push("Debe incluir al menos una letra")
-  if (!PASSWORD_NUMBER_REGEX.test(password)) errors.push("Debe incluir al menos un número")
-  if (!PASSWORD_SPECIAL_REGEX.test(password)) errors.push("Debe incluir al menos un carácter especial")
+  if (!hasPasswordLetter(password)) errors.push("Debe incluir al menos una letra")
+  if (!hasPasswordNumber(password)) errors.push("Debe incluir al menos un número")
+  if (!hasPasswordSpecial(password)) errors.push("Debe incluir al menos un carácter especial")
 
   return {
     isValid: errors.length === 0,

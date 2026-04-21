@@ -13,9 +13,10 @@ import {
 } from "lucide-react"
 import { getRoleBadgeClass } from "@/lib/role-badge"
 import { PasswordInputField } from "@/components/shared/password/password-input-field"
-import { PasswordPolicyHint } from "@/components/shared/password/password-policy-hint"
+import { PasswordRequirements } from "@/components/register-form-parts/password-requirements"
 import { StatusMessage } from "@/components/shared/password/status-message"
 import { useChangePasswordPage } from "@/hooks/use-change-password-page"
+import { PASSWORD_MIN_LENGTH, validatePasswordPolicy } from "@/lib/password-policy"
 
 export default function CambiarContrasenaPage() {
   const router = useRouter()
@@ -37,6 +38,7 @@ export default function CambiarContrasenaPage() {
     togglePasswordVisibility,
     handleSubmit,
   } = useChangePasswordPage(router)
+  const passwordValidation = validatePasswordPolicy(newPassword)
 
   if (loading) {
     return (
@@ -44,7 +46,7 @@ export default function CambiarContrasenaPage() {
         <Header isLoggedIn={true} userName="Usuario" />
         <div className="pt-32 pb-12 px-4 flex items-center justify-center h-96">
           <div className="text-center">
-            <Loader2 className="h-12 w-12 text-purple-600 animate-spin mx-auto mb-4" />
+            <Loader2 className="h-12 w-12 text-green-600 animate-spin mx-auto mb-4" />
             <p className="text-muted-foreground text-lg">Cargando...</p>
           </div>
         </div>
@@ -64,7 +66,7 @@ export default function CambiarContrasenaPage() {
             </p>
             <Button
               onClick={() => router.push("/")}
-              className="bg-purple-600 hover:bg-purple-700 text-white"
+              className="bg-green-600 hover:bg-green-700 text-white"
             >
               Ir al Inicio
             </Button>
@@ -165,6 +167,12 @@ export default function CambiarContrasenaPage() {
                     placeholder="Ingresa tu nueva contraseña"
                   />
 
+                  <PasswordRequirements
+                    password={newPassword}
+                    minLength={PASSWORD_MIN_LENGTH}
+                    isValid={passwordValidation.isValid}
+                  />
+
                   {/* Confirmar Contraseña */}
                   <PasswordInputField
                     id="confirm-password"
@@ -177,14 +185,26 @@ export default function CambiarContrasenaPage() {
                     labelClassName="text-green-700"
                     inputClassName="border-input text-foreground focus-visible:border-green-500 focus-visible:ring-green-500"
                     placeholder="Confirma tu nueva contraseña"
-                  />
+                  >
+                    {confirmPassword && (
+                      <div className={`p-3 rounded-lg text-sm flex items-center gap-2 ${
+                        newPassword === confirmPassword
+                          ? "bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800"
+                          : "bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800"
+                      }`}>
+                        {newPassword === confirmPassword
+                          ? <><span className="text-green-600 dark:text-green-400 font-semibold">✓</span><p className="text-green-700 dark:text-green-400">Las contraseñas coinciden</p></>
+                          : <><span className="text-red-600 dark:text-red-400 font-semibold">✗</span><p className="text-red-700 dark:text-red-400">Las contraseñas no coinciden</p></>}
+                      </div>
+                    )}
+                  </PasswordInputField>
 
                   {/* Botones */}
                   <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Button
                       type="submit"
                       disabled={saving}
-                      className="flex-1 bg-gradient-to-tr from-fuchsia-700 to-red-500 hover:from-fuchsia-600 hover:to-red-500 hover:scale-102 text-white font-medium flex items-center justify-center gap-2"
+                      className="flex-1 bg-rose-600 hover:bg-rose-500 hover:scale-102 text-white font-medium flex items-center justify-center gap-2 transition-transform"
                     >
                       {saving ? (
                         <>
@@ -202,24 +222,14 @@ export default function CambiarContrasenaPage() {
                       type="button"
                       onClick={() => router.push("/perfil")}
                       variant="outline"
-                      className="flex-1 border-border text-foreground hover:bg-accent hover:scale-102 font-medium"
+                      className="flex-1 border-green-600 dark:border-green-500 text-green-600 dark:text-green-500 hover:bg-green-50 dark:hover:bg-green-950/40 hover:text-green-700 dark:hover:text-green-400 hover:scale-102 font-medium transition-transform"
                     >
                       Cancelar
                     </Button>
                   </div>
                 </form>
 
-                {/* Información adicional */}
-                <div className="mt-6">
-                  <h3 className="font-semibold text-foreground mb-2">Recomendaciones de Seguridad:</h3>
-                  <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li>• Usa entre 8 y 20 caracteres</li>
-                    <li>• Incluye al menos una letra, un número y un carácter especial</li>
-                    <li>• Evita usar información personal (nombre, fecha de nacimiento)</li>
-                    <li>• No compartas tu contraseña con nadie</li>
-                  </ul>
-                  <PasswordPolicyHint className="mt-3 p-4" />
-                </div>
+
               </div>
             </div>
           </Card>

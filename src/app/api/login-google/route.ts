@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { serializeCookie } from "@/lib/cookies";
 import { signToken } from "@/lib/jwt";
+import { setActiveSession } from "@/lib/active-session";
 
 const GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo";
 
@@ -215,11 +216,14 @@ export async function POST(req: Request) {
     const accessExpiresIn = 15 * 60;
     const refreshExpiresIn = 7 * 24 * 60 * 60;
     const userId = String(user.id_usuario);
+    const sessionId = crypto.randomUUID();
+    await setActiveSession(userId, sessionId, refreshExpiresIn);
     const accessToken = await signToken(
       {
         id_usuario: userId,
         id_rol: user.id_rol,
         name: user.nombres || email.split("@")[0],
+        sid: sessionId,
       },
       accessExpiresIn
     );
@@ -229,6 +233,7 @@ export async function POST(req: Request) {
         id_usuario: userId,
         id_rol: user.id_rol,
         name: user.nombres || email.split("@")[0],
+        sid: sessionId,
         token_type: "refresh",
       },
       refreshExpiresIn

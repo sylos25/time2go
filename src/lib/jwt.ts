@@ -1,13 +1,22 @@
 import { SignJWT, decodeProtectedHeader, jwtVerify, type JWTPayload } from "jose";
 import { resolveJwtSecret } from "@/lib/jwt-secret";
 import { isTokenJtiRevoked } from "@/lib/token-revocation";
+import { isActiveSessionValid } from "@/lib/active-session";
 
 export interface JwtPayload extends JWTPayload {
   id_usuario?: string | number;
   id_rol?: number;
   name?: string;
+  sid?: string;
   token_type?: "access" | "refresh";
 }
+
+export type VerifyTokenFailureReason = "invalid" | "revoked" | "session_replaced";
+
+export type VerifyTokenResult = {
+  payload: JwtPayload | null;
+  reason?: VerifyTokenFailureReason;
+};
 
 export function getJwtSecret(): string {
   return resolveJwtSecret();
@@ -87,11 +96,19 @@ export async function verifyToken(
   token: string,
   expectedType: "access" | "refresh" = "access"
 ): Promise<JwtPayload | null> {
+  const result = await verifyTokenDetailed(token, expectedType);
+  return result.payload;
+}
+
+export async function verifyTokenDetailed(
+  token: string,
+  expectedType: "access" | "refresh" = "access"
+): Promise<VerifyTokenResult> {
   try {
     const header = decodeProtectedHeader(token);
     const secret = getSecretForKid(typeof header.kid === "string" ? header.kid : undefined);
     if (!secret) {
-      return null;
+      return { payload: null, reason: "invalid" };
     }
 
     const { payload } = await jwtVerify(token, secret, {
@@ -101,12 +118,12 @@ export async function verifyToken(
     });
 
     if (!payload?.id_usuario) {
-      return null;
+      return { payload: null, reason: "invalid" };
     }
 
     const tokenType = payload.token_type ? String(payload.token_type) : "access";
     if (tokenType !== expectedType) {
-      return null;
+      return { payload: null, reason: "invalid" };
     }
 
     const typed: JwtPayload = {
@@ -117,11 +134,12 @@ export async function verifyToken(
           ? undefined
           : Number(payload.id_rol),
       name: payload.name ? String(payload.name) : undefined,
+      sid: payload.sid ? String(payload.sid) : undefined,
       token_type: tokenType as "access" | "refresh",
     };
 
     if (typed.id_rol !== undefined && !Number.isFinite(typed.id_rol)) {
-      return null;
+      return { payload: null, reason: "invalid" };
     }
 
     if (typed.name !== undefined && typed.name.trim() === "") {
@@ -131,13 +149,18 @@ export async function verifyToken(
     if (typed.jti) {
       const revoked = await isTokenJtiRevoked(String(typed.jti));
       if (revoked) {
-        return null;
+        return { payload: null, reason: "revoked" };
       }
     }
 
-    return typed;
+    const activeSessionValid = await isActiveSessionValid(String(typed.id_usuario), typed.sid);
+    if (!activeSessionValid) {
+      return { payload: null, reason: "session_replaced" };
+    }
+
+    return { payload: typed };
   } catch {
-    return null;
+    return { payload: null, reason: "invalid" };
   }
 }
 
@@ -154,6 +177,7 @@ export async function signToken(payload: JwtPayload, expiresInSeconds = 60 * 60 
         ? undefined
         : Number(payload.id_rol),
     name: payload.name ? String(payload.name) : undefined,
+    sid: payload.sid ? String(payload.sid) : undefined,
     token_type: tokenType,
   })
     .setProtectedHeader({ alg: "HS256", typ: "JWT", kid })

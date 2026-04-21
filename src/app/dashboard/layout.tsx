@@ -19,7 +19,6 @@ import {
   Flag,
   Users,
 } from "lucide-react"
-import { SessionMonitor } from "@/components/session-monitor"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 
@@ -193,8 +192,6 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-background">
-      <SessionMonitor />
-
       <header className="w-full bg-green-700 dark:bg-green-900 border-b border-green-600/50 dark:border-green-800 backdrop-blur-xl sticky top-0 z-50">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4 min-w-0">

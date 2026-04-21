@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { extractBearerOrCookieToken, isPublicApiRoute } from "@/lib/api-route-policy";
-import { verifyToken } from "@/lib/jwt";
+import { verifyToken, verifyTokenDetailed } from "@/lib/jwt";
 import { resolveJwtSecret } from "@/lib/jwt-secret";
 
-function apiAuthJsonResponse(message: string, status: number) {
-  return NextResponse.json({ ok: false, message }, { status });
+function apiAuthJsonResponse(message: string, status: number, code?: string) {
+  return NextResponse.json({ ok: false, message, code }, { status });
 }
 
 // ── Roles ────────────────────────────────────────────────────────────────────
@@ -81,9 +81,13 @@ export async function middleware(request: NextRequest) {
       return apiAuthJsonResponse("Authentication is not configured", 503);
     }
 
-    const payload = await verifyToken(token, "access");
+    const verification = await verifyTokenDetailed(token, "access");
+    const payload = verification.payload;
     if (!payload?.id_usuario) {
       const isBearer = (request.headers.get("authorization") || "").startsWith("Bearer ");
+      if (verification.reason === "session_replaced") {
+        return apiAuthJsonResponse("Session replaced by a new login", 401, "session_replaced");
+      }
       return apiAuthJsonResponse(isBearer ? "Invalid token" : "Not authenticated", 401);
     }
     return NextResponse.next();

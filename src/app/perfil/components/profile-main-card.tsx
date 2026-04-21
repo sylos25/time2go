@@ -88,24 +88,24 @@ export function ProfileMainCard({
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-lime-500 mb-6">Informacion Personal</h2>
+              <h2 className="text-2xl font-bold text-lime-500 mb-6">Información Personal</h2>
 
               <div className="border border-border rounded-lg p-5 hover:bg-accent hover:border-green-500 transition-colors">
-                <p className="text-green-600 text-sm font-bold mb-1">NOMBRE COMPLETO</p>
+                <p className="text-green-600 dark:text-green-400 text-sm font-bold mb-1">NOMBRE COMPLETO</p>
                 <p className="text-foreground text-lg font-medium">
                   {user.nombres} {user.apellidos}
                 </p>
               </div>
 
               <div className="border border-border rounded-lg p-5 hover:bg-accent hover:border-green-500 transition-colors">
-                <p className="text-green-700 text-sm font-bold mb-1">PAIS</p>
+                <p className="text-green-700 dark:text-green-400 text-sm font-bold mb-1">PAÍS</p>
                 <p className="text-foreground text-lg font-medium">{user.nombre_pais || "No especificado"}</p>
               </div>
 
               <div className="border border-border rounded-lg p-5 hover:bg-accent hover:border-green-500 transition-colors">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
-                    <p className="text-green-700 text-sm font-bold mb-1">CORREO ELECTRONICO</p>
+                    <p className="text-green-700 dark:text-green-400 text-sm font-bold mb-1">CORREO ELECTRÓNICO</p>
                     <p className="text-foreground text-lg font-medium break-all">{user.correo}</p>
                   </div>
                   <div className="flex-shrink-0 pt-2">
@@ -125,7 +125,7 @@ export function ProfileMainCard({
               </div>
 
               <div className="border border-border rounded-lg p-5 hover:bg-accent hover:border-green-500 transition-colors">
-                <p className="text-green-700 text-sm font-bold mb-1">NUMERO DE TELEFONO</p>
+                <p className="text-green-700 dark:text-green-400 text-sm font-bold mb-1">NÚMERO DE TELÉFONO</p>
                 <p className="text-foreground text-lg font-medium">
                   {user.telefono ? String(user.telefono) : "No registrado"}
                 </p>
@@ -135,15 +135,15 @@ export function ProfileMainCard({
             <div className="mt-8 grid grid-cols-2 gap-4">
               <Button
                 onClick={onChangePassword}
-                className="w-full bg-gradient-to-tr from-fuchsia-700 to-red-600 hover:from-fuchsia-600 hover:to-red-500 hover:scale-102 text-white font-medium flex items-center justify-center gap-2"
+                className="w-full bg-rose-600 hover:bg-rose-500 hover:scale-102 text-white font-medium flex items-center justify-center gap-2 transition-transform"
               >
                 <Lock className="h-4 w-4" />
-                Cambiar Contrasena
+                Cambiar Contraseña
               </Button>
               <Button
                 onClick={onLogoutToHome}
                 variant="outline"
-                className="w-full border-border text-foreground hover:bg-accent hover:scale-102 font-medium"
+                className="w-full font-medium border-green-600 dark:border-green-500 text-green-500 hover:bg-green-50 dark:hover:bg-green-950/40 hover:text-green-700 dark:hover:text-green-400 hover:scale-102 transition-transform"
               >
                 Volver al Inicio
               </Button>
@@ -156,7 +156,7 @@ export function ProfileMainCard({
               </div>
               <div className="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Desactivar cuenta</p>
+                  <p className="text-sm font-medium text-rose-600 dark:text-rose-400">Desactivar cuenta</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     Suspende el acceso de inmediato. Requiere solicitud manual para reactivar.
                   </p>
@@ -165,7 +165,7 @@ export function ProfileMainCard({
                   type="button"
                   variant="outline"
                   onClick={onOpenDeactivate}
-                  className="shrink-0 border-red-300 text-red-600 hover:bg-red-50 hover:border-red-500 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40 transition-colors"
+                  className="shrink-0 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-500 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40 transition-colors"
                 >
                   <UserX className="h-4 w-4 mr-2" />
                   Desactivar mi cuenta

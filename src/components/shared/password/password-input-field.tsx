@@ -1,4 +1,4 @@
-import type { ChangeEventHandler } from "react"
+import type { ChangeEventHandler, ReactNode } from "react"
 import { Eye, EyeOff } from "lucide-react"
 
 import { Input } from "@/components/ui/input"
@@ -16,6 +16,7 @@ type PasswordInputFieldProps = {
   maxLength?: number
   labelClassName?: string
   inputClassName?: string
+  children?: ReactNode
 }
 
 export function PasswordInputField({
@@ -29,6 +30,7 @@ export function PasswordInputField({
   maxLength,
   labelClassName,
   inputClassName,
+  children,
 }: PasswordInputFieldProps) {
   return (
     <div className="space-y-2">
@@ -52,6 +54,7 @@ export function PasswordInputField({
           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
       </div>
+      {children}
     </div>
   )
 }
