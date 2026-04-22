@@ -19,7 +19,7 @@ export function getOrganizerPriceCOP(): number {
   return Number(
     process.env.NEXT_PUBLIC_ORGANIZADOR_PRICE_COP ??
       process.env.NEXT_PUBLIC_PROMOTOR_PRICE_COP ??
-      "50000"
+      "10000"
   )
 }
 

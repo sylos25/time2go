@@ -15,7 +15,7 @@ describe("isPublicApiRoute", () => {
 
   it("POST de login y webhooks sin JWT", () => {
     expect(isPublicApiRoute("POST", "/api/login")).toBe(true)
-    expect(isPublicApiRoute("POST", "/api/wompi/webhook")).toBe(true)
+    expect(isPublicApiRoute("POST", "/api/epayco/webhook")).toBe(true)
   })
 
   it("GET /api/events y detalle público", () => {

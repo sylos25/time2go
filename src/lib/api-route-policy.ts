@@ -45,7 +45,7 @@ const PUBLIC_POST_PATHS = new Set([
   "/api/refresh",
   "/api/send-validation-email",
   "/api/usuario_formulario",
-  "/api/wompi/webhook",
+  "/api/epayco/webhook",
   /** Mantenimiento programado: el handler exige CRON_SECRET (Bearer o cabecera dedicada). */
   "/api/cron/maintenance",
 ]);

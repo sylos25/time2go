@@ -1,17 +1,17 @@
 import type { NextConfig } from "next";
 
 /**
- * CSP orientativa para Next (scripts inline), Turnstile, Google OAuth, mapas/tiles y Wompi.
+ * CSP orientativa para Next (scripts inline), Turnstile, Google OAuth, mapas/tiles y ePayco.
  * `connect-src`/`img-src` con https: amplían superficie; ajústalo si conoces todos los orígenes.
  */
 const contentSecurityPolicy = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://accounts.google.com https://*.google.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://accounts.google.com https://*.google.com https://checkout.epayco.co https://*.epayco.co",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data: https://fonts.gstatic.com",
   "connect-src 'self' https: wss:",
-  "frame-src 'self' https://challenges.cloudflare.com https://checkout.wompi.co https://*.wompi.co",
+  "frame-src 'self' https://challenges.cloudflare.com https://checkout.epayco.co https://*.epayco.co",
   "base-uri 'self'",
   "form-action 'self'",
 ].join("; ");

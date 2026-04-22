@@ -1,4 +1,3 @@
-import crypto from "node:crypto"
 import { NextResponse } from "next/server"
 import pool from "@/lib/db"
 import { getRequesterIdLenient } from "@/lib/auth-request"
@@ -7,13 +6,14 @@ import { uploadDocumentBuffer } from "@/lib/document-storage"
 export const runtime = "nodejs"
 
 const MAX_PDF_SIZE_BYTES = 5 * 1024 * 1024
-const DEFAULT_WOMPI_AMOUNT_COP = Number(
-  process.env.ORGANIZADOR_ROLE_WOMPI_AMOUNT_COP ||
+const DEFAULT_EPAYCO_AMOUNT_COP = Number(
+  process.env.ORGANIZADOR_ROLE_EPAYCO_AMOUNT_COP ||
+    process.env.ORGANIZADOR_ROLE_WOMPI_AMOUNT_COP ||
     process.env.PROMOTOR_ROLE_WOMPI_AMOUNT_COP ||
-    "50000",
+    "10000",
 )
-const WOMPI_PUBLIC_KEY = process.env.WOMPI_PUBLIC_KEY || ""
-const WOMPI_INTEGRITY_SECRET = process.env.WOMPI_INTEGRITY_SECRET || ""
+const EPAYCO_PUBLIC_KEY = process.env.EPAYCO_PUBLIC_KEY || ""
+const EPAYCO_TEST_MODE = (process.env.EPAYCO_TEST_MODE || "true").toLowerCase() === "true"
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 
 function isPdf(file: File) {
@@ -61,27 +61,38 @@ export async function POST(req: Request) {
          id_usuario,
          id_rol_solicitado,
          url_documento_usuario,
+         proveedor_pago,
          referencia_pago,
          monto_pago
-       ) VALUES ($1, $2, $3, $4, $5)`,
-      [userId, requestedRoleId, documentUrl, paymentReference, DEFAULT_WOMPI_AMOUNT_COP],
+       ) VALUES ($1, $2, $3, $4, $5, $6)`,
+      [userId, requestedRoleId, documentUrl, "epayco", paymentReference, DEFAULT_EPAYCO_AMOUNT_COP],
     )
 
-    // Build Wompi checkout URL with integrity hash
-    // SHA256(reference + amount_in_cents + currency + integrity_secret)
-    const amountInCents = DEFAULT_WOMPI_AMOUNT_COP * 100
-    const currency = "COP"
-    const integrityInput = `${paymentReference}${amountInCents}${currency}${WOMPI_INTEGRITY_SECRET}`
-    const integrityHash = crypto.createHash("sha256").update(integrityInput, "utf8").digest("hex")
+    if (!EPAYCO_PUBLIC_KEY) {
+      return NextResponse.json(
+        { ok: false, message: "Falta configurar EPAYCO_PUBLIC_KEY" },
+        { status: 500 },
+      )
+    }
 
-    const redirectUrl = `${SITE_URL}/perfil?pago=resultado&ref=${encodeURIComponent(paymentReference)}`
-    const checkoutUrl = new URL("https://checkout.wompi.co/p/")
-    checkoutUrl.searchParams.set("public-key", WOMPI_PUBLIC_KEY)
-    checkoutUrl.searchParams.set("currency", currency)
-    checkoutUrl.searchParams.set("amount-in-cents", String(amountInCents))
-    checkoutUrl.searchParams.set("reference", paymentReference)
-    checkoutUrl.searchParams.set("signature:integrity", integrityHash)
-    checkoutUrl.searchParams.set("redirect-url", redirectUrl)
+    const amount = DEFAULT_EPAYCO_AMOUNT_COP.toFixed(2)
+    const responseUrl = encodeURIComponent(
+      process.env.EPAYCO_RESPONSE_URL ||
+      `${SITE_URL}/perfil?pago=resultado&ref=${encodeURIComponent(paymentReference)}`,
+    )
+    const confirmationUrl = encodeURIComponent(
+      process.env.EPAYCO_CONFIRMATION_URL || `${SITE_URL}/api/epayco/webhook`,
+    )
+
+    // Redirigir a la página intermedia que carga el SDK de ePayco (checkout.js)
+    // ePayco NO acepta parámetros GET directos en su URL de checkout
+    const checkoutUrl = new URL(`${SITE_URL}/perfil/pagar`)
+    checkoutUrl.searchParams.set("ref", paymentReference)
+    checkoutUrl.searchParams.set("amount", amount)
+    checkoutUrl.searchParams.set("pk", EPAYCO_PUBLIC_KEY)
+    checkoutUrl.searchParams.set("test", EPAYCO_TEST_MODE ? "true" : "false")
+    checkoutUrl.searchParams.set("response", responseUrl)
+    checkoutUrl.searchParams.set("confirmation", confirmationUrl)
 
     return NextResponse.json({ ok: true, checkout_url: checkoutUrl.toString(), referencia_pago: paymentReference })
   } catch (error) {

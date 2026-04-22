@@ -11,7 +11,7 @@ Documento técnico del repositorio: qué es el proyecto, cómo está montado, qu
 - Un **frontend** React (páginas y componentes cliente) con Tailwind y componentes tipo shadcn (Radix).
 - Un **backend** embebido en la misma app mediante **Route Handlers** bajo `src/app/api/*`.
 - Una base de datos **PostgreSQL** con esquema y scripts SQL versionados en `scripts SQL/`.
-- Integraciones opcionadas por variables de entorno: **almacenamiento S3-compatible** (p. ej. Cloudflare R2), **correo** (Nodemailer), **pagos Wompi**, **Google Sign-In**, **Cloudflare Turnstile**, **Upstash Redis** (revocación JWT y módulo de rate limit preparado). Cada una se describe con **qué es** y **rol en el proyecto** en **§6**; el stack de librerías en **§2.1**.
+- Integraciones opcionadas por variables de entorno: **almacenamiento S3-compatible** (p. ej. Cloudflare R2), **correo** (Nodemailer), **pagos ePayco**, **Google Sign-In**, **Cloudflare Turnstile**, **Upstash Redis** (revocación JWT y módulo de rate limit preparado). Cada una se describe con **qué es** y **rol en el proyecto** en **§6**; el stack de librerías en **§2.1**.
 
 El despliegue previsto es **`next build` + `next start`** (Node). La configuración de Next incluye `images.unoptimized: true` (útil si no usas el optimizador de imágenes del servidor de Next), patrones `images.remotePatterns` para portadas en CDN, y cabeceras de seguridad orientativas (CSP y afines) en `next.config.ts`.
 
@@ -178,12 +178,12 @@ En cada apartado, **Qué es** resume el producto o estándar; **Rol en Time2Go**
 ### 6.2 Almacenamiento de objetos (S3 / R2)
 
 - **Qué es:** **S3** es el servicio de objetos de AWS (archivos en “buckets” con API HTTP). **R2** de Cloudflare ofrece **API compatible con S3**, pensado para costes de salida más bajos; sigue siendo “almacenamiento de archivos en la nube”.
-- **Rol en Time2Go:** Guardar y referenciar **PDFs e imágenes** de eventos, documentos del flujo organizador/Wompi, etc., vía `document-storage.ts`.
+- **Rol en Time2Go:** Guardar y referenciar **PDFs e imágenes** de eventos, documentos del flujo organizador/ePayco, etc., vía `document-storage.ts`.
 
 - Implementado en **`src/lib/document-storage.ts`** con **AWS SDK v3** `S3Client`.
 - **`DOCUMENT_STORAGE_PROVIDER`**: `r2` o `s3`.
 - Requiere como mínimo: `DOCUMENTS_BUCKET_NAME`, `DOCUMENTS_ACCESS_KEY_ID`, `DOCUMENTS_SECRET_ACCESS_KEY`; opcionales `DOCUMENTS_REGION`, `DOCUMENTS_ENDPOINT`, `DOCUMENTS_PUBLIC_BASE_URL`, `DOCUMENTS_FORCE_PATH_STYLE`.
-- Uso: imágenes y PDFs de eventos, documentos del flujo organizador/Wompi, etc. Claves tipo `Documents/YYYY/MM/event-…/timestamp-random-nombre.pdf`.
+- Uso: imágenes y PDFs de eventos, documentos del flujo organizador/ePayco, etc. Claves tipo `Documents/YYYY/MM/event-…/timestamp-random-nombre.pdf`.
 
 ### 6.3 Correo electrónico (Nodemailer + SMTP)
 
@@ -206,13 +206,13 @@ En cada apartado, **Qué es** resume el producto o estándar; **Rol en Time2Go**
 - **Revocación JWT:** `src/lib/token-revocation.ts` guarda claves `revoked:jti:{jti}` con TTL acotado al `exp` del token. Si no hay env, la revocación es **no-op** (no falla).
 - **`src/lib/login-rate-limit.ts`**: define **Ratelimit** de Upstash (ventanas deslizantes por IP y por credencial). En el estado actual del repo, **`POST /api/login`** implementa además su **propio** rate limit en memoria en producción; el prelude `runLoginRateLimitPrelude` del módulo compartido puede quedar como extensión futura o integración pendiente — conviene unificar si quieres límites distribuidos solo vía Upstash.
 
-### 6.5 Wompi (pagos Colombia)
+### 6.5 ePayco (pagos Colombia)
 
 - **Qué es:** **Pasarela de pagos** colombiana (PSE, tarjetas, billeteras, etc.) orientada a comercio electrónico; expone **checkout** embebido o redirección y **webhooks** para confirmar transacciones en el servidor.
 - **Rol en Time2Go:** Cobrar el proceso de **upgrade a organizador**; el webhook `transaction.updated` actualiza tablas de cambio de rol cuando el pago es válido.
 
-- **Checkout:** `WOMPI_PUBLIC_KEY`, `WOMPI_INTEGRITY_SECRET`, monto `ORGANIZADOR_ROLE_WOMPI_AMOUNT_COP` (compat: `PROMOTOR_ROLE_WOMPI_AMOUNT_COP`). URL de retorno basada en `NEXT_PUBLIC_SITE_URL`.
-- **Webhook:** `WOMPI_EVENTS_SECRET` para validar firma del evento; en producción sin secreto las verificaciones fallan. Evento manejado: `transaction.updated`; actualiza `tabla_cambio_rol_usuario` y, si aprobado, sube rol del usuario.
+- **Checkout:** `EPAYCO_PUBLIC_KEY`, monto `ORGANIZADOR_ROLE_EPAYCO_AMOUNT_COP` (compatibilidad temporal con variables antiguas). URL de retorno basada en `NEXT_PUBLIC_SITE_URL`.
+- **Webhook:** `EPAYCO_P_CUST_ID_CLIENTE` para validar firma del evento de confirmación. Actualiza `tabla_cambio_rol_usuario` y, si aprobado, sube rol del usuario.
 
 ### 6.6 Google Sign-In
 
@@ -234,9 +234,9 @@ En cada apartado, **Qué es** resume el producto o estándar; **Rol en Time2Go**
 ### 6.8 URLs públicas de la app (variables de entorno)
 
 - **Qué son:** No son un “servicio” aparte: son **cadenas configurables** que representan el **origen HTTPS** (o `http://localhost:3000` en desarrollo) desde el que los usuarios acceden a la app.
-- **Rol en Time2Go:** Construir **enlaces absolutos** en correos, redirecciones tras pagos Wompi, y cualquier URL que deba apuntar al front desplegado. `NEXT_PUBLIC_*` se inyecta en el bundle del cliente; las demás suelen ser solo servidor.
+- **Rol en Time2Go:** Construir **enlaces absolutos** en correos, redirecciones tras pagos ePayco, y cualquier URL que deba apuntar al front desplegado. `NEXT_PUBLIC_*` se inyecta en el bundle del cliente; las demás suelen ser solo servidor.
 
-- **`NEXT_PUBLIC_SITE_URL`**, **`NEXT_PUBLIC_APP_URL`**, **`APP_URL`**: bases para enlaces en emails, redirects Wompi, etc. (usos dispersos; revisar cada handler).
+- **`NEXT_PUBLIC_SITE_URL`**, **`NEXT_PUBLIC_APP_URL`**, **`APP_URL`**: bases para enlaces en emails, redirects ePayco, etc. (usos dispersos; revisar cada handler).
 
 ### 6.9 Tareas programadas (mantenimiento)
 
@@ -268,7 +268,7 @@ En cada apartado, **Qué es** resume el producto o estándar; **Rol en Time2Go**
 ### 6.11 Cabeceras de seguridad y CSP (`next.config.ts`)
 
 - **Qué es:** Las respuestas HTTP pueden llevar **cabeceras** que instruyen al navegador (no abrir en iframe ajeno, no adivinar MIME, etc.). **CSP** (*Content Security Policy*) es una cabecera que **limita de dónde puede cargar scripts, estilos, imágenes y conexiones** la página, reduciendo impacto de XSS y recursos no deseados.
-- **Rol en Time2Go:** `next.config.ts` añade CSP **orientativa** (incluye dominios usados por Turnstile, Google OAuth, mapas/tiles, Wompi) más cabeceras como `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options` y `Permissions-Policy`. Conviene **ajustar la CSP** si añades nuevos orígenes o quieres endurecerla (p. ej. sustituir `https:` amplios por hosts concretos).
+- **Rol en Time2Go:** `next.config.ts` añade CSP **orientativa** (incluye dominios usados por Turnstile, Google OAuth, mapas/tiles, ePayco) más cabeceras como `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options` y `Permissions-Policy`. Conviene **ajustar la CSP** si añades nuevos orígenes o quieres endurecerla (p. ej. sustituir `https:` amplios por hosts concretos).
 
 ### 6.12 Imágenes remotas (`next.config.ts` → `images.remotePatterns`)
 
@@ -318,7 +318,7 @@ En cada apartado, **Qué es** resume el producto o estándar; **Rol en Time2Go**
 | `COOKIE_DOMAIN` | Cookies en subdominio |
 | `EMAIL_*` | Envío de correos |
 | `DOCUMENTS_*`, `DOCUMENT_STORAGE_PROVIDER` | R2/S3 |
-| `WOMPI_*`, `NEXT_PUBLIC_SITE_URL` | Pagos |
+| `EPAYCO_*`, `NEXT_PUBLIC_SITE_URL` | Pagos |
 | `NEXT_PUBLIC_ORGANIZADOR_PRICE_COP` | Precio mostrado en UI perfil (compat `NEXT_PUBLIC_PROMOTOR_PRICE_COP`) |
 | `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_ID` | OAuth Google |
 | `NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY`, `CLOUDFLARE_TURNSTILE_SECRET`, `CLOUDFLARE_TURNSTILE_MODE` | CAPTCHA login |
@@ -367,7 +367,7 @@ El código TypeScript **no** usa ORM; ejecuta SQL con **`pg`** y, en algunos flu
 4. Aplicar en PostgreSQL la versión actual de **`fn_eventos_listar_json`** (y el resto de funciones/migraciones pendientes) para alinear listados y archivo de eventos.
 5. Definir **`CRON_SECRET`** y programar llamadas a **`POST /api/cron/maintenance`** (cron del hosting, GitHub Actions u otro scheduler), o ejecutarlo manualmente tras despliegues si aplica.
 6. Tras proxy inverso, configurar cabeceras **`X-Forwarded-For` / `X-Real-IP`** si quieres rate limit por IP fiable.
-7. Asegurar **HTTPS** en producción para `Secure` en cookies y para integridad Wompi/webhooks.
+7. Asegurar **HTTPS** en producción para `Secure` en cookies y para validación de firmas en ePayco/webhooks.
 
 ---
 
@@ -384,7 +384,7 @@ El código TypeScript **no** usa ORM; ejecuta SQL con **`pg`** y, en algunos flu
 | Pool BD | `src/lib/db.ts` |
 | Archivos | `src/lib/document-storage.ts` |
 | Email | `src/lib/email.ts` |
-| Webhook Wompi | `src/app/api/wompi/webhook/route.ts` |
+| Webhook ePayco | `src/app/api/epayco/webhook/route.ts` |
 | Aprobar / rechazar evento (correo al organizador si pasa a aprobado) | `src/app/api/events/[id]/toggle-status/route.ts` |
 | Ban usuario (correo categoría + motivo) | `src/app/api/usuarios/[id]/ban/route.ts` |
 | Cron mantenimiento | `src/app/api/cron/maintenance/route.ts` |

@@ -30,7 +30,7 @@ export default function PerfilPage() {
     handleOrganizadorDialogOpenChange,
     closeOrganizadorDialog,
     handleFileChange,
-    handlePayWithWompi,
+    handlePayWithEpayco,
     openDeactivate,
     closeDeactivate,
     goToDeactivateStep2,
@@ -74,7 +74,7 @@ export default function PerfilPage() {
         onOpenChange={handleOrganizadorDialogOpenChange}
         onClose={closeOrganizadorDialog}
         onFileChange={handleFileChange}
-        onPay={handlePayWithWompi}
+        onPay={handlePayWithEpayco}
       />
 
       <DeactivateAccountDialogs

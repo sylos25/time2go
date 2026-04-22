@@ -108,7 +108,7 @@ export function OrganizerDialog({
             ) : (
               <>
                 <CreditCard className="h-4 w-4 mr-1" />
-                Pagar con Wompi
+                Pagar con ePayco
               </>
             )}
           </Button>

@@ -110,7 +110,7 @@ export function useProfilePage() {
     setSelectedPdf(file)
   }, [])
 
-  const handlePayWithWompi = useCallback(async () => {
+  const handlePayWithEpayco = useCallback(async () => {
     setIsProcessingPayment(true)
     setOrganizadorError(null)
 
@@ -234,7 +234,7 @@ export function useProfilePage() {
     handleOrganizadorDialogOpenChange,
     closeOrganizadorDialog,
     handleFileChange,
-    handlePayWithWompi,
+    handlePayWithEpayco,
     openDeactivate,
     closeDeactivate,
     goToDeactivateStep2,
