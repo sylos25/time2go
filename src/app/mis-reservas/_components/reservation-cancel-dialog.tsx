@@ -31,12 +31,17 @@ export function ReservationCancelDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" className="hover:scale-103" onClick={onClose} disabled={isCancelling}>
+          <Button
+            variant="outline"
+            className="border-border text-foreground hover:border-green-500 hover:text-green-700"
+            onClick={onClose}
+            disabled={isCancelling}
+          >
             No, conservar reserva
           </Button>
           <Button
             onClick={onConfirm}
-            className="bg-gradient-to-tr from-fuchsia-700 to-red-500 hover:scale-103 hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-500 text-white"
+            className="bg-red-600 hover:bg-red-700 text-white"
             disabled={isCancelling}
           >
             {isCancelling ? "Cancelando..." : "Sí, cancelar reserva"}

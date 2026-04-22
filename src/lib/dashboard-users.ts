@@ -23,6 +23,8 @@ export type UserRow = {
 
 export type MeUser = {
   id_usuario: number
+  id_rol?: number | string
+  nombre_rol?: string
   nombres?: string
   apellidos?: string
 }
@@ -32,7 +34,7 @@ export type BanFormState = {
   id_categoria: number
   id_motivo_ban: number
   inicio_ban: string
-  fin_ban: string
+  duracion_dias: number
 }
 
 export type UsersMessage = {

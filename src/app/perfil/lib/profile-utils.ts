@@ -15,14 +15,6 @@ export function clearSessionStorageValues() {
   localStorage.removeItem("userPublicId")
 }
 
-export function getOrganizerPriceCOP(): number {
-  return Number(
-    process.env.NEXT_PUBLIC_ORGANIZADOR_PRICE_COP ??
-      process.env.NEXT_PUBLIC_PROMOTOR_PRICE_COP ??
-      "10000"
-  )
-}
-
 export function formatOrganizerPrice(value: number): string {
   return new Intl.NumberFormat("es-CO", {
     style: "currency",

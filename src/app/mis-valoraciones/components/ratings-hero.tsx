@@ -22,13 +22,13 @@ export function RatingsHero({
           Inicio
         </button>
         <ChevronRight className="h-3.5 w-3.5" />
-        <span className="text-foreground font-medium">Mis Valoraciones</span>
+        <span className="text-foreground font-medium text-green-700">Mis Valoraciones</span>
       </div>
 
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <Star className="h-7 w-7 text-green-600" />
+          <h1 className="text-3xl font-bold text-foreground text-green-700 flex items-center gap-3">
+            <Star className="h-7 w-7 text-yellow-500" />
             Mis Valoraciones
           </h1>
           <p className="text-muted-foreground mt-1">{summaryText}</p>
@@ -37,7 +37,7 @@ export function RatingsHero({
         {!loading && count > 0 && (
           <div className="flex items-center gap-2 bg-card border border-border rounded-sm px-4 py-2">
             <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-            <span className="font-bold text-foreground text-lg">{averageText}</span>
+            <span className="font-bold text-foreground text-green-700 text-lg">{averageText}</span>
             <span className="text-muted-foreground text-sm">promedio</span>
           </div>
         )}

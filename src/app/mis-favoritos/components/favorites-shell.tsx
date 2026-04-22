@@ -22,7 +22,7 @@ export function FavoritesShell({
   onToggleAuthMode,
 }: FavoritesShellProps) {
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen flex flex-col bg-background">
       <Header onAuthClick={onAuthClick} />
       {children}
       <Footer />

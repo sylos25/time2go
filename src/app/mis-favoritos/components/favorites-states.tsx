@@ -41,7 +41,7 @@ export function FavoritesEmptyState({ onExploreEvents }: FavoritesEmptyStateProp
         </div>
         <button
           onClick={onExploreEvents}
-          className="px-5 py-2 rounded-sm text-white text-sm font-medium bg-linear-to-tr from-fuchsia-700 to-red-500 hover:scale-103 hover:from-fuchsia-600 hover:to-red-500 transition-all cursor-pointer"
+          className="px-5 py-2 rounded-sm text-white text-sm font-medium bg-rose-600 hover:scale-103 hover:bg-rose-500 transition-all cursor-pointer"
         >
           Explorar eventos
         </button>

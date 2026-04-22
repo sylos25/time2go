@@ -42,7 +42,7 @@ export function OrganizerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl">Organiza tus eventos</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-green-700">Organiza tus eventos</DialogTitle>
           <DialogDescription>
             Elige un plan mensual para publicar eventos en Time2Go
           </DialogDescription>
@@ -63,7 +63,7 @@ export function OrganizerDialog({
         </div>
 
         <div className="space-y-2">
-          <p className="text-sm font-medium text-foreground">Selecciona un plan mensual</p>
+          <p className="text-sm font-medium text-teal-700 text-foreground">Selecciona un plan mensual</p> 
           {isLoadingPlans ? (
             <div className="rounded-md border p-3 text-sm text-muted-foreground">Cargando planes...</div>
           ) : organizerPlans.length === 0 ? (
@@ -87,7 +87,7 @@ export function OrganizerDialog({
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-foreground">{plan.nombre_plan}</p>
+                      <p className="text-sm font-semibold text-foreground text-green-800">{plan.nombre_plan}</p>
                       <p className="text-sm font-bold text-green-700 dark:text-green-400">
                         {new Intl.NumberFormat("es-CO", {
                           style: "currency",
@@ -100,7 +100,7 @@ export function OrganizerDialog({
                       Hasta {plan.max_eventos_mensuales} eventos/mes · {plan.max_imagenes_por_evento} imagenes por evento · aforo {plan.aforo_minimo}-{plan.aforo_maximo}
                     </p>
                     {plan.permite_destacado && (
-                      <p className="mt-1 text-xs font-medium text-amber-600 dark:text-amber-400">Incluye eventos destacados</p>
+                      <p className="mt-1 text-xs font-medium text-amber-600 dark:text-amber-500">Incluye eventos destacados</p>
                     )}
                   </button>
                 )
@@ -131,13 +131,13 @@ export function OrganizerDialog({
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isProcessingPayment}>
+          <Button variant="outline" onClick={onClose} disabled={isProcessingPayment} className="border-green-600 text-green-700 hover:bg-green-50 hover:border-green-700 hover:text-green-700 hover:scale-103 transition-colors transition-transform">
             Cancelar
           </Button>
           <Button
             onClick={onPay}
             disabled={isProcessingPayment || !selectedPlanId || isLoadingPlans || organizerPlans.length === 0}
-            className="bg-gradient-to-tr from-green-600 to-lime-500 text-white"
+            className="bg-rose-600 text-white hover:bg-rose-500 hover:scale-103 transition-colors transition-transform"
           >
             {isProcessingPayment ? (
               <>

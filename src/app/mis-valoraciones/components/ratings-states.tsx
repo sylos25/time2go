@@ -20,7 +20,7 @@ export function RatingsLoadingState() {
 
 export function RatingsErrorState({ error }: RatingsErrorStateProps) {
   return (
-    <Card className="bg-card/90 backdrop-blur-sm border-border rounded-sm">
+    <Card className="bg-card/90 backdrop-blur-sm border border-red-200 rounded-sm">
       <CardContent className="p-6 text-center">
         <p className="text-red-600 text-sm">{error}</p>
       </CardContent>
@@ -30,7 +30,7 @@ export function RatingsErrorState({ error }: RatingsErrorStateProps) {
 
 export function RatingsEmptyState({ onExploreEvents }: RatingsEmptyStateProps) {
   return (
-    <Card className="bg-card/90 backdrop-blur-sm border-border rounded-sm">
+    <Card className="bg-card/90 backdrop-blur-sm border border-border rounded-sm">
       <CardContent className="p-12 flex flex-col items-center text-center gap-4">
         <Star className="h-12 w-12 text-muted-foreground/30" />
         <div>
@@ -41,7 +41,7 @@ export function RatingsEmptyState({ onExploreEvents }: RatingsEmptyStateProps) {
         </div>
         <button
           onClick={onExploreEvents}
-          className="px-5 py-2 rounded-sm text-white text-sm font-medium bg-gradient-to-tr from-fuchsia-700 to-red-500 hover:opacity-90 transition-all cursor-pointer"
+          className="px-5 py-2 rounded-sm text-white text-sm font-medium bg-rose-600 hover:bg-rose-500 hover:scale-103 transition-colors cursor-pointer"
         >
           Explorar eventos
         </button>

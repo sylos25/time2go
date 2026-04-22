@@ -25,6 +25,7 @@ type UserBanDialogProps = {
   onOpenChange: (open: boolean) => void
   banSubmitting: boolean
   banUserName: string
+  banUserEmail: string
   banForm: BanFormState
   banMessage: UsersMessage
   categoriasBan: BanCategory[]
@@ -33,8 +34,29 @@ type UserBanDialogProps = {
   meUser: MeUser | null
   onBanFormChange: (updater: (prev: BanFormState) => BanFormState) => void
   onSubmit: () => void
-  addDaysToDateTimeLocal: (dateTimeLocal: string, days: number) => string
   formatDateTimeLocal: (date: Date) => string
+}
+
+function getRoleLabel(idRol: number | string | undefined, roleName?: string) {
+  if (roleName?.trim()) return roleName.trim()
+
+  const role = Number(idRol)
+  if (role === 1) return "Usuario"
+  if (role === 2) return "Organizador"
+  if (role === 3) return "Moderador"
+  if (role === 4) return "Administrador"
+  return "Sin cargo"
+}
+
+function formatDisplayDate(dateTimeLocal: string) {
+  const date = new Date(dateTimeLocal)
+  if (Number.isNaN(date.getTime())) return "-"
+
+  return date.toLocaleDateString("es-CO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
 }
 
 export function UserBanDialog({
@@ -42,6 +64,7 @@ export function UserBanDialog({
   onOpenChange,
   banSubmitting,
   banUserName,
+  banUserEmail,
   banForm,
   banMessage,
   categoriasBan,
@@ -50,9 +73,11 @@ export function UserBanDialog({
   meUser,
   onBanFormChange,
   onSubmit,
-  addDaysToDateTimeLocal,
   formatDateTimeLocal,
 }: UserBanDialogProps) {
+  const responsableNombre = `${meUser?.nombres || ""} ${meUser?.apellidos || ""}`.trim() || "Sin nombre"
+  const responsableCargo = getRoleLabel(meUser?.id_rol, meUser?.nombre_rol)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[min(90vh,720px)] w-full max-w-lg overflow-y-auto sm:max-w-xl">
@@ -76,9 +101,7 @@ export function UserBanDialog({
               <CardTitle className="text-sm font-medium text-red-900 dark:text-red-200">Cuenta afectada</CardTitle>
               <CardDescription className="text-red-800/90 dark:text-red-300/90">
                 {banUserName}
-                <span className="mt-1 block font-mono text-xs text-red-700/80 dark:text-red-400/90">
-                  ID {banForm.id_usuario}
-                </span>
+                <span className="mt-1 block text-xs text-red-700/80 dark:text-red-400/90">{banUserEmail || "Sin correo"}</span>
               </CardDescription>
             </CardHeader>
           </Card>
@@ -150,57 +173,35 @@ export function UserBanDialog({
               <Label htmlFor="ban-inicio">Inicio</Label>
               <input
                 id="ban-inicio"
-                type="datetime-local"
-                value={banForm.inicio_ban}
-                onChange={(event) => onBanFormChange((prev) => ({ ...prev, inicio_ban: event.target.value }))}
+                type="text"
+                value={formatDisplayDate(banForm.inicio_ban || formatDateTimeLocal(new Date()))}
+                readOnly
                 className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ban-fin">Fin</Label>
+              <Label htmlFor="ban-dias">Duracion (dias)</Label>
               <input
-                id="ban-fin"
-                type="datetime-local"
-                value={banForm.fin_ban}
-                onChange={(event) => onBanFormChange((prev) => ({ ...prev, fin_ban: event.target.value }))}
+                id="ban-dias"
+                type="number"
+                min={1}
+                value={banForm.duracion_dias || ""}
+                onChange={(event) =>
+                  onBanFormChange((prev) => ({
+                    ...prev,
+                    duracion_dias: Number(event.target.value) || 0,
+                  }))
+                }
                 className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">Duracion desde el inicio</p>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { days: 7, label: "7 dias" },
-                { days: 14, label: "14 dias" },
-                { days: 30, label: "30 dias" },
-                { days: 90, label: "90 dias" },
-              ].map(({ days, label }) => (
-                <Button
-                  key={days}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="border-lime-200/80 text-green-900 hover:bg-lime-50 dark:border-emerald-800 dark:text-emerald-100 dark:hover:bg-emerald-950/50"
-                  onClick={() =>
-                    onBanFormChange((prev) => ({
-                      ...prev,
-                      fin_ban: addDaysToDateTimeLocal(prev.inicio_ban || formatDateTimeLocal(new Date()), days),
-                    }))
-                  }
-                >
-                  {label}
-                </Button>
-              ))}
             </div>
           </div>
 
           <Card className="gap-0 border-border/80 bg-muted/30 py-3 shadow-none">
             <CardContent className="px-4 py-0 text-sm text-muted-foreground">
               <span className="font-medium text-foreground">Responsable: </span>
-              {meUser?.nombres} {meUser?.apellidos}
-              <span className="mt-0.5 block font-mono text-xs">ID {meUser?.id_usuario}</span>
+              {responsableNombre}
+              <span className="mt-0.5 block text-xs">{responsableCargo}</span>
             </CardContent>
           </Card>
         </div>

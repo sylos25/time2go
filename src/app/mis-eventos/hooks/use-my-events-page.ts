@@ -61,6 +61,10 @@ export function useMyEventsPage() {
     router.push("/eventos")
   }, [router])
 
+  const goToHome = useCallback(() => {
+    router.push("/")
+  }, [router])
+
   const openEvent = useCallback(
     (id: number) => {
       saveCreatorView(id)
@@ -73,6 +77,7 @@ export function useMyEventsPage() {
     loading,
     error,
     events,
+    goToHome,
     goToExploreEvents,
     openEvent,
   }

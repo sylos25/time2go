@@ -39,7 +39,7 @@ export function ContactFormCard({
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nombre *</Label>
+              <Label htmlFor="name">Nombre</Label>
               <Input
                 id="name"
                 placeholder="Tu nombre"
@@ -50,7 +50,7 @@ export function ContactFormCard({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -64,7 +64,7 @@ export function ContactFormCard({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="subject">Asunto *</Label>
+            <Label htmlFor="subject">Asunto</Label>
             <Input
               id="subject"
               placeholder="¿En qué podemos ayudarte?"
@@ -76,7 +76,7 @@ export function ContactFormCard({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="message">Mensaje *</Label>
+            <Label htmlFor="message">Mensaje</Label>
             <Textarea
               id="message"
               placeholder="Describe tu consulta..."
@@ -91,7 +91,7 @@ export function ContactFormCard({
           <Button
             type="submit"
             disabled={sending}
-            className="w-full bg-linear-to-tr from-fuchsia-700 to-red-500 hover:scale-103 hover:from-fuchsia-600 hover:to-red-500 text-white font-medium rounded-sm cursor-pointer"
+            className="w-full bg-rose-600 hover:bg-rose-500 text-white hover:scale-103 font-medium rounded-sm cursor-pointer transition-colors transition-transform flex items-center justify-center"
           >
             <Send className="w-4 h-4 mr-2" />
             {sending ? "Enviando..." : "Enviar mensaje"}

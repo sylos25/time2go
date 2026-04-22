@@ -12,9 +12,9 @@ type MyEventCardProps = {
 
 export function MyEventCard({ event, onOpenEvent }: MyEventCardProps) {
   return (
-    <Card className="bg-card/90 backdrop-blur-sm">
+    <Card className="bg-card/90 backdrop-blur-sm border border-border rounded-sm overflow-hidden">
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg line-clamp-2">{event.title}</CardTitle>
+        <CardTitle className="text-lg text-foreground line-clamp-2">{event.title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {event.imageUrl && (
@@ -41,7 +41,10 @@ export function MyEventCard({ event, onOpenEvent }: MyEventCardProps) {
         </div>
 
         <div className="pt-2 flex gap-2">
-          <Button className="w-full" onClick={() => onOpenEvent(event.id)}>
+          <Button
+            className="w-full bg-gradient-to-tr from-green-600 to-lime-500 text-white hover:from-green-500 hover:to-lime-400"
+            onClick={() => onOpenEvent(event.id)}
+          >
             Ver evento
           </Button>
         </div>

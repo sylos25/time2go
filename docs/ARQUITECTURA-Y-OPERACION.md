@@ -211,7 +211,7 @@ En cada apartado, **Qué es** resume el producto o estándar; **Rol en Time2Go**
 - **Qué es:** **Pasarela de pagos** colombiana (PSE, tarjetas, billeteras, etc.) orientada a comercio electrónico; expone **checkout** embebido o redirección y **webhooks** para confirmar transacciones en el servidor.
 - **Rol en Time2Go:** Cobrar el proceso de **upgrade a organizador**; el webhook `transaction.updated` actualiza tablas de cambio de rol cuando el pago es válido.
 
-- **Checkout:** `EPAYCO_PUBLIC_KEY`, monto `ORGANIZADOR_ROLE_EPAYCO_AMOUNT_COP` (compatibilidad temporal con variables antiguas). URL de retorno basada en `NEXT_PUBLIC_SITE_URL`.
+- **Checkout:** `EPAYCO_PUBLIC_KEY`; el monto se toma del plan elegido en `tabla_planes_organizador` (columna `precio_cop`). URL de retorno basada en `NEXT_PUBLIC_SITE_URL`.
 - **Webhook:** `EPAYCO_P_CUST_ID_CLIENTE` para validar firma del evento de confirmación. Actualiza `tabla_cambio_rol_usuario` y, si aprobado, sube rol del usuario.
 
 ### 6.6 Google Sign-In
@@ -319,7 +319,7 @@ En cada apartado, **Qué es** resume el producto o estándar; **Rol en Time2Go**
 | `EMAIL_*` | Envío de correos |
 | `DOCUMENTS_*`, `DOCUMENT_STORAGE_PROVIDER` | R2/S3 |
 | `EPAYCO_*`, `NEXT_PUBLIC_SITE_URL` | Pagos |
-| `NEXT_PUBLIC_ORGANIZADOR_PRICE_COP` | Precio mostrado en UI perfil (compat `NEXT_PUBLIC_PROMOTOR_PRICE_COP`) |
+| (sin variable de precio en .env) | El precio de membresia se obtiene desde `tabla_planes_organizador.precio_cop` |
 | `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_ID` | OAuth Google |
 | `NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY`, `CLOUDFLARE_TURNSTILE_SECRET`, `CLOUDFLARE_TURNSTILE_MODE` | CAPTCHA login |
 | `CRON_SECRET` | Autoriza `POST /api/cron/maintenance` (obligatorio en producción si usas el job) |

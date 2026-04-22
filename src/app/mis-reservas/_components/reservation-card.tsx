@@ -23,9 +23,9 @@ export function ReservationCard({
   const canCancel = canCancelReservation(reserva);
 
   return (
-    <Card className="bg-card/90 backdrop-blur-sm">
+    <Card className="bg-card/90 backdrop-blur-sm border border-border rounded-sm overflow-hidden">
       <CardHeader className="pb-2">
-        <CardTitle className="text-2xl font-semibold text-green-700 line-clamp-2">
+        <CardTitle className="text-xl font-semibold text-foreground line-clamp-2">
           {reserva.nombre_evento}
         </CardTitle>
       </CardHeader>
@@ -56,7 +56,7 @@ export function ReservationCard({
         <div className="pt-2 grid grid-cols-2 gap-2">
           <Button
             size="sm"
-            className="w-full bg-gradient-to-tr from-green-600 to-lime-500 text-white hover:from-green-500 hover:to-lime-500 hover:scale-103"
+            className="w-full bg-gradient-to-tr from-green-600 to-lime-500 text-white hover:from-green-500 hover:to-lime-400"
             onClick={() => onView(Number(reserva.id_reserva_evento))}
           >
             Ver reserva
@@ -64,7 +64,7 @@ export function ReservationCard({
           <Button
             variant="outline"
             size="sm"
-            className="w-full border-rose-700 text-rose-700 hover:bg-rose-50 hover:text-rose-700 hover:scale-103"
+            className="w-full border-border text-foreground hover:border-red-400 hover:text-red-600"
             disabled={cancellingId === reserva.id_reserva_evento || !canCancel}
             onClick={() => onCancel(reserva)}
             title={
@@ -78,7 +78,7 @@ export function ReservationCard({
         </div>
 
         {!canCancel && (
-          <p className="text-xs text-amber-700">
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-sm px-2 py-1">
             La cancelación se permite únicamente hasta 12 horas antes del inicio.
           </p>
         )}

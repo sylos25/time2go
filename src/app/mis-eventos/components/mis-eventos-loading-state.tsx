@@ -6,9 +6,9 @@ type MisEventosLoadingStateProps = {
 
 export function MisEventosLoadingState({ message }: MisEventosLoadingStateProps) {
   return (
-    <div className="text-center">
-      <Loader2 className="h-12 w-12 text-green-800 animate-spin mx-auto mb-4" />
-      <p className="text-muted-foreground text-lg">{message}</p>
+    <div className="flex flex-col justify-center items-center py-24">
+      <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+      <p className="text-muted-foreground text-lg mt-4">{message}</p>
     </div>
   )
 }

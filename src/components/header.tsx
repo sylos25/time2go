@@ -100,14 +100,14 @@ export function Header({
       <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirmar cierre de sesión</DialogTitle>
+            <DialogTitle className="text-green-700">Confirmar cierre de sesión</DialogTitle>
             <DialogDescription>
               ¿Estás seguro que deseas cerrar sesión? Se cerrará tu sesión actual.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" className="hover:scale-103" onClick={() => setLogoutDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleConfirmLogout} className="bg-gradient-to-tr from-fuchsia-700 to-red-500 hover:scale-103 hover:bg-gradient-to-tr hover:from-fuchsia-600 hover:to-red-450 text-white">Cerrar sesión</Button>
+            <Button variant="outline" className="border-green-700 text-green-700 hover:bg-green-50 hover:text-green-700 hover:scale-103 transition-transform" onClick={() => setLogoutDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleConfirmLogout} className="bg-rose-600 hover:scale-102 hover:bg-rose-500 text-white">Cerrar sesión</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

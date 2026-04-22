@@ -26,6 +26,7 @@ export default function DashboardUsersPage() {
     banModalOpen,
     banSubmitting,
     banUserName,
+    banUserEmail,
     banMessage,
     banForm,
     motivosFiltrados,
@@ -38,7 +39,6 @@ export default function DashboardUsersPage() {
     openBanModal,
     submitBan,
     validateUser,
-    addDaysToDateTimeLocal,
     formatDateTimeLocal,
   } = useDashboardUsers()
 
@@ -79,6 +79,7 @@ export default function DashboardUsersPage() {
         onOpenChange={setBanModalOpen}
         banSubmitting={banSubmitting}
         banUserName={banUserName}
+        banUserEmail={banUserEmail}
         banForm={banForm}
         banMessage={banMessage}
         categoriasBan={categoriasBan}
@@ -87,7 +88,6 @@ export default function DashboardUsersPage() {
         meUser={meUser}
         onBanFormChange={setBanForm}
         onSubmit={submitBan}
-        addDaysToDateTimeLocal={addDaysToDateTimeLocal}
         formatDateTimeLocal={formatDateTimeLocal}
       />
     </div>

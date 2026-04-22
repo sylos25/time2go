@@ -36,7 +36,7 @@ export default function MisFavoritosPage() {
       onCloseAuth={closeAuthModal}
       onToggleAuthMode={toggleAuthMode}
     >
-      <section className="pt-28 lg:pt-32 pb-12">
+      <section className="flex-grow pt-28 lg:pt-32 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <FavoritesHero
             summaryText={summaryText}

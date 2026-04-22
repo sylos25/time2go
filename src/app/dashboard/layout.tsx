@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import Image from "next/image"
 import {
   Calendar,
+  ChartNoAxesColumn,
   ChevronLeft,
   ChevronRight,
   Home,
@@ -158,6 +159,9 @@ export default function DashboardLayout({
       { href: "/dashboard/ver-datos", name: "Ver Datos", icon: Search },
       { href: "/dashboard/usuarios", name: "Usuarios", icon: Users },
       ...(isModOrAdmin ? [{ href: "/dashboard/denuncias-eventos", name: "Reportes de eventos", icon: Flag }] : []),
+      ...(isAdmin
+        ? [{ href: "/dashboard/planes-organizador", name: "Planes y Suscripciones", icon: ChartNoAxesColumn }]
+        : []),
       ...(isAdmin ? [{ href: "/dashboard/administrador", name: "Administrador", icon: ShieldCheck }] : []),
     ],
     [canManageEvents, isAdmin, isModOrAdmin]

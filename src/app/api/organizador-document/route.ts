@@ -108,12 +108,11 @@ export async function POST(req: Request) {
       `INSERT INTO tabla_cambio_rol_usuario (
          id_usuario,
          id_rol_solicitado,
-         url_documento_usuario,
-         proveedor_pago,
          referencia_pago,
-         monto_pago
-       ) VALUES ($1, $2, $3, $4, $5, $6)`,
-      [userId, ORGANIZER_ROLE_ID, null, "epayco", paymentReference, selectedPlan.precio_cop],
+         monto_pago,
+         moneda
+       ) VALUES ($1, $2, $3, $4, $5)`,
+      [userId, ORGANIZER_ROLE_ID, paymentReference, selectedPlan.precio_cop, "COP"],
     )
 
     if (!EPAYCO_PUBLIC_KEY) {

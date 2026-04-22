@@ -449,7 +449,6 @@ CREATE TABLE IF NOT EXISTS tabla_cambio_rol_usuario (
     id_cambio_rol_usuario                   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     id_usuario                              INT                          NOT NULL,
     id_rol_solicitado                       INT                          NOT NULL       DEFAULT 2,                                -- 2: Rol de Organizador
-    url_documento_usuario                   VARCHAR,
     proveedor_pago                          VARCHAR                      NOT NULL       DEFAULT 'epayco' CHECK (proveedor_pago IN ('epayco')),
     referencia_pago                         VARCHAR                      NOT NULL       UNIQUE,
     id_transaccion_pago                     VARCHAR                                     UNIQUE,

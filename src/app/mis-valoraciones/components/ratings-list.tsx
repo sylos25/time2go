@@ -51,7 +51,7 @@ export function RatingsList({
         return (
           <Card
             key={item.id_valoracion}
-            className="bg-card/90 backdrop-blur-sm border-border rounded-sm overflow-hidden"
+            className="bg-card/90 backdrop-blur-sm border border-border rounded-sm overflow-hidden"
           >
             <CardContent className="p-0">
               <div className="flex flex-col sm:flex-row">
@@ -118,7 +118,7 @@ export function RatingsList({
                         <button
                           onClick={() => onSaveEdit(item.id_valoracion)}
                           disabled={savingEdit}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-medium bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 cursor-pointer transition-colors"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-medium bg-rose-500 hover:from-green-500 hover:to-lime-400 text-white disabled:opacity-50 cursor-pointer transition-colors"
                         >
                           {savingEdit ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
@@ -130,7 +130,7 @@ export function RatingsList({
                         <button
                           onClick={onCancelEdit}
                           disabled={savingEdit}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-medium border border-border text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-medium border border-border text-foreground hover:border-green-500 hover:text-green-700 transition-colors cursor-pointer"
                         >
                           <X className="h-3 w-3" />
                           Cancelar

@@ -31,13 +31,14 @@ export function useDashboardUsers() {
   const [banModalOpen, setBanModalOpen] = useState(false)
   const [banSubmitting, setBanSubmitting] = useState(false)
   const [banUserName, setBanUserName] = useState("")
+  const [banUserEmail, setBanUserEmail] = useState("")
   const [banMessage, setBanMessage] = useState<UsersMessage>(null)
   const [banForm, setBanForm] = useState<BanFormState>({
     id_usuario: 0,
     id_categoria: 0,
     id_motivo_ban: 0,
     inicio_ban: "",
-    fin_ban: "",
+    duracion_dias: 7,
   })
 
   const motivosFiltrados = useMemo(
@@ -97,7 +98,6 @@ export function useDashboardUsers() {
 
   function openBanModal(user: UserRow) {
     const inicio = formatDateTimeLocal(new Date())
-    const fin = formatDateTimeLocal(new Date(Date.now() + 7 * 86400000))
 
     setBanMessage(null)
     setBanForm({
@@ -105,9 +105,10 @@ export function useDashboardUsers() {
       id_categoria: 0,
       id_motivo_ban: 0,
       inicio_ban: inicio,
-      fin_ban: fin,
+      duracion_dias: 7,
     })
     setBanUserName(`${user.nombres || ""} ${user.apellidos || ""}`.trim())
+    setBanUserEmail((user.correo || "").trim())
     setBanModalOpen(true)
   }
 
@@ -125,13 +126,19 @@ export function useDashboardUsers() {
       setBanMessage({ type: "error", text: "Selecciona categoria y motivo de suspension." })
       return
     }
-    if (!banForm.inicio_ban || !banForm.fin_ban) {
-      setBanMessage({ type: "error", text: "Indica fecha de inicio y fecha final." })
+    if (!banForm.inicio_ban) {
+      setBanMessage({ type: "error", text: "No se pudo determinar la fecha de inicio." })
+      return
+    }
+    if (!Number.isFinite(banForm.duracion_dias) || banForm.duracion_dias <= 0) {
+      setBanMessage({ type: "error", text: "La duracion debe ser mayor a 0 dias." })
       return
     }
 
+    const finCalculada = addDaysToDateTimeLocal(banForm.inicio_ban, banForm.duracion_dias)
+
     const inicio = new Date(banForm.inicio_ban)
-    const fin = new Date(banForm.fin_ban)
+    const fin = new Date(finCalculada)
 
     if (Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime())) {
       setBanMessage({ type: "error", text: "Las fechas no son validas." })
@@ -154,7 +161,7 @@ export function useDashboardUsers() {
         idUsuario,
         idMotivoBan: banForm.id_motivo_ban,
         inicioBan: banForm.inicio_ban,
-        finBan: banForm.fin_ban,
+        finBan: finCalculada,
         responsable,
       })
 
@@ -207,6 +214,7 @@ export function useDashboardUsers() {
     banModalOpen,
     banSubmitting,
     banUserName,
+    banUserEmail,
     banMessage,
     banForm,
     motivosFiltrados,
@@ -219,7 +227,6 @@ export function useDashboardUsers() {
     openBanModal,
     submitBan,
     validateUser,
-    addDaysToDateTimeLocal,
     formatDateTimeLocal,
   }
 }
