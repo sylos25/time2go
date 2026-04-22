@@ -5,6 +5,23 @@ INSERT INTO tabla_roles (id_rol, nombre_rol)
 				    (3,'Moderador'),
 				    (4,'Administrador');
 
+-- Cargar planes de suscripcion para organizadores.
+INSERT INTO tabla_planes_organizador (
+	id_plan,
+	nombre_plan,
+	precio_cop,
+	max_eventos_mensuales,
+	max_imagenes_por_evento,
+	aforo_minimo,
+	aforo_maximo,
+	permite_destacado,
+	activo
+)
+			VALUES
+				(1, 'Plan Basico', 4000, 1, 3, 20, 100, FALSE, TRUE),
+				(2, 'Plan Emprendedor', 10000, 5, 3, 20, 1000, FALSE, TRUE),
+				(3, 'Plan Pro Destacado', 25000, 10, 7, 20, 5000, TRUE, TRUE);
+
 -- Cargar en tabla_accesibilidad_menu.
 INSERT INTO tabla_accesibilidad_menu (id_accesibilidad, nombre_accesibilidad)
 			VALUES (1, 'Crear Evento'),

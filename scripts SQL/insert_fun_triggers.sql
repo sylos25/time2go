@@ -326,6 +326,9 @@
     v_info_detalle     public.tabla_evento_informacion_importante.detalle%TYPE;
     v_info_obligatorio public.tabla_evento_informacion_importante.obligatorio%TYPE;
     v_evento           JSONB;
+    v_id_usuario_evento public.tabla_eventos.id_usuario%TYPE;
+    v_solicita_destacar BOOLEAN;
+    v_permite_destacado BOOLEAN;
     BEGIN
     -- ── 1. Validación del payload ─────────────────────────────────────────────
     IF p_evento IS NULL OR COALESCE(jsonb_typeof(p_evento), '') <> 'object' THEN
@@ -341,18 +344,49 @@
     PERFORM set_config('app.id_usuario', p_id_usuario_editor::TEXT, TRUE);
 
     -- ── 3. Bloqueo pesimista – garantiza actualización atómica ────────────────
-    PERFORM 1
-    FROM  public.tabla_eventos
-    WHERE id_evento = p_id_evento
-    FOR   UPDATE;
+    SELECT e.id_usuario
+    INTO v_id_usuario_evento
+    FROM public.tabla_eventos e
+    WHERE e.id_evento = p_id_evento
+    FOR UPDATE;
 
-    IF NOT FOUND THEN
+    IF v_id_usuario_evento IS NULL THEN
         RETURN jsonb_build_object(
         'ok',         FALSE,
         'error_code', 'EVENT_NOT_FOUND',
         'sqlstate',   'P0002',
         'error',      'Evento no encontrado'
         );
+    END IF;
+
+    v_solicita_destacar := CASE
+      WHEN p_evento ? 'destacado' THEN COALESCE((p_evento->>'destacado')::BOOLEAN, FALSE)
+      ELSE FALSE
+    END;
+
+    IF v_solicita_destacar THEN
+      SELECT p.permite_destacado
+      INTO v_permite_destacado
+      FROM public.tabla_suscripciones_organizador s
+      INNER JOIN public.tabla_planes_organizador p
+        ON p.id_plan = s.id_plan
+      WHERE s.id_usuario = v_id_usuario_evento
+        AND s.estado_suscripcion = 'activa'
+        AND p.activo = TRUE
+        AND p.permite_destacado = TRUE
+        AND CURRENT_TIMESTAMP >= s.fecha_inicio
+        AND CURRENT_TIMESTAMP < s.fecha_fin
+      ORDER BY s.fecha_fin DESC
+      LIMIT 1;
+
+      IF COALESCE(v_permite_destacado, FALSE) = FALSE THEN
+        RETURN jsonb_build_object(
+          'ok',         FALSE,
+          'error_code', 'PLAN_FEATURED_NOT_ALLOWED',
+          'sqlstate',   'P0001',
+          'error',      'Tu plan no incluye eventos destacados'
+        );
+      END IF;
     END IF;
 
     -- ── 4. Actualización principal + captura del estado post‑update ──────────
@@ -371,6 +405,26 @@
         hora_final          = COALESCE(NULLIF(p_evento->>'hora_final',                '')::TIME,    e.hora_final),
         gratis_pago         = COALESCE(NULLIF(p_evento->>'gratis_pago',               '')::BOOLEAN, e.gratis_pago),
         cupo                = COALESCE(NULLIF(p_evento->>'cupo',                      '')::INT,     e.cupo),
+        destacado           = CASE
+                                WHEN p_evento ? 'destacado' THEN COALESCE((p_evento->>'destacado')::BOOLEAN, e.destacado)
+                                ELSE e.destacado
+                              END,
+        destacado_por_usuario = CASE
+                                  WHEN p_evento ? 'destacado' THEN
+                                    CASE WHEN COALESCE((p_evento->>'destacado')::BOOLEAN, FALSE)
+                                      THEN p_id_usuario_editor
+                                      ELSE NULL
+                                    END
+                                  ELSE e.destacado_por_usuario
+                                END,
+        fecha_destacado = CASE
+                            WHEN p_evento ? 'destacado' THEN
+                              CASE WHEN COALESCE((p_evento->>'destacado')::BOOLEAN, FALSE)
+                                THEN CURRENT_TIMESTAMP
+                                ELSE NULL
+                              END
+                            ELSE e.fecha_destacado
+                          END,
         reservar_anticipado = COALESCE(NULLIF(p_evento->>'reservar_anticipado',       '')::BOOLEAN, e.reservar_anticipado),
         estado              = COALESCE(NULLIF(p_evento->>'estado',                    '')::BOOLEAN, e.estado),
         fecha_actualizacion = CURRENT_TIMESTAMP
@@ -613,6 +667,17 @@
     v_id_publico_evento public.tabla_eventos.id_publico_evento%TYPE;
     v_info_detalle      public.tabla_evento_informacion_importante.detalle%TYPE;
     v_info_obligatorio  public.tabla_evento_informacion_importante.obligatorio%TYPE;
+    v_max_eventos_mes   INT;
+    v_max_imagenes      INT;
+    v_aforo_minimo      INT;
+    v_aforo_maximo      INT;
+    v_permite_destacado BOOLEAN;
+    v_fecha_inicio_plan TIMESTAMP WITH TIME ZONE;
+    v_fecha_fin_plan    TIMESTAMP WITH TIME ZONE;
+    v_eventos_creados   INT;
+    v_imagenes_payload  INT;
+    v_cupo_solicitado   INT;
+    v_solicita_destacar BOOLEAN;
     BEGIN
     -- ── 1. Validación del payload ─────────────────────────────────────────────
     IF p_evento IS NULL OR COALESCE(jsonb_typeof(p_evento), '') <> 'object' THEN
@@ -624,7 +689,94 @@
         );
     END IF;
 
-    -- ── 2. Preparar datos del documento (si existe) ───────────────────────────
+      -- ── 2. Validaciones por plan de suscripción mensual ───────────────────────
+      SELECT
+        p.max_eventos_mensuales,
+        p.max_imagenes_por_evento,
+        p.aforo_minimo,
+        p.aforo_maximo,
+        p.permite_destacado,
+        s.fecha_inicio,
+        s.fecha_fin
+      INTO
+        v_max_eventos_mes,
+        v_max_imagenes,
+        v_aforo_minimo,
+        v_aforo_maximo,
+        v_permite_destacado,
+        v_fecha_inicio_plan,
+        v_fecha_fin_plan
+      FROM public.tabla_suscripciones_organizador s
+      INNER JOIN public.tabla_planes_organizador p
+        ON p.id_plan = s.id_plan
+      WHERE s.id_usuario = p_id_usuario
+        AND s.estado_suscripcion = 'activa'
+        AND p.activo = TRUE
+        AND CURRENT_TIMESTAMP >= s.fecha_inicio
+        AND CURRENT_TIMESTAMP < s.fecha_fin
+      ORDER BY s.fecha_fin DESC
+      LIMIT 1;
+
+      IF v_max_eventos_mes IS NULL THEN
+        RETURN jsonb_build_object(
+        'ok',         FALSE,
+        'error_code', 'PLAN_SUBSCRIPTION_REQUIRED',
+        'sqlstate',   'P0001',
+        'error',      'Debes tener una suscripción activa para crear eventos'
+        );
+      END IF;
+
+      v_imagenes_payload := CASE
+        WHEN COALESCE(jsonb_typeof(p_imagenes), '') = 'array' THEN jsonb_array_length(p_imagenes)
+        ELSE 0
+      END;
+
+      IF v_imagenes_payload > v_max_imagenes THEN
+        RETURN jsonb_build_object(
+        'ok',         FALSE,
+        'error_code', 'PLAN_IMAGE_LIMIT_EXCEEDED',
+        'sqlstate',   'P0001',
+        'error',      format('Tu plan permite hasta %s imágenes por evento', v_max_imagenes)
+        );
+      END IF;
+
+      v_cupo_solicitado := COALESCE((p_evento->>'cupo')::INT, 0);
+      IF v_cupo_solicitado < v_aforo_minimo OR v_cupo_solicitado > v_aforo_maximo THEN
+        RETURN jsonb_build_object(
+        'ok',         FALSE,
+        'error_code', 'PLAN_CAPACITY_OUT_OF_RANGE',
+        'sqlstate',   'P0001',
+        'error',      format('Tu plan permite aforo entre %s y %s personas', v_aforo_minimo, v_aforo_maximo)
+        );
+      END IF;
+
+      SELECT COUNT(*)::INT
+      INTO v_eventos_creados
+      FROM public.tabla_eventos e
+      WHERE e.id_usuario = p_id_usuario
+        AND e.fecha_creacion >= v_fecha_inicio_plan
+        AND e.fecha_creacion < v_fecha_fin_plan;
+
+      IF v_eventos_creados >= v_max_eventos_mes THEN
+        RETURN jsonb_build_object(
+        'ok',         FALSE,
+        'error_code', 'PLAN_EVENTS_LIMIT_EXCEEDED',
+        'sqlstate',   'P0001',
+        'error',      format('Tu plan permite crear hasta %s eventos en la suscripción mensual', v_max_eventos_mes)
+        );
+      END IF;
+
+      v_solicita_destacar := COALESCE((p_evento->>'destacado')::BOOLEAN, FALSE);
+      IF v_solicita_destacar AND NOT v_permite_destacado THEN
+        RETURN jsonb_build_object(
+        'ok',         FALSE,
+        'error_code', 'PLAN_FEATURED_NOT_ALLOWED',
+        'sqlstate',   'P0001',
+        'error',      'Tu plan no incluye eventos destacados'
+        );
+      END IF;
+
+      -- ── 3. Preparar datos del documento (si existe) ───────────────────────────
     WITH doc AS (
         SELECT
         CASE WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
@@ -642,7 +794,7 @@
         CASE WHEN p_documento IS NOT NULL AND jsonb_typeof(p_documento) = 'object'
             THEN NULLIF(TRIM(p_documento->>'original_filename'), '') END AS original_name
     )
-    -- ── 3. INSERT principal ───────────────────────────────────────────────────
+    -- ── 4. INSERT principal ───────────────────────────────────────────────────
     INSERT INTO public.tabla_eventos (
         nombre_evento,
         pulep_evento,
@@ -664,6 +816,9 @@
         documento_bytes,
         documento_original_filename,
         cupo,
+        destacado,
+        destacado_por_usuario,
+        fecha_destacado,
         reservar_anticipado,
         estado
     )
@@ -688,13 +843,16 @@
         doc.bytes,
         doc.original_name,
         COALESCE((p_evento->>'cupo')::INT, 0),
+        v_solicita_destacar,
+        CASE WHEN v_solicita_destacar THEN p_id_usuario ELSE NULL END,
+        CASE WHEN v_solicita_destacar THEN CURRENT_TIMESTAMP ELSE NULL END,
         COALESCE((p_evento->>'reservar_anticipado')::BOOLEAN, FALSE),
         COALESCE((p_evento->>'estado')::BOOLEAN, FALSE)
     FROM doc
     RETURNING id_evento, id_publico_evento
     INTO v_id_evento, v_id_publico_evento;
 
-    -- ── 4. Teléfonos: dedup payload + insert ─────────────────────────────────
+    -- ── 5. Teléfonos: dedup payload + insert ─────────────────────────────────
     IF COALESCE(jsonb_typeof(p_telefonos), 'array') = 'array' THEN
         WITH telefonos_raw AS (
         SELECT DISTINCT
@@ -710,7 +868,7 @@
         SET es_principal = EXCLUDED.es_principal;
     END IF;
 
-    -- ── 5. Información importante: consolida ítems en fila única ──────────────
+    -- ── 6. Información importante: consolida ítems en fila única ──────────────
     IF COALESCE(jsonb_typeof(p_info_importante), 'array') = 'array' THEN
         WITH info_src AS (
         SELECT
@@ -732,7 +890,7 @@
         END IF;
     END IF;
 
-    -- ── 6. Boletería ──────────────────────────────────────────────────────────
+    -- ── 7. Boletería ──────────────────────────────────────────────────────────
     IF COALESCE(jsonb_typeof(p_boleteria), 'array') = 'array' THEN
         WITH boletos_raw AS (
         SELECT DISTINCT ON (LOWER(TRIM(v.value->>'nombre_boleto')))
@@ -748,7 +906,7 @@
         FROM boletos_raw;
     END IF;
 
-    -- ── 7. Links ──────────────────────────────────────────────────────────────
+    -- ── 8. Links ──────────────────────────────────────────────────────────────
     IF COALESCE(jsonb_typeof(p_links), 'array') = 'array' THEN
         WITH links_raw AS (
         SELECT DISTINCT
@@ -765,7 +923,7 @@
         FROM links_raw;
     END IF;
 
-    -- ── 8. Imágenes: DISTINCT ON dedup por clave de almacenamiento ────────────
+    -- ── 9. Imágenes: DISTINCT ON dedup por clave de almacenamiento ────────────
     IF COALESCE(jsonb_typeof(p_imagenes), 'array') = 'array' THEN
         WITH imagenes_payload AS (
         SELECT DISTINCT ON (
@@ -794,7 +952,7 @@
         FROM imagenes_payload;
     END IF;
 
-    -- ── 9. Retorno exitoso ────────────────────────────────────────────────────
+    -- ── 10. Retorno exitoso ───────────────────────────────────────────────────
     RETURN jsonb_build_object(
         'ok',                TRUE,
         'id_evento',         v_id_evento,

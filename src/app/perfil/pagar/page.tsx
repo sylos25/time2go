@@ -15,6 +15,8 @@ export default function PagarPage() {
   const amount = searchParams.get("amount") ?? "0"
   const pk = searchParams.get("pk") ?? ""
   const test = searchParams.get("test") ?? "true"
+  const planId = searchParams.get("plan") ?? ""
+  const planName = searchParams.get("planName") ?? "Plan organizador"
   const responseUrl = searchParams.get("response") ?? "/perfil"
   const confirmationUrl = searchParams.get("confirmation") ?? ""
 
@@ -38,8 +40,8 @@ export default function PagarPage() {
     // Datos del pago
     script.dataset["epaycoKey"] = pk
     script.dataset["epaycoAmount"] = amount
-    script.dataset["epaycoName"] = "Upgrade Organizador Time2Go"
-    script.dataset["epaycoDescription"] = "Pago unico para activar rol de organizador"
+    script.dataset["epaycoName"] = decodeURIComponent(planName)
+    script.dataset["epaycoDescription"] = `Suscripcion mensual Time2Go - ${decodeURIComponent(planName)}`
     script.dataset["epaycoInvoice"] = ref
     script.dataset["epaycoCurrency"] = "cop"
     script.dataset["epaycoTax"] = "0.00"
@@ -51,6 +53,7 @@ export default function PagarPage() {
     script.dataset["epaycoResponse"] = decodeURIComponent(responseUrl)
     script.dataset["epaycoConfirmation"] = decodeURIComponent(confirmationUrl)
     script.dataset["epaycoExtra1"] = ref
+    script.dataset["epaycoExtra2"] = planId
 
     script.onload = () => {
       setStatus("ready")
@@ -67,7 +70,7 @@ export default function PagarPage() {
     }
 
     container.appendChild(script)
-  }, [pk, ref, amount, test, responseUrl, confirmationUrl])
+  }, [pk, ref, amount, test, planId, planName, responseUrl, confirmationUrl])
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-8 bg-background">

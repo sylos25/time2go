@@ -1,25 +1,55 @@
 import { NextResponse } from "next/server"
 import pool from "@/lib/db"
 import { getRequesterIdLenient } from "@/lib/auth-request"
-import { uploadDocumentBuffer } from "@/lib/document-storage"
 
 export const runtime = "nodejs"
 
-const MAX_PDF_SIZE_BYTES = 5 * 1024 * 1024
-const DEFAULT_EPAYCO_AMOUNT_COP = Number(
-  process.env.ORGANIZADOR_ROLE_EPAYCO_AMOUNT_COP ||
-    process.env.ORGANIZADOR_ROLE_WOMPI_AMOUNT_COP ||
-    process.env.PROMOTOR_ROLE_WOMPI_AMOUNT_COP ||
-    "10000",
-)
+const ORGANIZER_ROLE_ID = 2
 const EPAYCO_PUBLIC_KEY = process.env.EPAYCO_PUBLIC_KEY || ""
 const EPAYCO_TEST_MODE = (process.env.EPAYCO_TEST_MODE || "true").toLowerCase() === "true"
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 
-function isPdf(file: File) {
-  const type = (file.type || "").toLowerCase()
-  const name = (file.name || "").toLowerCase()
-  return type === "application/pdf" || name.endsWith(".pdf")
+type OrganizerPlanRow = {
+  id_plan: number
+  nombre_plan: string
+  precio_cop: number
+  max_eventos_mensuales: number
+  max_imagenes_por_evento: number
+  aforo_minimo: number
+  aforo_maximo: number
+  permite_destacado: boolean
+}
+
+export async function GET(req: Request) {
+  const requesterId = await getRequesterIdLenient(req)
+  if (!requesterId) {
+    return NextResponse.json({ ok: false, message: "No autenticado" }, { status: 401 })
+  }
+
+  const client = await pool.connect()
+  try {
+    const plansRes = await client.query<OrganizerPlanRow>(
+      `SELECT
+         id_plan,
+         nombre_plan,
+         precio_cop,
+         max_eventos_mensuales,
+         max_imagenes_por_evento,
+         aforo_minimo,
+         aforo_maximo,
+         permite_destacado
+       FROM tabla_planes_organizador
+       WHERE activo = TRUE
+       ORDER BY id_plan ASC`,
+    )
+
+    return NextResponse.json({ ok: true, plans: plansRes.rows })
+  } catch (error) {
+    console.error("/api/organizador-document GET error:", error)
+    return NextResponse.json({ ok: false, message: "Error consultando planes" }, { status: 500 })
+  } finally {
+    client.release()
+  }
 }
 
 export async function POST(req: Request) {
@@ -32,29 +62,47 @@ export async function POST(req: Request) {
     }
 
     const formData = await req.formData()
-    const document = formData.get("document")
-    const requestedRoleId = Number(formData.get("id_rol_solicitado") || 2)
+    const selectedPlanId = Number(formData.get("id_plan") || 0)
 
-    // Document is optional — only validate and upload if provided
-    let documentUrl: string | null = null
-    if (document instanceof File) {
-      if (!isPdf(document)) {
-        return NextResponse.json({ ok: false, message: "Solo se permite formato PDF" }, { status: 400 })
-      }
-      if (document.size > MAX_PDF_SIZE_BYTES) {
-        return NextResponse.json({ ok: false, message: "El archivo supera el máximo de 5 MB" }, { status: 400 })
-      }
-      const buffer = Buffer.from(await document.arrayBuffer())
-      const uploadResult = await uploadDocumentBuffer({
-        buffer,
-        contentType: "application/pdf",
-        originalFileName: document.name || "documento.pdf",
-        eventId: userId,
-      })
-      documentUrl = uploadResult?.publicUrl || `bucket://${uploadResult.storageKey}` || null
+    if (!Number.isInteger(selectedPlanId) || selectedPlanId <= 0) {
+      return NextResponse.json({ ok: false, message: "Plan invalido" }, { status: 400 })
     }
 
-    const paymentReference = `ORG-${userId}-${Date.now()}`
+    const planRes = await client.query<OrganizerPlanRow>(
+      `SELECT
+         id_plan,
+         nombre_plan,
+         precio_cop,
+         max_eventos_mensuales,
+         max_imagenes_por_evento,
+         aforo_minimo,
+         aforo_maximo,
+         permite_destacado
+       FROM tabla_planes_organizador
+       WHERE id_plan = $1
+         AND activo = TRUE
+       LIMIT 1`,
+      [selectedPlanId],
+    )
+
+    const selectedPlan = planRes.rows[0]
+    if (!selectedPlan) {
+      return NextResponse.json({ ok: false, message: "El plan seleccionado no esta disponible" }, { status: 400 })
+    }
+
+    const paymentReference = `PLAN-${selectedPlan.id_plan}-USR-${userId}-${Date.now()}`
+
+    await client.query(
+      `INSERT INTO tabla_suscripciones_organizador (
+         id_usuario,
+         id_plan,
+         referencia_pago,
+         monto_pago,
+         moneda,
+         estado_suscripcion
+       ) VALUES ($1, $2, $3, $4, $5, $6)`,
+      [userId, selectedPlan.id_plan, paymentReference, selectedPlan.precio_cop, "COP", "pendiente"],
+    )
 
     await client.query(
       `INSERT INTO tabla_cambio_rol_usuario (
@@ -65,7 +113,7 @@ export async function POST(req: Request) {
          referencia_pago,
          monto_pago
        ) VALUES ($1, $2, $3, $4, $5, $6)`,
-      [userId, requestedRoleId, documentUrl, "epayco", paymentReference, DEFAULT_EPAYCO_AMOUNT_COP],
+      [userId, ORGANIZER_ROLE_ID, null, "epayco", paymentReference, selectedPlan.precio_cop],
     )
 
     if (!EPAYCO_PUBLIC_KEY) {
@@ -75,7 +123,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const amount = DEFAULT_EPAYCO_AMOUNT_COP.toFixed(2)
+    const amount = Number(selectedPlan.precio_cop).toFixed(2)
     const responseUrl = encodeURIComponent(
       process.env.EPAYCO_RESPONSE_URL ||
       `${SITE_URL}/perfil?pago=resultado&ref=${encodeURIComponent(paymentReference)}`,
@@ -91,13 +139,15 @@ export async function POST(req: Request) {
     checkoutUrl.searchParams.set("amount", amount)
     checkoutUrl.searchParams.set("pk", EPAYCO_PUBLIC_KEY)
     checkoutUrl.searchParams.set("test", EPAYCO_TEST_MODE ? "true" : "false")
+    checkoutUrl.searchParams.set("plan", String(selectedPlan.id_plan))
+    checkoutUrl.searchParams.set("planName", selectedPlan.nombre_plan)
     checkoutUrl.searchParams.set("response", responseUrl)
     checkoutUrl.searchParams.set("confirmation", confirmationUrl)
 
     return NextResponse.json({ ok: true, checkout_url: checkoutUrl.toString(), referencia_pago: paymentReference })
   } catch (error) {
     console.error("/api/organizador-document POST error:", error)
-    return NextResponse.json({ ok: false, message: "Error subiendo documento" }, { status: 500 })
+    return NextResponse.json({ ok: false, message: "Error iniciando pago" }, { status: 500 })
   } finally {
     client.release()
   }

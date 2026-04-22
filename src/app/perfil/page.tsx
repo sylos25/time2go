@@ -14,9 +14,10 @@ export default function PerfilPage() {
     error,
     successMessage,
     userNameForHeader,
-    organizerPriceText,
     isOrganizadorDialogOpen,
-    selectedPdf,
+    isLoadingOrganizerPlans,
+    organizerPlans,
+    selectedPlanId,
     organizadorError,
     isProcessingPayment,
     deactivateOpen,
@@ -29,7 +30,7 @@ export default function PerfilPage() {
     handleOpenOrganizadorDialog,
     handleOrganizadorDialogOpenChange,
     closeOrganizadorDialog,
-    handleFileChange,
+    handlePlanChange,
     handlePayWithEpayco,
     openDeactivate,
     closeDeactivate,
@@ -68,12 +69,13 @@ export default function PerfilPage() {
       <OrganizerDialog
         open={isOrganizadorDialogOpen}
         isProcessingPayment={isProcessingPayment}
-        selectedPdf={selectedPdf}
+        isLoadingPlans={isLoadingOrganizerPlans}
+        organizerPlans={organizerPlans}
+        selectedPlanId={selectedPlanId}
         organizerError={organizadorError}
-        organizerPriceText={organizerPriceText}
         onOpenChange={handleOrganizadorDialogOpenChange}
         onClose={closeOrganizadorDialog}
-        onFileChange={handleFileChange}
+        onPlanChange={handlePlanChange}
         onPay={handlePayWithEpayco}
       />
 

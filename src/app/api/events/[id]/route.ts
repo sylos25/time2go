@@ -9,6 +9,41 @@ export const runtime = "nodejs";
 
 const ALPHANUM_SPACE_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ ]+$/;
 const TEXT_WITH_PUNCT_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]+$/;
+const ROL_ORGANIZADOR = 2;
+
+type OrganizerPlanLimits = {
+  maxImagenes: number;
+  aforoMinimo: number;
+  aforoMaximo: number;
+};
+
+async function getOrganizerPlanLimits(client: Awaited<ReturnType<typeof pool.connect>>, userId: number): Promise<OrganizerPlanLimits | null> {
+  const planRes = await client.query(
+    `SELECT
+       p.max_imagenes_por_evento,
+       p.aforo_minimo,
+       p.aforo_maximo
+     FROM tabla_suscripciones_organizador s
+     INNER JOIN tabla_planes_organizador p
+       ON p.id_plan = s.id_plan
+     WHERE s.id_usuario = $1
+       AND s.estado_suscripcion = 'activa'
+       AND p.activo = TRUE
+       AND CURRENT_TIMESTAMP >= s.fecha_inicio
+       AND CURRENT_TIMESTAMP < s.fecha_fin
+     ORDER BY s.fecha_fin DESC
+     LIMIT 1`,
+    [userId]
+  );
+
+  if (!planRes.rows?.length) return null;
+
+  return {
+    maxImagenes: Number(planRes.rows[0].max_imagenes_por_evento),
+    aforoMinimo: Number(planRes.rows[0].aforo_minimo),
+    aforoMaximo: Number(planRes.rows[0].aforo_maximo),
+  };
+}
 
 
 export async function POST(req: Request) {
@@ -42,14 +77,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
     }
 
+    const organizerPlanLimits = role === ROL_ORGANIZADOR
+      ? await getOrganizerPlanLimits(client, Number(requesterId))
+      : null;
+
+    if (role === ROL_ORGANIZADOR && !organizerPlanLimits) {
+      return NextResponse.json({ ok: false, message: "Debes tener una suscripción mensual activa para crear eventos" }, { status: 403 });
+    }
+
     const formData = await req.formData();
 
-    const maxImages = 8;
+    const maxImages = organizerPlanLimits?.maxImagenes ?? 8;
+    const aforoMinimo = organizerPlanLimits?.aforoMinimo ?? 20;
+    const aforoMaximo = organizerPlanLimits?.aforoMaximo ?? 5000;
     const maxDocBytes = 5 * 1024 * 1024;
 
     const files = formData.getAll("additionalImages") as File[];
     if (files.length > maxImages) {
-      return NextResponse.json({ ok: false, message: "Maximo 8 imagenes" }, { status: 400 });
+      return NextResponse.json({ ok: false, message: `Tu plan permite maximo ${maxImages} imagenes por evento` }, { status: 400 });
     }
     const uploadedImages: Array<{
       url: string;
@@ -170,8 +215,8 @@ export async function POST(req: Request) {
     if (!TEXT_WITH_PUNCT_REGEX.test(descripcion)) {
       return NextResponse.json({ ok: false, message: "La descripción del evento contiene caracteres no permitidos" }, { status: 400 });
     }
-    if (!Number.isInteger(cupo) || cupo < 20 || cupo > 5000) {
-      return NextResponse.json({ ok: false, message: "El aforo debe ser un número entero entre 20 y 5000" }, { status: 400 });
+    if (!Number.isInteger(cupo) || cupo < aforoMinimo || cupo > aforoMaximo) {
+      return NextResponse.json({ ok: false, message: `El aforo debe ser un número entero entre ${aforoMinimo} y ${aforoMaximo}` }, { status: 400 });
     }
     for (const infoItem of infoItems) {
       if (!TEXT_WITH_PUNCT_REGEX.test(infoItem.detalle)) {

@@ -28,6 +28,9 @@ DECLARE
   v_info_detalle     public.tabla_evento_informacion_importante.detalle%TYPE;
   v_info_obligatorio public.tabla_evento_informacion_importante.obligatorio%TYPE;
   v_evento           JSONB;
+  v_id_usuario_evento public.tabla_eventos.id_usuario%TYPE;
+  v_solicita_destacar BOOLEAN;
+  v_permite_destacado BOOLEAN;
 BEGIN
   -- ── 1. Validación del payload ─────────────────────────────────────────────
   IF p_evento IS NULL OR COALESCE(jsonb_typeof(p_evento), '') <> 'object' THEN
@@ -43,18 +46,49 @@ BEGIN
   PERFORM set_config('app.id_usuario', p_id_usuario_editor::TEXT, TRUE);
 
   -- ── 3. Bloqueo pesimista – garantiza actualización atómica ────────────────
-  PERFORM 1
-  FROM  public.tabla_eventos
-  WHERE id_evento = p_id_evento
-  FOR   UPDATE;
+  SELECT e.id_usuario
+  INTO v_id_usuario_evento
+  FROM public.tabla_eventos e
+  WHERE e.id_evento = p_id_evento
+  FOR UPDATE;
 
-  IF NOT FOUND THEN
+  IF v_id_usuario_evento IS NULL THEN
     RETURN jsonb_build_object(
       'ok',         FALSE,
       'error_code', 'EVENT_NOT_FOUND',
       'sqlstate',   'P0002',
       'error',      'Evento no encontrado'
     );
+  END IF;
+
+  v_solicita_destacar := CASE
+    WHEN p_evento ? 'destacado' THEN COALESCE((p_evento->>'destacado')::BOOLEAN, FALSE)
+    ELSE FALSE
+  END;
+
+  IF v_solicita_destacar THEN
+    SELECT p.permite_destacado
+    INTO v_permite_destacado
+    FROM public.tabla_suscripciones_organizador s
+    INNER JOIN public.tabla_planes_organizador p
+      ON p.id_plan = s.id_plan
+    WHERE s.id_usuario = v_id_usuario_evento
+      AND s.estado_suscripcion = 'activa'
+      AND p.activo = TRUE
+      AND p.permite_destacado = TRUE
+      AND CURRENT_TIMESTAMP >= s.fecha_inicio
+      AND CURRENT_TIMESTAMP < s.fecha_fin
+    ORDER BY s.fecha_fin DESC
+    LIMIT 1;
+
+    IF COALESCE(v_permite_destacado, FALSE) = FALSE THEN
+      RETURN jsonb_build_object(
+        'ok',         FALSE,
+        'error_code', 'PLAN_FEATURED_NOT_ALLOWED',
+        'sqlstate',   'P0001',
+        'error',      'Tu plan no incluye eventos destacados'
+      );
+    END IF;
   END IF;
 
   -- ── 4. Actualización principal + captura del estado post‑update ──────────
@@ -73,6 +107,26 @@ BEGIN
     hora_final          = COALESCE(NULLIF(p_evento->>'hora_final',                '')::TIME,    e.hora_final),
     gratis_pago         = COALESCE(NULLIF(p_evento->>'gratis_pago',               '')::BOOLEAN, e.gratis_pago),
     cupo                = COALESCE(NULLIF(p_evento->>'cupo',                      '')::INT,     e.cupo),
+    destacado           = CASE
+                            WHEN p_evento ? 'destacado' THEN COALESCE((p_evento->>'destacado')::BOOLEAN, e.destacado)
+                            ELSE e.destacado
+                          END,
+    destacado_por_usuario = CASE
+                              WHEN p_evento ? 'destacado' THEN
+                                CASE WHEN COALESCE((p_evento->>'destacado')::BOOLEAN, FALSE)
+                                  THEN p_id_usuario_editor
+                                  ELSE NULL
+                                END
+                              ELSE e.destacado_por_usuario
+                            END,
+    fecha_destacado = CASE
+                        WHEN p_evento ? 'destacado' THEN
+                          CASE WHEN COALESCE((p_evento->>'destacado')::BOOLEAN, FALSE)
+                            THEN CURRENT_TIMESTAMP
+                            ELSE NULL
+                          END
+                        ELSE e.fecha_destacado
+                      END,
     reservar_anticipado = COALESCE(NULLIF(p_evento->>'reservar_anticipado',       '')::BOOLEAN, e.reservar_anticipado),
     estado              = COALESCE(NULLIF(p_evento->>'estado',                    '')::BOOLEAN, e.estado),
     fecha_actualizacion = CURRENT_TIMESTAMP

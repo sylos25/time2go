@@ -1,23 +1,22 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 
 import type {
   DeactivateStep,
   MeResponse,
   MutationResponse,
+  OrganizerPlan,
   OrganizerPaymentResponse,
+  OrganizerPlansResponse,
   UserData,
 } from "@/app/perfil/lib/profile-types"
 import {
   clearSessionStorageValues,
-  formatOrganizerPrice,
   getAuthToken,
   getDisplayUserName,
-  getOrganizerPriceCOP,
   getProfileSuccessMessageFromUrl,
-  validatePdfFile,
 } from "@/app/perfil/lib/profile-utils"
 
 export function useProfilePage() {
@@ -29,7 +28,9 @@ export function useProfilePage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const [isOrganizadorDialogOpen, setIsOrganizadorDialogOpen] = useState(false)
-  const [selectedPdf, setSelectedPdf] = useState<File | null>(null)
+  const [isLoadingOrganizerPlans, setIsLoadingOrganizerPlans] = useState(false)
+  const [organizerPlans, setOrganizerPlans] = useState<OrganizerPlan[]>([])
+  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null)
   const [organizadorError, setOrganizadorError] = useState<string | null>(null)
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
 
@@ -78,11 +79,41 @@ export function useProfilePage() {
     if (message) setSuccessMessage(message)
   }, [])
 
+  const fetchOrganizerPlans = useCallback(async () => {
+    setIsLoadingOrganizerPlans(true)
+    try {
+      const token = getAuthToken()
+      const response = await fetch("/api/organizador-document", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      })
+
+      const data: OrganizerPlansResponse = await response.json().catch(() => ({}))
+      if (!response.ok || !data?.ok || !Array.isArray(data.plans)) {
+        setOrganizerPlans([])
+        setSelectedPlanId(null)
+        return
+      }
+
+      const plans = [...data.plans].sort((a, b) => a.id_plan - b.id_plan)
+      setOrganizerPlans(plans)
+      setSelectedPlanId((current) => {
+        if (current && plans.some((plan) => plan.id_plan === current)) return current
+        return plans.length > 0 ? plans[0].id_plan : null
+      })
+    } catch {
+      setOrganizerPlans([])
+      setSelectedPlanId(null)
+    } finally {
+      setIsLoadingOrganizerPlans(false)
+    }
+  }, [])
+
   const handleOpenOrganizadorDialog = useCallback(() => {
     setOrganizadorError(null)
-    setSelectedPdf(null)
     setIsOrganizadorDialogOpen(true)
-  }, [])
+    void fetchOrganizerPlans()
+  }, [fetchOrganizerPlans])
 
   const handleOrganizadorDialogOpenChange = useCallback(
     (open: boolean) => {
@@ -95,29 +126,24 @@ export function useProfilePage() {
     if (!isProcessingPayment) setIsOrganizadorDialogOpen(false)
   }, [isProcessingPayment])
 
-  const handleFileChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] ?? null
+  const handlePlanChange = useCallback((planId: number) => {
+    setSelectedPlanId(planId)
     setOrganizadorError(null)
-
-    const validationError = validatePdfFile(file)
-    if (validationError) {
-      setOrganizadorError(validationError)
-      setSelectedPdf(null)
-      event.target.value = ""
-      return
-    }
-
-    setSelectedPdf(file)
   }, [])
 
   const handlePayWithEpayco = useCallback(async () => {
+    if (!selectedPlanId) {
+      setOrganizadorError("Debes seleccionar un plan")
+      return
+    }
+
     setIsProcessingPayment(true)
     setOrganizadorError(null)
 
     try {
       const token = getAuthToken()
       const formData = new FormData()
-      if (selectedPdf) formData.append("document", selectedPdf)
+      formData.append("id_plan", String(selectedPlanId))
 
       const response = await fetch("/api/organizador-document", {
         method: "POST",
@@ -138,7 +164,7 @@ export function useProfilePage() {
       setOrganizadorError("Ocurrio un error al iniciar el pago")
       setIsProcessingPayment(false)
     }
-  }, [selectedPdf])
+  }, [selectedPlanId])
 
   const openDeactivate = useCallback(() => {
     setDeactivateStep(1)
@@ -205,11 +231,6 @@ export function useProfilePage() {
     router.push("/")
   }, [router])
 
-  const organizerPriceText = useMemo(
-    () => formatOrganizerPrice(getOrganizerPriceCOP()),
-    []
-  )
-
   const userNameForHeader = useMemo(() => getDisplayUserName(user), [user])
 
   return {
@@ -218,9 +239,10 @@ export function useProfilePage() {
     error,
     successMessage,
     userNameForHeader,
-    organizerPriceText,
     isOrganizadorDialogOpen,
-    selectedPdf,
+    isLoadingOrganizerPlans,
+    organizerPlans,
+    selectedPlanId,
     organizadorError,
     isProcessingPayment,
     deactivateOpen,
@@ -233,7 +255,7 @@ export function useProfilePage() {
     handleOpenOrganizadorDialog,
     handleOrganizadorDialogOpenChange,
     closeOrganizadorDialog,
-    handleFileChange,
+    handlePlanChange,
     handlePayWithEpayco,
     openDeactivate,
     closeDeactivate,

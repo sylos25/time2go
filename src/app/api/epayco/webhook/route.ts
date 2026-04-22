@@ -108,6 +108,43 @@ export async function POST(req: Request) {
 
     const client = await pool.connect()
     try {
+      await client.query("BEGIN")
+
+      const suscripcionEstado =
+        estadoPago === "aprobado"
+          ? "activa"
+          : estadoPago === "rechazado"
+            ? "rechazada"
+            : estadoPago === "anulado"
+              ? "cancelada"
+              : estadoPago === "error"
+                ? "error"
+                : "pendiente"
+
+      const suscripcionResult = await client.query(
+        `UPDATE tabla_suscripciones_organizador s
+         SET estado_suscripcion      = CASE
+                                         WHEN s.estado_suscripcion = 'activa' THEN 'activa'
+                                         ELSE $1
+                                       END,
+             id_transaccion_pago     = COALESCE($2, s.id_transaccion_pago),
+             json_respuesta_pasarela = $3,
+             fecha_inicio            = CASE
+                                         WHEN s.estado_suscripcion = 'activa' THEN s.fecha_inicio
+                                         WHEN $1 = 'activa' THEN NOW()
+                                         ELSE s.fecha_inicio
+                                       END,
+             fecha_fin               = CASE
+                                         WHEN s.estado_suscripcion = 'activa' THEN s.fecha_fin
+                                         WHEN $1 = 'activa' THEN NOW() + INTERVAL '30 days'
+                                         ELSE s.fecha_fin
+                                       END,
+             fecha_actualizacion     = NOW()
+         WHERE s.referencia_pago = $4
+         RETURNING s.id_usuario, s.id_plan, s.estado_suscripcion`,
+        [suscripcionEstado, transactionId || null, JSON.stringify(payload), referenciaPago],
+      )
+
       const updateResult = await client.query(
         `UPDATE tabla_cambio_rol_usuario
          SET estado_pago             = $1,
@@ -120,25 +157,51 @@ export async function POST(req: Request) {
         [estadoPago, transactionId || null, JSON.stringify(payload), referenciaPago],
       )
 
-      if (updateResult.rowCount === 0) {
+      if (updateResult.rowCount === 0 && suscripcionResult.rowCount === 0) {
+        await client.query("COMMIT")
         return NextResponse.json({ ok: true })
       }
 
       if (estadoPago === "aprobado") {
-        const { id_usuario, id_rol_solicitado } = updateResult.rows[0] as {
+        const rolRow = updateResult.rowCount > 0 ? (updateResult.rows[0] as {
           id_usuario: number
           id_rol_solicitado: number
-        }
+        }) : null
 
-        await client.query(
-          `UPDATE tabla_usuarios
-           SET id_rol = $1, fecha_actualizacion = NOW()
-           WHERE id_usuario = $2`,
-          [id_rol_solicitado, id_usuario],
-        )
+        const suscripcionRow = suscripcionResult.rowCount > 0 ? (suscripcionResult.rows[0] as {
+          id_usuario: number
+          id_plan: number
+          estado_suscripcion: string
+        }) : null
+
+        const idUsuario = suscripcionRow?.id_usuario ?? rolRow?.id_usuario
+
+        if (idUsuario) {
+          await client.query(
+            `UPDATE tabla_suscripciones_organizador
+             SET estado_suscripcion = 'vencida',
+                 fecha_actualizacion = NOW()
+             WHERE id_usuario = $1
+               AND referencia_pago <> $2
+               AND estado_suscripcion = 'activa'`,
+            [idUsuario, referenciaPago],
+          )
+
+          await client.query(
+            `UPDATE tabla_usuarios
+             SET id_rol = $1, fecha_actualizacion = NOW()
+             WHERE id_usuario = $2`,
+            [rolRow?.id_rol_solicitado || 2, idUsuario],
+          )
+        }
       }
 
+      await client.query("COMMIT")
+
       return NextResponse.json({ ok: true })
+    } catch (dbError) {
+      await client.query("ROLLBACK")
+      throw dbError
     } finally {
       client.release()
     }

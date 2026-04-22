@@ -17,6 +17,8 @@ DROP TABLE IF EXISTS tabla_denuncia_eventos;
 DROP TABLE IF EXISTS tabla_motivos_denuncia_eventos;
 DROP TABLE IF EXISTS tabla_categoria_denuncia_evento;
 DROP TABLE IF EXISTS tabla_valoraciones;
+DROP TABLE IF EXISTS tabla_suscripciones_organizador;
+DROP TABLE IF EXISTS tabla_planes_organizador;
 DROP TABLE IF EXISTS tabla_cambio_rol_usuario;
 DROP TABLE IF EXISTS tabla_favoritos;
 DROP TABLE IF EXISTS tabla_imagenes_eventos;
@@ -160,6 +162,47 @@ CREATE TABLE IF NOT EXISTS tabla_usuarios (
     FOREIGN KEY (id_rol)                                REFERENCES       tabla_roles(id_rol),
     FOREIGN KEY (id_pais)                               REFERENCES       tabla_paises(id_pais)
 );
+
+CREATE TABLE IF NOT EXISTS tabla_planes_organizador (
+    id_plan                                 INT                          PRIMARY KEY,
+    nombre_plan                             VARCHAR                      NOT NULL       UNIQUE  CHECK (char_length(nombre_plan) >= 3),
+    precio_cop                              INT                          NOT NULL               CHECK (precio_cop > 0),
+    max_eventos_mensuales                   INT                          NOT NULL               CHECK (max_eventos_mensuales > 0),
+    max_imagenes_por_evento                 INT                          NOT NULL               CHECK (max_imagenes_por_evento > 0),
+    aforo_minimo                            INT                          NOT NULL               CHECK (aforo_minimo >= 1),
+    aforo_maximo                            INT                          NOT NULL               CHECK (aforo_maximo >= aforo_minimo),
+    permite_destacado                       BOOLEAN                      NOT NULL       DEFAULT FALSE,
+    activo                                  BOOLEAN                      NOT NULL       DEFAULT TRUE,
+    fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS tabla_suscripciones_organizador (
+    id_suscripcion_organizador              INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_usuario                              INT                          NOT NULL,
+    id_plan                                 INT                          NOT NULL,
+    referencia_pago                         VARCHAR                      NOT NULL       UNIQUE,
+    id_transaccion_pago                     VARCHAR                                     UNIQUE,
+    estado_suscripcion                      VARCHAR                      NOT NULL       DEFAULT 'pendiente'
+                                                                                       CHECK (estado_suscripcion IN ('pendiente', 'activa', 'vencida', 'cancelada', 'rechazada', 'error')),
+    monto_pago                              DECIMAL(10,2)                NOT NULL               CHECK (monto_pago > 0),
+    moneda                                  CHAR(3)                      NOT NULL       DEFAULT 'COP',
+    fecha_inicio                            TIMESTAMP   WITH TIME ZONE,
+    fecha_fin                               TIMESTAMP   WITH TIME ZONE,
+    json_respuesta_pasarela                 JSONB,
+    fecha_creacion                          TIMESTAMP   WITH TIME ZONE   NOT NULL       DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion                     TIMESTAMP   WITH TIME ZONE                  DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario)                            REFERENCES       tabla_usuarios(id_usuario),
+    FOREIGN KEY (id_plan)                               REFERENCES       tabla_planes_organizador(id_plan),
+    CONSTRAINT ck_suscripcion_periodo_valido CHECK (
+      (fecha_inicio IS NULL AND fecha_fin IS NULL) OR
+      (fecha_inicio IS NOT NULL AND fecha_fin IS NOT NULL AND fecha_fin > fecha_inicio)
+    )
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_suscripcion_organizador_activa
+ON tabla_suscripciones_organizador (id_usuario)
+WHERE estado_suscripcion = 'activa';
 
 CREATE TABLE IF NOT EXISTS tabla_usuarios_credenciales (
     id_usuario_credenciales                 INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

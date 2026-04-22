@@ -367,7 +367,7 @@ src/app/api/
 ├── usuarios/           → CRUD de usuarios (admin)
 ├── usuario_formulario/ → Registro de nuevo usuario
 ├── validate-email/     → Confirmar email con token
-└── epayco/             → Webhook de pagos con ePayco
+└── wompi/              → Webhook de pagos con Wompi
 ```
 
 ---
@@ -663,7 +663,7 @@ SMTP_USER=...
 SMTP_PASS=...
 
 # Pagos
-EPAYCO_P_CUST_ID_CLIENTE=...
+WOMPI_EVENTS_SECRET=...
 
 # Google OAuth
 GOOGLE_CLIENT_ID=...
