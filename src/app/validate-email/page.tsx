@@ -60,7 +60,7 @@ function ValidateEmailPageContent() {
         {status === "loading" && (
           <>
             <Loader2 className="h-16 w-16 text-green-700 mx-auto mb-4 animate-spin" />
-            <h1 className="text-2xl font-bold text-foreground mb-2">Validando correo...</h1>
+            <h1 className="text-2xl text-green-600 font-bold text-foreground mb-2">Validando correo...</h1>
             <p className="text-muted-foreground">Por favor espera un momento</p>
           </>
         )}
@@ -68,14 +68,14 @@ function ValidateEmailPageContent() {
         {status === "success" && (
           <>
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-foreground mb-2">¡Éxito!</h1>
+            <h1 className="text-2xl font-bold text-green-600 text-foreground mb-2">¡Éxito!</h1>
             <p className="text-muted-foreground mb-6">{message}</p>
             <p className="text-sm text-muted-foreground mb-6">
               Serás redirigido al login en unos segundos...
             </p>
             <Link
               href="/auth"
-              className="inline-block bg-gradient-to-r from-green-400 to-lime-500 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-shadow hover:scale-103"
+              className="inline-block bg-rose-600 text-white px-6 py-2 rounded-lg hover:bg-rose-500 hover:scale-103 transition-colors transition-transform"
             >
               Ir al Login
             </Link>
@@ -85,18 +85,18 @@ function ValidateEmailPageContent() {
         {status === "error" && (
           <>
             <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-foreground mb-2">Error</h1>
+            <h1 className="text-2xl font-bold text-green-600 text-foreground mb-2">Error</h1>
             <p className="text-muted-foreground mb-6">{message}</p>
             <div className="flex gap-3">
               <Link
                 href="/"
-                className="flex-1 bg-secondary text-secondary-foreground px-4 py-2 rounded-lg hover:bg-accent transition hover:scale-103"
+                className="flex-1 border-2 border-green-600 text-green-700 px-4 py-2 rounded-lg hover:bg-green-50 hover:scale-103 transition-colors transition-transform"
               >
                 Ir al inicio
               </Link>
               <Link
                 href="/auth"
-                className="flex-1 bg-gradient-to-tr from-green-700 to-lime-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-shadow hover:scale-103"
+                className="flex-1 bg-rose-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-shadow hover:bg-rose-500 hover:scale-103 transition-transform"
               >
                 Login
               </Link>

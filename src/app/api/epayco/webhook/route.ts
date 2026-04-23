@@ -11,6 +11,17 @@ type PayloadValue = string | number | boolean | null | undefined
 
 type PayloadMap = Record<string, PayloadValue>
 
+type SubscriptionUpdateRow = {
+  id_usuario: number
+  id_plan: number
+  estado_suscripcion: string
+}
+
+type RoleUpdateRow = {
+  id_usuario: number
+  id_rol_solicitado: number
+}
+
 function getPayloadValue(payload: PayloadMap, ...keys: string[]): string {
   for (const key of keys) {
     const value = payload[key]
@@ -23,17 +34,28 @@ function getPayloadValue(payload: PayloadMap, ...keys: string[]): string {
 
 function parseEpaycoStatus(payload: PayloadMap): string {
   const code = Number.parseInt(getPayloadValue(payload, "x_cod_response", "cod_response"), 10)
+  const state = getPayloadValue(payload, "x_transaction_state", "transaction_state").toLowerCase()
+  const response = getPayloadValue(
+    payload,
+    "x_response",
+    "response",
+    "x_response_reason_text",
+    "response_reason_text",
+  ).toLowerCase()
+  const isInsufficientFunds = response.includes("fondos insuficientes") || response.includes("insufficient funds")
+
   if (Number.isFinite(code)) {
     if (code === 1) return "aprobado"
-    if (code === 2) return "rechazado"
+    if (code === 2) return isInsufficientFunds ? "rechazado" : "error"
     if (code === 3) return "pendiente"
     if (code === 4) return "error"
     if (code === 6) return "anulado"
   }
 
-  const state = getPayloadValue(payload, "x_transaction_state", "transaction_state").toLowerCase()
   if (state === "aceptada" || state === "approved") return "aprobado"
-  if (state === "rechazada" || state === "declined") return "rechazado"
+  if (state === "rechazada" || state === "declined") {
+    return isInsufficientFunds ? "rechazado" : "error"
+  }
   if (state === "fallida" || state === "failed") return "error"
   if (state === "anulada" || state === "voided") return "anulado"
   return "pendiente"
@@ -121,7 +143,7 @@ export async function POST(req: Request) {
                 ? "error"
                 : "pendiente"
 
-      const suscripcionResult = await client.query(
+      const suscripcionResult = await client.query<SubscriptionUpdateRow>(
         `UPDATE tabla_suscripciones_organizador s
          SET estado_suscripcion      = CASE
                                          WHEN s.estado_suscripcion = 'activa' THEN 'activa'
@@ -145,7 +167,7 @@ export async function POST(req: Request) {
         [suscripcionEstado, transactionId || null, JSON.stringify(payload), referenciaPago],
       )
 
-      const updateResult = await client.query(
+      const updateResult = await client.query<RoleUpdateRow>(
         `UPDATE tabla_cambio_rol_usuario
          SET estado_pago             = $1,
              id_transaccion_pago     = $2,
@@ -157,22 +179,18 @@ export async function POST(req: Request) {
         [estadoPago, transactionId || null, JSON.stringify(payload), referenciaPago],
       )
 
-      if (updateResult.rowCount === 0 && suscripcionResult.rowCount === 0) {
+      const updatedRoleRows = updateResult.rowCount ?? 0
+      const updatedSubscriptionRows = suscripcionResult.rowCount ?? 0
+
+      if (updatedRoleRows === 0 && updatedSubscriptionRows === 0) {
         await client.query("COMMIT")
         return NextResponse.json({ ok: true })
       }
 
       if (estadoPago === "aprobado") {
-        const rolRow = updateResult.rowCount > 0 ? (updateResult.rows[0] as {
-          id_usuario: number
-          id_rol_solicitado: number
-        }) : null
+        const rolRow = updatedRoleRows > 0 ? updateResult.rows[0] : null
 
-        const suscripcionRow = suscripcionResult.rowCount > 0 ? (suscripcionResult.rows[0] as {
-          id_usuario: number
-          id_plan: number
-          estado_suscripcion: string
-        }) : null
+        const suscripcionRow = updatedSubscriptionRows > 0 ? suscripcionResult.rows[0] : null
 
         const idUsuario = suscripcionRow?.id_usuario ?? rolRow?.id_usuario
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react"
+import type { RegisterStep } from "@/components/register-form-parts/registration-progress-modal"
 
 import {
   EMAIL_MAX_LENGTH,
@@ -59,6 +60,7 @@ export function useRegisterForm(onSuccess: () => void) {
   })
   const [listaPaises, setListaPaises] = useState<{ value: number; label: string }[]>([])
   const [duplicateModal, setDuplicateModal] = useState<DuplicateModalState>({ open: false, duplicates: [] })
+  const [registerStep, setStep] = useState<RegisterStep>("idle")
 
   const [formData, setFormData] = useState<FormFields>(formDataInicial)
   const [touchedFields, setTouchedFields] = useState<Record<keyof FormFields, boolean>>({
@@ -239,7 +241,12 @@ export function useRegisterForm(onSuccess: () => void) {
       return
     }
 
+    setStep("validating")
+
     try {
+      await new Promise<void>((resolve) => setTimeout(resolve, 700))
+      setStep("creating")
+
       const response = await fetch("/api/usuario_formulario", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -256,6 +263,7 @@ export function useRegisterForm(onSuccess: () => void) {
 
       const data = await response.json()
       if (!response.ok) {
+        setStep("idle")
         setRegistroError(data.error || "Error al crear usuario.")
         if (response.status === 409) {
           setDuplicateModal({ open: true, duplicates: data.duplicates || [], message: data.error })
@@ -263,6 +271,7 @@ export function useRegisterForm(onSuccess: () => void) {
         return
       }
 
+      setStep("success")
       setRegistroError("")
       setFormData(formDataInicial)
       setConfirmPassword("")
@@ -279,16 +288,18 @@ export function useRegisterForm(onSuccess: () => void) {
       })
       setPasswordValidation({ isValid: false, errors: [] })
 
-      setTimeout(() => {
-        onSuccess()
-      }, 500)
+      await new Promise<void>((resolve) => setTimeout(resolve, 1800))
+      setStep("idle")
+      onSuccess()
     } catch (err) {
       console.error("Registro error:", err)
+      setStep("idle")
       setRegistroError("Error de red. Intenta nuevamente.")
     }
   }
 
   return {
+    registerStep,
     confirmPassword,
     duplicateModal,
     emailError,

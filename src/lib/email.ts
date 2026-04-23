@@ -47,14 +47,14 @@ export async function sendEmailValidationEmail(
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <img src="${bannerUrl}" alt="Banner" style="width: 100%; border-radius: 8px 8px 0 0; display: block;" />
-          <div style="background: linear-gradient(to bottom left, #a21caf, #dc2626); padding: 20px; border-radius: 0 0 8px 8px; color: white; text-align: center;">
+          <div style="background-color: #e11d48; padding: 20px; border-radius: 0 0 8px 8px; color: white; text-align: center;">
             <h2 style="margin: 0;">Validación de Correo Electrónico</h2>
           </div>
           <div style="padding: 20px; background: #FBFEFF; border-radius: 0 0 8px 8px;">
             <p>¡Hola!</p>
             <p>Gracias por registrarte en Time2Go. Para completar tu registro, necesitas validar tu correo electrónico.</p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${validationUrl}" style="background: linear-gradient(to top right, #15803d, #84cc16); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+              <a href="${validationUrl}" onmouseover="this.style.backgroundColor='#15803d'" onmouseout="this.style.backgroundColor='#16a34a'" style="background-color: #16a34a; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
                 Validar Correo Electrónico
               </a>
             </div>
@@ -113,7 +113,7 @@ export async function sendPasswordResetTokenEmail(
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <img src="${bannerUrl}" alt="Banner" style="width: 100%; border-radius: 8px 8px 0 0; display: block;" />
-          <div style="background: linear-gradient(to bottom left, #a21caf, #dc2626); padding: 20px; border-radius: 8px 8px 0 0; color: white;">
+          <div style="background-color: #e11d48; padding: 20px; border-radius: 8px 8px 0 0; color: white;">
             <h2 style="margin: 0;">Restablecimiento de Contraseña</h2>
           </div>
           <div style="padding: 20px; background: #FBFEFF; border-radius: 0 0 8px 8px;">
@@ -121,7 +121,7 @@ export async function sendPasswordResetTokenEmail(
             <p>Has solicitado restablecer tu contraseña en Time2Go.</p>
             <p>Haz clic en el siguiente botón para continuar con el proceso:</p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${resetUrl}" style="background: linear-gradient(to top right, #15803d, #84cc16); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+              <a href="${resetUrl}" onmouseover="this.style.backgroundColor='#15803d'" onmouseout="this.style.backgroundColor='#16a34a'" style="background-color: #16a34a; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
                 Restablecer Contraseña
               </a>
             </div>
@@ -189,7 +189,7 @@ export async function sendContactMessageEmail({
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 680px; margin: 0 auto;">
           <img src="${bannerUrl}" alt="Banner" style="width: 100%; border-radius: 8px 8px 0 0; display: block;" />
-          <div style="background: linear-gradient(to bottom left, #a21caf, #dc2626); padding: 20px; border-radius: 0 0 8px 8px; color: white;">
+          <div style="background-color: #e11d48; padding: 20px; border-radius: 0 0 8px 8px; color: white;">
             <h2 style="margin: 0;">Nuevo mensaje desde Contáctanos</h2>
           </div>
           <div style="padding: 20px; background: #FBFEFF; border-radius: 0 0 8px 8px; color: #111827;">
@@ -244,7 +244,7 @@ export async function sendEventApprovedEmail(
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; font-size: 15px;">
           <img src="${bannerUrl}" alt="Banner" style="width: 100%; border-radius: 8px 8px 0 0; display: block;" />
-          <div style="background: linear-gradient(to bottom left, #a21caf, #dc2626); padding: 20px; border-radius: 0; color: white; text-align: center;">
+          <div style="background-color: #e11d48; padding: 20px; border-radius: 0; color: white; text-align: center;">
             <h2 style="margin: 0; font-size: 22px;">Evento aprobado</h2>
           </div>
           <div style="padding: 24px; background: #FBFEFF; border-radius: 0 0 8px 8px;">
@@ -254,7 +254,7 @@ export async function sendEventApprovedEmail(
               <p style="margin: 0; color: #111827; font-size: 16px; font-weight: bold;">${safeName}</p>
             </div>
             <div style="text-align: center; margin: 28px 0;">
-              <a href="${eventUrl}" style="background: linear-gradient(to top right, #15803d, #84cc16); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 15px;">
+              <a href="${eventUrl}" onmouseover="this.style.backgroundColor='#15803d'" onmouseout="this.style.backgroundColor='#16a34a'" style="background-color: #16a34a; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
                 Ver evento
               </a>
             </div>
@@ -317,7 +317,7 @@ export async function sendBanNotificationEmail(
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; font-size: 15px;">
           <img src="${bannerUrl}" alt="Banner" style="width: 100%; border-radius: 8px 8px 0 0; display: block;" />
-          <div style="background: linear-gradient(to bottom left, #a21caf, #dc2626); padding: 20px; border-radius: 0; color: white; text-align: center;">
+          <div style="background-color: #e11d48; padding: 20px; border-radius: 0; color: white; text-align: center;">
             <h2 style="margin: 0; font-size: 22px;">Cuenta Desactivada</h2>
           </div>
           <div style="padding: 24px; background: #FBFEFF; border-radius: 0 0 8px 8px;">
@@ -350,7 +350,7 @@ export async function sendBanNotificationEmail(
               Si crees que esto es un error o deseas obtener más información, por favor contacta a nuestro equipo de soporte. Estaremos felices de ayudarte a resolver cualquier inconveniente.
             </p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="mailto:${process.env.EMAIL_USER}" style="background: linear-gradient(to top right, #15803d, #84cc16); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 15px;">
+              <a href="mailto:${process.env.EMAIL_USER}" onmouseover="this.style.backgroundColor='#15803d'" onmouseout="this.style.backgroundColor='#16a34a'" style="background-color: #16a34a; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
                 Contactar Soporte
               </a>
             </div>
@@ -390,7 +390,7 @@ export async function sendUnbanNotificationEmail(
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; font-size: 15px;">
           <img src="${bannerUrl}" alt="Banner" style="width: 100%; border-radius: 8px 8px 0 0; display: block;" />
-          <div style="background: linear-gradient(to bottom left, #a21caf, #dc2626); padding: 20px; border-radius: 0; color: white; text-align: center;">
+          <div style="background-color: #e11d48; padding: 20px; border-radius: 0; color: white; text-align: center;">
             <h2 style="margin: 0; font-size: 22px;">Cuenta Reactivada</h2>
           </div>
           <div style="padding: 24px; background: #FBFEFF; border-radius: 0 0 8px 8px;">
@@ -413,7 +413,7 @@ export async function sendUnbanNotificationEmail(
               Si tienes alguna duda o necesitas ayuda, no dudes en contactar a nuestro equipo de soporte.
             </p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="mailto:${process.env.EMAIL_USER}" style="background: linear-gradient(to top right, #15803d, #84cc16); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 15px;">
+              <a href="mailto:${process.env.EMAIL_USER}" onmouseover="this.style.backgroundColor='#15803d'" onmouseout="this.style.backgroundColor='#16a34a'" style="background-color: #16a34a; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; font-size: 15px;">
                 Contactar Soporte
               </a>
             </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 
 import type {
@@ -38,6 +38,7 @@ export function useProfilePage() {
   const [deactivateStep, setDeactivateStep] = useState<DeactivateStep>(1)
   const [deactivating, setDeactivating] = useState(false)
   const [deactivateError, setDeactivateError] = useState<string | null>(null)
+  const paymentSyncRanRef = useRef(false)
 
   const fetchUserData = useCallback(async () => {
     try {
@@ -78,6 +79,74 @@ export function useProfilePage() {
     const message = getProfileSuccessMessageFromUrl()
     if (message) setSuccessMessage(message)
   }, [])
+
+  useEffect(() => {
+    if (paymentSyncRanRef.current || typeof window === "undefined") return
+    paymentSyncRanRef.current = true
+
+    const syncPaymentFromReturnUrl = async () => {
+      const currentUrl = new URL(window.location.href)
+      if (currentUrl.pathname !== "/perfil") return
+      if (currentUrl.searchParams.get("pago") !== "resultado") return
+
+      const hasGatewayParams = [
+        "x_ref_payco",
+        "ref_payco",
+        "x_cod_response",
+        "cod_response",
+        "x_transaction_state",
+        "transaction_state",
+        "x_signature",
+        "signature",
+      ].some((key) => currentUrl.searchParams.has(key))
+
+      if (!hasGatewayParams) return
+
+      const reference = currentUrl.searchParams.get("ref") || currentUrl.searchParams.get("x_extra1") || ""
+      const syncKey = reference ? `epayco-sync:${reference}` : ""
+      if (syncKey && window.sessionStorage.getItem(syncKey) === "done") {
+        return
+      }
+
+      const form = new URLSearchParams()
+      currentUrl.searchParams.forEach((value, key) => {
+        form.append(key, value)
+      })
+
+      if (reference) {
+        if (!form.get("x_extra1")) form.set("x_extra1", reference)
+        if (!form.get("x_id_invoice")) form.set("x_id_invoice", reference)
+        if (!form.get("id_invoice")) form.set("id_invoice", reference)
+        if (!form.get("reference")) form.set("reference", reference)
+      }
+
+      try {
+        const response = await fetch("/api/epayco/webhook", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: form.toString(),
+          credentials: "include",
+        })
+
+        if (!response.ok) {
+          setSuccessMessage(
+            "Pago recibido por ePayco, pero no se pudo sincronizar en este entorno. Si persiste, usa un tunel (ngrok/cloudflared) para confirmation_url.",
+          )
+          return
+        }
+
+        if (syncKey) window.sessionStorage.setItem(syncKey, "done")
+        await fetchUserData()
+        setSuccessMessage("Pago verificado y sincronizado. Ya puedes revisar Mis transacciones.")
+      } catch {
+        setSuccessMessage(
+          "Pago recibido por ePayco, pero fallo la sincronizacion local. Verifica confirmation_url publico para webhook.",
+        )
+      }
+    }
+
+    void syncPaymentFromReturnUrl()
+  }, [fetchUserData])
 
   const fetchOrganizerPlans = useCallback(async () => {
     setIsLoadingOrganizerPlans(true)

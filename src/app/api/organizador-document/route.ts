@@ -20,6 +20,13 @@ type OrganizerPlanRow = {
   permite_destacado: boolean
 }
 
+type ExistingSubscriptionRow = {
+  id_suscripcion_organizador: number
+  estado_suscripcion: string
+  fecha_fin: string | null
+  referencia_pago: string
+}
+
 export async function GET(req: Request) {
   const requesterId = await getRequesterIdLenient(req)
   if (!requesterId) {
@@ -90,6 +97,60 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, message: "El plan seleccionado no esta disponible" }, { status: 400 })
     }
 
+    if (!EPAYCO_PUBLIC_KEY) {
+      return NextResponse.json(
+        { ok: false, message: "Falta configurar EPAYCO_PUBLIC_KEY" },
+        { status: 500 },
+      )
+    }
+
+    await client.query("BEGIN")
+
+    await client.query(
+      `UPDATE tabla_suscripciones_organizador
+       SET estado_suscripcion = 'vencida',
+           fecha_actualizacion = NOW()
+       WHERE id_usuario = $1
+         AND estado_suscripcion = 'activa'
+         AND fecha_fin IS NOT NULL
+         AND fecha_fin <= NOW()`,
+      [userId],
+    )
+
+    const existingSubscriptionRes = await client.query<ExistingSubscriptionRow>(
+      `SELECT
+         id_suscripcion_organizador,
+         estado_suscripcion,
+         fecha_fin::text,
+         referencia_pago
+       FROM tabla_suscripciones_organizador
+       WHERE id_usuario = $1
+         AND (
+           estado_suscripcion = 'pendiente'
+           OR (
+             estado_suscripcion = 'activa'
+             AND (fecha_fin IS NULL OR fecha_fin > NOW())
+           )
+         )
+       ORDER BY
+         CASE WHEN estado_suscripcion = 'activa' THEN 0 ELSE 1 END,
+         fecha_creacion DESC
+       LIMIT 1`,
+      [userId],
+    )
+
+    const existingSubscription = existingSubscriptionRes.rows[0]
+    if (existingSubscription) {
+      await client.query("ROLLBACK")
+
+      const message =
+        existingSubscription.estado_suscripcion === "activa"
+          ? "Ya tienes un plan activo vigente. Solo puedes realizar otro pago cuando el plan termine."
+          : "Ya tienes un pago pendiente. Solo puedes intentar otro pago si ese intento termina rechazado o con error."
+
+      return NextResponse.json({ ok: false, message }, { status: 409 })
+    }
+
     const paymentReference = `PLAN-${selectedPlan.id_plan}-USR-${userId}-${Date.now()}`
 
     await client.query(
@@ -115,12 +176,7 @@ export async function POST(req: Request) {
       [userId, ORGANIZER_ROLE_ID, paymentReference, selectedPlan.precio_cop, "COP"],
     )
 
-    if (!EPAYCO_PUBLIC_KEY) {
-      return NextResponse.json(
-        { ok: false, message: "Falta configurar EPAYCO_PUBLIC_KEY" },
-        { status: 500 },
-      )
-    }
+    await client.query("COMMIT")
 
     const amount = Number(selectedPlan.precio_cop).toFixed(2)
     const responseUrl = encodeURIComponent(
@@ -145,6 +201,12 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, checkout_url: checkoutUrl.toString(), referencia_pago: paymentReference })
   } catch (error) {
+    try {
+      await client.query("ROLLBACK")
+    } catch {
+      // Ignore rollback errors from requests that failed before BEGIN.
+    }
+
     console.error("/api/organizador-document POST error:", error)
     return NextResponse.json({ ok: false, message: "Error iniciando pago" }, { status: 500 })
   } finally {

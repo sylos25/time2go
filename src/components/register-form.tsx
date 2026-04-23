@@ -7,6 +7,7 @@ import { EmailInputField } from "@/components/auth-form-parts/email-input-field"
 import { PasswordInputField } from "@/components/auth-form-parts/password-input-field"
 import { DuplicateFieldsModal } from "@/components/register-form-parts/duplicate-fields-modal"
 import { PasswordRequirements } from "@/components/register-form-parts/password-requirements"
+import { RegistrationProgressModal } from "@/components/register-form-parts/registration-progress-modal"
 import { TermsConditionsModal } from "@/components/register-form-parts/terms-conditions-modal"
 import { useRegisterForm } from "@/hooks/use-register-form"
 
@@ -16,6 +17,7 @@ interface RegisterFormProps {
 
 export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const {
+    registerStep,
     confirmPassword,
     duplicateModal,
     emailError,
@@ -211,6 +213,9 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
         message={duplicateModal.message}
         onClose={handleDuplicateModalClose}
       />
+
+      <RegistrationProgressModal step={registerStep} />
     </>
   )
 }
+
