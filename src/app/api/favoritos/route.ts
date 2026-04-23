@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
 import { getRequesterIdLenient } from "@/lib/auth-request";
+import { mapFavoriteRowsToIds } from "@/app/api/favoritos/lib/favoritos-mappers";
+import {
+  addFavorite,
+  listFavoriteRows,
+  removeFavorite,
+} from "@/app/api/favoritos/lib/favoritos-repository";
 
 async function getUserIdNumber(req: Request): Promise<number | null> {
   const raw = await getRequesterIdLenient(req);
@@ -14,17 +19,9 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
     }
 
-    const result = await pool.query(
-      `SELECT id_evento
-       FROM tabla_favoritos
-       WHERE id_usuario = $1
-       ORDER BY fecha_creacion DESC`,
-      [userId]
-    );
-
     return NextResponse.json({
       ok: true,
-      favoritos: result.rows.map((row) => Number(row.id_evento)).filter((value) => Number.isFinite(value)),
+      favoritos: mapFavoriteRowsToIds(await listFavoriteRows(userId)),
     });
   } catch (error) {
     console.error("[GET /api/favoritos]", error);
@@ -45,17 +42,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, message: "id_evento inválido" }, { status: 400 });
     }
 
-    await pool.query(
-      `INSERT INTO tabla_favoritos (id_usuario, id_evento)
-       VALUES ($1, $2)
-       ON CONFLICT (id_usuario, id_evento) DO NOTHING`,
-      [userId, eventId]
-    );
+    await addFavorite(userId, eventId);
 
     return NextResponse.json({ ok: true, id_evento: eventId });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[POST /api/favoritos]", error);
-    if (error?.code === "23503") {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "23503"
+    ) {
       return NextResponse.json({ ok: false, message: "Evento no válido" }, { status: 404 });
     }
     return NextResponse.json({ ok: false, message: "Error agregando favorito" }, { status: 500 });
@@ -75,11 +72,7 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ ok: false, message: "id_evento inválido" }, { status: 400 });
     }
 
-    await pool.query(
-      `DELETE FROM tabla_favoritos
-       WHERE id_usuario = $1 AND id_evento = $2`,
-      [userId, eventId]
-    );
+    await removeFavorite(userId, eventId);
 
     return NextResponse.json({ ok: true, id_evento: eventId });
   } catch (error) {

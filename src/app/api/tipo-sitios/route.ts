@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server"
-import pool from "@/lib/db"
+import { listTipoSitios } from "@/app/api/tipo-sitios/lib/tipo-sitios-repository"
 
 export async function GET() {
   try {
-    const result = await pool.query(
-      "SELECT id_tipo_sitio, nombre_tipo_sitio FROM tabla_tipo_sitios ORDER BY nombre_tipo_sitio ASC"
-    )
-    
-    return NextResponse.json({ tipos: result.rows })
+    return NextResponse.json({ tipos: await listTipoSitios() })
   } catch (error) {
     console.error("Error fetching tipo sitios:", error)
     return NextResponse.json(

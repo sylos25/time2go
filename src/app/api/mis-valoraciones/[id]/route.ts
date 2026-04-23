@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
-import { getJwtPayloadLenient } from "@/lib/auth-request";
 import { dbErrorResponse } from "@/lib/api-error-response";
-
-async function getAuthenticatedUser(req: Request) {
-  const payload = await getJwtPayloadLenient(req);
-  if (!payload?.id_usuario) return null;
-  return { id_usuario: Number(payload.id_usuario), name: payload.name };
-}
+import { getMisValoracionesAuthenticatedUser } from "@/app/api/mis-valoraciones/lib/mis-valoraciones-auth";
+import {
+  deleteMisValoracion,
+  fetchMisValoracionById,
+  updateMisValoracion,
+} from "@/app/api/mis-valoraciones/lib/mis-valoraciones-repository";
 
 // ── GET — obtener una valoración por id ─────────────────────────────────────
 export async function GET(
@@ -15,7 +13,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getAuthenticatedUser(req);
+    const user = await getMisValoracionesAuthenticatedUser(req);
     if (!user)
       return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
 
@@ -24,17 +22,12 @@ export async function GET(
     if (!Number.isFinite(idValoracion) || idValoracion <= 0)
       return NextResponse.json({ ok: false, message: "ID de valoración inválido" }, { status: 400 });
 
-    const { rows } = await pool.query(
-      "SELECT app_api.fn_valoraciones_obtener_por_id($1,$2) AS result",
-      [idValoracion, user.id_usuario]
-    );
-
-    const data = rows[0].result;
+    const data = await fetchMisValoracionById(idValoracion, user.id_usuario);
     if (!data?.ok)
       return dbErrorResponse(data, "Error obteniendo la valoracion");
 
     return NextResponse.json(data);
-  } catch (err: any) {
+  } catch (err) {
     console.error("[GET /api/mis-valoraciones/[id]]", err);
     return NextResponse.json({ ok: false, message: "Error obteniendo la valoración" }, { status: 500 });
   }
@@ -46,7 +39,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getAuthenticatedUser(req);
+    const user = await getMisValoracionesAuthenticatedUser(req);
     if (!user)
       return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
 
@@ -62,17 +55,12 @@ export async function PUT(
     if (valoracion !== null && (!Number.isFinite(valoracion) || !Number.isInteger(valoracion) || valoracion < 1 || valoracion > 5))
       return NextResponse.json({ ok: false, message: "La valoración debe ser un entero entre 1 y 5" }, { status: 400 });
 
-    const { rows } = await pool.query(
-      "SELECT app_api.fn_valoraciones_actualizar($1,$2,$3,$4) AS result",
-      [idValoracion, user.id_usuario, valoracion, comentario]
-    );
-
-    const data = rows[0].result;
+    const data = await updateMisValoracion(idValoracion, user.id_usuario, valoracion, comentario);
     if (!data?.ok)
       return dbErrorResponse(data, "Error actualizando la valoracion");
 
     return NextResponse.json({ ok: true, message: "Valoración actualizada" });
-  } catch (err: any) {
+  } catch (err) {
     console.error("[PUT /api/mis-valoraciones/[id]]", err);
     return NextResponse.json({ ok: false, message: "Error actualizando la valoración" }, { status: 500 });
   }
@@ -84,7 +72,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getAuthenticatedUser(req);
+    const user = await getMisValoracionesAuthenticatedUser(req);
     if (!user)
       return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
 
@@ -93,17 +81,12 @@ export async function DELETE(
     if (!Number.isFinite(idValoracion) || idValoracion <= 0)
       return NextResponse.json({ ok: false, message: "ID de valoración inválido" }, { status: 400 });
 
-    const { rows } = await pool.query(
-      "SELECT app_api.fn_valoraciones_eliminar($1,$2) AS result",
-      [idValoracion, user.id_usuario]
-    );
-
-    const data = rows[0].result;
+    const data = await deleteMisValoracion(idValoracion, user.id_usuario);
     if (!data?.ok)
       return dbErrorResponse(data, "Error eliminando la valoracion");
 
     return NextResponse.json({ ok: true, message: "Valoración eliminada correctamente" });
-  } catch (err: any) {
+  } catch (err) {
     console.error("[DELETE /api/mis-valoraciones/[id]]", err);
     return NextResponse.json({ ok: false, message: "Error eliminando la valoración" }, { status: 500 });
   }

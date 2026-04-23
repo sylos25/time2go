@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
 import { getRequesterIdFromRequest } from "@/lib/auth-request";
+import {
+  findPermissionAccess,
+  findUserRoleById,
+} from "@/app/api/permissions/check/lib/permissions-check-repository";
 
 /**
  * API para verificar si un rol tiene acceso a una funcionalidad específica
@@ -31,42 +34,27 @@ export async function GET(req: Request) {
       }
 
       // Obtener el rol del usuario
-      const userResult = await pool.query(
-        "SELECT id_rol FROM tabla_usuarios WHERE id_usuario = $1",
-        [userId]
-      );
+      const resolvedRole = await findUserRoleById(userId)
 
-      if (!userResult.rows || userResult.rows.length === 0) {
+      if (resolvedRole === null) {
         return NextResponse.json(
           { ok: false, message: "Usuario no encontrado" },
           { status: 404 }
         );
       }
 
-      idRol = String(userResult.rows[0].id_rol);
+      idRol = String(resolvedRole);
     }
 
-    // Verificar si el rol tiene acceso a la accesibilidad
-    const result = await pool.query(
-      `SELECT 
-        axr.id_accesibilidad_menu_x_rol,
-        axr.id_accesibilidad,
-        axr.id_rol,
-        am.nombre_accesibilidad
-       FROM tabla_accesibilidad_menu_x_rol axr
-       INNER JOIN tabla_accesibilidad_menu am ON axr.id_accesibilidad = am.id_accesibilidad
-       WHERE axr.id_accesibilidad = $1 AND axr.id_rol = $2`,
-      [idAccesibilidad, idRol]
-    );
-
-    const hasAccess = result.rows && result.rows.length > 0;
+    const accessRow = await findPermissionAccess(idAccesibilidad, idRol)
+    const hasAccess = Boolean(accessRow)
 
     return NextResponse.json({
       ok: true,
       hasAccess,
       id_accesibilidad: Number(idAccesibilidad),
       id_rol: Number(idRol),
-      nombre_accesibilidad: hasAccess ? result.rows[0].nombre_accesibilidad : null,
+      nombre_accesibilidad: accessRow?.nombre_accesibilidad ?? null,
     });
   } catch (err) {
     console.error("/api/permissions/check error:", err);

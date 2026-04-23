@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { User, LogOut, Calendar, Ticket, Star, Heart } from "lucide-react"
+import { User, LogOut, Calendar, Ticket, Star, Heart, CreditCard } from "lucide-react"
 import type { JSX } from "react"
 
 export interface NavigationItem {
@@ -22,6 +22,7 @@ interface DesktopNavProps {
   canDashboard: boolean
   displayName: string
   isRegularUser: boolean
+  canViewTransactions: boolean
   navigateTo: (path: string) => void
   onJoinClick: () => void
   onLogoutClick: () => void
@@ -34,6 +35,7 @@ export function DesktopNav({
   canDashboard,
   displayName,
   isRegularUser,
+  canViewTransactions,
   navigateTo,
   onJoinClick,
   onLogoutClick,
@@ -137,6 +139,15 @@ export function DesktopNav({
                 <Heart className="h-4 w-4 mr-2" />
                 Mis favoritos
               </DropdownMenuItem>
+              {canViewTransactions && (
+                <DropdownMenuItem
+                  onClick={() => navigateTo("/mis-transacciones")}
+                  className="cursor-pointer"
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Mis transacciones
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={onLogoutClick}

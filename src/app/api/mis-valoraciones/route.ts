@@ -1,32 +1,24 @@
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
-import { getJwtPayloadLenient } from "@/lib/auth-request";
 import { dbErrorResponse } from "@/lib/api-error-response";
-
-async function getAuthenticatedUser(req: Request) {
-  const payload = await getJwtPayloadLenient(req);
-  if (!payload?.id_usuario) return null;
-  return { id_usuario: Number(payload.id_usuario), name: payload.name };
-}
+import { getMisValoracionesAuthenticatedUser } from "@/app/api/mis-valoraciones/lib/mis-valoraciones-auth";
+import {
+  createMisValoracion,
+  fetchMisValoraciones,
+} from "@/app/api/mis-valoraciones/lib/mis-valoraciones-repository";
 
 // ── GET — listar todas las valoraciones ─────────────────────────────────────
 export async function GET(req: Request) {
   try {
-    const user = await getAuthenticatedUser(req);
+    const user = await getMisValoracionesAuthenticatedUser(req);
     if (!user)
       return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
 
-    const { rows } = await pool.query(
-      "SELECT app_api.fn_valoraciones_obtener($1) AS result",
-      [user.id_usuario]
-    );
-
-    const data = rows[0].result;
+    const data = await fetchMisValoraciones(user.id_usuario);
     if (!data?.ok) {
       return dbErrorResponse(data, "Error obteniendo valoraciones");
     }
     return NextResponse.json(data);
-  } catch (err: any) {
+  } catch (err) {
     console.error("[GET /api/mis-valoraciones]", err);
     return NextResponse.json({ ok: false, message: "Error obteniendo valoraciones" }, { status: 500 });
   }
@@ -35,7 +27,7 @@ export async function GET(req: Request) {
 // ── POST — crear una valoración ──────────────────────────────────────────────
 export async function POST(req: Request) {
   try {
-    const user = await getAuthenticatedUser(req);
+    const user = await getMisValoracionesAuthenticatedUser(req);
     if (!user)
       return NextResponse.json({ ok: false, message: "Not authenticated" }, { status: 401 });
 
@@ -50,17 +42,12 @@ export async function POST(req: Request) {
     if (valoracion === undefined || !Number.isFinite(valoracion) || !Number.isInteger(valoracion) || valoracion < 1 || valoracion > 5)
       return NextResponse.json({ ok: false, message: "La valoración debe ser un entero entre 1 y 5" }, { status: 400 });
 
-    const { rows } = await pool.query(
-      "SELECT app_api.fn_valoraciones_crear($1,$2,$3,$4) AS result",
-      [user.id_usuario, idEvento, valoracion, comentario]
-    );
-
-    const data = rows[0].result;
+    const data = await createMisValoracion(user.id_usuario, idEvento, valoracion, comentario);
     if (!data?.ok)
       return dbErrorResponse(data, "Error creando la valoracion");
 
     return NextResponse.json(data, { status: 201 });
-  } catch (err: any) {
+  } catch (err) {
     console.error("[POST /api/mis-valoraciones]", err);
     return NextResponse.json({ ok: false, message: "Error creando la valoración" }, { status: 500 });
   }

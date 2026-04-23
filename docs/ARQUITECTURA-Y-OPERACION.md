@@ -203,7 +203,9 @@ En cada apartado, **Qué es** resume el producto o estándar; **Rol en Time2Go**
 - **Rol en Time2Go:** Registrar **tokens JWT revocados** (por `jti`) hasta su expiración; el módulo `login-rate-limit.ts` define límites con **@upstash/ratelimit** para un posible uso distribuido (hoy el login también limita en memoria en Node).
 
 - **`UPSTASH_REDIS_REST_URL`** y **`UPSTASH_REDIS_REST_TOKEN`**.
+- **`ACTIVE_SESSION_HMAC_SECRET`**: secreto dedicado para firmar (HMAC SHA-256) la clave por usuario usada por control de sesión activa en Redis. Evita exponer `id_usuario` como parte de la key.
 - **Revocación JWT:** `src/lib/token-revocation.ts` guarda claves `revoked:jti:{jti}` con TTL acotado al `exp` del token. Si no hay env, la revocación es **no-op** (no falla).
+- **Control de sesión activa:** `src/lib/active-session.ts` usa una key versionada `active:session:user:v2:{hmac}`. Durante migración, si no existe la key v2 consulta una key legacy y la limpia al escribir nuevamente.
 - **`src/lib/login-rate-limit.ts`**: define **Ratelimit** de Upstash (ventanas deslizantes por IP y por credencial). En el estado actual del repo, **`POST /api/login`** implementa además su **propio** rate limit en memoria en producción; el prelude `runLoginRateLimitPrelude` del módulo compartido puede quedar como extensión futura o integración pendiente — conviene unificar si quieres límites distribuidos solo vía Upstash.
 
 ### 6.5 ePayco (pagos Colombia)
@@ -314,7 +316,8 @@ En cada apartado, **Qué es** resume el producto o estándar; **Rol en Time2Go**
 |----------|-----------|
 | `SKIP_DATABASE_URL_CHECK` | `true` solo en CI/build sin BD real |
 | `JWT_KEYS`, `JWT_ACTIVE_KID`, `JWT_ISSUER`, `JWT_AUDIENCE` | Rotación / claims JWT |
-| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Revocación JTI; rate limit Upstash en módulo dedicado |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Revocación JTI; control de sesión activa; rate limit Upstash en módulo dedicado |
+| `ACTIVE_SESSION_HMAC_SECRET` | Firma HMAC SHA-256 para ofuscar la identidad interna en keys de sesión activa en Redis |
 | `COOKIE_DOMAIN` | Cookies en subdominio |
 | `EMAIL_*` | Envío de correos |
 | `DOCUMENTS_*`, `DOCUMENT_STORAGE_PROVIDER` | R2/S3 |

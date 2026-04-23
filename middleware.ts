@@ -38,6 +38,10 @@ const RUTAS_PROTEGIDAS: { pattern: RegExp; rolesPermitidos: number[] }[] = [
     rolesPermitidos: [ROL_USUARIO, ROL_ORGANIZADOR, ROL_MODERADOR, ROL_ADMIN],
   },
   {
+    pattern: /^\/mis-transacciones(\/.*)?$/,
+    rolesPermitidos: [ROL_USUARIO, ROL_ORGANIZADOR],
+  },
+  {
     pattern: /^\/cambiar-contrasena(\/.*)?$/,
     rolesPermitidos: [ROL_USUARIO, ROL_ORGANIZADOR, ROL_MODERADOR, ROL_ADMIN],
   },
@@ -133,6 +137,7 @@ export const config = {
     "/configuracion/:path*",
     "/mis-favoritos/:path*",
     "/mis-valoraciones/:path*",
+    "/mis-transacciones/:path*",
     "/cambiar-contrasena/:path*",
   ],
 };

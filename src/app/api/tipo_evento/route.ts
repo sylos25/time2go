@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { listTiposEventoByCategoriaId } from "@/app/api/tipo_evento/lib/tipo-evento-repository";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -21,12 +21,7 @@ export async function GET(req: Request) {
       );
     }
 
-    const result = await pool.query(
-      "SELECT id_tipo_evento, nombre_tipo_evento AS nombre FROM tabla_tipo_eventos WHERE id_categoria_evento = $1",
-      [id]
-    );
-
-    return NextResponse.json(result.rows, { status: 200 });
+    return NextResponse.json(await listTiposEventoByCategoriaId(id), { status: 200 });
   } catch {
     return NextResponse.json(
       { message: "Error al obtener tipos de evento" },

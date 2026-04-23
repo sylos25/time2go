@@ -48,6 +48,8 @@ export function Header({
       ? Number(user.role)
       : undefined
   const isRegularUser = permissionsKnown && roleForPermissions === 1
+  const canViewTransactions =
+    permissionsKnown && (roleForPermissions === 1 || roleForPermissions === 2)
 
   const { hasAccess: canCreate } = usePermission(
     permissionsKnown ? PERMISSIONS.CREAR_EVENTOS : null,
@@ -147,6 +149,7 @@ export function Header({
               canDashboard={canDashboard}
               displayName={displayName}
               isRegularUser={isRegularUser}
+              canViewTransactions={canViewTransactions}
               navigateTo={navigateTo}
               onJoinClick={handleJoinClick}
               onLogoutClick={handleLogout}
@@ -164,6 +167,7 @@ export function Header({
         canCreate={canCreate}
         canDashboard={canDashboard}
         isRegularUser={isRegularUser}
+        canViewTransactions={canViewTransactions}
         navigateTo={navigateTo}
         onJoinClick={handleJoinClick}
         onLogoutClick={handleLogout}

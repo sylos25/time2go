@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server"
-import pool from "@/lib/db"
+import { listDepartamentos } from "@/app/api/departamentos/lib/departamentos-repository"
 
 export async function GET() {
   try {
-    const result = await pool.query(
-      "SELECT id_departamento, nombre_departamento FROM tabla_departamentos ORDER BY nombre_departamento ASC"
-    )
-    
-    return NextResponse.json({ departamentos: result.rows })
+    return NextResponse.json({ departamentos: await listDepartamentos() })
   } catch (error) {
     console.error("Error fetching departamentos:", error)
     return NextResponse.json(

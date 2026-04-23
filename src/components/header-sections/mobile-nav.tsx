@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { User, LogOut, Calendar, Ticket, Star, Heart } from "lucide-react"
+import { User, LogOut, Calendar, Ticket, Star, Heart, CreditCard } from "lucide-react"
 import type { JSX } from "react"
 import type { NavigationItem } from "./desktop-nav"
 
@@ -10,6 +10,7 @@ interface MobileNavProps {
   canCreate: boolean
   canDashboard: boolean
   isRegularUser: boolean
+  canViewTransactions: boolean
   navigateTo: (path: string) => void
   onJoinClick: () => void
   onLogoutClick: () => void
@@ -22,6 +23,7 @@ export function MobileNav({
   canCreate,
   canDashboard,
   isRegularUser,
+  canViewTransactions,
   navigateTo,
   onJoinClick,
   onLogoutClick,
@@ -121,6 +123,15 @@ export function MobileNav({
                 <Heart className="h-5 w-5 text-lime-600" />
                 <span>Mis Favoritos</span>
               </button>
+              {canViewTransactions && (
+                <button
+                  onClick={() => navigateTo("/mis-transacciones")}
+                  className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
+                >
+                  <CreditCard className="h-5 w-5 text-lime-600" />
+                  <span>Mis Transacciones</span>
+                </button>
+              )}
               <button
                 onClick={onLogoutClick}
                 className="flex items-center space-x-3 text-red-600 hover:text-red-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-red-50 transition-all w-full text-left mt-4"

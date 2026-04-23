@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import pool from "@/lib/db";
-import { serializeCookie } from "@/lib/cookies";
-import { signToken } from "@/lib/jwt";
 import { setActiveSession } from "@/lib/active-session";
+import { createSessionTokenPair, REFRESH_EXPIRES_IN } from "@/lib/auth-session";
+import { appendSessionCookies, buildSessionCookies } from "@/lib/auth-session-http";
 
 type LoginLimiter = {
   requests: number[];
@@ -341,49 +341,14 @@ export async function POST(req: Request) {
 
     clearSuccessfulAuth(ip, normalizedEmail);
 
-    const accessExpiresIn = 15 * 60;
-    const refreshExpiresIn = 7 * 24 * 60 * 60;
     const sessionId = crypto.randomUUID();
-    await setActiveSession(String(user.id_usuario), sessionId, refreshExpiresIn);
+    await setActiveSession(String(user.id_usuario), sessionId, REFRESH_EXPIRES_IN);
 
-    const accessToken = await signToken(
-      {
-        id_usuario: user.id_usuario,
-        id_rol: user.id_rol,
-        name: user.nombres || user.correo.split("@")[0],
-        sid: sessionId,
-      },
-      accessExpiresIn
-    );
-
-    const refreshToken = await signToken(
-      {
-        id_usuario: user.id_usuario,
-        id_rol: user.id_rol,
-        name: user.nombres || user.correo.split("@")[0],
-        sid: sessionId,
-        token_type: "refresh",
-      },
-      refreshExpiresIn
-    );
-
-    const secure = process.env.NODE_ENV === "production";
-    const accessCookie = serializeCookie("token", accessToken, {
-      maxAge: accessExpiresIn,
-      httpOnly: true,
-      secure,
-      sameSite: "lax",
-      path: "/",
-      domain: process.env.COOKIE_DOMAIN,
-    });
-
-    const refreshCookie = serializeCookie("refresh_token", refreshToken, {
-      maxAge: refreshExpiresIn,
-      httpOnly: true,
-      secure,
-      sameSite: "strict",
-      path: "/",
-      domain: process.env.COOKIE_DOMAIN,
+    const sessionTokens = await createSessionTokenPair({
+      userId: String(user.id_usuario),
+      roleId: user.id_rol,
+      name: user.nombres || user.correo.split("@")[0],
+      sessionId,
     });
 
     const response = NextResponse.json(
@@ -391,16 +356,13 @@ export async function POST(req: Request) {
         success: true,
         id_publico: user.id_publico,
         id_rol: user.id_rol,
-        expiresAt: Math.floor(Date.now() / 1000) + accessExpiresIn,
+        expiresAt: sessionTokens.expiresAt,
         name: user.nombres || user.correo.split("@")[0],
       },
       { status: 200 }
     );
 
-    response.headers.append("Set-Cookie", accessCookie);
-    response.headers.append("Set-Cookie", refreshCookie);
-
-    return response;
+    return appendSessionCookies(response, buildSessionCookies(sessionTokens));
   } catch (err) {
     console.error("Login error:", err);
     return NextResponse.json({ message: "Error interno" }, { status: 500 });

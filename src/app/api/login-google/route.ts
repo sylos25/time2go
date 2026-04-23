@@ -1,20 +1,18 @@
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
-import { serializeCookie } from "@/lib/cookies";
-import { signToken } from "@/lib/jwt";
 import { setActiveSession } from "@/lib/active-session";
-
-const GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo";
+import { createSessionTokenPair } from "@/lib/auth-session";
+import { appendSessionCookies, buildSessionCookies } from "@/lib/auth-session-http";
+import { resolveGoogleDisplayName, resolveGoogleLoginUser, verifyGoogleIdentity } from "@/app/api/login-google/lib/login-google-service";
+import { getGoogleClientId, parseGoogleCredential } from "@/app/api/login-google/lib/login-google-validation";
 
 export async function POST(req: Request) {
   try {
-    const { credential } = (await req.json()) as { credential?: string };
-
-    if (!credential) {
-      return NextResponse.json({ message: "Token requerido" }, { status: 400 });
+    const parsedCredential = await parseGoogleCredential(req);
+    if (!parsedCredential.ok) {
+      return parsedCredential.response;
     }
 
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
+    const clientId = getGoogleClientId();
     if (!clientId) {
       return NextResponse.json(
         { message: "Google Client ID no configurado" },
@@ -22,257 +20,42 @@ export async function POST(req: Request) {
       );
     }
 
-    const verifyRes = await fetch(
-      `${GOOGLE_TOKENINFO_URL}?id_token=${encodeURIComponent(String(credential))}`
-    );
-
-    if (!verifyRes.ok) {
-      return NextResponse.json({ message: "Token de Google invalido" }, { status: 401 });
+    const verifiedIdentity = await verifyGoogleIdentity(parsedCredential.credential, clientId);
+    if (!verifiedIdentity.ok) {
+      return verifiedIdentity.response;
     }
 
-    const tokenInfo = (await verifyRes.json()) as {
-      aud?: string;
-      email_verified?: boolean | string;
-      sub?: string;
-      email?: string;
-      given_name?: string;
-      family_name?: string;
-    };
-
-    if (tokenInfo.aud !== clientId) {
-      return NextResponse.json({ message: "Audience no valido" }, { status: 401 });
+    const resolvedUser = await resolveGoogleLoginUser(verifiedIdentity.identity);
+    if (!resolvedUser.ok) {
+      return resolvedUser.response;
     }
 
-    const emailVerified =
-      tokenInfo.email_verified === true || tokenInfo.email_verified === "true";
-    if (!emailVerified) {
-      return NextResponse.json(
-        { message: "Email de Google no verificado" },
-        { status: 403 }
-      );
-    }
-
-    const igGoogle = String(tokenInfo.sub || "").trim();
-    const email = String(tokenInfo.email || "").trim();
-    const nombres = String(tokenInfo.given_name || "").trim();
-    const apellidos = String(tokenInfo.family_name || "").trim();
-
-    if (!igGoogle || !email) {
-      return NextResponse.json(
-        { message: "Datos de Google incompletos" },
-        { status: 400 }
-      );
-    }
-
-    const existing = await pool.query(
-      `
-        SELECT
-          u.id_usuario,
-          u.id_publico,
-          u.id_rol,
-          u.estado_usuario AS estado,
-          c.correo_usuario AS correo,
-          c.id_google,
-          c.validacion_correo,
-          u.nombres
-        FROM tabla_usuarios u
-        INNER JOIN tabla_usuarios_credenciales c ON c.id_usuario = u.id_usuario
-        WHERE c.id_google = $1 OR c.correo_usuario = $2
-        LIMIT 1
-      `,
-      [igGoogle, email]
-    );
-
-    let user = existing.rows[0] as
-      | {
-          id_usuario: string | number;
-          id_publico?: string;
-          id_rol: number;
-          correo: string;
-          nombres?: string | null;
-          estado?: boolean;
-        }
-      | undefined;
-
-    if (user) {
-      if (user.estado === false) {
-        return NextResponse.json(
-          {
-            error: "Usuario baneado",
-            message: "Tu cuenta está baneada temporalmente. Contacta al administrador.",
-            banned: true,
-          },
-          { status: 403 }
-        );
-      }
-
-      const updated = await pool.query(
-        `
-          UPDATE tabla_usuarios_credenciales
-          SET id_google = COALESCE(id_google, $1),
-              validacion_correo = TRUE,
-              fecha_actualizacion = CURRENT_TIMESTAMP
-          WHERE id_usuario = $2
-          RETURNING id_usuario
-        `,
-        [igGoogle, user.id_usuario]
-      );
-
-      if (nombres || apellidos) {
-        await pool.query(
-          `
-            UPDATE tabla_usuarios
-            SET nombres = COALESCE(NULLIF(nombres, ''), $1),
-                apellidos = COALESCE(NULLIF(apellidos, ''), $2),
-                fecha_actualizacion = CURRENT_TIMESTAMP
-            WHERE id_usuario = $3
-          `,
-          [nombres || null, apellidos || null, user.id_usuario]
-        );
-      }
-
-      const refreshed = await pool.query(
-        `
-          SELECT
-            u.id_usuario,
-            u.id_publico,
-            u.id_rol,
-            c.correo_usuario AS correo,
-            u.nombres
-          FROM tabla_usuarios u
-          INNER JOIN tabla_usuarios_credenciales c ON c.id_usuario = u.id_usuario
-          WHERE u.id_usuario = $1
-          LIMIT 1
-        `,
-        [updated.rows[0].id_usuario]
-      );
-      user = refreshed.rows[0];
-    } else {
-      const client = await pool.connect();
-      try {
-        await client.query("BEGIN");
-
-        const createdUser = await client.query(
-          `
-            INSERT INTO tabla_usuarios (
-              nombres,
-              apellidos,
-              terminos_condiciones,
-              estado_usuario,
-              id_rol,
-              fecha_actualizacion
-            ) VALUES ($1,$2,TRUE,TRUE,1,NOW())
-            RETURNING id_usuario, id_publico
-          `,
-          [nombres || null, apellidos || null]
-        );
-
-        const newUserId = createdUser.rows[0].id_usuario;
-
-        await client.query(
-          `
-            INSERT INTO tabla_usuarios_credenciales (
-              id_usuario,
-              id_google,
-              correo_usuario,
-              validacion_correo,
-              fecha_creacion,
-              fecha_actualizacion
-            ) VALUES ($1,$2,$3,TRUE,NOW(),NOW())
-          `,
-          [newUserId, igGoogle, email]
-        );
-
-        await client.query("COMMIT");
-
-        const created = await pool.query(
-          `
-            SELECT
-              u.id_usuario,
-              u.id_publico,
-              u.id_rol,
-              c.correo_usuario AS correo,
-              u.nombres
-            FROM tabla_usuarios u
-            INNER JOIN tabla_usuarios_credenciales c ON c.id_usuario = u.id_usuario
-            WHERE u.id_usuario = $1
-            LIMIT 1
-          `,
-          [newUserId]
-        );
-        user = created.rows[0];
-      } catch (txError) {
-        await client.query("ROLLBACK");
-        throw txError;
-      } finally {
-        client.release();
-      }
-    }
-
-    if (!user) {
-      return NextResponse.json({ message: "No fue posible resolver el usuario" }, { status: 500 });
-    }
-
-    const accessExpiresIn = 15 * 60;
-    const refreshExpiresIn = 7 * 24 * 60 * 60;
+    const user = resolvedUser.user;
     const userId = String(user.id_usuario);
     const sessionId = crypto.randomUUID();
-    await setActiveSession(userId, sessionId, refreshExpiresIn);
-    const accessToken = await signToken(
-      {
-        id_usuario: userId,
-        id_rol: user.id_rol,
-        name: user.nombres || email.split("@")[0],
-        sid: sessionId,
-      },
-      accessExpiresIn
-    );
+    const displayName = resolveGoogleDisplayName(user);
 
-    const refreshToken = await signToken(
-      {
-        id_usuario: userId,
-        id_rol: user.id_rol,
-        name: user.nombres || email.split("@")[0],
-        sid: sessionId,
-        token_type: "refresh",
-      },
-      refreshExpiresIn
-    );
-
-    const secure = process.env.NODE_ENV === "production";
-    const accessCookie = serializeCookie("token", accessToken, {
-      maxAge: accessExpiresIn,
-      httpOnly: true,
-      secure,
-      sameSite: "lax",
-      path: "/",
-      domain: process.env.COOKIE_DOMAIN,
+    const sessionTokens = await createSessionTokenPair({
+      userId,
+      roleId: user.id_rol,
+      name: displayName,
+      sessionId,
     });
 
-    const refreshCookie = serializeCookie("refresh_token", refreshToken, {
-      maxAge: refreshExpiresIn,
-      httpOnly: true,
-      secure,
-      sameSite: "strict",
-      path: "/",
-      domain: process.env.COOKIE_DOMAIN,
-    });
+    await setActiveSession(userId, sessionId, 7 * 24 * 60 * 60);
 
     const response = NextResponse.json(
       {
         success: true,
         id_publico: user.id_publico,
         id_rol: user.id_rol,
-        expiresAt: Math.floor(Date.now() / 1000) + accessExpiresIn,
-        name: user.nombres || email.split("@")[0],
+        expiresAt: sessionTokens.expiresAt,
+        name: displayName,
       },
       { status: 200 }
     );
 
-    response.headers.append("Set-Cookie", accessCookie);
-    response.headers.append("Set-Cookie", refreshCookie);
-
-    return response;
+    return appendSessionCookies(response, buildSessionCookies(sessionTokens));
   } catch (err) {
     console.error("Login Google error:", err);
     return NextResponse.json({ message: "Error interno" }, { status: 500 });

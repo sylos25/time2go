@@ -1,45 +1,25 @@
 import { NextResponse } from "next/server"
-import { sendContactMessageEmail } from "@/lib/email"
+import { sendContactMessage } from "@/app/api/contact/lib/contact-service"
+import {
+  parseContactPayload,
+  validateContactPayload,
+} from "@/app/api/contact/lib/contact-validation"
 
 export const runtime = "nodejs"
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
-    const name = String(body?.name || "").trim()
-    const email = String(body?.email || "").trim().toLowerCase()
-    const subject = String(body?.subject || "").trim()
-    const message = String(body?.message || "").trim()
+    const payload = parseContactPayload(await req.json())
+    const validationError = validateContactPayload(payload)
 
-    if (!name || !email || !subject || !message) {
+    if (validationError) {
       return NextResponse.json(
-        { error: "Todos los campos son obligatorios" },
+        { error: validationError },
         { status: 400 }
       )
     }
 
-    if (!EMAIL_REGEX.test(email)) {
-      return NextResponse.json(
-        { error: "Correo electrónico inválido" },
-        { status: 400 }
-      )
-    }
-
-    if (name.length > 120 || subject.length > 200 || message.length > 5000) {
-      return NextResponse.json(
-        { error: "Uno o más campos superan la longitud permitida" },
-        { status: 400 }
-      )
-    }
-
-    const emailSent = await sendContactMessageEmail({
-      name,
-      email,
-      subject,
-      message,
-    })
+    const emailSent = await sendContactMessage(payload)
 
     if (!emailSent) {
       return NextResponse.json(

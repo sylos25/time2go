@@ -1,18 +1,10 @@
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { mapPaisesToOptions } from "@/app/api/llamar_pais/lib/llamar-pais-mappers";
+import { listPaises } from "@/app/api/llamar_pais/lib/llamar-pais-repository";
 
 export async function GET() {
   try {
-    const result = await pool.query(
-      "SELECT id_pais, nombre_pais FROM tabla_paises ORDER BY nombre_pais ASC"
-    );
-
-    const paises = result.rows.map((pais) => ({
-      value: pais.id_pais,
-      label: pais.nombre_pais,
-    }));
-
-    return NextResponse.json(paises, { status: 200 });
+    return NextResponse.json(mapPaisesToOptions(await listPaises()), { status: 200 });
   } catch (error) {
     console.error("Error al consultar países:", error);
     return NextResponse.json(

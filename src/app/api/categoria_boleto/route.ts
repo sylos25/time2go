@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { listCategoriaBoletos } from "@/app/api/categoria_boleto/lib/categoria-boleto-repository";
 
 export async function GET() {
   try {
-    const result = await pool.query(
-      "SELECT id_categoria_boleto, nombre_categoria_boleto FROM tabla_categoria_boletos ORDER BY nombre_categoria_boleto"
-    );
-
-    return NextResponse.json(result.rows);
+    return NextResponse.json(await listCategoriaBoletos());
   } catch (error) {
     console.error("Error fetching categorías de boleto:", error);
     return NextResponse.json(

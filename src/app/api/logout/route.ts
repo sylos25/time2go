@@ -1,20 +1,14 @@
 import { NextResponse } from "next/server";
-import { clearCookieHeader, parseCookies } from "@/lib/cookies";
 import { verifyToken } from "@/lib/jwt";
 import { revokeTokenJti } from "@/lib/token-revocation";
-
-function isTrustedOrigin(req: Request): boolean {
-  const origin = req.headers.get("origin");
-  if (!origin) return false;
-  return origin === new URL(req.url).origin;
-}
+import { appendSessionCookies, buildClearedSessionCookies, isTrustedOrigin, readAuthCookies } from "@/lib/auth-session-http";
 
 export async function POST(req: Request) {
   if (!isTrustedOrigin(req)) {
     return NextResponse.json({ success: false, message: "Invalid origin" }, { status: 403 });
   }
 
-  const cookies = parseCookies(req.headers.get("cookie"));
+  const cookies = readAuthCookies(req);
   const accessToken = cookies["token"];
   const refreshToken = cookies["refresh_token"];
 
@@ -38,27 +32,6 @@ export async function POST(req: Request) {
     }
   }
 
-  const secure = process.env.NODE_ENV === "production";
-  const domain = process.env.COOKIE_DOMAIN;
-
-  const accessCookie = clearCookieHeader("token", {
-    path: "/",
-    httpOnly: true,
-    secure,
-    sameSite: "lax",
-    domain,
-  });
-
-  const refreshCookie = clearCookieHeader("refresh_token", {
-    path: "/",
-    httpOnly: true,
-    secure,
-    sameSite: "strict",
-    domain,
-  });
-
   const response = NextResponse.json({ success: true }, { status: 200 });
-  response.headers.append("Set-Cookie", accessCookie);
-  response.headers.append("Set-Cookie", refreshCookie);
-  return response;
+  return appendSessionCookies(response, buildClearedSessionCookies());
 }
