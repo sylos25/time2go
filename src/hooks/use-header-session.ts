@@ -38,7 +38,6 @@ export function useHeaderSession() {
         }
       }
 
-      localStorage.removeItem("token")
       localStorage.removeItem(ACCESS_EXP_KEY)
       localStorage.removeItem("userName")
       localStorage.removeItem("userRole")

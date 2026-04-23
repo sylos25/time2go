@@ -108,10 +108,7 @@ export function useReservaEvento(config: UseReservaEventoConfig) {
         setLoading(true);
         setError(null);
 
-        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
         const meRes = await fetch("/api/me", {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
           credentials: "include",
         });
 
@@ -304,13 +301,10 @@ export function useReservaEvento(config: UseReservaEventoConfig) {
 
       setSaving(true);
 
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
       const res = await fetch("/api/reservas", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         credentials: "include",
         body: JSON.stringify({

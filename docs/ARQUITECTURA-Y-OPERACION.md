@@ -206,6 +206,7 @@ En cada apartado, **Qué es** resume el producto o estándar; **Rol en Time2Go**
 - **`ACTIVE_SESSION_HMAC_SECRET`**: secreto dedicado para firmar (HMAC SHA-256) la clave por usuario usada por control de sesión activa en Redis. Evita exponer `id_usuario` como parte de la key.
 - **Revocación JWT:** `src/lib/token-revocation.ts` guarda claves `revoked:jti:{jti}` con TTL acotado al `exp` del token. Si no hay env, la revocación es **no-op** (no falla).
 - **Control de sesión activa:** `src/lib/active-session.ts` usa una key versionada `active:session:user:v2:{hmac}`. Durante migración, si no existe la key v2 consulta una key legacy y la limpia al escribir nuevamente.
+- **Cambio reciente de seguridad (Redis):** la sesión activa dejó de usar keys directas con `id_usuario` y migró a clave HMAC versionada (`v2`) + secreto dedicado `ACTIVE_SESSION_HMAC_SECRET`.
 - **`src/lib/login-rate-limit.ts`**: define **Ratelimit** de Upstash (ventanas deslizantes por IP y por credencial). En el estado actual del repo, **`POST /api/login`** implementa además su **propio** rate limit en memoria en producción; el prelude `runLoginRateLimitPrelude` del módulo compartido puede quedar como extensión futura o integración pendiente — conviene unificar si quieres límites distribuidos solo vía Upstash.
 
 ### 6.5 ePayco (pagos Colombia)

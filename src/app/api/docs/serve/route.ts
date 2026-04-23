@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
-import fs from "fs"
+import { promises as fs } from "fs"
 import path from "path"
 import pool from "@/lib/db"
 import { getRequesterIdLenient } from "@/lib/auth-request"
 
 export const runtime = "nodejs"
 
-// ── Verificar rol admin ──────────────────────────────────────────────────────
 async function ensureAdminRole(req: NextRequest): Promise<boolean> {
   const userId = await getRequesterIdLenient(req)
   if (!userId) return false
@@ -19,7 +18,6 @@ async function ensureAdminRole(req: NextRequest): Promise<boolean> {
   return role === 4
 }
 
-// ── Determinar MIME type ─────────────────────────────────────────────────────
 function getMimeType(ext: string): string {
   const mimeTypes: Record<string, string> = {
     ".pdf": "application/pdf",
@@ -50,7 +48,6 @@ function getMimeType(ext: string): string {
   return mimeTypes[ext.toLowerCase()] || "application/octet-stream"
 }
 
-// ── GET: Servir archivo de /docs/ ────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   try {
     const isAdmin = await ensureAdminRole(req)
@@ -65,50 +62,45 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Missing path parameter" }, { status: 400 })
     }
 
-    // Sanitizar el path para evitar directory traversal
     const sanitizedPath = relativePath
-      .replace(/\.\./g, "") // Remover ..
-      .replace(/^\/+/, "") // Remover / inicial
-      .replace(/\/+/g, "/") // Normalizar slashes
+      .replace(/\.\./g, "")
+      .replace(/^\/+/, "")
+      .replace(/\/+/g, "/")
 
-    // Ruta de la carpeta docs en public (para que funcione en Vercel)
     const docsDir = path.join(process.cwd(), "public", "docs")
     const fullPath = path.join(docsDir, sanitizedPath)
-
-    // Verificar que el archivo esta dentro de /docs/
     const resolvedPath = path.resolve(fullPath)
     const resolvedDocsDir = path.resolve(docsDir)
-    
+
     if (!resolvedPath.startsWith(resolvedDocsDir)) {
       return NextResponse.json({ error: "Invalid path" }, { status: 400 })
     }
 
-    // Verificar que el archivo existe
-    if (!fs.existsSync(fullPath)) {
+    let stat: Awaited<ReturnType<typeof fs.stat>>
+    try {
+      stat = await fs.stat(resolvedPath)
+    } catch {
       return NextResponse.json({ error: "File not found" }, { status: 404 })
     }
 
-    const stats = fs.statSync(fullPath)
-    if (!stats.isFile()) {
+    if (!stat.isFile()) {
       return NextResponse.json({ error: "Not a file" }, { status: 400 })
     }
 
-    // Leer el archivo
-    const fileBuffer = fs.readFileSync(fullPath)
-    const ext = path.extname(fullPath)
+    const fileBuffer = await fs.readFile(resolvedPath)
+    const ext = path.extname(resolvedPath)
     const mimeType = getMimeType(ext)
-    const filename = path.basename(fullPath).replace(/"/g, "")
+    const filename = path.basename(resolvedPath).replace(/"/g, "")
 
-    // Determinar si mostrar inline o forzar descarga
     const disposition = download
       ? `attachment; filename="${filename}"`
       : `inline; filename="${filename}"`
 
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         "Content-Type": mimeType,
         "Content-Disposition": disposition,
-        "Content-Length": String(stats.size),
+        "Content-Length": String(fileBuffer.length),
         "Cache-Control": "private, max-age=3600",
       },
     })

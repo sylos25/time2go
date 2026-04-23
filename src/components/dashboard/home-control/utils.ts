@@ -35,8 +35,7 @@ export function getErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function getAuthHeaders(): HeadersInit {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-  return token ? { Authorization: `Bearer ${token}` } : {}
+  return {}
 }
 
 export async function parseHomeControlResponse(response: Response): Promise<HomeControlResponse> {

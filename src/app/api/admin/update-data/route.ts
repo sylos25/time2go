@@ -137,14 +137,14 @@ export async function PUT(req: NextRequest) {
       const siteEntries = Object.entries(normalizedData).filter(([key]) => siteFields.includes(key))
       const phone1 = typeof normalizedData.telefono_1 === "string" ? normalizedData.telefono_1.trim() : normalizedData.telefono_1
       const phone2 = typeof normalizedData.telefono_2 === "string" ? normalizedData.telefono_2.trim() : normalizedData.telefono_2
-
-      await pool.query("BEGIN")
+      const client = await pool.connect()
       try {
+        await client.query("BEGIN")
         if (siteEntries.length > 0) {
           const setClauses = siteEntries.map(([key], index) => `${key} = $${index + 1}`)
           const values = siteEntries.map(([, value]) => value)
           values.push(id)
-          await pool.query(
+          await client.query(
             `UPDATE tabla_sitios
              SET ${setClauses.join(", ")}
              WHERE id_sitio = $${values.length}`,
@@ -154,14 +154,14 @@ export async function PUT(req: NextRequest) {
 
         for (const [rawPhone, isPrimary] of [[phone1, true], [phone2, false]] as const) {
           const sanitizedPhone = rawPhone ? String(rawPhone).replace(/\D/g, "") : ""
-          await pool.query(
+          await client.query(
             `DELETE FROM tabla_sitios_telefonos
              WHERE id_sitio = $1 AND es_principal = $2`,
             [id, isPrimary]
           )
 
           if (sanitizedPhone) {
-            await pool.query(
+            await client.query(
               `INSERT INTO tabla_sitios_telefonos (id_sitio, telefono_sitio, es_principal)
                VALUES ($1, $2, $3)`,
               [id, sanitizedPhone, isPrimary]
@@ -169,7 +169,7 @@ export async function PUT(req: NextRequest) {
           }
         }
 
-        const result = await pool.query(
+        const result = await client.query(
           `SELECT
              s.id_sitio,
              s.nombre_sitio,
@@ -198,7 +198,7 @@ export async function PUT(req: NextRequest) {
           [id]
         )
 
-        await pool.query("COMMIT")
+        await client.query("COMMIT")
 
         if (result.rows.length === 0) {
           return NextResponse.json({ error: "Registro no encontrado" }, { status: 404 })
@@ -210,8 +210,10 @@ export async function PUT(req: NextRequest) {
           data: result.rows[0],
         })
       } catch (error) {
-        await pool.query("ROLLBACK")
+        await client.query("ROLLBACK")
         throw error
+      } finally {
+        client.release()
       }
     }
 

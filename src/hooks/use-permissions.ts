@@ -20,8 +20,6 @@ export function usePermission(idAccesibilidad: number | null, idRol?: number) {
     const checkPermission = async () => {
       try {
         setIsLoading(true);
-        const token = localStorage.getItem('token');
-        
         const params = new URLSearchParams({
           id_accesibilidad: String(idAccesibilidad),
         });
@@ -30,16 +28,8 @@ export function usePermission(idAccesibilidad: number | null, idRol?: number) {
           params.append('id_rol', String(idRol));
         }
 
-        const headers: HeadersInit = {
-          'Content-Type': 'application/json',
-        };
-
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-
         const response = await fetch(`/api/permissions/check?${params.toString()}`, {
-          headers,
+          headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
         });
 
@@ -72,8 +62,6 @@ export async function checkPermission(
   idRol?: number
 ): Promise<boolean> {
   try {
-    const token = localStorage.getItem('token');
-    
     const params = new URLSearchParams({
       id_accesibilidad: String(idAccesibilidad),
     });
@@ -82,16 +70,8 @@ export async function checkPermission(
       params.append('id_rol', String(idRol));
     }
 
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
     const response = await fetch(`/api/permissions/check?${params.toString()}`, {
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
     });
 

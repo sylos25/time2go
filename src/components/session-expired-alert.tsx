@@ -29,7 +29,6 @@ export function SessionExpiredAlert({
     } catch (error) {
       console.error("Logout request error:", error)
     } finally {
-      localStorage.removeItem("token")
       localStorage.removeItem("userName")
       localStorage.removeItem("userPublicId")
       localStorage.removeItem("userRole")

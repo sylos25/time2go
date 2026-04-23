@@ -23,10 +23,6 @@ type CurrentUser = {
   [key: string]: unknown
 }
 
-function getLocalToken() {
-  return typeof window !== "undefined" ? localStorage.getItem("token") : null
-}
-
 function toMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback
 }
@@ -51,9 +47,9 @@ export function useDashboardEvents() {
 
   const [togglingDestacado, setTogglingDestacado] = useState<number | null>(null)
 
-  const refreshEvents = useCallback(async (token?: string | null) => {
+  const refreshEvents = useCallback(async () => {
     try {
-      const nextEvents = await fetchEvents(token)
+      const nextEvents = await fetchEvents()
       setEvents(nextEvents)
     } catch (error) {
       console.error("Failed to refresh events", error)
@@ -66,8 +62,7 @@ export function useDashboardEvents() {
     async function loadData() {
       setLoading(true)
       try {
-        const token = getLocalToken()
-        const user = await fetchCurrentUser(token)
+        const user = await fetchCurrentUser()
 
         if (!user) {
           if (!cancelled) setAuthorized(false)
@@ -82,14 +77,14 @@ export function useDashboardEvents() {
           return
         }
 
-        const hasAccess = await checkEventsPermission(roleNum, token)
+        const hasAccess = await checkEventsPermission(roleNum)
         if (!cancelled) setAuthorized(hasAccess)
 
         if (!hasAccess) return
 
         const [categories, eventsData] = await Promise.all([
-          fetchEventCategories(token),
-          fetchEvents(token),
+          fetchEventCategories(),
+          fetchEvents(),
         ])
 
         if (!cancelled) {
@@ -164,7 +159,7 @@ export function useDashboardEvents() {
       await rejectEventById(rejectForm.id_evento, {
         motivo_rechazo: rejectForm.motivo_rechazo.trim(),
         rechazado_por: Number(rejectForm.rechazado_por),
-      }, getLocalToken())
+      })
 
       setRejectModalOpen(false)
       await refreshEvents()
@@ -182,7 +177,7 @@ export function useDashboardEvents() {
       if (!confirmed) return
 
       try {
-        await deleteEventById(eventId, getLocalToken())
+        await deleteEventById(eventId)
         await refreshEvents()
       } catch (error) {
         console.error("Error eliminando evento", error)
@@ -195,7 +190,7 @@ export function useDashboardEvents() {
   const approveEvent = useCallback(
     async (eventId: number) => {
       try {
-        await approveEventById(eventId, getLocalToken())
+        await approveEventById(eventId)
         await refreshEvents()
       } catch (error) {
         console.error("Error validando evento", error)
@@ -208,7 +203,7 @@ export function useDashboardEvents() {
   const toggleDestacado = useCallback(async (eventId: number, currentValue: boolean) => {
     setTogglingDestacado(eventId)
     try {
-      await toggleDestacadoById(eventId, !currentValue, getLocalToken())
+      await toggleDestacadoById(eventId, !currentValue)
       setEvents((prev) => prev.map((eventItem) => (eventItem.id === eventId ? { ...eventItem, destacado: !currentValue } : eventItem)))
     } catch (error) {
       console.error("Error toggling destacado", error)

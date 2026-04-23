@@ -12,7 +12,6 @@ import {
   getAverageRating,
   getEventPathId,
   getSummaryText,
-  getToken,
   normalizeValoraciones,
 } from "@/app/mis-valoraciones/lib/mis-valoraciones-utils"
 
@@ -52,9 +51,7 @@ export function useMyRatingsPage() {
   useEffect(() => {
     async function fetchValoraciones() {
       try {
-        const token = getToken()
         const response = await fetch("/api/mis-valoraciones", {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
           credentials: "include",
         })
 
@@ -120,12 +117,10 @@ export function useMyRatingsPage() {
       setEditSuccess(null)
 
       try {
-        const token = getToken()
         const response = await fetch(`/api/mis-valoraciones/${id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           credentials: "include",
           body: JSON.stringify({
@@ -184,10 +179,8 @@ export function useMyRatingsPage() {
     setDeleting(true)
 
     try {
-      const token = getToken()
       const response = await fetch(`/api/mis-valoraciones/${confirmId}`, {
         method: "DELETE",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
         credentials: "include",
       })
 

@@ -11,6 +11,7 @@ export interface PermissionCheckResult {
   userId?: string;
   userRole?: number;
   error?: string;
+  statusCode?: 401 | 403 | 500;
 }
 
 /**
@@ -29,9 +30,9 @@ export async function checkUserPermission(
 
     if (!userId) {
       if (authHeader.startsWith("Bearer ")) {
-        return { hasAccess: false, error: "Token inválido" };
+        return { hasAccess: false, error: "Token inválido", statusCode: 401 };
       }
-      return { hasAccess: false, error: "Usuario no autenticado" };
+      return { hasAccess: false, error: "Usuario no autenticado", statusCode: 401 };
     }
 
     // Obtener el rol del usuario
@@ -41,7 +42,7 @@ export async function checkUserPermission(
     );
 
     if (!userResult.rows || userResult.rows.length === 0) {
-      return { hasAccess: false, error: "Usuario no encontrado" };
+      return { hasAccess: false, error: "Usuario no encontrado", statusCode: 403 };
     }
 
     const userRole = Number(userResult.rows[0].id_rol);
@@ -63,7 +64,7 @@ export async function checkUserPermission(
     };
   } catch (error) {
     console.error("Error checking user permission:", error);
-    return { hasAccess: false, error: "Error al verificar permisos" };
+    return { hasAccess: false, error: "Error al verificar permisos", statusCode: 500 };
   }
 }
 
@@ -108,7 +109,7 @@ export async function requirePermission(
         message: result.error || "No tienes permiso para realizar esta acción",
       }),
       {
-        status: result.error?.includes("autenticado") ? 401 : 403,
+        status: result.statusCode ?? 403,
         headers: { "Content-Type": "application/json" },
       }
     );

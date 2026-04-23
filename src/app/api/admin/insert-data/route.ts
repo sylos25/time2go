@@ -36,37 +36,50 @@ export async function POST(req: NextRequest) {
         break
 
       case "sitios":
-        result = await pool.query(
-          `INSERT INTO tabla_sitios (nombre_sitio, id_tipo_sitio, id_municipio, direccion, latitud, longitud, sitio_web)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
-           RETURNING id_sitio, nombre_sitio, id_tipo_sitio, id_municipio, direccion, latitud, longitud, sitio_web`,
-          [
-            data.nombre_sitio,
-            data.id_tipo_sitio,
-            data.id_municipio,
-            data.direccion,
-            data.latitud,
-            data.longitud,
-            data.sitio_web || null,
-          ]
-        )
+        {
+          const client = await pool.connect()
+          try {
+            await client.query("BEGIN")
+            result = await client.query(
+              `INSERT INTO tabla_sitios (nombre_sitio, id_tipo_sitio, id_municipio, direccion, latitud, longitud, sitio_web)
+               VALUES ($1, $2, $3, $4, $5, $6, $7)
+               RETURNING id_sitio, nombre_sitio, id_tipo_sitio, id_municipio, direccion, latitud, longitud, sitio_web`,
+              [
+                data.nombre_sitio,
+                data.id_tipo_sitio,
+                data.id_municipio,
+                data.direccion,
+                data.latitud,
+                data.longitud,
+                data.sitio_web || null,
+              ]
+            )
 
-        const createdSiteId = result.rows[0]?.id_sitio
+            const createdSiteId = result.rows[0]?.id_sitio
 
-        if (data.telefono_1) {
-          await pool.query(
-            `INSERT INTO tabla_sitios_telefonos (id_sitio, telefono_sitio, es_principal)
-             VALUES ($1, $2, TRUE)`,
-            [createdSiteId, data.telefono_1]
-          )
-        }
+            if (data.telefono_1) {
+              await client.query(
+                `INSERT INTO tabla_sitios_telefonos (id_sitio, telefono_sitio, es_principal)
+                 VALUES ($1, $2, TRUE)`,
+                [createdSiteId, data.telefono_1]
+              )
+            }
 
-        if (data.telefono_2) {
-          await pool.query(
-            `INSERT INTO tabla_sitios_telefonos (id_sitio, telefono_sitio, es_principal)
-             VALUES ($1, $2, FALSE)`,
-            [createdSiteId, data.telefono_2]
-          )
+            if (data.telefono_2) {
+              await client.query(
+                `INSERT INTO tabla_sitios_telefonos (id_sitio, telefono_sitio, es_principal)
+                 VALUES ($1, $2, FALSE)`,
+                [createdSiteId, data.telefono_2]
+              )
+            }
+
+            await client.query("COMMIT")
+          } catch (error) {
+            await client.query("ROLLBACK")
+            throw error
+          } finally {
+            client.release()
+          }
         }
 
         return NextResponse.json(

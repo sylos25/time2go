@@ -83,7 +83,6 @@ export function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps) {
                 localStorage.setItem("accessExpiresAt", String(data.expiresAt))
               }
             } else {
-              localStorage.removeItem("token")
               localStorage.removeItem("userPublicId")
               localStorage.removeItem("userName")
               localStorage.removeItem("userRole")

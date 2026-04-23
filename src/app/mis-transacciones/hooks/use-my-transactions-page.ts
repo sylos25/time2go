@@ -7,11 +7,7 @@ import type {
   TransaccionItem,
   TransaccionesResponse,
 } from "@/app/mis-transacciones/lib/mis-transacciones-types"
-import {
-  getSummaryText,
-  getToken,
-  normalizeTransactions,
-} from "@/app/mis-transacciones/lib/mis-transacciones-utils"
+import { getSummaryText, normalizeTransactions } from "@/app/mis-transacciones/lib/mis-transacciones-utils"
 
 export function useMyTransactionsPage() {
   const router = useRouter()
@@ -26,9 +22,7 @@ export function useMyTransactionsPage() {
         setLoading(true)
         setError(null)
 
-        const token = getToken()
         const response = await fetch("/api/mis-transacciones", {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
           credentials: "include",
         })
 

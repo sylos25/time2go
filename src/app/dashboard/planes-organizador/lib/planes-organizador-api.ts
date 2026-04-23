@@ -7,15 +7,10 @@ import type {
 } from "./planes-organizador-types"
 
 function getAuthHeaders(includeJson = false): HeadersInit {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
   const headers: HeadersInit = {}
 
   if (includeJson) {
     headers["Content-Type"] = "application/json"
-  }
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
   }
 
   return headers

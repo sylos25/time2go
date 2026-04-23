@@ -1,9 +1,5 @@
 import type { TransaccionItem } from "@/app/mis-transacciones/lib/mis-transacciones-types"
 
-export function getToken(): string | null {
-  return typeof window !== "undefined" ? localStorage.getItem("token") : null
-}
-
 export function getSummaryText(loading: boolean, count: number): string {
   if (loading) {
     return "Estamos cargando tus compras de planes."

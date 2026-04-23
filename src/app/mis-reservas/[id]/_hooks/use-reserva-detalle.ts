@@ -33,9 +33,7 @@ export function useReservaDetalle({ reservaIdParam }: UseReservaDetalleParams) {
           return;
         }
 
-        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
         const res = await fetch(`/api/reservas/${encodeURIComponent(String(reservaId))}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
           credentials: "include",
         });
 

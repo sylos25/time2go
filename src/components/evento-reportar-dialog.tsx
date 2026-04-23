@@ -102,11 +102,7 @@ export function EventoReportarDialog({
   const loadMyStatus = useCallback(async () => {
     setLoadingStatus(true);
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const headers: HeadersInit = {};
-      if (token) headers.Authorization = `Bearer ${token}`;
       const res = await fetch(`/api/events/${encodeURIComponent(String(eventId))}/denuncia`, {
-        headers,
         credentials: "include",
       });
       const data = await res.json().catch(() => ({}));
@@ -150,9 +146,7 @@ export function EventoReportarDialog({
     }
     setSubmitting(true);
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const headers: HeadersInit = { "Content-Type": "application/json" };
-      if (token) headers.Authorization = `Bearer ${token}`;
       const body: Record<string, unknown> = {
         id_motivo_denuncia_evento: idMotivoDenunciaEvento,
       };

@@ -47,21 +47,11 @@ type ApiResponse = {
   [key: string]: unknown
 }
 
-function getToken() {
-  return typeof window !== "undefined" ? localStorage.getItem("token") : null
-}
-
 export function getAuthHeaders(contentTypeJson = false): HeadersInit {
   const headers: HeadersInit = {}
   if (contentTypeJson) {
     headers["Content-Type"] = "application/json"
   }
-
-  const token = getToken()
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
-  }
-
   return headers
 }
 

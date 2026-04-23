@@ -4,39 +4,12 @@ import pool from "@/lib/db";
 import { setActiveSession } from "@/lib/active-session";
 import { createSessionTokenPair, REFRESH_EXPIRES_IN } from "@/lib/auth-session";
 import { appendSessionCookies, buildSessionCookies } from "@/lib/auth-session-http";
-
-type LoginLimiter = {
-  requests: number[];
-  lockUntil: number;
-};
-
-const ipLimiter = new Map<string, LoginLimiter>();
-const credentialLimiter = new Map<string, LoginLimiter>();
-
-const ONE_MINUTE_MS = 60 * 1000;
-const FIFTEEN_MINUTES_MS = 15 * ONE_MINUTE_MS;
-const THIRTY_MINUTES_MS = 30 * ONE_MINUTE_MS;
-const SHOULD_APPLY_LOGIN_RATE_LIMIT = process.env.NODE_ENV === "production";
-
-function cleanupLimiterMap(map: Map<string, LoginLimiter>, now: number, windowMs: number) {
-  for (const [key, value] of map.entries()) {
-    value.requests = value.requests.filter((ts) => now - ts <= windowMs);
-    if (value.requests.length === 0 && value.lockUntil <= now) {
-      map.delete(key);
-    }
-  }
-}
-
-function getOrCreateLimiter(map: Map<string, LoginLimiter>, key: string): LoginLimiter {
-  const existing = map.get(key);
-  if (existing) {
-    return existing;
-  }
-
-  const created: LoginLimiter = { requests: [], lockUntil: 0 };
-  map.set(key, created);
-  return created;
-}
+import {
+  clearSuccessfulAuth,
+  registerFailedAuth,
+  runLoginRateLimitPrelude,
+} from "@/lib/login-rate-limit";
+import { logApiEvent, withRequestId } from "@/lib/observability";
 
 function getClientIp(req: Request): string {
   const forwardedFor = req.headers.get("x-forwarded-for");
@@ -57,71 +30,6 @@ function getClientIp(req: Request): string {
 
 function normalizeEmail(value: string): string {
   return String(value || "").trim().toLowerCase();
-}
-
-function addAttemptAndCheckWindow(
-  limiter: LoginLimiter,
-  now: number,
-  windowMs: number,
-  maxAttempts: number
-) {
-  limiter.requests = limiter.requests.filter((ts) => now - ts <= windowMs);
-  limiter.requests.push(now);
-
-  return {
-    blocked: limiter.requests.length > maxAttempts,
-    count: limiter.requests.length,
-  };
-}
-
-function setProgressiveLock(limiter: LoginLimiter, now: number, failsInWindow: number) {
-  if (failsInWindow >= 10) {
-    limiter.lockUntil = Math.max(limiter.lockUntil, now + THIRTY_MINUTES_MS);
-  } else if (failsInWindow >= 6) {
-    limiter.lockUntil = Math.max(limiter.lockUntil, now + 10 * ONE_MINUTE_MS);
-  } else if (failsInWindow >= 4) {
-    limiter.lockUntil = Math.max(limiter.lockUntil, now + 3 * ONE_MINUTE_MS);
-  }
-}
-
-function lockResponse(lockUntil: number) {
-  const retryAfter = Math.max(1, Math.ceil((lockUntil - Date.now()) / 1000));
-  return NextResponse.json(
-    {
-      message: "Demasiados intentos. Intenta nuevamente en unos minutos.",
-      error: "too_many_attempts",
-      retryAfter,
-    },
-    {
-      status: 429,
-      headers: {
-        "Retry-After": String(retryAfter),
-      },
-    }
-  );
-}
-
-function registerFailedAuth(ip: string, email: string, now: number) {
-  if (!SHOULD_APPLY_LOGIN_RATE_LIMIT) {
-    return;
-  }
-
-  const ipEntry = getOrCreateLimiter(ipLimiter, ip);
-  const credEntry = getOrCreateLimiter(credentialLimiter, `${ip}::${email}`);
-
-  const ipAttempt = addAttemptAndCheckWindow(ipEntry, now, FIFTEEN_MINUTES_MS, 40);
-  const credAttempt = addAttemptAndCheckWindow(credEntry, now, FIFTEEN_MINUTES_MS, 8);
-
-  setProgressiveLock(ipEntry, now, ipAttempt.count);
-  setProgressiveLock(credEntry, now, credAttempt.count);
-}
-
-function clearSuccessfulAuth(ip: string, email: string) {
-  if (!SHOULD_APPLY_LOGIN_RATE_LIMIT) {
-    return;
-  }
-
-  credentialLimiter.delete(`${ip}::${email}`);
 }
 
 async function verifyTurnstileToken(
@@ -180,8 +88,15 @@ function getCaptchaMode(): "strict" | "degraded" | "disabled" {
   return "strict";
 }
 
+function withRequestIdHeader(res: NextResponse, requestId: string) {
+  res.headers.set("X-Request-Id", requestId);
+  return res;
+}
 
 export async function POST(req: Request) {
+  const t0 = Date.now();
+  const { requestId } = withRequestId(req);
+
   try {
     const { email, password, turnstileToken } = (await req.json()) as {
       email?: string;
@@ -194,43 +109,42 @@ export async function POST(req: Request) {
     const now = Date.now();
     const captchaMode = getCaptchaMode();
 
-    if (SHOULD_APPLY_LOGIN_RATE_LIMIT) {
-      cleanupLimiterMap(ipLimiter, now, FIFTEEN_MINUTES_MS);
-      cleanupLimiterMap(credentialLimiter, now, FIFTEEN_MINUTES_MS);
-
-      const ipEntry = getOrCreateLimiter(ipLimiter, ip);
-      const credentialKey = `${ip}::${normalizedEmail}`;
-      const credentialEntry = getOrCreateLimiter(credentialLimiter, credentialKey);
-
-      if (ipEntry.lockUntil > now) {
-        return lockResponse(ipEntry.lockUntil);
-      }
-
-      if (credentialEntry.lockUntil > now) {
-        return lockResponse(credentialEntry.lockUntil);
-      }
-
-      // Limita volumen bruto por IP para reducir ataques distribuidos sobre credenciales.
-      const ipWindow = addAttemptAndCheckWindow(ipEntry, now, FIFTEEN_MINUTES_MS, 70);
-      if (ipWindow.blocked) {
-        ipEntry.lockUntil = Math.max(ipEntry.lockUntil, now + 10 * ONE_MINUTE_MS);
-        return lockResponse(ipEntry.lockUntil);
-      }
+    const limited = await runLoginRateLimitPrelude(ip, normalizedEmail, now);
+    if (limited) {
+      withRequestIdHeader(limited, requestId);
+      logApiEvent("warn", {
+        requestId,
+        route: "POST /api/login",
+        event: "rate_limited_prelude",
+        status: 429,
+        durationMs: Date.now() - t0,
+      });
+      return limited;
     }
 
     if (!normalizedEmail || !password) {
-      registerFailedAuth(ip, normalizedEmail || "missing", now);
-      return NextResponse.json(
-        { message: "Email y contraseña requeridos" },
-        { status: 400 }
-      );
+      const failLimit = await registerFailedAuth(ip, normalizedEmail || "missing", now);
+      if (failLimit) {
+        withRequestIdHeader(failLimit, requestId);
+        return failLimit;
+      }
+      const res = NextResponse.json({ message: "Email y contraseña requeridos" }, { status: 400 });
+      return withRequestIdHeader(res, requestId);
     }
 
     if (captchaMode !== "disabled") {
       if (!turnstileToken) {
         if (captchaMode === "strict") {
-          registerFailedAuth(ip, normalizedEmail, now);
-          return NextResponse.json({ message: "Captcha requerido", error: "turnstile_required" }, { status: 400 });
+          const failLimit = await registerFailedAuth(ip, normalizedEmail, now);
+          if (failLimit) {
+            withRequestIdHeader(failLimit, requestId);
+            return failLimit;
+          }
+          const res = NextResponse.json(
+            { message: "Captcha requerido", error: "turnstile_required" },
+            { status: 400 }
+          );
+          return withRequestIdHeader(res, requestId);
         }
 
         console.warn("[login] Missing turnstile token, degraded mode active");
@@ -240,8 +154,12 @@ export async function POST(req: Request) {
         const captchaResult = await verifyTurnstileToken(String(turnstileToken), ip);
         if (!captchaResult.ok) {
           if (captchaResult.kind === "invalid") {
-            registerFailedAuth(ip, normalizedEmail, now);
-            return NextResponse.json(
+            const failLimit = await registerFailedAuth(ip, normalizedEmail, now);
+            if (failLimit) {
+              withRequestIdHeader(failLimit, requestId);
+              return failLimit;
+            }
+            const res = NextResponse.json(
               {
                 message: "Falló la verificación del captcha",
                 error: "turnstile_failed",
@@ -249,19 +167,21 @@ export async function POST(req: Request) {
               },
               { status: 403 }
             );
+            return withRequestIdHeader(res, requestId);
           }
 
           if (captchaMode === "strict") {
-            return NextResponse.json(
+            const res = NextResponse.json(
               {
-                message: "No se pudo validar el captcha por un incidente del proveedor. Intenta nuevamente en unos minutos.",
+                message:
+                  "No se pudo validar el captcha por un incidente del proveedor. Intenta nuevamente en unos minutos.",
                 error: "turnstile_provider_unavailable",
               },
               { status: 503 }
             );
+            return withRequestIdHeader(res, requestId);
           }
 
-          // Modo degradado: permite autenticar, pero con límites de intentos activos.
           console.warn("[login] Turnstile provider unavailable, degraded mode active", captchaResult.details);
         }
       }
@@ -287,8 +207,22 @@ export async function POST(req: Request) {
     );
 
     if (userResult.rowCount === 0) {
-      registerFailedAuth(ip, normalizedEmail, now);
-      return NextResponse.json({ message: "Credenciales inválidas" }, { status: 401 });
+      const failLimit = await registerFailedAuth(ip, normalizedEmail, now);
+      if (failLimit) {
+        withRequestIdHeader(failLimit, requestId);
+        return failLimit;
+      }
+      const res = NextResponse.json({ message: "Credenciales inválidas" }, { status: 401 });
+      withRequestIdHeader(res, requestId);
+      logApiEvent("info", {
+        requestId,
+        route: "POST /api/login",
+        event: "login_failed",
+        status: 401,
+        extra: { reason: "user_not_found" },
+        durationMs: Date.now() - t0,
+      });
+      return res;
     }
 
     const user = userResult.rows[0] as {
@@ -303,8 +237,12 @@ export async function POST(req: Request) {
     };
 
     if (user.estado === false) {
-      registerFailedAuth(ip, normalizedEmail, now);
-      return NextResponse.json(
+      const failLimit = await registerFailedAuth(ip, normalizedEmail, now);
+      if (failLimit) {
+        withRequestIdHeader(failLimit, requestId);
+        return failLimit;
+      }
+      const res = NextResponse.json(
         {
           error: "Usuario baneado",
           message: "Tu cuenta está baneada temporalmente. Contacta al administrador.",
@@ -312,11 +250,16 @@ export async function POST(req: Request) {
         },
         { status: 403 }
       );
+      return withRequestIdHeader(res, requestId);
     }
 
     if (!user.validacion_correo) {
-      registerFailedAuth(ip, normalizedEmail, now);
-      return NextResponse.json(
+      const failLimit = await registerFailedAuth(ip, normalizedEmail, now);
+      if (failLimit) {
+        withRequestIdHeader(failLimit, requestId);
+        return failLimit;
+      }
+      const res = NextResponse.json(
         {
           error: "Email no validado",
           message:
@@ -325,18 +268,48 @@ export async function POST(req: Request) {
         },
         { status: 403 }
       );
+      return withRequestIdHeader(res, requestId);
     }
 
     const hash = user.contrasena_hash;
     if (!hash || hash.trim() === "") {
-      registerFailedAuth(ip, normalizedEmail, now);
-      return NextResponse.json({ message: "Credenciales inválidas" }, { status: 401 });
+      const failLimit = await registerFailedAuth(ip, normalizedEmail, now);
+      if (failLimit) {
+        withRequestIdHeader(failLimit, requestId);
+        return failLimit;
+      }
+      const res = NextResponse.json({ message: "Credenciales inválidas" }, { status: 401 });
+      withRequestIdHeader(res, requestId);
+      logApiEvent("info", {
+        requestId,
+        route: "POST /api/login",
+        event: "login_failed",
+        status: 401,
+        extra: { reason: "no_password_hash" },
+        durationMs: Date.now() - t0,
+      });
+      return res;
     }
 
     const match = await bcrypt.compare(String(password), hash);
     if (!match) {
-      registerFailedAuth(ip, normalizedEmail, now);
-      return NextResponse.json({ message: "Credenciales inválidas" }, { status: 401 });
+      const failLimit = await registerFailedAuth(ip, normalizedEmail, now);
+      if (failLimit) {
+        withRequestIdHeader(failLimit, requestId);
+        return failLimit;
+      }
+      const res = NextResponse.json({ message: "Credenciales inválidas" }, { status: 401 });
+      withRequestIdHeader(res, requestId);
+      logApiEvent("info", {
+        requestId,
+        route: "POST /api/login",
+        event: "login_failed",
+        userId: String(user.id_usuario),
+        status: 401,
+        extra: { reason: "bad_password" },
+        durationMs: Date.now() - t0,
+      });
+      return res;
     }
 
     clearSuccessfulAuth(ip, normalizedEmail);
@@ -362,9 +335,28 @@ export async function POST(req: Request) {
       { status: 200 }
     );
 
+    withRequestIdHeader(response, requestId);
+    logApiEvent("info", {
+      requestId,
+      route: "POST /api/login",
+      userId: String(user.id_usuario),
+      event: "login_success",
+      status: 200,
+      durationMs: Date.now() - t0,
+    });
+
     return appendSessionCookies(response, buildSessionCookies(sessionTokens));
   } catch (err) {
+    logApiEvent("error", {
+      requestId,
+      route: "POST /api/login",
+      event: "login_error",
+      status: 500,
+      extra: { message: err instanceof Error ? err.message : String(err) },
+      durationMs: Date.now() - t0,
+    });
     console.error("Login error:", err);
-    return NextResponse.json({ message: "Error interno" }, { status: 500 });
+    const res = NextResponse.json({ message: "Error interno" }, { status: 500 });
+    return withRequestIdHeader(res, requestId);
   }
 }

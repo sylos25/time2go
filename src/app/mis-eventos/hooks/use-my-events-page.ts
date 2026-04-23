@@ -29,10 +29,7 @@ export function useMyEventsPage() {
         setLoading(true)
         setError(null)
 
-        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-
         const response = await fetch("/api/events?mine=true", {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
           credentials: "include",
         })
 

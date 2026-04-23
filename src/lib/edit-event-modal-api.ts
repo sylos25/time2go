@@ -1,16 +1,7 @@
 import type { Categoria, Evento, Sitio, TipoEvento } from "@/types/event-edit"
 
-function getToken() {
-  return typeof window !== "undefined" ? localStorage.getItem("token") : null
-}
-
 function getAuthHeaders() {
-  const headers: Record<string, string> = {}
-  const token = getToken()
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
-  }
-  return headers
+  return {}
 }
 
 export async function fetchEventDetail(sourceEvent: Evento): Promise<Evento> {
@@ -30,6 +21,7 @@ export async function fetchEventDetail(sourceEvent: Evento): Promise<Evento> {
 export async function fetchCategorias(): Promise<Categoria[]> {
   const response = await fetch("/api/categoria_evento", {
     headers: getAuthHeaders(),
+    credentials: "include",
   })
 
   if (!response.ok) {
@@ -44,6 +36,7 @@ export async function fetchSitios(nombreSitio: string): Promise<Sitio[]> {
   const query = `/api/llamar_sitio?nombre_sitio=${encodeURIComponent(nombreSitio)}`
   const response = await fetch(query, {
     headers: getAuthHeaders(),
+    credentials: "include",
   })
 
   if (!response.ok) {
@@ -59,7 +52,7 @@ export async function fetchTiposEvento(categoriaId: string): Promise<TipoEvento[
     return []
   }
 
-  const response = await fetch(`/api/tipo_evento?categoriaId=${categoriaId}`)
+  const response = await fetch(`/api/tipo_evento?categoriaId=${categoriaId}`, { credentials: "include" })
   if (!response.ok) {
     return []
   }
@@ -73,6 +66,7 @@ export async function updateEventRequest(eventId: number | string | undefined, b
     method: "PUT",
     headers: getAuthHeaders(),
     body,
+    credentials: "include",
   })
 
   const payload = await response.json().catch(() => ({}))

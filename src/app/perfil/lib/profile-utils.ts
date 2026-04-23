@@ -2,15 +2,14 @@ import type { UserData } from "@/app/perfil/lib/profile-types"
 
 export const MAX_PDF_SIZE_BYTES = 5 * 1024 * 1024
 
+/** @deprecated La sesión va por cookies HttpOnly; no leer JWT en el cliente. */
 export function getAuthToken(): string {
-  if (typeof window === "undefined") return ""
-  return localStorage.getItem("token") ?? ""
+  return ""
 }
 
 export function clearSessionStorageValues() {
   if (typeof window === "undefined") return
 
-  localStorage.removeItem("token")
   localStorage.removeItem("userName")
   localStorage.removeItem("userPublicId")
 }

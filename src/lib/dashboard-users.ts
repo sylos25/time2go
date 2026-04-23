@@ -107,22 +107,17 @@ export function addDaysToDateTimeLocal(dateTimeLocal: string, days: number) {
 }
 
 function getAuthHeaders(contentType = false): Record<string, string> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
   const headers: Record<string, string> = {}
 
   if (contentType) {
     headers["Content-Type"] = "application/json"
   }
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
-  }
-
   return headers
 }
 
 export async function fetchCurrentUser() {
-  const response = await fetch("/api/me", { headers: getAuthHeaders(false) })
+  const response = await fetch("/api/me", { headers: getAuthHeaders(false), credentials: "include" })
   if (!response.ok) return null
 
   const data = await response.json().catch(() => ({}))
@@ -140,7 +135,10 @@ export async function fetchUsers(params: { search: string; page: number; pageSiz
     query.set("q", params.search.trim())
   }
 
-  const response = await fetch(`/api/usuarios?${query.toString()}`, { headers: getAuthHeaders(false) })
+  const response = await fetch(`/api/usuarios?${query.toString()}`, {
+    headers: getAuthHeaders(false),
+    credentials: "include",
+  })
   if (!response.ok) {
     return {
       usuarios: [] as UserRow[],
@@ -167,6 +165,7 @@ export async function banUser(payload: {
   const response = await fetch(`/api/usuarios/${encodeURIComponent(String(payload.idUsuario))}/ban`, {
     method: "PUT",
     headers: getAuthHeaders(true),
+    credentials: "include",
     body: JSON.stringify({
       action: "ban",
       id_usuario: payload.idUsuario,
@@ -188,6 +187,7 @@ export async function validateUserAccount(idUsuario: number) {
   const response = await fetch(`/api/usuarios/${encodeURIComponent(String(idUsuario))}/ban`, {
     method: "PUT",
     headers: getAuthHeaders(true),
+    credentials: "include",
     body: JSON.stringify({ action: "validate" }),
   })
 

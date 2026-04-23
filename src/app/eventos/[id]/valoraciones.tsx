@@ -98,12 +98,6 @@
     );
   }
 
-  // ── Helper token ──────────────────────────────────────────────────────────────
-  function getToken(): string {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem("token") ?? "";
-  }
-
   // ── Componente principal ──────────────────────────────────────────────────────
   export default function Valoraciones({ eventId }: { eventId: number }) {
     const TEXT_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]+$/;
@@ -133,9 +127,7 @@
     useEffect(() => {
       (async () => {
         try {
-          const token = getToken();
           const res  = await fetch("/api/me", {
-            headers:     token ? { Authorization: `Bearer ${token}` } : {},
             credentials: "include",
           });
           if (!res.ok) return;
@@ -176,10 +168,9 @@
       }
       setLoading(true);
       try {
-        const token = getToken();
         const res  = await fetch(`/api/events/${eventId}/valoraciones`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({ valoracion: rating, comentario: comment }),
         });
@@ -208,10 +199,9 @@
       if (editRating < 1 || editRating > 5) { setEditError("Calificación inválida."); return; }
       setSavingEdit(true); setEditError("");
       try {
-        const token = getToken();
         const res  = await fetch(`/api/mis-valoraciones/${id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({ valoracion: editRating, comentario: editComment.trim() || null }),
         });
@@ -227,10 +217,8 @@
     const deleteValoracion = async (id: number) => {
       setDeletingId(id);
       try {
-        const token = getToken();
         const res  = await fetch(`/api/mis-valoraciones/${id}`, {
           method: "DELETE",
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
           credentials: "include",
         });
         const json = await res.json();

@@ -1,10 +1,5 @@
 import type { Valoracion } from "@/app/mis-valoraciones/lib/mis-valoraciones-types"
 
-export function getToken(): string {
-  if (typeof window === "undefined") return ""
-  return localStorage.getItem("token") ?? ""
-}
-
 export function normalizeValoracion(value: unknown): Valoracion | null {
   if (!value || typeof value !== "object") return null
 

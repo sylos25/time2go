@@ -24,7 +24,6 @@ function readCookieConsent(): string | null {
 }
 
 function resetStoredSessionData() {
-  localStorage.removeItem("token")
   localStorage.removeItem("accessExpiresAt")
   localStorage.removeItem("userPublicId")
   localStorage.removeItem("userName")

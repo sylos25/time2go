@@ -116,15 +116,11 @@ export function mergeOverviewStats(baseStats: StatCard[], values: {
 }
 
 export async function fetchOverviewStats() {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-  const headers: Record<string, string> = {}
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
-  }
+  const fetchOpts: RequestInit = { credentials: "include" }
 
   const [statsResponse, usersRolesResponse] = await Promise.all([
-    fetch("/api/stats", { headers }),
-    fetch("/api/usuarios?roles=1,2&estado=true&page=1&pageSize=1", { headers }),
+    fetch("/api/stats", fetchOpts),
+    fetch("/api/usuarios?roles=1,2&estado=true&page=1&pageSize=1", fetchOpts),
   ])
 
   const statsPayload = statsResponse.ok ? await statsResponse.json().catch(() => ({})) : null

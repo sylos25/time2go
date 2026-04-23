@@ -43,17 +43,12 @@ export function useEventLanding({ eventId, mineView }: UseEventLandingParams) {
         const shouldUseCreatorMode = mineView || creatorFlagFromSession
         setCreatorMode(shouldUseCreatorMode)
 
-        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
         const query = shouldUseCreatorMode
           ? `/api/events?id=${encodeURIComponent(eventId)}&mine=true`
           : `/api/events?id=${encodeURIComponent(eventId)}`
 
         const response = await fetch(query, {
-          headers:
-            shouldUseCreatorMode && token
-              ? { Authorization: `Bearer ${token}` }
-              : undefined,
-          credentials: shouldUseCreatorMode ? "include" : undefined,
+          credentials: "include",
         })
 
         const payload = await response.json().catch(() => ({}))
@@ -86,11 +81,9 @@ export function useEventLanding({ eventId, mineView }: UseEventLandingParams) {
 
       setLoadingEventReservations(true)
       try {
-        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
         const response = await fetch(
           `/api/reservas?eventId=${encodeURIComponent(String(event.id_evento))}`,
           {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
             credentials: "include",
           }
         )
@@ -115,9 +108,7 @@ export function useEventLanding({ eventId, mineView }: UseEventLandingParams) {
   useEffect(() => {
     async function fetchCurrentUserRole() {
       try {
-        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
         const response = await fetch("/api/me", {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
           credentials: "include",
         })
 
@@ -155,9 +146,7 @@ export function useEventLanding({ eventId, mineView }: UseEventLandingParams) {
 
       setCheckingReservation(true)
       try {
-        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
         const response = await fetch("/api/reservas", {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
           credentials: "include",
         })
 

@@ -47,21 +47,11 @@ export function badgeVariant(estado: string) {
   }
 }
 
-function getToken() {
-  return typeof window !== "undefined" ? localStorage.getItem("token") : null
-}
-
 function getHeaders(contentTypeJson = false): HeadersInit {
   const headers: HeadersInit = {}
   if (contentTypeJson) {
     headers["Content-Type"] = "application/json"
   }
-
-  const token = getToken()
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
-  }
-
   return headers
 }
 

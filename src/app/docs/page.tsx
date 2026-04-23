@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   Database, Server, Terminal, ExternalLink,
   ChevronDown, ChevronRight, Lock, BookOpen,
   FileText, FileSpreadsheet, FileImage, File,
-  Download, Eye, RefreshCw, FolderOpen
+  Download, Eye, RefreshCw, FolderOpen, Braces, Search, Link2,
 } from "lucide-react"
 
 // ── Guard de acceso (solo servidor vía /api/me; coherente con middleware) ────
@@ -48,6 +48,35 @@ interface DocFile {
   sizeLabel: string
   modifiedAt: string
   relativePath: string
+}
+
+type SqlGroup = "ddl" | "triggers" | "funciones"
+
+interface SqlFileResponse {
+  ok: boolean
+  files?: Record<SqlGroup, string[]>
+  error?: string
+}
+
+interface SqlContentResponse {
+  ok: boolean
+  content?: string
+  error?: string
+}
+
+interface SqlSearchMatch {
+  group: SqlGroup
+  file: string
+  line: number
+  snippet: string
+}
+
+interface SqlSearchResponse {
+  ok: boolean
+  q?: string
+  matches?: SqlSearchMatch[]
+  truncated?: boolean
+  error?: string
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -101,6 +130,380 @@ function CodeBlock({ children }: { children: string }) {
       <button onClick={copy} className="absolute top-3 right-3 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
         {copied ? "✓ Copiado" : "Copiar"}
       </button>
+    </div>
+  )
+}
+
+const SQL_Q_GROUP = "sqlGroup"
+const SQL_Q_FILE = "sqlFile"
+const SQL_Q_Q = "sqlQ"
+
+function readSqlFromLocation(): { group: SqlGroup | null; file: string | null; q: string } {
+  if (typeof window === "undefined") {
+    return { group: null, file: null, q: "" }
+  }
+  const sp = new URLSearchParams(window.location.search)
+  const g = sp.get(SQL_Q_GROUP)
+  const f = sp.get(SQL_Q_FILE)
+  const qRaw = sp.get(SQL_Q_Q) || ""
+  const group =
+    g === "ddl" || g === "triggers" || g === "funciones" ? (g as SqlGroup) : null
+  return { group, file: f && f.length > 0 ? f : null, q: qRaw }
+}
+
+function writeSqlToLocation(
+  next: { group: SqlGroup; file: string; searchQ?: string },
+  opts: { replace?: boolean } = {}
+) {
+  if (typeof window === "undefined") return
+  const u = new URL(window.location.href)
+  u.searchParams.set(SQL_Q_GROUP, next.group)
+  u.searchParams.set(SQL_Q_FILE, next.file)
+  if (next.searchQ && next.searchQ.length > 0) u.searchParams.set(SQL_Q_Q, next.searchQ)
+  else u.searchParams.delete(SQL_Q_Q)
+  const method = opts.replace ? "replaceState" : "pushState"
+  window.history[method](null, "", `${u.pathname}${u.search}${u.hash}`)
+}
+
+function SqlSourceViewer() {
+  const [loadingList, setLoadingList] = useState(true)
+  const [loadingContent, setLoadingContent] = useState(false)
+  const [searching, setSearching] = useState(false)
+  const [error, setError] = useState("")
+  const [filesByGroup, setFilesByGroup] = useState<Record<SqlGroup, string[]>>({
+    ddl: [],
+    triggers: [],
+    funciones: [],
+  })
+  const [activeGroup, setActiveGroup] = useState<SqlGroup>("ddl")
+  const [activeFile, setActiveFile] = useState("")
+  const [activeContent, setActiveContent] = useState("")
+  const [nameFilter, setNameFilter] = useState("")
+  const [searchInput, setSearchInput] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<SqlSearchMatch[] | null>(null)
+  const listSyncedFromUrl = useRef(false)
+
+  const groupLabels: Record<SqlGroup, string> = {
+    ddl: "DDL",
+    triggers: "Triggers",
+    funciones: "Funciones",
+  }
+
+  const loadList = useCallback(async () => {
+    setLoadingList(true)
+    setError("")
+    try {
+      const res = await fetch("/api/docs/sql?mode=list", { credentials: "include" })
+      const data: SqlFileResponse = await res.json().catch(() => ({ ok: false }))
+      if (!res.ok || !data.ok || !data.files) {
+        setError((data as { error?: string }).error || "No se pudo cargar el índice SQL")
+        return
+      }
+
+      setFilesByGroup(data.files)
+      if (!listSyncedFromUrl.current) {
+        listSyncedFromUrl.current = true
+        const fromLoc = readSqlFromLocation()
+        if (fromLoc.q) {
+          setSearchInput(fromLoc.q)
+          setSearchQuery(fromLoc.q)
+        }
+        if (fromLoc.group && fromLoc.file) {
+          const list = data.files[fromLoc.group] || []
+          if (list.includes(fromLoc.file)) {
+            setActiveGroup(fromLoc.group)
+            setActiveFile(fromLoc.file)
+            return
+          }
+        }
+        const firstGroup: SqlGroup =
+          data.files.ddl.length > 0 ? "ddl" : data.files.triggers.length > 0 ? "triggers" : "funciones"
+        const firstFile = data.files[firstGroup][0] || ""
+        setActiveGroup(firstGroup)
+        setActiveFile(firstFile)
+        if (firstFile) {
+          writeSqlToLocation({ group: firstGroup, file: firstFile }, { replace: true })
+        }
+      }
+    } catch {
+      setError("Error de red al cargar el índice SQL")
+    } finally {
+      setLoadingList(false)
+    }
+  }, [])
+
+  const loadContent = useCallback(async (group: SqlGroup, file: string) => {
+    if (!file) {
+      setActiveContent("")
+      return
+    }
+    setLoadingContent(true)
+    setError("")
+    try {
+      const params = new URLSearchParams({
+        mode: "content",
+        group,
+        file,
+      })
+      const res = await fetch(`/api/docs/sql?${params.toString()}`, { credentials: "include" })
+      const data: SqlContentResponse = await res.json().catch(() => ({ ok: false }))
+      if (!res.ok || !data.ok || typeof data.content !== "string") {
+        setError(data.error || "No se pudo cargar el contenido SQL")
+        setActiveContent("")
+        return
+      }
+      setActiveContent(data.content)
+    } catch {
+      setError("Error de red al cargar el contenido SQL")
+      setActiveContent("")
+    } finally {
+      setLoadingContent(false)
+    }
+  }, [])
+
+  const runSearch = useCallback(async () => {
+    const q = searchInput.trim()
+    if (q.length < 2) {
+      setError("Escribe al menos 2 caracteres para buscar en el SQL.")
+      return
+    }
+    setSearching(true)
+    setError("")
+    setSearchQuery(q)
+    try {
+      const params = new URLSearchParams({ mode: "search", q })
+      const res = await fetch(`/api/docs/sql?${params.toString()}`, { credentials: "include" })
+      const data: SqlSearchResponse = await res.json().catch(() => ({ ok: false }))
+      if (!res.ok || !data.ok) {
+        setError(data.error || "Búsqueda no disponible")
+        setSearchResults(null)
+        return
+      }
+      setSearchResults(data.matches ?? [])
+      writeSqlToLocation(
+        { group: activeGroup, file: activeFile, searchQ: q },
+        { replace: true }
+      )
+    } catch {
+      setError("Error de red en la búsqueda")
+      setSearchResults(null)
+    } finally {
+      setSearching(false)
+    }
+  }, [searchInput, activeGroup, activeFile])
+
+  const selectFile = useCallback(
+    (group: SqlGroup, file: string) => {
+      setActiveGroup(group)
+      setActiveFile(file)
+      writeSqlToLocation(
+        { group, file, searchQ: searchQuery || undefined },
+        { replace: true }
+      )
+    },
+    [searchQuery]
+  )
+
+  const copyLink = useCallback(() => {
+    if (typeof window === "undefined" || !activeFile) return
+    writeSqlToLocation(
+      { group: activeGroup, file: activeFile, searchQ: searchQuery || undefined },
+      { replace: true }
+    )
+    const p = new URLSearchParams()
+    p.set(SQL_Q_GROUP, activeGroup)
+    p.set(SQL_Q_FILE, activeFile)
+    if (searchQuery) p.set(SQL_Q_Q, searchQuery)
+    const link = `${window.location.origin}${window.location.pathname}?${p.toString()}`
+    void navigator.clipboard.writeText(link)
+  }, [activeGroup, activeFile, searchQuery])
+
+  useEffect(() => {
+    void loadList()
+  }, [loadList])
+
+  useEffect(() => {
+    if (!activeFile) return
+    void loadContent(activeGroup, activeFile)
+  }, [activeGroup, activeFile, loadContent])
+
+  useEffect(() => {
+    const onPop = () => {
+      const { group, file, q } = readSqlFromLocation()
+      if (q) {
+        setSearchInput(q)
+        setSearchQuery(q)
+      }
+      if (group && file) {
+        setActiveGroup(group)
+        setActiveFile(file)
+      }
+    }
+    window.addEventListener("popstate", onPop)
+    return () => window.removeEventListener("popstate", onPop)
+  }, [])
+
+  const currentFiles = (filesByGroup[activeGroup] || []).filter((f) => {
+    const t = nameFilter.trim().toLowerCase()
+    if (!t) return true
+    return f.toLowerCase().includes(t)
+  })
+
+  return (
+    <div className="mt-5 space-y-4">
+      <p className="text-sm text-gray-600 leading-relaxed">
+        Vista rápida del código SQL de base de datos para soporte técnico durante demos. Incluye solo
+        <strong> DDL</strong>, <strong>triggers</strong> y <strong>funciones</strong> (sin inserts). Usa{" "}
+        <code className="bg-gray-100 px-1 rounded text-xs">?sqlGroup=…&amp;sqlFile=…</code> para enlaces directos.
+      </p>
+
+      <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+        <div className="flex-1 min-w-0">
+          <label className="text-xs font-medium text-gray-600 flex items-center gap-1.5">
+            <Search className="h-3.5 w-3.5" /> Buscar texto dentro del SQL
+          </label>
+          <div className="mt-1 flex flex-wrap gap-2">
+            <input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && void runSearch()}
+              placeholder="Ej. CREATE TABLE, usuario, …"
+              className="flex-1 min-w-[12rem] rounded-lg border border-gray-200 px-3 py-2 text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => void runSearch()}
+              disabled={searching}
+              className="text-xs font-medium px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
+            >
+              {searching ? "Buscando…" : "Buscar"}
+            </button>
+          </div>
+        </div>
+        <div className="sm:w-48">
+          <label className="text-xs font-medium text-gray-600">Filtrar archivos por nombre</label>
+          <input
+            value={nameFilter}
+            onChange={(e) => setNameFilter(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+            placeholder="*.sql"
+          />
+        </div>
+      </div>
+
+      {searchResults && searchResults.length > 0 && (
+        <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3 text-sm max-h-48 overflow-y-auto">
+          <p className="text-xs font-semibold text-emerald-800 mb-2">Coincidencias</p>
+          <ul className="space-y-1.5">
+            {searchResults.map((m, i) => (
+              <li key={`${m.group}-${m.file}-${m.line}-${i}`}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    selectFile(m.group, m.file)
+                    setSearchResults(null)
+                  }}
+                  className="text-left w-full text-emerald-900 hover:underline"
+                >
+                  <span className="font-mono text-xs text-emerald-700">
+                    {groupLabels[m.group]}/{m.file}:{m.line}
+                  </span>
+                  <span className="block text-gray-600 line-clamp-2">{m.snippet}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {searchResults && searchResults.length === 0 && searchQuery && !searching && (
+        <p className="text-sm text-amber-700">No hay coincidencias para &quot;{searchQuery}&quot;.</p>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        {(["ddl", "triggers", "funciones"] as const).map((group) => (
+          <button
+            key={group}
+            onClick={() => {
+              const first = filesByGroup[group]?.[0] || ""
+              selectFile(group, first)
+            }}
+            className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
+              activeGroup === group
+                ? "bg-green-600 text-white border-green-600"
+                : "bg-white text-gray-600 border-gray-200 hover:border-green-400"
+            }`}
+          >
+            {groupLabels[group]}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={() => void loadList()}
+          className="ml-auto flex items-center gap-1.5 text-xs text-gray-500 hover:text-green-600 transition-colors cursor-pointer"
+        >
+          <RefreshCw className="h-3.5 w-3.5" /> Actualizar índice SQL
+        </button>
+        <button
+          type="button"
+          onClick={copyLink}
+          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-green-600 transition-colors cursor-pointer"
+        >
+          <Link2 className="h-3.5 w-3.5" /> Copiar enlace
+        </button>
+      </div>
+
+      {!loadingList && currentFiles.length > 0 && (
+        <div className="flex flex-wrap gap-2" id="sql-section">
+          {currentFiles.map((file) => (
+            <button
+              key={file}
+              onClick={() => selectFile(activeGroup, file)}
+              className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+                activeFile === file
+                  ? "bg-emerald-600 text-white border-emerald-600"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-emerald-400"
+              }`}
+            >
+              {file}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {loadingList && (
+        <div className="flex items-center gap-3 py-6 text-gray-400">
+          <div className="w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm">Cargando índice SQL...</span>
+        </div>
+      )}
+
+      {!loadingList && !error && !activeFile && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
+          No se encontraron archivos SQL para esta categoría.
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{error}</div>
+      )}
+
+      {activeFile && (
+        <div className="space-y-2">
+          <p className="text-xs text-gray-500">
+            Archivo activo: <code className="bg-gray-100 px-1 rounded">{activeFile}</code>
+          </p>
+          {loadingContent ? (
+            <div className="flex items-center gap-3 py-6 text-gray-400">
+              <div className="w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm">Cargando contenido SQL...</span>
+            </div>
+          ) : (
+            <CodeBlock>{activeContent || "-- Sin contenido --"}</CodeBlock>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -289,6 +692,10 @@ export default function DocsPage() {
           <FileBrowser />
         </Section>
 
+        <Section icon={Braces} title="Código SQL de la Base de Datos" color="bg-emerald-700">
+          <SqlSourceViewer />
+        </Section>
+
         {/* ── Diagrama BD ── */}
         <Section icon={Database} title="Diagrama de Base de Datos" color="bg-lime-600">
           <div className="mt-5 space-y-4">
@@ -309,9 +716,11 @@ export default function DocsPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-2">
               {[
                 { label: "Motor",          value: "PostgreSQL" },
-                { label: "Autenticación",  value: "JWT + HttpOnly" },
+                { label: "Autenticación",  value: "JWT + cookies HttpOnly + refresh" },
                 { label: "Cifrado",        value: "bcrypt (bf, 12)" },
                 { label: "Archivos evento", value: "S3 / R2" },
+                { label: "Pagos",          value: "ePayco (checkout + webhook)" },
+                { label: "Sesión activa",  value: "Redis/Upstash (HMAC key v2)" },
                 { label: "ORM / Query",    value: "SQL nativo" },
                 { label: "Roles",          value: "4 niveles" },
               ].map((item) => (
@@ -335,9 +744,10 @@ export default function DocsPage() {
                   { layer: "Estilos",             tech: "Tailwind CSS + shadcn/ui", icon: "🎨" },
                   { layer: "Backend",             tech: "Next.js API Routes (Node.js)", icon: "⚙️" },
                   { layer: "Base de datos",        tech: "PostgreSQL", icon: "🗄️" },
-                  { layer: "Autenticación",        tech: "JWT + cookies", icon: "🔐" },
+                  { layer: "Autenticación",        tech: "JWT + refresh + sesión activa", icon: "🔐" },
                   { layer: "Almacenamiento",       tech: "S3/R2 (eventos, documentos)", icon: "☁️" },
-                  { layer: "Acceso remoto",        tech: "Cloudflare Tunnel", icon: "🌐" },
+                  { layer: "Pagos",                tech: "ePayco (checkout + webhook)", icon: "💳" },
+                  { layer: "Redis",                tech: "Upstash (revocación + sesión activa)", icon: "🧠" },
                   { layer: "Control de versiones", tech: "Git + GitHub", icon: "📦" },
                 ].map((item) => (
                   <div key={item.layer} className="flex items-center gap-3 border border-gray-100 rounded-xl p-3 bg-gray-50">
@@ -361,12 +771,14 @@ export default function DocsPage() {
 │   │   │   ├── docs/
 │   │   │   │   ├── files/      # Lista archivos de public/docs
 │   │   │   │   └── serve/      # Sirve archivos de public/docs
+│   │   │   ├── epayco/
+│   │   │   │   └── webhook/    # Confirmación de transacciones
 │   │   │   └── ...
 │   │   ├── docs/               # UI /docs (admin)
 │   │   └── ...
 │   ├── components/
 │   ├── hooks/
-│   └── lib/
+│   └── lib/                    # auth-session, jwt, active-session, token-revocation
 ├── public/
 │   ├── docs/                   # ← Documentación adjunta (PDF, xlsx, etc.)
 │   └── images/
@@ -431,14 +843,26 @@ DATABASE_URL=postgresql://user:password@localhost:5432/time2go
 JWT_SECRET=tu_secreto_seguro
 # o BETTER_AUTH_SECRET=...
 
-# Ver .env.example para S3/R2, email, Redis, etc.
+# Redis/Upstash (opcional pero recomendado para sesión activa segura):
+UPSTASH_REDIS_REST_URL=https://...
+UPSTASH_REDIS_REST_TOKEN=...
+ACTIVE_SESSION_HMAC_SECRET=tu_secreto_hmac_largo
+
+# ePayco (si pruebas upgrade de organizador):
+EPAYCO_PUBLIC_KEY=...
+EPAYCO_TEST_MODE=true
+EPAYCO_P_CUST_ID_CLIENTE=...
+
+# Ver .env.example para S3/R2, email, cron, etc.
 NEXT_PUBLIC_APP_URL=http://localhost:3000`}</CodeBlock>
             </div>
 
             <div>
               <h4 className="text-sm font-semibold text-gray-700 mb-1 uppercase tracking-wide">3 · Inicializar la base de datos</h4>
-              <CodeBlock>{`psql -U user -d time2go -f scripts/schema.sql
-psql -U user -d time2go -f scripts/seed.sql`}</CodeBlock>
+              <CodeBlock>{`# Usa los scripts reales del repositorio:
+psql -U user -d time2go -f "scripts SQL/DDL Time2Go.SQL"
+# Inserta catálogos/semillas según necesites desde:
+# scripts SQL/insert/`}</CodeBlock>
             </div>
 
             <div>

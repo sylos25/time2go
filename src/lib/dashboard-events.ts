@@ -42,21 +42,11 @@ export const DEFAULT_REJECT_FORM: RejectForm = {
   rechazado_por: "",
 }
 
-function getToken() {
-  return typeof window !== "undefined" ? localStorage.getItem("token") : null
-}
-
-export function getAuthHeaders(contentTypeJson = false, token?: string | null): HeadersInit {
+export function getAuthHeaders(contentTypeJson = false): HeadersInit {
   const headers: HeadersInit = {}
   if (contentTypeJson) {
     headers["Content-Type"] = "application/json"
   }
-
-  const resolvedToken = token ?? getToken()
-  if (resolvedToken) {
-    headers.Authorization = `Bearer ${resolvedToken}`
-  }
-
   return headers
 }
 
@@ -82,9 +72,9 @@ export function mapServerEvent(eventValue: any): DashboardEvent {
   }
 }
 
-export async function fetchCurrentUser(token?: string | null) {
+export async function fetchCurrentUser() {
   const response = await fetch("/api/me", {
-    headers: getAuthHeaders(false, token),
+    headers: getAuthHeaders(false),
     credentials: "include",
   })
 
@@ -96,9 +86,9 @@ export async function fetchCurrentUser(token?: string | null) {
   return data?.user || null
 }
 
-export async function checkEventsPermission(roleId: number, token?: string | null) {
+export async function checkEventsPermission(roleId: number) {
   const response = await fetch(`/api/permissions/check?id_accesibilidad=4&id_rol=${roleId}`, {
-    headers: getAuthHeaders(false, token),
+    headers: getAuthHeaders(false),
     credentials: "include",
   })
 
@@ -110,9 +100,9 @@ export async function checkEventsPermission(roleId: number, token?: string | nul
   return Boolean(data?.hasAccess)
 }
 
-export async function fetchEvents(token?: string | null) {
+export async function fetchEvents() {
   const response = await fetch("/api/events?includeAll=true", {
-    headers: getAuthHeaders(false, token),
+    headers: getAuthHeaders(false),
     credentials: "include",
   })
 
@@ -125,9 +115,9 @@ export async function fetchEvents(token?: string | null) {
   return events.map(mapServerEvent)
 }
 
-export async function fetchEventCategories(token?: string | null) {
+export async function fetchEventCategories() {
   const response = await fetch("/api/categoria_evento", {
-    headers: getAuthHeaders(false, token),
+    headers: getAuthHeaders(false),
     credentials: "include",
   })
 
@@ -144,10 +134,10 @@ async function parseErrorMessage(response: Response, fallback: string) {
   return String(body?.message || fallback)
 }
 
-export async function deleteEventById(eventId: number, token?: string | null) {
+export async function deleteEventById(eventId: number) {
   const response = await fetch(`/api/events/${eventId}`, {
     method: "DELETE",
-    headers: getAuthHeaders(false, token),
+    headers: getAuthHeaders(false),
     credentials: "include",
   })
 
@@ -156,10 +146,10 @@ export async function deleteEventById(eventId: number, token?: string | null) {
   }
 }
 
-export async function approveEventById(eventId: number, token?: string | null) {
+export async function approveEventById(eventId: number) {
   const response = await fetch(`/api/events/${eventId}/toggle-status`, {
     method: "PUT",
-    headers: getAuthHeaders(true, token),
+    headers: getAuthHeaders(true),
     credentials: "include",
     body: JSON.stringify({ estado: true }),
   })
@@ -171,12 +161,11 @@ export async function approveEventById(eventId: number, token?: string | null) {
 
 export async function rejectEventById(
   eventId: number,
-  payload: { motivo_rechazo: string; rechazado_por: number },
-  token?: string | null
+  payload: { motivo_rechazo: string; rechazado_por: number }
 ) {
   const response = await fetch(`/api/events/${eventId}/toggle-status`, {
     method: "PUT",
-    headers: getAuthHeaders(true, token),
+    headers: getAuthHeaders(true),
     credentials: "include",
     body: JSON.stringify({ estado: false, ...payload }),
   })
@@ -187,10 +176,10 @@ export async function rejectEventById(
   }
 }
 
-export async function toggleDestacadoById(eventId: number, destacado: boolean, token?: string | null) {
+export async function toggleDestacadoById(eventId: number, destacado: boolean) {
   const response = await fetch(`/api/events/${eventId}/toggle-status`, {
     method: "PUT",
-    headers: getAuthHeaders(true, token),
+    headers: getAuthHeaders(true),
     credentials: "include",
     body: JSON.stringify({ destacado }),
   })

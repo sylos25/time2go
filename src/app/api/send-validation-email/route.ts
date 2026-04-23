@@ -3,9 +3,19 @@ export const runtime = "nodejs";
 import pool from "@/lib/db";
 import { sendEmailValidationEmail, generateEmailValidationToken } from "@/lib/email";
 
+function getValidationBaseUrl(): string {
+  const candidate =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.APP_URL ||
+    process.env.BETTER_AUTH_URL ||
+    process.env.NEXTAUTH_URL ||
+    "http://localhost:3000";
+  return candidate.replace(/\/$/, "");
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { email, id_usuario, baseUrl } = await req.json();
+    const { email, id_usuario } = await req.json();
     const userId = id_usuario;
 
     if (!email || !userId) {
@@ -40,7 +50,7 @@ export async function POST(req: NextRequest) {
     );
 
 
-    const baseUrlToUse = baseUrl || process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const baseUrlToUse = getValidationBaseUrl();
     const emailSent = await sendEmailValidationEmail(email, token, baseUrlToUse);
 
     if (!emailSent) {

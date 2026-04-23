@@ -1,6 +1,8 @@
 import crypto from "node:crypto"
 import { NextResponse } from "next/server"
 import pool from "@/lib/db"
+import { buildEpaycoIdempotencyKey, markEpaycoWebhookIfNew } from "@/lib/epayco-webhook-idempotency"
+import { logApiEvent, withRequestId } from "@/lib/observability"
 
 export const runtime = "nodejs"
 
@@ -113,10 +115,20 @@ async function parseIncomingPayload(req: Request): Promise<PayloadMap> {
 }
 
 export async function POST(req: Request) {
+  const t0 = Date.now()
+  const { requestId } = withRequestId(req)
+
   try {
     const payload = await parseIncomingPayload(req)
 
     if (!verifyEpaycoSignature(payload)) {
+      logApiEvent("warn", {
+        requestId,
+        route: "POST /api/epayco/webhook",
+        event: "webhook_invalid_signature",
+        status: 401,
+        durationMs: Date.now() - t0,
+      })
       return NextResponse.json({ ok: false, message: "Firma invalida" }, { status: 401 })
     }
 
@@ -127,6 +139,24 @@ export async function POST(req: Request) {
 
     const estadoPago = parseEpaycoStatus(payload)
     const transactionId = getPayloadValue(payload, "x_transaction_id", "x_ref_payco", "transaction_id")
+
+    const idemKey = buildEpaycoIdempotencyKey({
+      referencia: referenciaPago,
+      transactionId: transactionId || "no-tx",
+      estado: estadoPago,
+    })
+    const idem = await markEpaycoWebhookIfNew(idemKey)
+    if (idem === "duplicate") {
+      logApiEvent("info", {
+        requestId,
+        route: "POST /api/epayco/webhook",
+        event: "webhook_duplicate",
+        status: 200,
+        extra: { referenciaPago, transactionId, estadoPago },
+        durationMs: Date.now() - t0,
+      })
+      return NextResponse.json({ ok: true, duplicate: true })
+    }
 
     const client = await pool.connect()
     try {
@@ -216,6 +246,14 @@ export async function POST(req: Request) {
 
       await client.query("COMMIT")
 
+      logApiEvent("info", {
+        requestId,
+        route: "POST /api/epayco/webhook",
+        event: "webhook_applied",
+        status: 200,
+        extra: { referenciaPago, transactionId, estadoPago },
+        durationMs: Date.now() - t0,
+      })
       return NextResponse.json({ ok: true })
     } catch (dbError) {
       await client.query("ROLLBACK")
@@ -224,6 +262,14 @@ export async function POST(req: Request) {
       client.release()
     }
   } catch (error) {
+    logApiEvent("error", {
+      requestId,
+      route: "POST /api/epayco/webhook",
+      event: "webhook_error",
+      status: 500,
+      extra: { message: error instanceof Error ? error.message : String(error) },
+      durationMs: Date.now() - t0,
+    })
     console.error("/api/epayco/webhook POST error:", error)
     return NextResponse.json({ ok: false }, { status: 500 })
   }

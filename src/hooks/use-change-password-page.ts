@@ -48,10 +48,8 @@ export function useChangePasswordPage(router: AppRouterInstance) {
     try {
       setLoading(true)
       setError(null)
-      const token = localStorage.getItem("token")
-
       const response = await fetch("/api/me", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
       })
 
       if (!response.ok) {
@@ -103,14 +101,13 @@ export function useChangePasswordPage(router: AppRouterInstance) {
 
     try {
       setSaving(true)
-      const token = localStorage.getItem("token")
 
       const response = await fetch("/api/change-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
         body: JSON.stringify({
           currentPassword,
           newPassword,

@@ -19,7 +19,6 @@ describe("useChangePasswordPage", () => {
     vi.restoreAllMocks()
     push.mockReset()
     localStorage.clear()
-    localStorage.setItem("token", "jwt-token")
   })
 
   afterEach(() => {
@@ -42,7 +41,7 @@ describe("useChangePasswordPage", () => {
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     expect(fetchMock).toHaveBeenCalledWith("/api/me", {
-      headers: { Authorization: "Bearer jwt-token" },
+      credentials: "include",
     })
     expect(result.current.user?.nombres).toBe("Ana")
     expect(result.current.error).toBeNull()
@@ -119,8 +118,8 @@ describe("useChangePasswordPage", () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer jwt-token",
       },
+      credentials: "include",
       body: JSON.stringify({
         currentPassword: "Actual123!",
         newPassword: "Nueva123!",

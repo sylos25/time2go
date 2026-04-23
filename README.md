@@ -18,7 +18,7 @@ Puedes añadir más guías (email, R2, reset password, etc.) bajo la carpeta `do
 
 - **Node.js** compatible con Next.js 16 (ver `package.json`)
 - **PostgreSQL** (cadena en `DATABASE_URL`)
-- Opcional según funcionalidades: cuenta **S3/R2**, **Wompi**, **Google OAuth**, **Cloudflare Turnstile**, **Upstash Redis**, credenciales **SMTP**
+- Opcional según funcionalidades: cuenta **S3/R2**, **ePayco**, **Google OAuth**, **Cloudflare Turnstile**, **Upstash Redis**, credenciales **SMTP**
 
 ---
 

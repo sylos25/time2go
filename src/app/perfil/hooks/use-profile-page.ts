@@ -14,10 +14,10 @@ import type {
 } from "@/app/perfil/lib/profile-types"
 import {
   clearSessionStorageValues,
-  getAuthToken,
   getDisplayUserName,
   getProfileSuccessMessageFromUrl,
 } from "@/app/perfil/lib/profile-utils"
+import { fetchWithSession } from "@/lib/client-auth-fetch"
 
 export function useProfilePage() {
   const router = useRouter()
@@ -45,10 +45,7 @@ export function useProfilePage() {
       setLoading(true)
       setError(null)
 
-      const token = getAuthToken()
-      const response = await fetch("/api/me", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      })
+      const response = await fetchWithSession("/api/me")
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -151,11 +148,7 @@ export function useProfilePage() {
   const fetchOrganizerPlans = useCallback(async () => {
     setIsLoadingOrganizerPlans(true)
     try {
-      const token = getAuthToken()
-      const response = await fetch("/api/organizador-document", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        credentials: "include",
-      })
+      const response = await fetchWithSession("/api/organizador-document")
 
       const data: OrganizerPlansResponse = await response.json().catch(() => ({}))
       if (!response.ok || !data?.ok || !Array.isArray(data.plans)) {
@@ -210,15 +203,12 @@ export function useProfilePage() {
     setOrganizadorError(null)
 
     try {
-      const token = getAuthToken()
       const formData = new FormData()
       formData.append("id_plan", String(selectedPlanId))
 
-      const response = await fetch("/api/organizador-document", {
+      const response = await fetchWithSession("/api/organizador-document", {
         method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
-        credentials: "include",
       })
 
       const data: OrganizerPaymentResponse = await response.json().catch(() => ({}))
@@ -261,14 +251,11 @@ export function useProfilePage() {
     setDeactivateError(null)
 
     try {
-      const token = getAuthToken()
-      const response = await fetch(`/api/usuarios/${user.id_usuario}/ban`, {
+      const response = await fetchWithSession(`/api/usuarios/${user.id_usuario}/ban`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        credentials: "include",
         body: JSON.stringify({ motivo: "Desactivacion solicitada por el usuario" }),
       })
 

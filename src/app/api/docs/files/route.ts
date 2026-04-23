@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
-import fs from "fs"
+import { promises as fs } from "fs"
 import path from "path"
 import pool from "@/lib/db"
 import { getRequesterIdLenient } from "@/lib/auth-request"
 
 export const runtime = "nodejs"
 
-// ── Verificar rol admin ──────────────────────────────────────────────────────
 async function ensureAdminRole(req: NextRequest): Promise<boolean> {
   const userId = await getRequesterIdLenient(req)
   if (!userId) return false
@@ -19,10 +18,9 @@ async function ensureAdminRole(req: NextRequest): Promise<boolean> {
   return role === 4
 }
 
-// ── Categorizar archivo por extension ────────────────────────────────────────
 function categorizeFile(ext: string): { category: string; label: string; color: string } {
   const extLower = ext.toLowerCase()
-  
+
   if ([".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".bmp"].includes(extLower)) {
     return { category: "Diagrama", label: "Imagen", color: "bg-purple-100 text-purple-700" }
   }
@@ -50,14 +48,12 @@ function categorizeFile(ext: string): { category: string; label: string; color: 
   return { category: "Otro", label: extLower.slice(1).toUpperCase() || "Archivo", color: "bg-gray-100 text-gray-600" }
 }
 
-// ── Formatear tamano de archivo ──────────────────────────────────────────────
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-// ── Leer archivos recursivamente ─────────────────────────────────────────────
 interface DocFile {
   name: string
   ext: string
@@ -69,28 +65,29 @@ interface DocFile {
   relativePath: string
 }
 
-function readFilesRecursively(dir: string, baseDir: string): DocFile[] {
+async function readFilesRecursively(dir: string, baseDir: string): Promise<DocFile[]> {
   const files: DocFile[] = []
-  
-  if (!fs.existsSync(dir)) return files
-  
-  const entries = fs.readdirSync(dir, { withFileTypes: true })
-  
+
+  let entries: Awaited<ReturnType<typeof fs.readdir>>
+  try {
+    entries = await fs.readdir(dir, { withFileTypes: true })
+  } catch {
+    return files
+  }
+
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name)
     const relativePath = path.relative(baseDir, fullPath).replace(/\\/g, "/")
-    
+
     if (entry.isDirectory()) {
-      // Recursivamente leer subdirectorios
-      files.push(...readFilesRecursively(fullPath, baseDir))
+      files.push(...(await readFilesRecursively(fullPath, baseDir)))
     } else if (entry.isFile()) {
-      // Ignorar archivos ocultos
       if (entry.name.startsWith(".")) continue
-      
+
       const ext = path.extname(entry.name)
-      const stats = fs.statSync(fullPath)
+      const stats = await fs.stat(fullPath)
       const { category, label, color } = categorizeFile(ext)
-      
+
       files.push({
         name: entry.name,
         ext,
@@ -103,11 +100,10 @@ function readFilesRecursively(dir: string, baseDir: string): DocFile[] {
       })
     }
   }
-  
+
   return files
 }
 
-// ── GET: Listar archivos de /docs/ ───────────────────────────────────────────
 export async function GET(req: NextRequest) {
   try {
     const isAdmin = await ensureAdminRole(req)
@@ -115,12 +111,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    // Ruta de la carpeta docs en public (para que funcione en Vercel)
     const docsDir = path.join(process.cwd(), "public", "docs")
-    
-    const files = readFilesRecursively(docsDir, docsDir)
-    
-    // Ordenar por fecha de modificacion (mas recientes primero)
+    const files = await readFilesRecursively(docsDir, docsDir)
     files.sort((a, b) => new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime())
 
     return NextResponse.json({ ok: true, files })

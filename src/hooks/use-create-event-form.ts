@@ -262,11 +262,7 @@ export function useCreateEventForm() {
     let cancelled = false
     const checkAuth = async () => {
       try {
-        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-        const headers: Record<string, string> = {}
-        if (token) headers.Authorization = `Bearer ${token}`
-
-        const res = await fetch("/api/me", { headers, credentials: "include" })
+        const res = await fetch("/api/me", { credentials: "include" })
         if (!res.ok) {
           if (!cancelled) setAuthorized(false)
           return
@@ -282,7 +278,7 @@ export function useCreateEventForm() {
 
         const permissionRes = await fetch(
           `/api/permissions/check?id_accesibilidad=1&id_rol=${roleNum}`,
-          { headers, credentials: "include" },
+          { credentials: "include" },
         )
 
         if (!permissionRes.ok) {
@@ -651,16 +647,10 @@ export function useCreateEventForm() {
         formData.append("documento", newEvent.documento)
       }
 
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-      const headers: Record<string, string> = {}
-      if (token) {
-        headers.Authorization = `Bearer ${token}`
-      }
-
       const res = await fetch("/api/events", {
         method: "POST",
-        headers,
         body: formData,
+        credentials: "include",
       })
 
       if (!res.ok) {

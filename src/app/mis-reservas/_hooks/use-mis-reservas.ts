@@ -18,10 +18,7 @@ export function useMisReservas() {
         setLoading(true);
         setError(null);
 
-        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
         const meRes = await fetch("/api/me", {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
           credentials: "include",
         });
 
@@ -33,7 +30,6 @@ export function useMisReservas() {
         }
 
         const res = await fetch("/api/reservas", {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
           credentials: "include",
         });
 
@@ -85,11 +81,8 @@ export function useMisReservas() {
     try {
       setCancellingId(reservaId);
       setError(null);
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
       const res = await fetch(`/api/reservas/${encodeURIComponent(String(reservaId))}`, {
         method: "DELETE",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
         credentials: "include",
       });
 

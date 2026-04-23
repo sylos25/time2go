@@ -16,12 +16,14 @@ const THIRTY_MINUTES_MS = 30 * ONE_MINUTE_MS;
 
 let upstashIp: Ratelimit | null = null;
 let upstashCred: Ratelimit | null = null;
+let upstashFailIp: Ratelimit | null = null;
+let upstashFailCred: Ratelimit | null = null;
 
-function getUpstashLimiters(): { ip: Ratelimit; cred: Ratelimit } | null {
+function getUpstashLimiters(): { ip: Ratelimit; cred: Ratelimit; failIp: Ratelimit; failCred: Ratelimit } | null {
   if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
     return null;
   }
-  if (!upstashIp || !upstashCred) {
+  if (!upstashIp || !upstashCred || !upstashFailIp || !upstashFailCred) {
     const redis = Redis.fromEnv();
     upstashIp = new Ratelimit({
       redis,
@@ -33,8 +35,18 @@ function getUpstashLimiters(): { ip: Ratelimit; cred: Ratelimit } | null {
       limiter: Ratelimit.slidingWindow(8, "15 m"),
       prefix: "login:cred",
     });
+    upstashFailIp = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(40, "15 m"),
+      prefix: "login:fail:ip",
+    });
+    upstashFailCred = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(8, "15 m"),
+      prefix: "login:fail:cred",
+    });
   }
-  return { ip: upstashIp, cred: upstashCred };
+  return { ip: upstashIp, cred: upstashCred, failIp: upstashFailIp, failCred: upstashFailCred };
 }
 
 function cleanupLimiterMap(map: Map<string, LoginLimiter>, now: number, windowMs: number) {
@@ -121,7 +133,7 @@ export async function runLoginRateLimitPrelude(
   if (upstash) {
     const [ipRes, credRes] = await Promise.all([
       upstash.ip.limit(ip),
-      upstash.cred.limit(`${ip}::${normalizedEmail}`),
+      upstash.cred.limit(`${ip}::${normalizedEmail || "no-email"}`),
     ]);
     if (!ipRes.success) {
       return upstashTooMany(ipRes.reset);
@@ -155,21 +167,39 @@ export async function runLoginRateLimitPrelude(
   return null;
 }
 
-export function registerFailedAuth(ip: string, email: string, now: number) {
-  if (getUpstashLimiters()) {
-    return;
+/**
+ * Tras un intento fallido (captcha, credenciales, etc.): aplica tope progresivo en memoria
+ * o contadores de fallo en Upstash (límites `login:fail:*`).
+ */
+export async function registerFailedAuth(
+  ip: string,
+  email: string,
+  now: number
+): Promise<NextResponse | null> {
+  const upstash = getUpstashLimiters();
+  if (upstash) {
+    const [ipRes, credRes] = await Promise.all([
+      upstash.failIp.limit(ip),
+      upstash.failCred.limit(`${ip}::${email}`),
+    ]);
+    if (!ipRes.success) {
+      return upstashTooMany(ipRes.reset);
+    }
+    if (!credRes.success) {
+      return upstashTooMany(credRes.reset);
+    }
+    return null;
   }
+
   const ipEntry = getOrCreateLimiter(ipLimiter, ip);
   const credEntry = getOrCreateLimiter(credentialLimiter, `${ip}::${email}`);
   const ipAttempt = addAttemptAndCheckWindow(ipEntry, now, FIFTEEN_MINUTES_MS, 40);
   const credAttempt = addAttemptAndCheckWindow(credEntry, now, FIFTEEN_MINUTES_MS, 8);
   setProgressiveLock(ipEntry, now, ipAttempt.count);
   setProgressiveLock(credEntry, now, credAttempt.count);
+  return null;
 }
 
 export function clearSuccessfulAuth(ip: string, email: string) {
-  if (getUpstashLimiters()) {
-    return;
-  }
   credentialLimiter.delete(`${ip}::${email}`);
 }

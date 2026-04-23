@@ -73,11 +73,7 @@ export default function DashboardLayout({
     const verifyDashboardAccess = async () => {
       setLoading(true)
       try {
-        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-        const headers: any = {}
-        if (token) headers.Authorization = `Bearer ${token}`
-
-        const meRes = await fetch("/api/me", { headers })
+        const meRes = await fetch("/api/me", { credentials: "include" })
         if (!meRes.ok) {
           if (!canceled) setAuthorized(false)
           return
@@ -94,11 +90,9 @@ export default function DashboardLayout({
 
         const [dashboardPermRes, eventsPermRes] = await Promise.all([
           fetch(`/api/permissions/check?id_accesibilidad=2&id_rol=${roleNum}`, {
-            headers,
             credentials: "include",
           }),
           fetch(`/api/permissions/check?id_accesibilidad=4&id_rol=${roleNum}`, {
-            headers,
             credentials: "include",
           }),
         ])
