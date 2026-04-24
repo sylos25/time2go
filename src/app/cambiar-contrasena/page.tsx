@@ -1,6 +1,6 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -19,7 +19,6 @@ import { useChangePasswordPage } from "@/hooks/use-change-password-page"
 import { PASSWORD_MIN_LENGTH, validatePasswordPolicy } from "@/lib/password-policy"
 
 export default function CambiarContrasenaPage() {
-  const router = useRouter()
   const {
     user,
     loading,
@@ -37,7 +36,7 @@ export default function CambiarContrasenaPage() {
     setConfirmPassword,
     togglePasswordVisibility,
     handleSubmit,
-  } = useChangePasswordPage(router)
+  } = useChangePasswordPage()
   const passwordValidation = validatePasswordPolicy(newPassword)
 
   if (loading) {
@@ -64,11 +63,8 @@ export default function CambiarContrasenaPage() {
             <p className="text-foreground text-lg font-medium mb-4">
               {error || "Error al cargar los datos"}
             </p>
-            <Button
-              onClick={() => router.push("/")}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              Ir al Inicio
+            <Button asChild className="bg-green-600 hover:bg-green-700 text-white">
+              <Link href="/">Ir al Inicio</Link>
             </Button>
           </div>
         </div>
@@ -83,13 +79,13 @@ export default function CambiarContrasenaPage() {
       <div className="pt-32 pb-12 px-4">
         <div className="max-w-3xl mx-auto">
           {/* Botón Atrás */}
-          <button
-            onClick={() => router.push("/perfil")}
-            className="flex items-center gap-2 text-green-700 hover:text-lime-500 mb-6 transition-colors font-medium cursor-pointer"
+          <Link
+            href="/perfil"
+            className="inline-flex items-center gap-2 text-green-700 hover:text-lime-500 mb-6 transition-colors font-medium cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Volver al perfil</span>
-          </button>
+          </Link>
 
           {/* Success Message */}
           <StatusMessage message={successMessage} variant="success" className="mb-6 p-4" />
@@ -219,12 +215,12 @@ export default function CambiarContrasenaPage() {
                       )}
                     </Button>
                     <Button
+                      asChild
                       type="button"
-                      onClick={() => router.push("/perfil")}
                       variant="outline"
                       className="flex-1 border-green-600 dark:border-green-500 text-green-600 dark:text-green-500 hover:bg-green-50 dark:hover:bg-green-950/40 hover:text-green-700 dark:hover:text-green-400 hover:scale-102 font-medium transition-transform"
                     >
-                      Cancelar
+                      <Link href="/perfil">Cancelar</Link>
                     </Button>
                   </div>
                 </form>

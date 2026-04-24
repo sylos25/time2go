@@ -25,7 +25,7 @@ export function useMisReservas() {
         const meJson = await meRes.json().catch(() => ({}));
         const role = Number(meJson?.user?.id_rol || 0);
         if (!meRes.ok || role !== 1) {
-          router.replace("/eventos");
+          window.location.replace("/eventos");
           return;
         }
 
@@ -108,9 +108,6 @@ export function useMisReservas() {
     cancellingId,
     reservaToCancel,
     actions: {
-      goToHome: () => router.push("/"),
-      goToEventos: () => router.push("/eventos"),
-      goToReservaDetail: (reservaId: number) => router.push(`/mis-reservas/${reservaId}`),
       openCancelDialog,
       closeCancelDialog,
       confirmCancelReservation,

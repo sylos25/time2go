@@ -31,9 +31,7 @@ export default function MisValoracionesPage() {
     openAuthModal,
     closeAuthModal,
     toggleAuthMode,
-    goToHome,
-    goToEvents,
-    goToEvent,
+    getEventHref,
     startEdit,
     cancelEdit,
     setEditRating,
@@ -59,7 +57,7 @@ export default function MisValoracionesPage() {
             count={valoraciones.length}
             summaryText={summaryText}
             averageText={averageText}
-            onGoHome={goToHome}
+            homeHref="/"
           />
 
           {loading && <RatingsLoadingState />}
@@ -67,7 +65,7 @@ export default function MisValoracionesPage() {
           {error && !loading && <RatingsErrorState error={error} />}
 
           {!loading && !error && valoraciones.length === 0 && (
-            <RatingsEmptyState onExploreEvents={goToEvents} />
+            <RatingsEmptyState exploreEventsHref="/eventos" />
           )}
 
           {!loading && !error && valoraciones.length > 0 && (
@@ -79,7 +77,7 @@ export default function MisValoracionesPage() {
               savingEdit={savingEdit}
               editError={editError}
               editSuccess={editSuccess}
-              onGoToEvent={goToEvent}
+              getEventHref={getEventHref}
               onStartEdit={startEdit}
               onCancelEdit={cancelEdit}
               onEditRatingChange={setEditRating}

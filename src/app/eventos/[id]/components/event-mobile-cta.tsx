@@ -1,4 +1,5 @@
 import { Ticket } from "lucide-react"
+import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 
@@ -9,7 +10,7 @@ type EventMobileCtaProps = {
   canReserveByRole: boolean
   reserveDisabled: boolean
   reserveButtonText: string
-  onReserve: () => void
+  reserveHref: string
 }
 
 export function EventMobileCta({
@@ -19,7 +20,7 @@ export function EventMobileCta({
   canReserveByRole,
   reserveDisabled,
   reserveButtonText,
-  onReserve,
+  reserveHref,
 }: EventMobileCtaProps) {
   if (!visible) return null
 
@@ -35,13 +36,22 @@ export function EventMobileCta({
           </div>
           {canReserveByRole && (
             <Button
-              onClick={onReserve}
+              asChild={!reserveDisabled}
               size="lg"
               className="flex-1 bg-gradient-to-r from-lime-500 to-green-500 text-white hover:from-lime-600 hover:to-green-600"
               disabled={reserveDisabled}
             >
-              <Ticket className="h-5 w-5 mr-2" />
-              {reserveButtonText}
+              {reserveDisabled ? (
+                <>
+                  <Ticket className="h-5 w-5 mr-2" />
+                  {reserveButtonText}
+                </>
+              ) : (
+                <Link href={reserveHref}>
+                  <Ticket className="h-5 w-5 mr-2" />
+                  {reserveButtonText}
+                </Link>
+              )}
             </Button>
           )}
         </div>

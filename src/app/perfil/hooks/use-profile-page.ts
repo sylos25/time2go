@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
 
 import type {
   DeactivateStep,
@@ -20,8 +19,6 @@ import {
 import { fetchWithSession } from "@/lib/client-auth-fetch"
 
 export function useProfilePage() {
-  const router = useRouter()
-
   const [user, setUser] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -49,7 +46,7 @@ export function useProfilePage() {
 
       if (!response.ok) {
         if (response.status === 401) {
-          router.push("/auth")
+          window.location.assign("/auth")
           return
         }
         throw new Error("No se pudo cargar los datos del usuario")
@@ -66,7 +63,7 @@ export function useProfilePage() {
     } finally {
       setLoading(false)
     }
-  }, [router])
+  }, [])
 
   useEffect(() => {
     fetchUserData()
@@ -266,26 +263,26 @@ export function useProfilePage() {
       }
 
       clearSessionStorageValues()
-      router.push("/?deactivated=true")
+      window.location.assign("/?deactivated=true")
     } catch {
       setDeactivateError("Ocurrio un error. Intenta de nuevo.")
     } finally {
       setDeactivating(false)
     }
-  }, [router, user?.id_usuario])
+  }, [user?.id_usuario])
 
   const handleGoHome = useCallback(() => {
-    router.push("/")
-  }, [router])
+    window.location.assign("/")
+  }, [])
 
   const handleChangePassword = useCallback(() => {
-    router.push("/cambiar-contrasena")
-  }, [router])
+    window.location.assign("/cambiar-contrasena")
+  }, [])
 
   const handleLogoutToHome = useCallback(() => {
     clearSessionStorageValues()
-    router.push("/")
-  }, [router])
+    window.location.assign("/")
+  }, [])
 
   const userNameForHeader = useMemo(() => getDisplayUserName(user), [user])
 

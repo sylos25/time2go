@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { Flag, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,7 +47,6 @@ export function EventoReportarDialog({
   creatorMode,
   isOwnEvent,
 }: Props) {
-  const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [loadingCatalog, setLoadingCatalog] = useState(false);
@@ -132,10 +132,10 @@ export function EventoReportarDialog({
     if (isAuthenticated) void loadMyStatus();
   }, [open, isAuthenticated, loadCatalog, loadMyStatus, resetForm]);
 
-  const onLoginRedirect = () => {
+  const loginRedirectHref = useMemo(() => {
     const redirect = pathname || `/eventos/${eventId}`;
-    router.push(`/auth?redirect=${encodeURIComponent(redirect)}`);
-  };
+    return `/auth?redirect=${encodeURIComponent(redirect)}`;
+  }, [pathname, eventId]);
 
   const onSubmit = async () => {
     setErrorMsg(null);
@@ -184,9 +184,11 @@ export function EventoReportarDialog({
         <p className="text-muted-foreground mb-2">
           ¿Ves algo incorrecto en este evento? Inicia sesión para reportarlo al equipo.
         </p>
-        <Button type="button" variant="outline" size="sm" onClick={onLoginRedirect} className="gap-2">
-          <Flag className="h-4 w-4" aria-hidden />
-          Iniciar sesión y reportar
+        <Button type="button" variant="outline" size="sm" asChild className="gap-2">
+          <Link href={loginRedirectHref}>
+            <Flag className="h-4 w-4" aria-hidden />
+            Iniciar sesión y reportar
+          </Link>
         </Button>
       </div>
     );

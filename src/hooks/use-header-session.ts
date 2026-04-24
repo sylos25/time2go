@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
 
 export interface HeaderUser {
   name?: string
@@ -17,7 +16,6 @@ interface ClearSessionOptions {
 }
 
 export function useHeaderSession() {
-  const router = useRouter()
   const [user, setUser] = useState<HeaderUser | null>(null)
   /** Primera validación con /api/me terminó (éxito o fallo). */
   const [sessionResolved, setSessionResolved] = useState(false)
@@ -54,10 +52,10 @@ export function useHeaderSession() {
       }
 
       if (redirectToHome) {
-        router.push("/")
+        window.location.assign("/")
       }
     },
-    [router, ACCESS_EXP_KEY],
+    [ACCESS_EXP_KEY],
   )
 
   const performLogout = useCallback(async () => {
@@ -80,8 +78,8 @@ export function useHeaderSession() {
       redirectToHome: false,
       callServerLogout: false,
     })
-    router.push("/auth?session_replaced=1")
-  }, [clearSessionState, router])
+    window.location.assign("/auth?session_replaced=1")
+  }, [clearSessionState])
 
   const refreshAccessToken = useCallback(async (): Promise<{ expiresAt: number | null; sessionReplaced: boolean }> => {
     try {

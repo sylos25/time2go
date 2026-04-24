@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
@@ -18,7 +18,6 @@ import { useEventLanding } from "./hooks/use-event-landing";
 import { buildCalendarDayCells } from "./lib/event-landing-utils";
 
 export default function EventLandingPage() {
-  const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
 
@@ -70,16 +69,11 @@ export default function EventLandingPage() {
   }
 
   if (!event) {
-    return <EventLandingNotFoundState onExploreEvents={() => router.push("/eventos")} />;
+    return <EventLandingNotFoundState exploreHref="/eventos" />;
   }
 
   const images = Array.isArray(event.imagenes) ? event.imagenes : [];
   const links = Array.isArray(event.links) ? event.links : [];
-
-  const handleReserve = () => {
-    if (reserveDisabled) return;
-    router.push(reservePath);
-  };
 
   return (
     <main className="min-h-screen bg-background">
@@ -89,7 +83,7 @@ export default function EventLandingPage() {
         eventName={event.nombre_evento || "Evento"}
         images={images}
         selectedImage={selectedImage}
-        onBack={() => router.push(backPath)}
+        backHref={backPath}
         onSelectImage={(index) => setSelectedImage(index)}
         onNextImage={() =>
           setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1))
@@ -134,7 +128,7 @@ export default function EventLandingPage() {
             calendarCells={calendarCells}
             organizerPhones={organizerPhones}
             creator={event.creador}
-            onReserve={handleReserve}
+            reserveHref={reservePath}
           />
         </div>
       </div>
@@ -146,7 +140,7 @@ export default function EventLandingPage() {
         canReserveByRole={canReserveByRole}
         reserveDisabled={reserveDisabled}
         reserveButtonText={reserveButtonText}
-        onReserve={handleReserve}
+        reserveHref={reservePath}
       />
 
       <Footer />

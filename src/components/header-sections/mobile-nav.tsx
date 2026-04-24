@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 import { User, LogOut, Calendar, Ticket, Star, Heart, CreditCard } from "lucide-react"
 import type { JSX } from "react"
 import type { NavigationItem } from "./desktop-nav"
@@ -11,7 +12,7 @@ interface MobileNavProps {
   canDashboard: boolean
   isRegularUser: boolean
   canViewTransactions: boolean
-  navigateTo: (path: string) => void
+  onNavigate: () => void
   onJoinClick: () => void
   onLogoutClick: () => void
 }
@@ -24,7 +25,7 @@ export function MobileNav({
   canDashboard,
   isRegularUser,
   canViewTransactions,
-  navigateTo,
+  onNavigate,
   onJoinClick,
   onLogoutClick,
 }: MobileNavProps): JSX.Element {
@@ -38,37 +39,40 @@ export function MobileNav({
         <ul className="space-y-2">
           {navigationItems.map((item) => (
             <li key={item.name}>
-              <button
-                onClick={() => navigateTo(item.path)}
+              <Link
+                href={item.path}
+                onClick={onNavigate}
                 className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
               >
                 <span className="w-2 h-2 bg-lime-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                 <span>{item.name}</span>
-              </button>
+              </Link>
             </li>
           ))}
           {loggedIn && (
             <>
               {canCreate && (
                 <li>
-                  <button
-                    onClick={() => navigateTo("/eventos/crear")}
+                  <Link
+                    href="/eventos/crear"
+                    onClick={onNavigate}
                     className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
                   >
                     <span className="w-2 h-2 bg-lime-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                     <span>Crear Evento</span>
-                  </button>
+                  </Link>
                 </li>
               )}
               {canDashboard && (
                 <li>
-                  <button
-                    onClick={() => navigateTo("/dashboard")}
+                  <Link
+                    href="/dashboard"
+                    onClick={onNavigate}
                     className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
                   >
                     <span className="w-2 h-2 bg-lime-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                     <span>Dashboard</span>
-                  </button>
+                  </Link>
                 </li>
               )}
             </>
@@ -85,52 +89,58 @@ export function MobileNav({
             </Button>
           ) : (
             <div className="space-y-2">
-              <button
-                onClick={() => navigateTo("/perfil")}
+              <Link
+                href="/perfil"
+                onClick={onNavigate}
                 className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
               >
                 <User className="h-5 w-5 text-lime-600" />
                 <span>Mi Perfil</span>
-              </button>
+              </Link>
               {isRegularUser ? (
-                <button
-                  onClick={() => navigateTo("/mis-reservas")}
+                <Link
+                  href="/mis-reservas"
+                  onClick={onNavigate}
                   className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
                 >
                   <Ticket className="h-5 w-5 text-lime-600" />
                   <span>Mis Reservas</span>
-                </button>
+                </Link>
               ) : (
-                <button
-                  onClick={() => navigateTo("/mis-eventos")}
+                <Link
+                  href="/mis-eventos"
+                  onClick={onNavigate}
                   className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
                 >
                   <Calendar className="h-5 w-5 text-lime-600" />
                   <span>Mis Eventos</span>
-                </button>
+                </Link>
               )}
-              <button
-                onClick={() => navigateTo("/mis-valoraciones")}
+              <Link
+                href="/mis-valoraciones"
+                onClick={onNavigate}
                 className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
               >
                 <Star className="h-5 w-5 text-lime-600" />
                 <span>Mis Valoraciones</span>
-              </button>
-              <button
-                onClick={() => navigateTo("/mis-favoritos")}
+              </Link>
+              <Link
+                href="/mis-favoritos"
+                onClick={onNavigate}
                 className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
               >
                 <Heart className="h-5 w-5 text-lime-600" />
                 <span>Mis Favoritos</span>
-              </button>
+              </Link>
               {canViewTransactions && (
-                <button
-                  onClick={() => navigateTo("/mis-transacciones")}
+                <Link
+                  href="/mis-transacciones"
+                  onClick={onNavigate}
                   className="flex items-center space-x-3 text-foreground hover:text-green-700 font-semibold text-base py-3 px-4 rounded-lg hover:bg-accent transition-all w-full text-left group"
                 >
                   <CreditCard className="h-5 w-5 text-lime-600" />
                   <span>Mis Transacciones</span>
-                </button>
+                </Link>
               )}
               <button
                 onClick={onLogoutClick}

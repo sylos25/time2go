@@ -1,4 +1,5 @@
 import { Calendar, Link as LinkIcon, Phone, Ticket } from "lucide-react"
+import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,7 +22,7 @@ type EventSidebarProps = {
   calendarCells: CalendarDayCell[]
   organizerPhones: string
   creator?: EventCreator | null
-  onReserve: () => void
+  reserveHref: string
 }
 
 export function EventSidebar({
@@ -38,7 +39,7 @@ export function EventSidebar({
   calendarCells,
   organizerPhones,
   creator,
-  onReserve,
+  reserveHref,
 }: EventSidebarProps) {
   return (
     <div className="space-y-6">
@@ -53,13 +54,22 @@ export function EventSidebar({
 
           {canReserveByRole && (
             <Button
-              onClick={onReserve}
+              asChild={!reserveDisabled}
               className="w-full mb-3 bg-gradient-to-r from-red-500 to-fuchsia-500 text-white hover:from-red-600 hover:to-fuchsia-700"
               size="lg"
               disabled={reserveDisabled}
             >
-              <Ticket className="h-5 w-5 mr-2" />
-              {reserveButtonText}
+              {reserveDisabled ? (
+                <>
+                  <Ticket className="h-5 w-5 mr-2" />
+                  {reserveButtonText}
+                </>
+              ) : (
+                <Link href={reserveHref}>
+                  <Ticket className="h-5 w-5 mr-2" />
+                  {reserveButtonText}
+                </Link>
+              )}
             </Button>
           )}
 

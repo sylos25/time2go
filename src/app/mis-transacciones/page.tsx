@@ -11,7 +11,7 @@ import {
 import { useMyTransactionsPage } from "@/app/mis-transacciones/hooks/use-my-transactions-page"
 
 export default function MisTransaccionesPage() {
-  const { loading, error, transacciones, summaryText, goToHome } = useMyTransactionsPage()
+  const { loading, error, transacciones, summaryText } = useMyTransactionsPage()
 
   return (
     <TransactionsShell>
@@ -21,7 +21,7 @@ export default function MisTransaccionesPage() {
             loading={loading}
             count={transacciones.length}
             summaryText={summaryText}
-            onGoHome={goToHome}
+            homeHref="/"
           />
 
           {loading && <TransactionsLoadingState />}

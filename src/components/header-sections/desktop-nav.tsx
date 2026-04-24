@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,7 +24,6 @@ interface DesktopNavProps {
   displayName: string
   isRegularUser: boolean
   canViewTransactions: boolean
-  navigateTo: (path: string) => void
   onJoinClick: () => void
   onLogoutClick: () => void
 }
@@ -36,21 +36,20 @@ export function DesktopNav({
   displayName,
   isRegularUser,
   canViewTransactions,
-  navigateTo,
   onJoinClick,
   onLogoutClick,
 }: DesktopNavProps): JSX.Element {
   return (
     <nav className="hidden lg:flex items-center space-x-8">
       {navigationItems.map((item) => (
-        <button
+        <Link
           key={item.name}
-          onClick={() => navigateTo(item.path)}
+          href={item.path}
           className="text-white hover:text-lime-400 font-medium transition-colors relative group cursor-pointer"
         >
           {item.name}
           <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-lime-500 transition-all group-hover:w-full" />
-        </button>
+        </Link>
       ))}
 
       {!loggedIn ? (
@@ -63,23 +62,23 @@ export function DesktopNav({
       ) : (
         <div className="flex items-center gap-3">
           {canCreate && (
-            <button
-              onClick={() => navigateTo("/eventos/crear")}
+            <Link
+              href="/eventos/crear"
               className="text-white hover:text-lime-400 font-medium transition-colors relative group cursor-pointer"
             >
               Crear Evento
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-lime-500 transition-all group-hover:w-full" />
-            </button>
+            </Link>
           )}
 
           {canDashboard && (
-            <button
-              onClick={() => navigateTo("/dashboard")}
+            <Link
+              href="/dashboard"
               className="text-white hover:text-lime-400 font-medium transition-colors relative group cursor-pointer"
             >
               Dashboard
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-lime-500 transition-all group-hover:w-full" />
-            </button>
+            </Link>
           )}
 
           <DropdownMenu modal={false}>
@@ -101,51 +100,45 @@ export function DesktopNav({
                 <p>Mi Cuenta</p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => navigateTo("/perfil")}
-                className="cursor-pointer"
-              >
-                <User className="h-4 w-4 mr-2" />
-                <p>Mi Perfil</p>
+              <DropdownMenuItem asChild className="cursor-pointer">
+                <Link href="/perfil">
+                  <User className="h-4 w-4 mr-2" />
+                  <p>Mi Perfil</p>
+                </Link>
               </DropdownMenuItem>
               {isRegularUser ? (
-                <DropdownMenuItem
-                  onClick={() => navigateTo("/mis-reservas")}
-                  className="cursor-pointer"
-                >
-                  <Ticket className="h-4 w-4 mr-2" />
-                  Mis Reservas
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href="/mis-reservas">
+                    <Ticket className="h-4 w-4 mr-2" />
+                    Mis Reservas
+                  </Link>
                 </DropdownMenuItem>
               ) : (
-                <DropdownMenuItem
-                  onClick={() => navigateTo("/mis-eventos")}
-                  className="cursor-pointer"
-                >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Mis Eventos
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href="/mis-eventos">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Mis Eventos
+                  </Link>
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem
-                onClick={() => navigateTo("/mis-valoraciones")}
-                className="cursor-pointer"
-              >
-                <Star className="h-4 w-4 mr-2" />
-                Mis valoraciones
+              <DropdownMenuItem asChild className="cursor-pointer">
+                <Link href="/mis-valoraciones">
+                  <Star className="h-4 w-4 mr-2" />
+                  Mis valoraciones
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => navigateTo("/mis-favoritos")}
-                className="cursor-pointer"
-              >
-                <Heart className="h-4 w-4 mr-2" />
-                Mis favoritos
+              <DropdownMenuItem asChild className="cursor-pointer">
+                <Link href="/mis-favoritos">
+                  <Heart className="h-4 w-4 mr-2" />
+                  Mis favoritos
+                </Link>
               </DropdownMenuItem>
               {canViewTransactions && (
-                <DropdownMenuItem
-                  onClick={() => navigateTo("/mis-transacciones")}
-                  className="cursor-pointer"
-                >
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Mis transacciones
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href="/mis-transacciones">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Mis transacciones
+                  </Link>
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />

@@ -1,24 +1,25 @@
 import { ChevronRight, Heart } from "lucide-react"
+import Link from "next/link"
 
 type FavoritesHeroProps = {
   summaryText: string
   favoritesCount: number
   loading: boolean
-  onGoHome: () => void
+  homeHref: string
 }
 
 export function FavoritesHero({
   summaryText,
   favoritesCount,
   loading,
-  onGoHome,
+  homeHref,
 }: FavoritesHeroProps) {
   return (
     <div className="mb-8">
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-        <button onClick={onGoHome} className="hover:text-green-600 transition-colors">
+        <Link href={homeHref} className="hover:text-green-600 transition-colors">
           Inicio
-        </button>
+        </Link>
         <ChevronRight className="h-3.5 w-3.5" />
         <span className="text-foreground font-medium text-green-700">Mis Favoritos</span>
       </div>

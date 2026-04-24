@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 
 import { normalizeMyEvent } from "@/app/mis-eventos/lib/mis-eventos-utils"
 import type { MyEventItem, RawMyEvent } from "@/app/mis-eventos/lib/mis-eventos-types"
@@ -18,7 +17,6 @@ function saveCreatorView(id: number) {
 }
 
 export function useMyEventsPage() {
-  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [events, setEvents] = useState<MyEventItem[]>([])
@@ -54,28 +52,14 @@ export function useMyEventsPage() {
     loadMyEvents()
   }, [])
 
-  const goToExploreEvents = useCallback(() => {
-    router.push("/eventos")
-  }, [router])
-
-  const goToHome = useCallback(() => {
-    router.push("/")
-  }, [router])
-
-  const openEvent = useCallback(
-    (id: number) => {
-      saveCreatorView(id)
-      router.push(`/eventos/${id}`)
-    },
-    [router]
-  )
+  const beforeOpenEvent = useCallback((id: number) => {
+    saveCreatorView(id)
+  }, [])
 
   return {
     loading,
     error,
     events,
-    goToHome,
-    goToExploreEvents,
-    openEvent,
+    beforeOpenEvent,
   }
 }

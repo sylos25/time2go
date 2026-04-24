@@ -22,9 +22,6 @@ export default function MisFavoritosPage() {
     openAuthModal,
     closeAuthModal,
     toggleAuthMode,
-    goToHome,
-    goToEvents,
-    goToEventDetail,
     handleRemoveFavorite,
   } = useFavoritesPage()
 
@@ -42,7 +39,7 @@ export default function MisFavoritosPage() {
             summaryText={summaryText}
             favoritesCount={favoritos.length}
             loading={loading}
-            onGoHome={goToHome}
+            homeHref="/"
           />
 
           {loading && <FavoritesLoadingState />}
@@ -50,14 +47,14 @@ export default function MisFavoritosPage() {
           {error && !loading && <FavoritesErrorState error={error} />}
 
           {!loading && !error && favoritos.length === 0 && (
-            <FavoritesEmptyState onExploreEvents={goToEvents} />
+            <FavoritesEmptyState exploreEventsHref="/eventos" />
           )}
 
           {!loading && favoritos.length > 0 && (
             <FavoriteEventsList
               favorites={favoritos}
               removingId={removingId}
-              onOpenDetail={goToEventDetail}
+              getEventHref={(eventId) => `/eventos/${eventId}`}
               onRemoveFavorite={handleRemoveFavorite}
             />
           )}

@@ -2,11 +2,19 @@
 
 import { Suspense, useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { LoginForm } from "@/components/login-form"
 import { GoogleLoginButton } from "@/components/google-login-button"
 import { RegisterForm } from "@/components/register-form"
 import { CheckCircle } from "lucide-react"
+
+function getSafeRedirectPath(rawRedirect: string | null): string {
+  if (!rawRedirect) return "/"
+  if (!rawRedirect.startsWith("/")) return "/"
+  if (rawRedirect.startsWith("//")) return "/"
+  return rawRedirect
+}
 
 export default function AuthPage() {
   return (
@@ -19,16 +27,19 @@ export default function AuthPage() {
 function AuthPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [step, setStep] = useState<"choice" | "login" | "register">("choice")
   const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false)
   const images = [ "/images/bucaramanga.jpg", "/images/floridablanca.jpg", "/images/giron.jpg", "/images/piedecuesta.jpg", ];
   const [currentIndex, setCurrentIndex] = useState(0); 
+
+  const stepParam = searchParams?.get("step")
+  const step: "choice" | "login" | "register" =
+    stepParam === "login" || stepParam === "register" ? stepParam : "choice"
+  const postLoginRedirect = getSafeRedirectPath(searchParams?.get("redirect"))
 
   useEffect(() => {
     if (searchParams?.get("registered") !== "true") return
     const showTimer = window.setTimeout(() => {
       setShowRegistrationSuccess(true)
-      setStep("choice")
     }, 0)
     const hideTimer = window.setTimeout(() => {
       setShowRegistrationSuccess(false)
@@ -41,12 +52,12 @@ function AuthPageContent() {
 
   
   const handleLoginSuccess = () => {
-    router.push("/")
+    window.location.assign(postLoginRedirect)
   }
 
   const handleRegisterSuccess = () => {
+    router.replace("/auth?registered=true")
     setShowRegistrationSuccess(true)
-    setStep("choice")
     // Ocultar el mensaje después de 5 segundos
     setTimeout(() => {
       setShowRegistrationSuccess(false)
@@ -102,28 +113,24 @@ function AuthPageContent() {
 
               <div className="flex flex-col items-center space-y-4">
                 <Button
-                  onClick={() => setStep("login")}
+                  asChild
                   className="w-80 bg-rose-600 text-white font-medium py-6 rounded-sm text-lg transition-all duration-300 ease-in-out hover:scale-103 hover:bg-rose-500 hover:text-white"
                 >
-                  Iniciar Sesión
+                  <Link href="/auth?step=login">Iniciar Sesión</Link>
                 </Button>
 
                 <Button
-                  onClick={() => setStep("register")}
+                  asChild
                   variant="outline"
                   className="w-80 border-2 border-lime-500 text-lime-600 hover:scale-103 hover:bg-teal-50 hover:text-lime-600 font-medium py-6 rounded-sm text-lg"
                 >
-                  Crear Cuenta
+                  <Link href="/auth?step=register">Crear Cuenta</Link>
                 </Button>
               </div>
 
               <div className="mt-8 text-center">
-                <Button
-                  variant="link"
-                  onClick={() => router.push("/")}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  Regresar
+                <Button asChild variant="link" className="text-muted-foreground hover:text-foreground">
+                  <Link href="/">Regresar</Link>
                 </Button>
               </div>
             </div>
@@ -148,11 +155,11 @@ function AuthPageContent() {
 
               <div className="mt-4 text-center">
                 <Button
+                  asChild
                   variant="link"
-                  onClick={() => setStep("choice")}
                   className="text-muted-foreground hover:text-foreground"
                 >
-                  Volver atrás
+                  <Link href="/auth">Volver atrás</Link>
                 </Button>
               </div>
             </div>
@@ -171,11 +178,11 @@ function AuthPageContent() {
 
               <div className="mt-4 text-center">
                 <Button
+                  asChild
                   variant="link"
-                  onClick={() => setStep("choice")}
                   className="text-muted-foreground hover:text-foreground"
                 >
-                  Volver atrás
+                  <Link href="/auth">Volver atrás</Link>
                 </Button>
               </div>
             </div>

@@ -14,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/card"
 
 import { formatEventPrice } from "@/app/eventos/lib/events-page-utils"
 import type { EventCardItem } from "@/app/eventos/lib/events-page-types"
+import Link from "next/link"
 
 type EventsGridProps = {
   events: EventCardItem[]
@@ -24,7 +25,7 @@ type EventsGridProps = {
   onSelectImage: (eventId: number, index: number) => void
   onToggleFavorite: (eventId: number) => void
   onShareEvent: (event: EventCardItem) => void
-  onViewDetails: (eventId: number) => void
+  getViewDetailsHref: (eventId: number) => string
 }
 
 export function EventsGrid({
@@ -36,7 +37,7 @@ export function EventsGrid({
   onSelectImage,
   onToggleFavorite,
   onShareEvent,
-  onViewDetails,
+  getViewDetailsHref,
 }: EventsGridProps) {
   if (events.length === 0) {
     return (
@@ -230,11 +231,11 @@ export function EventsGrid({
               <div className="flex items-center justify-between">
                 <div className="text-2xl font-bold text-green-600 dark:text-emerald-400">{formatEventPrice(event.price)}</div>
                 <Button
+                  asChild
                   type="button"
-                  onClick={() => onViewDetails(event.id_evento)}
                   className="bg-rose-600 hover:bg-rose-500 dark:bg-rose-500 dark:hover:bg-rose-600 hover:scale-103 rounded-xl px-6 text-white"
                 >
-                  Detalles
+                  <Link href={getViewDetailsHref(event.id_evento)}>Detalles</Link>
                 </Button>
               </div>
             </CardContent>

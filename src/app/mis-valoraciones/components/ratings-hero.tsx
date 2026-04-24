@@ -1,11 +1,12 @@
 import { ChevronRight, Star } from "lucide-react"
+import Link from "next/link"
 
 type RatingsHeroProps = {
   loading: boolean
   count: number
   summaryText: string
   averageText: string
-  onGoHome: () => void
+  homeHref: string
 }
 
 export function RatingsHero({
@@ -13,14 +14,12 @@ export function RatingsHero({
   count,
   summaryText,
   averageText,
-  onGoHome,
+  homeHref,
 }: RatingsHeroProps) {
   return (
     <div className="mb-8">
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-        <button onClick={onGoHome} className="hover:text-green-600 transition-colors">
-          Inicio
-        </button>
+        <Link href={homeHref} className="hover:text-green-600 transition-colors">Inicio</Link>
         <ChevronRight className="h-3.5 w-3.5" />
         <span className="text-foreground font-medium text-green-700">Mis Valoraciones</span>
       </div>

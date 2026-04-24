@@ -24,7 +24,6 @@ export default function PerfilPage() {
     deactivateStep,
     deactivating,
     deactivateError,
-    handleGoHome,
     handleChangePassword,
     handleLogoutToHome,
     handleOpenOrganizadorDialog,
@@ -50,7 +49,7 @@ export default function PerfilPage() {
   if (error || !user) {
     return (
       <ProfileShell userName="Usuario">
-        <ProfileErrorState message={error || "Error al cargar el perfil"} onGoHome={handleGoHome} />
+        <ProfileErrorState message={error || "Error al cargar el perfil"} homeHref="/" />
       </ProfileShell>
     )
   }

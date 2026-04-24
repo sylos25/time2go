@@ -1,4 +1,5 @@
 import { AlertCircle, Loader2 } from "lucide-react"
+import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 
@@ -8,7 +9,7 @@ type ProfileLoadingStateProps = {
 
 type ProfileErrorStateProps = {
   message: string
-  onGoHome: () => void
+  homeHref: string
 }
 
 export function ProfileLoadingState({ message }: ProfileLoadingStateProps) {
@@ -22,14 +23,14 @@ export function ProfileLoadingState({ message }: ProfileLoadingStateProps) {
   )
 }
 
-export function ProfileErrorState({ message, onGoHome }: ProfileErrorStateProps) {
+export function ProfileErrorState({ message, homeHref }: ProfileErrorStateProps) {
   return (
     <div className="pt-32 pb-12 px-4">
       <div className="max-w-2xl mx-auto bg-red-50 border border-red-200 rounded-lg p-6 text-center">
         <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
         <p className="text-foreground text-lg font-medium mb-4">{message}</p>
-        <Button onClick={onGoHome} className="bg-purple-600 hover:bg-purple-700 text-white">
-          Ir al Inicio
+        <Button asChild className="bg-purple-600 hover:bg-purple-700 text-white">
+          <Link href={homeHref}>Ir al Inicio</Link>
         </Button>
       </div>
     </div>

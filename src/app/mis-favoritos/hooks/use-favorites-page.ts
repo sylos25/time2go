@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 
 import type {
   FavoriteEvent,
@@ -15,8 +14,6 @@ import {
 } from "@/app/mis-favoritos/lib/mis-favoritos-utils"
 
 export function useFavoritesPage() {
-  const router = useRouter()
-
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [isLogin, setIsLogin] = useState(true)
   const [favoritos, setFavoritos] = useState<FavoriteEvent[]>([])
@@ -115,21 +112,6 @@ export function useFavoritesPage() {
     [openAuthModal]
   )
 
-  const goToHome = useCallback(() => {
-    router.push("/")
-  }, [router])
-
-  const goToEvents = useCallback(() => {
-    router.push("/eventos")
-  }, [router])
-
-  const goToEventDetail = useCallback(
-    (eventId: number) => {
-      router.push(`/eventos/${eventId}`)
-    },
-    [router]
-  )
-
   return {
     authModalOpen,
     isLogin,
@@ -141,9 +123,6 @@ export function useFavoritesPage() {
     openAuthModal,
     closeAuthModal,
     toggleAuthMode,
-    goToHome,
-    goToEvents,
-    goToEventDetail,
     handleRemoveFavorite,
   }
 }

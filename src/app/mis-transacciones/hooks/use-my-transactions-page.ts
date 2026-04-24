@@ -1,7 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useMemo, useState } from "react"
 
 import type {
   TransaccionItem,
@@ -10,8 +9,6 @@ import type {
 import { getSummaryText, normalizeTransactions } from "@/app/mis-transacciones/lib/mis-transacciones-utils"
 
 export function useMyTransactionsPage() {
-  const router = useRouter()
-
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [transacciones, setTransacciones] = useState<TransaccionItem[]>([])
@@ -31,12 +28,12 @@ export function useMyTransactionsPage() {
           .catch(() => ({ ok: false, message: "Respuesta invalida del servidor" }))
 
         if (response.status === 401) {
-          router.replace("/auth?redirect=/mis-transacciones")
+          window.location.replace("/auth?redirect=/mis-transacciones")
           return
         }
 
         if (response.status === 403) {
-          router.replace("/")
+          window.location.replace("/")
           return
         }
 
@@ -57,11 +54,7 @@ export function useMyTransactionsPage() {
     }
 
     loadTransactions()
-  }, [router])
-
-  const goToHome = useCallback(() => {
-    router.push("/")
-  }, [router])
+  }, [])
 
   const summaryText = useMemo(
     () => getSummaryText(loading, transacciones.length),
@@ -73,6 +66,5 @@ export function useMyTransactionsPage() {
     error,
     transacciones,
     summaryText,
-    goToHome,
   }
 }

@@ -1,19 +1,18 @@
 import { ChevronRight, ChartNoAxesColumn } from "lucide-react"
+import Link from "next/link"
 
 type MyEventsHeaderProps = {
   loading: boolean
   count: number
   summaryText: string
-  onGoHome: () => void
+  homeHref: string
 }
 
-export function MyEventsHeader({ loading, count, summaryText, onGoHome }: MyEventsHeaderProps) {
+export function MyEventsHeader({ loading, count, summaryText, homeHref }: MyEventsHeaderProps) {
   return (
     <div className="mb-8">
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-        <button onClick={onGoHome} className="hover:text-green-600 transition-colors">
-          Inicio
-        </button>
+        <Link href={homeHref} className="hover:text-green-600 transition-colors">Inicio</Link>
         <ChevronRight className="h-3.5 w-3.5" />
         <span className="text-foreground font-medium text-green-700">Mis Eventos</span>
       </div>

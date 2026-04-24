@@ -1,7 +1,5 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-
 import { AuthModal } from "@/components/auth-modal"
 import { Footer } from "@/components/footer"
 import { Header } from "@/components/header"
@@ -12,8 +10,6 @@ import { EventsSearchFilters } from "@/app/eventos/components/events-search-filt
 import { useEventsPage } from "@/app/eventos/hooks/use-events-page"
 
 export default function EventosPage() {
-  const router = useRouter()
-
   const {
     categories,
     selectedImageByEvent,
@@ -93,8 +89,8 @@ export default function EventosPage() {
             }
             onToggleFavorite={toggleFavorite}
             onShareEvent={handleShareEvent}
-            onViewDetails={(eventId) =>
-              router.push(`/eventos/${eventId}?returnTo=${encodeURIComponent("/eventos#eventos-disponibles")}`)
+            getViewDetailsHref={(eventId) =>
+              `/eventos/${eventId}?returnTo=${encodeURIComponent("/eventos#eventos-disponibles")}`
             }
           />
         </div>

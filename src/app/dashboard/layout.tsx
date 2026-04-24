@@ -2,7 +2,8 @@
 
 import type React from "react"
 import { useEffect, useMemo, useState } from "react"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
+import Link from "next/link"
 import Image from "next/image"
 import {
   Calendar,
@@ -35,7 +36,6 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const router = useRouter()
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
@@ -169,7 +169,9 @@ export default function DashboardLayout({
             <h2 className="text-2xl font-semibold text-red-600">Acceso denegado</h2>
             <p className="mt-4 text-muted-foreground">No tienes permisos para ver el dashboard.</p>
             <div className="mt-6">
-              <Button onClick={() => router.push("/")} className="bg-lime-600 text-white">Volver al inicio</Button>
+              <Button asChild className="bg-lime-600 text-white">
+                <Link href="/">Volver al inicio</Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -233,9 +235,9 @@ export default function DashboardLayout({
           {menuItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
             return (
-              <button
+              <Link
                 key={item.href}
-                onClick={() => router.push(item.href)}
+                href={item.href}
                 className={`w-full flex items-center px-4 py-3 rounded-lg font-medium transition-all ${
                   isSidebarCollapsed ? "lg:justify-center lg:px-2" : "gap-3"
                 } ${
@@ -247,12 +249,12 @@ export default function DashboardLayout({
               >
                 <item.icon className="w-5 h-5" />
                 <span className={`text-sm ${isSidebarCollapsed ? "lg:hidden" : ""}`}>{item.name}</span>
-              </button>
+              </Link>
             )
           })}
 
-          <button
-            onClick={() => router.push("/")}
+          <Link
+            href="/"
             className={`mt-2 w-full flex items-center px-4 py-3 rounded-lg font-medium transition-all text-white dark:text-green-100 hover:bg-white/20 dark:hover:bg-green-800/40 cursor-pointer ${
               isSidebarCollapsed ? "lg:justify-center lg:px-2" : "gap-3"
             }`}
@@ -260,7 +262,7 @@ export default function DashboardLayout({
           >
             <LogOut className="w-5 h-5" />
             <span className={`text-sm ${isSidebarCollapsed ? "lg:hidden" : ""}`}>Salir</span>
-          </button>
+          </Link>
         </nav>
       </aside>
 

@@ -4,6 +4,7 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, ChevronRight, ChartNoAxesColumn } from "lucide-react";
+import Link from "next/link";
 import { ReservationCancelDialog } from "./_components/reservation-cancel-dialog";
 import { ReservationCard } from "./_components/reservation-card";
 import { useMisReservas } from "./_hooks/use-mis-reservas";
@@ -28,9 +29,7 @@ export default function MisReservasPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-              <button onClick={actions.goToHome} className="hover:text-green-600 transition-colors">
-                Inicio
-              </button>
+              <Link href="/" className="hover:text-green-600 transition-colors">Inicio</Link>
               <ChevronRight className="h-3.5 w-3.5" />
               <span className="text-foreground font-medium text-green-700">Mis Reservas</span>
             </div>
@@ -78,12 +77,12 @@ export default function MisReservasPage() {
                     Reserva eventos para verlos listados y gestionarlos desde aqui.
                   </p>
                 </div>
-                <button
-                  onClick={actions.goToEventos}
+                <Link
+                  href="/eventos"
                   className="px-5 py-2 rounded-sm text-white text-sm font-medium bg-rose-600 hover:bg-rose-500 hover:scale-103 transition-colors cursor-pointer"
                 >
                   Explorar eventos
-                </button>
+                </Link>
               </CardContent>
             </Card>
           )}
@@ -95,7 +94,7 @@ export default function MisReservasPage() {
                   key={reserva.id_reserva_evento}
                   reserva={reserva}
                   cancellingId={cancellingId}
-                  onView={actions.goToReservaDetail}
+                  getViewHref={(reservaId) => `/mis-reservas/${reservaId}`}
                   onCancel={actions.openCancelDialog}
                 />
               ))}

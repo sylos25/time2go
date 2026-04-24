@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   buildEventSummary,
   createEmptyAsistente,
@@ -66,8 +65,6 @@ export function useReservaEvento(config: UseReservaEventoConfig) {
     successRedirect = "/mis-reservas",
   } = config;
 
-  const router = useRouter();
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [event, setEvent] = useState<EventLike | null>(null);
@@ -121,7 +118,7 @@ export function useReservaEvento(config: UseReservaEventoConfig) {
         const role = Number(meJson?.user?.id_rol || 0);
 
         if (!meRes.ok || role !== 1) {
-          router.replace(getUnauthorizedRedirect(identifier));
+          window.location.replace(getUnauthorizedRedirect(identifier));
           return;
         }
 
@@ -160,7 +157,7 @@ export function useReservaEvento(config: UseReservaEventoConfig) {
     };
 
     load();
-  }, [identifier, invalidIdentifierMessage, router, getEventRequestUrl, getUnauthorizedRedirect]);
+  }, [identifier, invalidIdentifierMessage, getEventRequestUrl, getUnauthorizedRedirect]);
 
   const summary = useMemo(() => {
     if (!event) {
@@ -268,7 +265,7 @@ export function useReservaEvento(config: UseReservaEventoConfig) {
   };
 
   const goToCancel = () => {
-    router.push(getCancelRedirect(identifier));
+    window.location.assign(getCancelRedirect(identifier));
   };
 
   const submit = async () => {
@@ -326,7 +323,7 @@ export function useReservaEvento(config: UseReservaEventoConfig) {
         return;
       }
 
-      router.push(successRedirect);
+      window.location.assign(successRedirect);
     } catch {
       setError("Error creando la reserva.");
     } finally {
