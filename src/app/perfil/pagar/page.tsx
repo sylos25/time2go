@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button"
 export default function PagarPage() {
   const searchParams = useSearchParams()
   const containerRef = useRef<HTMLDivElement>(null)
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading")
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const ref = searchParams.get("ref") ?? ""
   const amount = searchParams.get("amount") ?? "0"
@@ -19,11 +17,17 @@ export default function PagarPage() {
   const planName = searchParams.get("planName") ?? "Plan organizador"
   const responseUrl = searchParams.get("response") ?? "/perfil"
   const confirmationUrl = searchParams.get("confirmation") ?? ""
+  const hasRequiredParams = Boolean(pk && ref)
+
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(
+    hasRequiredParams ? "loading" : "error"
+  )
+  const [errorMsg, setErrorMsg] = useState<string | null>(
+    hasRequiredParams ? null : "Datos de pago incompletos. Por favor intenta de nuevo."
+  )
 
   useEffect(() => {
-    if (!pk || !ref) {
-      setErrorMsg("Datos de pago incompletos. Por favor intenta de nuevo.")
-      setStatus("error")
+    if (!hasRequiredParams) {
       return
     }
 
@@ -70,7 +74,7 @@ export default function PagarPage() {
     }
 
     container.appendChild(script)
-  }, [pk, ref, amount, test, planId, planName, responseUrl, confirmationUrl])
+  }, [hasRequiredParams, pk, ref, amount, test, planId, planName, responseUrl, confirmationUrl])
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-8 bg-background">

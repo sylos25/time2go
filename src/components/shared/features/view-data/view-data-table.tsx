@@ -20,7 +20,6 @@ type ViewDataTableProps = {
 }
 
 export function ViewDataTable({
-  table,
   rowIdColumn,
   loading,
   error,

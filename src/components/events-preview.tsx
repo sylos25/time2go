@@ -39,6 +39,36 @@ type HomeConfigResponse = {
   selectedCategories?: LandingCategory[]
 }
 
+type ServerEventImage = {
+  url_imagen_evento?: unknown
+}
+
+type ServerEventPrice = {
+  precio_boleto?: unknown
+  valor?: unknown
+}
+
+type ServerEvent = {
+  estado?: unknown
+  destacado?: unknown
+  id_categoria_evento?: unknown
+  evento_categoria_id?: unknown
+  categoria?: { id_categoria_evento?: unknown; nombre?: unknown }
+  categoria_nombre?: unknown
+  imagenes?: ServerEventImage[]
+  fecha_inicio?: unknown
+  gratis_pago?: unknown
+  valores?: ServerEventPrice[]
+  id_evento?: unknown
+  nombre_evento?: unknown
+  descripcion?: unknown
+  sitio?: { nombre_sitio?: unknown }
+  nombre_sitio?: unknown
+  cupo?: unknown
+  promedio_valoracion?: unknown
+  fecha_destacado?: unknown
+}
+
 const swiperBreakpoints = {
   640: { slidesPerView: 2 },
   1024: { slidesPerView: 3 },
@@ -82,7 +112,7 @@ export function EventsPreview() {
               : []
 
         const destacados = rawEvents
-          .filter((event: any) => {
+          .filter((event: ServerEvent) => {
             if (event?.estado !== true || event?.destacado !== true) {
               return false
             }
@@ -97,14 +127,14 @@ export function EventsPreview() {
 
             return selectedCategoryIds.has(eventCategoryId)
           })
-          .map((event: any) => {
+          .map((event: ServerEvent) => {
             const firstImage =
               event.imagenes && event.imagenes.length
                 ? event.imagenes[0].url_imagen_evento
                 : "/placeholder.svg"
 
             const date = event.fecha_inicio
-              ? new Date(event.fecha_inicio).toLocaleDateString("es-CO", {
+              ? new Date(String(event.fecha_inicio)).toLocaleDateString("es-CO", {
                   day: "2-digit",
                   month: "short",
                 })
@@ -114,7 +144,7 @@ export function EventsPreview() {
             if (event.gratis_pago) {
               const prices = Array.isArray(event.valores)
                 ? event.valores
-                    .map((value: any) => Number(value?.precio_boleto ?? value?.valor ?? 0))
+                    .map((value: ServerEventPrice) => Number(value?.precio_boleto ?? value?.valor ?? 0))
                     .filter((value: number) => Number.isFinite(value) && value > 0)
                 : []
               price = prices.length ? Math.min(...prices) : 0
@@ -132,7 +162,7 @@ export function EventsPreview() {
               image: firstImage,
               category: String(event.categoria?.nombre || event.categoria_nombre || "Sin categoría"),
               rating: Number.isFinite(Number(event.promedio_valoracion)) ? Number(event.promedio_valoracion) : null,
-              featuredAt: event.fecha_destacado || null,
+              featuredAt: event.fecha_destacado ? String(event.fecha_destacado) : null,
             } as FeaturedEvent
           })
           .sort((a: FeaturedEvent, b: FeaturedEvent) => {
@@ -190,7 +220,6 @@ export function EventsPreview() {
   const EventCard = ({ event }: { event: FeaturedEvent }) => (
     <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-card/80 backdrop-blur-sm border-border overflow-hidden h-full rounded-sm">
       <div className="relative">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={event.image}
           alt={event.title}

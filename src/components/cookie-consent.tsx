@@ -21,11 +21,6 @@ function setConsent(value: string) {
   document.cookie = `${CONSENT_COOKIE}=${encodeURIComponent(value)}; Max-Age=${maxAge}; Path=/; SameSite=Lax${secure}`
 }
 
-function revokeConsent() {
-  // Expira la cookie inmediatamente
-  document.cookie = `${CONSENT_COOKIE}=; Max-Age=0; Path=/`
-}
-
 // ─── Modal de política ───────────────────────────────────────────────────────
 function CookiePolicyModal({ onClose }: { onClose: () => void }) {
   useEffect(() => {
@@ -157,16 +152,11 @@ function CookiePolicyModal({ onClose }: { onClose: () => void }) {
 
 // ─── Banner principal ────────────────────────────────────────────────────────
 export function CookieConsent() {
-  const [loaded, setLoaded] = useState(false)
-  const [consent, setConsentState] = useState<string | null>(null)
+  const [consent, setConsentState] = useState<string | null>(() => {
+    if (typeof document === "undefined") return null
+    return readConsent()
+  })
   const [showPolicy, setShowPolicy] = useState(false)
-
-  useEffect(() => {
-    setConsentState(readConsent())
-    setLoaded(true)
-  }, [])
-
-  if (!loaded) return null
   if (consent) return null
 
   const accept = () => { setConsent('accepted'); setConsentState('accepted') }

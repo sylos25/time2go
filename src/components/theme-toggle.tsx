@@ -36,17 +36,16 @@ type ThemeToggleProps = {
 }
 
 export function ThemeToggle({ inline = false }: ThemeToggleProps) {
-  const [theme, setTheme] = useState<ThemeMode>("light")
-  const [mounted, setMounted] = useState(false)
+  const [theme, setTheme] = useState<ThemeMode>(() => {
+    if (typeof window === "undefined") return "light"
+    return getInitialTheme()
+  })
   const pathname = usePathname()
 
   useEffect(() => {
-    const initialTheme = getInitialTheme()
-    setTheme(initialTheme)
-    applyTheme(initialTheme)
-    persistTheme(initialTheme)
-    setMounted(true)
-  }, [])
+    applyTheme(theme)
+    persistTheme(theme)
+  }, [theme])
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
@@ -69,8 +68,6 @@ export function ThemeToggle({ inline = false }: ThemeToggleProps) {
     applyTheme(nextTheme)
     window.dispatchEvent(new Event("themechange"))
   }
-
-  if (!mounted) return null
 
   if (!inline && pathname?.startsWith("/dashboard")) {
     return null

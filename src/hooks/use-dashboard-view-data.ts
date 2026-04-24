@@ -55,7 +55,7 @@ export function useDashboardViewData() {
   const paginatedRows = filteredRows.slice(startIndex, startIndex + PAGE_SIZE)
 
   const editableFieldsForTable = TABLE_EDITABLE_FIELDS[table] || []
-  const hiddenColumnsForTable = TABLE_HIDDEN_COLUMNS[table] || []
+  const hiddenColumnsForTable = useMemo(() => TABLE_HIDDEN_COLUMNS[table] || [], [table])
   const activeTableIndex = TABLE_NAV_ITEMS.findIndex((item) => item.key === table)
   const activeTableLabel = TABLE_NAV_ITEMS[activeTableIndex]?.label || ""
 

@@ -1,14 +1,14 @@
-import { buildEventSummary, type EventSummary } from "../lib/reserva-evento";
+import { buildEventSummary, type EventLike, type EventSummary } from "../lib/reserva-evento";
 
 type ReservationEventSummaryProps =
   | {
       variant?: "detailed";
-      event?: Record<string, any> | null;
+      event?: EventLike | null;
       summary?: EventSummary | null;
     }
   | {
       variant: "compact";
-      event: Record<string, any> | null;
+      event: EventLike | null;
       summary?: EventSummary | null;
     };
 
@@ -22,12 +22,13 @@ export function ReservationEventSummary({
       return null;
     }
 
-    const fecha = event.fecha_inicio ? new Date(event.fecha_inicio).toLocaleDateString("es-ES") : "";
+    const fechaRaw = event.fecha_inicio;
+    const fecha = fechaRaw ? new Date(String(fechaRaw)).toLocaleDateString("es-ES") : "";
     const hora = event.hora_inicio ? String(event.hora_inicio).slice(0, 5) : "";
 
     return (
       <div className="rounded-lg bg-muted/50 p-4 text-sm">
-        <p className="font-semibold text-foreground">{event.nombre_evento}</p>
+        <p className="font-semibold text-foreground">{String(event.nombre_evento || "Evento")}</p>
         <p className="text-muted-foreground">
           {fecha}
           {hora ? ` · ${hora}` : ""}

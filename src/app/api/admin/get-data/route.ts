@@ -323,7 +323,7 @@ export async function GET(req: NextRequest) {
     const result = await pool.query(query, [limit])
 
     return NextResponse.json({ rows: result.rows })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching data:", error)
     return NextResponse.json({ error: "Error al obtener datos" }, { status: 500 })
   }

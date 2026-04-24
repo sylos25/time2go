@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 import {
   CATEGORIAS_BAN,
@@ -46,7 +46,7 @@ export function useDashboardUsers() {
     [banForm.id_categoria]
   )
 
-  async function loadUsers(search = searchUsers, page = usersPage) {
+  const loadUsers = useCallback(async (search = searchUsers, page = usersPage) => {
     setLoadingUsers(true)
     try {
       const data = await fetchUsers({
@@ -63,7 +63,7 @@ export function useDashboardUsers() {
     } finally {
       setLoadingUsers(false)
     }
-  }
+  }, [searchUsers, usersPage])
 
   useEffect(() => {
     let cancelled = false
@@ -94,7 +94,7 @@ export function useDashboardUsers() {
   useEffect(() => {
     if (loading) return
     void loadUsers(searchUsers, usersPage)
-  }, [loading, searchUsers, usersPage])
+  }, [loading, searchUsers, usersPage, loadUsers])
 
   function openBanModal(user: UserRow) {
     const inicio = formatDateTimeLocal(new Date())

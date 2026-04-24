@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server"
+import type { PoolClient } from "pg"
 import pool from "@/lib/db"
 import { getRequesterIdLenient } from "@/lib/auth-request"
 import { sendBanNotificationEmail, sendUnbanNotificationEmail } from "@/lib/email"
 
-async function getRequester(req: Request, client: any) {
+async function getRequester(req: Request, client: PoolClient) {
   const userId = await getRequesterIdLenient(req)
   if (!userId) return null
 

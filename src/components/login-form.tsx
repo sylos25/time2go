@@ -20,7 +20,6 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     emailValidationError,
     error,
     isBanned,
-    isNotRegistered,
     areCredentialsInvalid,
     password,
     rememberMe,
@@ -42,7 +41,6 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     setResetPasswordOpen,
     setShowPassword,
     setTurnstileError,
-    setTurnstileKey,
     setTurnstileToken,
   } = useLoginForm(onSuccess)
 

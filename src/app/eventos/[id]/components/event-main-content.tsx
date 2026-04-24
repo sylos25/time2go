@@ -4,17 +4,13 @@ import {
   ChevronDown,
   Clock,
   Grid3X3,
-  Link as LinkIcon,
   MapPin,
-  Phone,
   TagIcon,
   Ticket,
   Users,
 } from "lucide-react"
 
 import { EventoReportarDialog } from "@/components/evento-reportar-dialog"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 import Valoraciones from "../valoraciones"

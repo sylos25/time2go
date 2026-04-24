@@ -10,6 +10,7 @@ import {
   sanitizeTelefono,
   TIPOS_DOCUMENTO,
   type AsistenteForm,
+  type EventLike,
   type ReservaTitularForm,
 } from "../lib/reserva-evento";
 import { validateReserva } from "../lib/reserva-evento";
@@ -38,7 +39,7 @@ type UseReservaEventoConfig = {
   getEventRequestUrl: (identifier: string | number) => string;
   getUnauthorizedRedirect: (identifier: string | number) => string;
   getCancelRedirect: (identifier: string | number) => string;
-  getReservaEventId: (event: Record<string, any> | null, identifier: string | number) => number | null;
+  getReservaEventId: (event: EventLike | null, identifier: string | number) => number | null;
   successRedirect?: string;
 };
 
@@ -48,6 +49,10 @@ const hasIdentifier = (identifier: string | number) => {
   }
 
   return String(identifier).trim().length > 0;
+};
+
+const isTipoDocumento = (value: unknown): value is ReservaTitularForm["tipo_documento"] => {
+  return typeof value === "string" && TIPOS_DOCUMENTO.includes(value as ReservaTitularForm["tipo_documento"]);
 };
 
 export function useReservaEvento(config: UseReservaEventoConfig) {
@@ -65,7 +70,7 @@ export function useReservaEvento(config: UseReservaEventoConfig) {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [event, setEvent] = useState<Record<string, any> | null>(null);
+  const [event, setEvent] = useState<EventLike | null>(null);
   const [user, setUser] = useState<UserData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,8 +87,8 @@ export function useReservaEvento(config: UseReservaEventoConfig) {
 
   const userTitular = useMemo(() => {
     return {
-      tipo_documento: TIPOS_DOCUMENTO.includes(user?.tipo_documento as any)
-        ? (user?.tipo_documento as ReservaTitularForm["tipo_documento"])
+      tipo_documento: isTipoDocumento(user?.tipo_documento)
+        ? user.tipo_documento
         : null,
       numero_documento: sanitizeDocumento(String(user?.numero_documento || "")),
       nombres: sanitizeNombre(String(user?.nombres || "")),
@@ -155,7 +160,7 @@ export function useReservaEvento(config: UseReservaEventoConfig) {
     };
 
     load();
-  }, [identifier, invalidIdentifierMessage, router]);
+  }, [identifier, invalidIdentifierMessage, router, getEventRequestUrl, getUnauthorizedRedirect]);
 
   const summary = useMemo(() => {
     if (!event) {

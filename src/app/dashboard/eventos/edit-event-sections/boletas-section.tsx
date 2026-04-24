@@ -1,6 +1,5 @@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import type { Boleta } from "@/types/event-edit"
 
 type BoleteDefinition = {
   nombre_boleto: string

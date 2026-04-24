@@ -10,21 +10,49 @@ type GoogleCredentialResponse = {
   credential?: string
 }
 
+type GoogleIdentity = {
+  accounts: {
+    id: {
+      initialize: (config: {
+        client_id: string
+        callback: (response: GoogleCredentialResponse) => void | Promise<void>
+      }) => void
+      renderButton: (
+        element: HTMLElement,
+        options: {
+          theme: string
+          size: string
+          width: number
+          text: string
+          shape: string
+        }
+      ) => void
+    }
+  }
+}
+
+declare global {
+  interface Window {
+    google?: GoogleIdentity
+  }
+}
+
 export function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps) {
   const buttonRef = useRef<HTMLDivElement | null>(null)
-  const [error, setError] = useState("")
+  const [error, setError] = useState(() =>
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? "" : "Google Client ID no configurado"
+  )
 
   useEffect(() => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
     if (!clientId) {
-      setError("Google Client ID no configurado")
       return
     }
 
     if (typeof window === "undefined") return
 
     const init = () => {
-      const google = (window as any).google
+      const google = window.google
       if (!google || !buttonRef.current) {
         setError("No se pudo cargar Google Identity Services")
         return
@@ -119,7 +147,7 @@ export function GoogleLoginButton({ onSuccess }: GoogleLoginButtonProps) {
 
     const existing = document.querySelector("script[data-google-gsi]")
     if (existing) {
-      if ((window as any).google) {
+      if (window.google) {
         init()
       } else {
         existing.addEventListener("load", init)

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 
 export interface EventoInfoItem {
   detalle: string
@@ -321,7 +321,7 @@ export function useCreateEventForm() {
     void fetchTiposDeEvento()
   }, [newEvent.id_categoria_evento])
 
-  async function refreshSitios(queryOverride?: string) {
+  const refreshSitios = useCallback(async (queryOverride?: string) => {
     try {
       const query = (queryOverride ?? debouncedBusquedaSitio).trim()
       const url = query
@@ -335,11 +335,11 @@ export function useCreateEventForm() {
       console.error("Error al buscar sitios:", error)
       setSitios([])
     }
-  }
+  }, [debouncedBusquedaSitio])
 
   useEffect(() => {
     void refreshSitios(debouncedBusquedaSitio)
-  }, [debouncedBusquedaSitio])
+  }, [debouncedBusquedaSitio, refreshSitios])
 
   const handleAddEvent = async () => {
     try {

@@ -41,6 +41,34 @@ export type EventSummary = {
   items: EventSummaryItem[];
 };
 
+export type EventLike = {
+  categoria?: { nombre?: unknown };
+  categoria_nombre?: unknown;
+  tipo_evento?: { nombre?: unknown };
+  tipo_nombre?: unknown;
+  pulep_evento?: unknown;
+  sitio?: {
+    nombre_sitio?: unknown;
+    direccion?: unknown;
+  };
+  nombre_sitio?: unknown;
+  sitio_direccion?: unknown;
+  municipio?: { nombre_municipio?: unknown };
+  nombre_municipio?: unknown;
+  cupo?: unknown;
+  id_evento?: unknown;
+  responsable_evento?: unknown;
+  creador?: { nombres?: unknown; apellidos?: unknown };
+  telefono_1?: unknown;
+  telefono_2?: unknown;
+  event_telefono_1?: unknown;
+  event_telefono_2?: unknown;
+  gratis_pago?: unknown;
+  fecha_inicio?: unknown;
+  hora_inicio?: unknown;
+  nombre_evento?: unknown;
+};
+
 export const ONLY_LETTERS_REGEX = /[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g;
 
 export const onlyNumbers = (value: string) => value.replace(/\D+/g, "");
@@ -158,13 +186,13 @@ const formatUniqueJoined = (values: unknown[]): string => {
     .join(" / ");
 };
 
-export const buildEventSummary = (event: Record<string, any>): EventSummary => {
-  const categoriaEvento = event?.categoria?.nombre || event?.categoria_nombre || "No registrado";
-  const tipoEvento = event?.tipo_evento?.nombre || event?.tipo_nombre || "No registrado";
-  const pulepEvento = event?.pulep_evento || "No registrado";
-  const nombreSitio = event?.sitio?.nombre_sitio || event?.nombre_sitio || "No registrado";
-  const direccionSitio = event?.sitio?.direccion || event?.sitio_direccion || "No registrada";
-  const ciudadSitio = event?.municipio?.nombre_municipio || event?.nombre_municipio || "No registrada";
+export const buildEventSummary = (event: EventLike): EventSummary => {
+  const categoriaEvento = String(event?.categoria?.nombre || event?.categoria_nombre || "No registrado");
+  const tipoEvento = String(event?.tipo_evento?.nombre || event?.tipo_nombre || "No registrado");
+  const pulepEvento = String(event?.pulep_evento || "No registrado");
+  const nombreSitio = String(event?.sitio?.nombre_sitio || event?.nombre_sitio || "No registrado");
+  const direccionSitio = String(event?.sitio?.direccion || event?.sitio_direccion || "No registrada");
+  const ciudadSitio = String(event?.municipio?.nombre_municipio || event?.nombre_municipio || "No registrada");
 
   const aforo = Number(event?.cupo ?? 0);
   const aforoTexto = aforo > 0 ? aforo.toLocaleString("es-CO") : "No registrado";
@@ -187,7 +215,7 @@ export const buildEventSummary = (event: Record<string, any>): EventSummary => {
     String(event?.gratis_pago || "").toLowerCase() === "true";
 
   const fechaEvento = event?.fecha_inicio
-    ? new Date(event.fecha_inicio).toLocaleDateString("es-ES")
+    ? new Date(String(event.fecha_inicio)).toLocaleDateString("es-ES")
     : "No registrada";
 
   const horaEvento = event?.hora_inicio ? String(event.hora_inicio).slice(0, 5) : "No registrada";

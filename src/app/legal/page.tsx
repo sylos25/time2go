@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
-import { Scale, Shield, Cookie, Cpu, AlertTriangle, X } from "lucide-react"
+import { Scale, Shield, Cookie, Cpu, AlertTriangle } from "lucide-react"
 import { Footer } from "@/components/footer"
 import {
   Accordion,
@@ -175,12 +175,7 @@ const sections = [
 ]
 
 export default function LegalPage() {
-  const [showNotice, setShowNotice] = useState(false)
-
-  useEffect(() => {
-    // Mostrar el aviso al cargar la página
-    setShowNotice(true)
-  }, [])
+  const [showNotice, setShowNotice] = useState(true)
 
   return (
     <>

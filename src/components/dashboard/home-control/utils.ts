@@ -63,7 +63,7 @@ export function reorderHeroImages(images: HeroImage[], id: number, direction: Mo
 
 export function buildVisiblePageWindow(currentPage: number, totalPages: number): number[] {
   let start = Math.max(1, currentPage - 2)
-  let end = Math.min(totalPages, start + CATEGORY_PAGE_WINDOW - 1)
+  const end = Math.min(totalPages, start + CATEGORY_PAGE_WINDOW - 1)
   start = Math.max(1, end - CATEGORY_PAGE_WINDOW + 1)
 
   return Array.from({ length: end - start + 1 }, (_, index) => start + index)

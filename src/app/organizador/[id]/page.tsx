@@ -43,16 +43,16 @@ interface EventoOrganizador {
 }
 
 /* ─── Helpers ────────────────────────────────────────────────────── */
-function formatDate(d: any) {
+function formatDate(d: unknown) {
   if (!d) return "—";
   try {
-    return new Date(d).toLocaleDateString("es-ES", {
+    return new Date(String(d)).toLocaleDateString("es-ES", {
       weekday: "short", year: "numeric", month: "short", day: "numeric",
     });
   } catch { return String(d); }
 }
 
-function formatTime(t: any) {
+function formatTime(t: unknown) {
   if (!t) return null;
   try { return String(t).trim().split(":").slice(0, 2).join(":"); }
   catch { return null; }
@@ -150,7 +150,6 @@ export default function OrganizadorPage() {
 
   useEffect(() => {
     if (!id) return;
-    setLoading(true);
 
     fetch(`/api/organizador/${encodeURIComponent(id)}`)
       .then((r) => r.json())

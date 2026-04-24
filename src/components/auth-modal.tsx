@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { CheckCircle } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -17,12 +17,6 @@ interface AuthModalProps {
 
 export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalProps) {
   const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false)
-
-  useEffect(() => {
-    if (!isOpen) {
-      setShowRegistrationSuccess(false)
-    }
-  }, [isOpen])
 
   const handleLoginSuccess = () => {
     onClose()
@@ -41,7 +35,15 @@ export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalP
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          setShowRegistrationSuccess(false)
+          onClose()
+        }
+      }}
+    >
       <DialogContent className="sm:max-w-md rounded-sm max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600 bg-clip-text text-transparent">

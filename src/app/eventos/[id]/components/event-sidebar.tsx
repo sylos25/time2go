@@ -1,4 +1,4 @@
-import { Calendar, Clock, Link as LinkIcon, Phone, Ticket } from "lucide-react"
+import { Calendar, Link as LinkIcon, Phone, Ticket } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"

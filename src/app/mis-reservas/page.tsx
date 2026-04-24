@@ -2,8 +2,7 @@
 
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, ChevronRight, ChartNoAxesColumn } from "lucide-react";
 import { ReservationCancelDialog } from "./_components/reservation-cancel-dialog";
 import { ReservationCard } from "./_components/reservation-card";

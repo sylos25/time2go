@@ -32,12 +32,13 @@ export function useSessionExpiry() {
   useEffect(() => {
     const userPublicId = typeof window !== "undefined" ? localStorage.getItem("userPublicId") : null
     if (!userPublicId) {
-      setIsSessionExpired(false)
       return
     }
 
-    // Verificar inmediatamente
-    checkSessionValidity()
+    // Verificar inmediatamente sin ejecutar setState en el cuerpo del effect
+    const initialCheckTimeout = window.setTimeout(() => {
+      void checkSessionValidity()
+    }, 0)
 
     // Verificar cada 5 minutos (300000ms)
     const interval = setInterval(checkSessionValidity, 5 * 60 * 1000)
@@ -58,6 +59,7 @@ export function useSessionExpiry() {
     window.addEventListener("session:replaced", handleSessionReplaced)
 
     return () => {
+      clearTimeout(initialCheckTimeout)
       clearInterval(interval)
       document.removeEventListener("visibilitychange", handleVisibilityChange)
       window.removeEventListener("session:replaced", handleSessionReplaced)

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { PoolClient } from "pg";
 import pool from "@/lib/db";
 import { getRequesterIdLenient } from "@/lib/auth-request";
 import { sendEventApprovedEmail } from "@/lib/email";
@@ -12,7 +13,7 @@ function appBaseUrl(): string {
   );
 }
 
-async function getAuthenticatedUser(req: Request, client: any) {
+async function getAuthenticatedUser(req: Request, client: PoolClient) {
   const userId = await getRequesterIdLenient(req);
   if (!userId) return null;
 

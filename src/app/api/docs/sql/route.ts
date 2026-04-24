@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import fs from "fs/promises"
+import type { Dirent } from "fs"
 import path from "path"
 import pool from "@/lib/db"
 import { getRequesterIdLenient } from "@/lib/auth-request"
@@ -43,7 +44,7 @@ async function listSqlFilesForGroup(group: SqlGroup): Promise<string[]> {
     }
   }
 
-  let entries: Awaited<ReturnType<typeof fs.readdir>>
+  let entries: Dirent[]
   try {
     entries = await fs.readdir(target, { withFileTypes: true })
   } catch {

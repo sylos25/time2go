@@ -1,6 +1,6 @@
   "use client";
 
-  import { useEffect, useState } from "react";
+  import { useCallback, useEffect, useState } from "react";
   import { Pencil, Trash2, X, Check, Loader2 } from "lucide-react";
 
   // ── Formato relativo de fecha ─────────────────────────────────────────────────
@@ -99,12 +99,22 @@
   }
 
   // ── Componente principal ──────────────────────────────────────────────────────
+  type ValoracionItem = {
+    id_valoracion: number;
+    id_usuario: number;
+    valoracion: number;
+    comentario: string | null;
+    fecha_creacion: string;
+    nombres?: string | null;
+    apellidos?: string | null;
+  };
+
   export default function Valoraciones({ eventId }: { eventId: number }) {
     const TEXT_REGEX = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]+$/;
     const sanitize = (v: string) =>
       v.replace(/[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,;:()"'¿?¡!\-_/\n\r]/g, "");
 
-    const [valoraciones,    setValoraciones]    = useState<any[]>([]);
+    const [valoraciones,    setValoraciones]    = useState<ValoracionItem[]>([]);
     const [rating,          setRating]          = useState(5);
     const [comment,         setComment]         = useState("");
     const [loading,         setLoading]         = useState(false);
@@ -145,7 +155,7 @@
     }, []);
 
     // ── Fetch valoraciones ────────────────────────────────────────────────────
-    const fetchValoraciones = async () => {
+    const fetchValoraciones = useCallback(async () => {
       try {
         const res  = await fetch(`/api/events/${eventId}/valoraciones`);
         const json = await res.json();
@@ -153,9 +163,9 @@
       } catch {
         setValoraciones([]);
       }
-    };
+    }, [eventId]);
 
-    useEffect(() => { fetchValoraciones(); }, [eventId]);
+    useEffect(() => { fetchValoraciones(); }, [fetchValoraciones]);
 
     // ── Enviar valoración ─────────────────────────────────────────────────────
     const submit = async () => {
@@ -187,7 +197,7 @@
     };
 
     // ── Edición ───────────────────────────────────────────────────────────────
-    const startEdit = (v: any) => {
+    const startEdit = (v: ValoracionItem) => {
       setEditingId(v.id_valoracion);
       setEditRating(Number(v.valoracion));
       setEditComment(v.comentario ?? "");
@@ -209,7 +219,7 @@
         if (!json.ok) throw new Error(json.message);
         setEditingId(null);
         fetchValoraciones();
-      } catch (e: any) { setEditError(e.message ?? "Error al guardar"); }
+      } catch (e: unknown) { setEditError(e instanceof Error ? e.message : "Error al guardar"); }
       finally { setSavingEdit(false); }
     };
 
@@ -225,7 +235,7 @@
         if (!json.ok) throw new Error(json.message);
         setConfirmDeleteId(null);
         fetchValoraciones();
-      } catch (e: any) { setErrorMessage(e.message ?? "Error al eliminar"); }
+      } catch (e: unknown) { setErrorMessage(e instanceof Error ? e.message : "Error al eliminar"); }
       finally { setDeletingId(null); }
     };
 

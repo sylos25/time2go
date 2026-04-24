@@ -11,6 +11,22 @@ const TIPOS_DOCUMENTO_VALIDOS = [
 
 type TipoDocumento = (typeof TIPOS_DOCUMENTO_VALIDOS)[number];
 type SqlRow = Record<string, unknown>;
+type RawAsistente = {
+  tipo_documento?: unknown;
+  numero_documento?: unknown;
+  nombres?: unknown;
+  apellidos?: unknown;
+  telefono?: unknown;
+  correo?: unknown;
+};
+type AsistenteReserva = {
+  tipo_documento: TipoDocumento;
+  numero_documento: string;
+  nombres: string;
+  apellidos: string;
+  telefono: string;
+  correo: string;
+};
 
 const asString = (value: unknown): string | null => {
   if (typeof value !== "string") return null;
@@ -40,6 +56,9 @@ const asBoolean = (value: unknown): boolean | null => {
   if (value === 0 || value === "0") return false;
   return null;
 };
+
+const toRawAsistente = (value: unknown): RawAsistente =>
+  typeof value === "object" && value !== null ? (value as RawAsistente) : {};
 
 const mapReservaListadoItem = (row: SqlRow): ReservaListadoItem => {
   return {
@@ -235,18 +254,21 @@ export async function POST(req: Request) {
     const titular_nombres = String(titularRaw?.nombres || "").trim();
     const titular_apellidos = String(titularRaw?.apellidos || "").trim();
     const titular_telefono = String(titularRaw?.telefono || "").trim();
-    const asistentesRaw = Array.isArray(body?.asistentes) ? body.asistentes : [];
+    const asistentesRaw: unknown[] = Array.isArray(body?.asistentes) ? body.asistentes : [];
 
-    const asistentes = asistentesRaw
-      .map((item: any) => ({
-        tipo_documento: String(item?.tipo_documento || "").trim() as TipoDocumento,
-        numero_documento: String(item?.numero_documento || "").trim(),
-        nombres: String(item?.nombres || "").trim(),
-        apellidos: String(item?.apellidos || "").trim(),
-        telefono: String(item?.telefono || "").trim(),
-        correo: String(item?.correo || "").trim().toLowerCase(),
-      }))
-      .filter((item: any) => item.tipo_documento || item.numero_documento || item.nombres || item.apellidos || item.telefono || item.correo);
+    const asistentes: AsistenteReserva[] = asistentesRaw
+      .map((item: unknown) => {
+        const rawItem = toRawAsistente(item);
+        return {
+          tipo_documento: String(rawItem.tipo_documento || "").trim() as TipoDocumento,
+          numero_documento: String(rawItem.numero_documento || "").trim(),
+          nombres: String(rawItem.nombres || "").trim(),
+          apellidos: String(rawItem.apellidos || "").trim(),
+          telefono: String(rawItem.telefono || "").trim(),
+          correo: String(rawItem.correo || "").trim().toLowerCase(),
+        };
+      })
+      .filter((item) => item.tipo_documento || item.numero_documento || item.nombres || item.apellidos || item.telefono || item.correo);
 
     const totalInvitados = asistentes.length;
 

@@ -7,6 +7,7 @@ import { EventsSearch } from "@/components/dashboard/eventos/events-search"
 import { EventsTable } from "@/components/dashboard/eventos/events-table"
 import { RejectEventDialog } from "@/components/dashboard/eventos/reject-event-dialog"
 import { useDashboardEvents } from "@/hooks/use-dashboard-events"
+import type { Evento } from "@/types/event-edit"
 
 import { EditEventModal } from "./edit-event-modal"
 
@@ -123,7 +124,7 @@ export default function DashboardEventsPage() {
         <EditEventModal
           isOpen={editModalOpen}
           onClose={closeEditModal}
-          event={editingEvent as any}
+          event={editingEvent as unknown as Evento}
           onSave={async () => {
             await refreshEvents()
           }}

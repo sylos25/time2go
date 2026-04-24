@@ -1,14 +1,9 @@
 "use client"
 
 import Image from "next/image"
-import { useEffect, useState } from "react"
 
 export function Footer() {
-  const [currentYear, setCurrentYear] = useState<number | null>(null)
-
-  useEffect(() => {
-    setCurrentYear(new Date().getFullYear())
-  }, [])
+  const currentYear = new Date().getFullYear()
 
   return (
     <footer className="mt-auto bg-zinc-800 text-white">
@@ -42,7 +37,7 @@ export function Footer() {
         {/* Copyright */}
         <div className="text-center">
           <p className="text-gray-400 text-sm">
-            © {currentYear ?? ""} Time2Go. Todos los derechos reservados.
+            © {currentYear} Time2Go. Todos los derechos reservados.
           </p>
         </div>
       </div>

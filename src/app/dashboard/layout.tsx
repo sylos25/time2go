@@ -43,7 +43,6 @@ export default function DashboardLayout({
   const [authorized, setAuthorized] = useState<boolean | null>(null)
   const [canManageEvents, setCanManageEvents] = useState(false)
   const [meUser, setMeUser] = useState<DashboardUser | null>(null)
-  const [isDarkMode, setIsDarkMode] = useState(false)
   const isAdmin = Number(meUser?.id_rol) === 4
   const isModOrAdmin = Number(meUser?.id_rol) === 3 || Number(meUser?.id_rol) === 4
 
@@ -51,7 +50,6 @@ export default function DashboardLayout({
     const syncTheme = () => {
       const theme = localStorage.getItem("theme")
       const isDark = theme === "dark" || (!theme && window.matchMedia("(prefers-color-scheme: dark)").matches)
-      setIsDarkMode(isDark)
       if (isDark) {
         document.documentElement.classList.add("dark")
       } else {
@@ -133,15 +131,6 @@ export default function DashboardLayout({
   useEffect(() => {
     setSidebarOpen(false)
   }, [pathname])
-
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      const isDark = document.documentElement.classList.contains("dark")
-      setIsDarkMode(isDark)
-    })
-    observer.observe(document.documentElement, { attributes: true })
-    return () => observer.disconnect()
-  }, [])
 
   const menuItems = useMemo(
     () => [

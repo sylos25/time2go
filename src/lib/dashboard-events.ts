@@ -36,6 +36,24 @@ export type EventCategoryTab = {
   label: string
 }
 
+type ServerEvent = {
+  id_evento?: unknown
+  nombre_evento?: unknown
+  fecha_inicio?: unknown
+  fecha_creacion?: unknown
+  hora_inicio?: unknown
+  sitio?: { nombre_sitio?: unknown }
+  municipio?: { nombre_municipio?: unknown }
+  categoria?: { nombre?: unknown }
+  categoria_nombre?: unknown
+  cupo?: unknown
+  reservas_asistentes?: unknown
+  estado?: unknown
+  creador?: { nombres?: unknown }
+  documentos?: unknown
+  destacado?: unknown
+}
+
 export const DEFAULT_REJECT_FORM: RejectForm = {
   id_evento: 0,
   motivo_rechazo: "",
@@ -54,7 +72,7 @@ function normalizeStatus(isVisible: boolean): EventStatus {
   return isVisible ? "published" : "hidden"
 }
 
-export function mapServerEvent(eventValue: any): DashboardEvent {
+export function mapServerEvent(eventValue: ServerEvent): DashboardEvent {
   return {
     id: Number(eventValue?.id_evento || 0),
     name: String(eventValue?.nombre_evento || "Sin titulo"),

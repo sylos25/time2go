@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { PoolClient } from "pg";
 import { uploadDocumentBuffer, uploadImageBuffer } from "@/lib/document-storage";
 import pool from "@/lib/db";
 import { getRequesterIdFromRequest, getRequesterIdLenient } from "@/lib/auth-request";
@@ -17,7 +18,7 @@ type OrganizerPlanLimits = {
   aforoMaximo: number;
 };
 
-async function getOrganizerPlanLimits(client: Awaited<ReturnType<typeof pool.connect>>, userId: number): Promise<OrganizerPlanLimits | null> {
+async function getOrganizerPlanLimits(client: PoolClient, userId: number): Promise<OrganizerPlanLimits | null> {
   const planRes = await client.query(
     `SELECT
        p.max_imagenes_por_evento,
@@ -108,8 +109,8 @@ export async function POST(req: Request) {
       const buffer = Buffer.from(await f.arrayBuffer());
       const result = await uploadImageBuffer({
         buffer,
-        contentType: String((f as any).type || "image/jpeg"),
-        originalFileName: String((f as any).name || "imagen.jpg"),
+        contentType: String(f.type || "image/jpeg"),
+        originalFileName: String(f.name || "imagen.jpg"),
       });
       const imageUrl = result.publicUrl || `/api/events/image?key=${encodeURIComponent(result.storageKey)}`;
       uploadedImages.push({
@@ -130,14 +131,14 @@ export async function POST(req: Request) {
     let documentoBytes: number | null = null;
     let documentoOriginalFilename: string | null = null;
 
-    if (docFile && (docFile as unknown as any).size) {
-      const fileName = String((docFile as any).name || "").toLowerCase();
-      const fileType = String((docFile as any).type || "").toLowerCase();
+    if (docFile && docFile.size) {
+      const fileName = String(docFile.name || "").toLowerCase();
+      const fileType = String(docFile.type || "").toLowerCase();
       const isPdf = fileType === "application/pdf" || fileName.endsWith(".pdf");
       if (!isPdf) {
         return NextResponse.json({ ok: false, message: "Solo se permite cargar un documento PDF" }, { status: 400 });
       }
-      const docSize = (docFile as unknown as any).size as number;
+      const docSize = docFile.size;
       if (docSize > maxDocBytes) {
         return NextResponse.json({ ok: false, message: "Documento supera 5 MB" }, { status: 400 });
       }
@@ -145,7 +146,7 @@ export async function POST(req: Request) {
       const docResult = await uploadDocumentBuffer({
         buffer: bufferDoc,
         contentType: "application/pdf",
-        originalFileName: String((docFile as any).name || "documento.pdf"),
+        originalFileName: String(docFile.name || "documento.pdf"),
       });
       documentoUrl = docResult.publicUrl;
       documentoStorageProvider = docResult.provider;
@@ -509,11 +510,12 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({ ok: true, eventos: payload.eventos || [] });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error(err);
 
-    const dbMessage = String(err?.message || "");
-    if (err?.code === "42703" && dbMessage.toLowerCase().includes("cuantos_asistiran")) {
+    const dbMessage = String(err instanceof Error ? err.message : "");
+    const dbCode = typeof err === "object" && err !== null && "code" in err ? String(err.code) : "";
+    if (dbCode === "42703" && dbMessage.toLowerCase().includes("cuantos_asistiran")) {
       return NextResponse.json(
         {
           ok: false,

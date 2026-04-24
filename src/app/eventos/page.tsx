@@ -25,7 +25,6 @@ export default function EventosPage() {
     selectedFilterType,
     selectedFilterValue,
     isSearchFocused,
-    expandedEventId,
     copiedEventId,
     filteredEvents,
     topRatedEvents,

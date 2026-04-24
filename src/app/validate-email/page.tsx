@@ -17,13 +17,12 @@ function ValidateEmailPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const token = searchParams?.get("token")
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading")
-  const [message, setMessage] = useState("")
+  const hasToken = Boolean(token)
+  const [status, setStatus] = useState<"loading" | "success" | "error">(hasToken ? "loading" : "error")
+  const [message, setMessage] = useState(hasToken ? "" : "Token no proporcionado")
 
   useEffect(() => {
-    if (!token) {
-      setStatus("error")
-      setMessage("Token no proporcionado")
+    if (!hasToken || !token) {
       return
     }
 
@@ -52,7 +51,7 @@ function ValidateEmailPageContent() {
     }
 
     validateEmail()
-  }, [token, router])
+  }, [hasToken, token, router])
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">

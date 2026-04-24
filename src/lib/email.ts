@@ -168,11 +168,6 @@ export async function sendContactMessageEmail({
       return false
     }
 
-    const appBaseUrl =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      process.env.APP_URL ||
-      process.env.BETTER_AUTH_URL ||
-      "http://localhost:3000"
     const bannerUrl = "https://res.cloudinary.com/dljthy97e/image/upload/v1770842202/banner_top_azaedp.jpg"
 
     const sanitizedMessage = message

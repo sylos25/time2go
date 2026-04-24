@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { promises as fs } from "fs"
+import type { Dirent } from "fs"
 import path from "path"
 import pool from "@/lib/db"
 import { getRequesterIdLenient } from "@/lib/auth-request"
@@ -68,7 +69,7 @@ interface DocFile {
 async function readFilesRecursively(dir: string, baseDir: string): Promise<DocFile[]> {
   const files: DocFile[] = []
 
-  let entries: Awaited<ReturnType<typeof fs.readdir>>
+  let entries: Dirent[]
   try {
     entries = await fs.readdir(dir, { withFileTypes: true })
   } catch {

@@ -86,7 +86,10 @@ function useSwipe(onNext: () => void, onPrev: () => void) {
   const onTouchEnd = (e: TouchEvent<HTMLDivElement>) => {
     if (startX.current === null) return
     const delta = startX.current - e.changedTouches[0].clientX
-    if (Math.abs(delta) > 40) delta > 0 ? onNext() : onPrev()
+    if (Math.abs(delta) > 40) {
+      if (delta > 0) onNext()
+      else onPrev()
+    }
     startX.current = null
   }
 
@@ -136,7 +139,6 @@ export function HeroCarouselFade({ slides, interval = 5000 }: CarouselProps) {
                 zIndex: isActive ? 2 : isLeaving ? 1 : 0,
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={slide.url}
                 alt={`Imagen ${i + 1} del carrusel`}
@@ -264,7 +266,6 @@ export function HeroCarouselSlide({ slides, interval = 5000 }: CarouselProps) {
                 zIndex,
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={slide.url}
                 alt={`Imagen ${i + 1} del carrusel`}
@@ -368,7 +369,6 @@ export function HeroCarouselZoom({ slides, interval = 5000 }: CarouselProps) {
                 zIndex: isActive ? 2 : isLeaving ? 1 : 0,
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={slide.url}
                 alt={`Imagen ${i + 1} del carrusel`}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import pool from "@/lib/db"
 import { PERMISSION_IDS, requirePermission } from "@/lib/permissions"
+type ApiErrorWithCode = { code?: string }
 
 type TableConfig = {
   tableName: string
@@ -246,16 +247,17 @@ export async function PUT(req: NextRequest) {
       message: "Registro actualizado correctamente",
       data: result.rows[0],
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating data:", error)
 
     let errorMessage = "Error al actualizar los datos"
+    const errorCode = (error as ApiErrorWithCode).code
 
-    if (error.code === "23503") {
+    if (errorCode === "23503") {
       errorMessage = "Error de integridad referencial: uno de los valores relacionados no existe"
-    } else if (error.code === "23502") {
+    } else if (errorCode === "23502") {
       errorMessage = "Falta un campo obligatorio"
-    } else if (error.code === "22001") {
+    } else if (errorCode === "22001") {
       errorMessage = "Uno de los valores excede el tamaño permitido"
     }
 

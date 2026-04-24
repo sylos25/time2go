@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react"
+import { useState, type ChangeEvent, type FormEvent } from "react"
 
 import { EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, sanitizeEmail, sanitizePassword } from "@/lib/auth-form-validation"
 
@@ -31,15 +31,20 @@ function resetStoredSessionData() {
   localStorage.removeItem("rememberedEmail")
 }
 
+function getRememberedEmail(): string {
+  if (typeof window === "undefined") return ""
+  return localStorage.getItem("rememberedEmail")?.toLowerCase() ?? ""
+}
+
 export function useLoginForm(onSuccess: () => void) {
   const turnstileSiteKey = process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY || ""
   const turnstileStrictMode = process.env.NEXT_PUBLIC_TURNSTILE_STRICT_MODE === "true"
   const shouldRenderTurnstile = turnstileSiteKey.length > 0
 
   const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = useState(getRememberedEmail)
   const [password, setPassword] = useState("")
-  const [rememberMe, setRememberMe] = useState(false)
+  const [rememberMe, setRememberMe] = useState(() => getRememberedEmail().length > 0)
   const [error, setError] = useState("")
   const [emailValidationError, setEmailValidationError] = useState(false)
   const [isBanned, setIsBanned] = useState(false)
@@ -53,14 +58,6 @@ export function useLoginForm(onSuccess: () => void) {
     email: false,
     password: false,
   })
-
-  useEffect(() => {
-    const savedEmail = localStorage.getItem("rememberedEmail")
-    if (savedEmail) {
-      setEmail(savedEmail.toLowerCase())
-      setRememberMe(true)
-    }
-  }, [])
 
   function handleBlur(field: keyof TouchedFields) {
     setTouchedFields((prev) => ({ ...prev, [field]: true }))

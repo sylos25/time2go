@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import pool from "@/lib/db"
 import { PERMISSION_IDS, requirePermission } from "@/lib/permissions"
+import type { QueryResult } from "pg"
+
+type ApiErrorWithCode = { code?: string }
 
 export async function POST(req: NextRequest) {
   const denied = await requirePermission(req, PERMISSION_IDS.INGRESAR_DATOS)
@@ -14,8 +17,8 @@ export async function POST(req: NextRequest) {
     }
 
     let query = ""
-    let values: any[] = []
-    let result
+    let values: unknown[] = []
+    let result: QueryResult | null = null
 
     switch (table) {
       case "paises":
@@ -138,19 +141,20 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     )
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error inserting data:", error)
 
     // Manejo específico de errores de base de datos
     let errorMessage = "Error al insertar los datos"
+    const errorCode = (error as ApiErrorWithCode).code
 
-    if (error.code === "23505") {
+    if (errorCode === "23505") {
       errorMessage = "El registro ya existe (violación de unicidad)"
-    } else if (error.code === "23503") {
+    } else if (errorCode === "23503") {
       errorMessage = "Error de integridad referencial: la clave foránea no existe"
-    } else if (error.code === "23502") {
+    } else if (errorCode === "23502") {
       errorMessage = "Falta un campo obligatorio"
-    } else if (error.code === "22001") {
+    } else if (errorCode === "22001") {
       errorMessage = "El valor es demasiado largo para el campo"
     }
 
