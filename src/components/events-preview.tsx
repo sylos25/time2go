@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, MapPin, Users, ArrowRight, Star } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
 import { Swiper, SwiperSlide } from "swiper/react"
 import { Navigation, Pagination, Autoplay } from "swiper/modules"
@@ -76,7 +75,6 @@ const swiperBreakpoints = {
 }
 
 export function EventsPreview() {
-  const router = useRouter()
   const [featuredEvents, setFeaturedEvents] = useState<FeaturedEvent[]>([])
   const [landingCategories, setLandingCategories] = useState<LandingCategory[]>([])
   const [loading, setLoading] = useState(true)
@@ -213,10 +211,6 @@ export function EventsPreview() {
       .sort((a, b) => b.events.length - a.events.length)
   }, [featuredByCategory, featuredEvents, landingCategories])
 
-  const handleEventDetails = (eventId: number) => {
-    router.push(`/eventos?expand=${eventId}`)
-  }
-
   const EventCard = ({ event }: { event: FeaturedEvent }) => (
     <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-card/80 backdrop-blur-sm border-border overflow-hidden h-full rounded-sm">
       <div className="relative">
@@ -263,10 +257,10 @@ export function EventsPreview() {
             {typeof event.price === "number" ? `$${event.price}` : event.price}
           </div>
           <Button
-            onClick={() => handleEventDetails(event.id)}
+            asChild
             className="bg-gradient-to-r from-green-500 to-lime-400 hover:from-green-600 hover:to-lime-500 text-white group-hover:scale-105 transition-transform rounded-sm"
           >
-            Ver detalles
+            <Link href={`/eventos?expand=${event.id}`}>Ver detalles</Link>
           </Button>
         </div>
       </CardContent>

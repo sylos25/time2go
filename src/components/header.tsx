@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import {
@@ -66,11 +67,6 @@ export function Header({
     { name: "Contacto", path: "/contacto" },
   ]
 
-  const navigateTo = (path: string) => {
-    router.push(path)
-    setMenuOpen(false)
-  }
-
   const handleJoinClick = () => {
     if (onAuthClick) {
       onAuthClick(true)
@@ -131,8 +127,9 @@ export function Header({
             </Button>
 
             {/* Logo */}
-            <button
-              onClick={() => navigateTo("/")}
+            <Link
+              href="/"
+              onClick={() => setMenuOpen(false)}
               className="flex items-center space-x-3 hover:opacity-80 transition-opacity cursor-pointer">
                 <div className="relative w-[90px] h-[90px] md:w-[130px] md:h-[130px] lg:w-[160px] lg:h-[160px]">
                   <Image src="/images/logo_header.png" 
@@ -140,7 +137,7 @@ export function Header({
                   fill 
                   className="object-contain" />
                 </div>
-            </button>
+            </Link>
 
             <DesktopNav
               navigationItems={navigationItems}
@@ -150,7 +147,6 @@ export function Header({
               displayName={displayName}
               isRegularUser={isRegularUser}
               canViewTransactions={canViewTransactions}
-              navigateTo={navigateTo}
               onJoinClick={handleJoinClick}
               onLogoutClick={handleLogout}
             />
@@ -168,7 +164,7 @@ export function Header({
         canDashboard={canDashboard}
         isRegularUser={isRegularUser}
         canViewTransactions={canViewTransactions}
-        navigateTo={navigateTo}
+        onNavigate={() => setMenuOpen(false)}
         onJoinClick={handleJoinClick}
         onLogoutClick={handleLogout}
       />

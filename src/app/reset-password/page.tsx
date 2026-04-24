@@ -1,6 +1,7 @@
 "use client"
 
 import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
@@ -69,13 +70,8 @@ export default function ResetPasswordPage() {
                   <div>
                     <p className="text-red-700 font-medium">No se puede usar este enlace</p>
                     <p className="text-red-600 text-sm mt-1">{tokenError}</p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="mt-4"
-                      onClick={() => router.push("/auth")}
-                    >
-                      Volver a Iniciar Sesión
+                    <Button type="button" variant="outline" className="mt-4" asChild>
+                      <Link href="/auth">Volver a Iniciar Sesión</Link>
                     </Button>
                   </div>
                 </div>
@@ -114,13 +110,8 @@ export default function ResetPasswordPage() {
                   <StatusMessage message={success} variant="success" />
 
                   <div className="flex justify-end gap-2 pt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => router.push("/auth")}
-                      disabled={submitting}
-                    >
-                      Cancelar
+                    <Button type="button" variant="outline" disabled={submitting} asChild>
+                      <Link href="/auth">Cancelar</Link>
                     </Button>
                     <Button
                       type="submit"

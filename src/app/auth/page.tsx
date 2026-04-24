@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { LoginForm } from "@/components/login-form"
 import { GoogleLoginButton } from "@/components/google-login-button"
@@ -118,12 +119,8 @@ function AuthPageContent() {
               </div>
 
               <div className="mt-8 text-center">
-                <Button
-                  variant="link"
-                  onClick={() => router.push("/")}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  Regresar
+                <Button asChild variant="link" className="text-muted-foreground hover:text-foreground">
+                  <Link href="/">Regresar</Link>
                 </Button>
               </div>
             </div>
