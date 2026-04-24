@@ -47,6 +47,7 @@ export function PasswordInputField({
         />
         <button
           type="button"
+          onMouseDown={(event) => event.preventDefault()}
           onClick={onToggleVisibility}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}

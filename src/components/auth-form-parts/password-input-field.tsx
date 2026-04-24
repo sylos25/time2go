@@ -53,8 +53,10 @@ export function PasswordInputField({
         />
         <button
           type="button"
+          onMouseDown={(event) => event.preventDefault()}
           onClick={onToggleVisibility}
           className="absolute right-3 top-1/2 -translate-y-1/2 transform cursor-pointer text-muted-foreground hover:text-foreground"
+          aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
         >
           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>

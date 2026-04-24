@@ -6,7 +6,6 @@ import { EmailInputField } from "@/components/auth-form-parts/email-input-field"
 import { PasswordInputField } from "@/components/auth-form-parts/password-input-field"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
 import { ResetPasswordDialog } from "@/components/reset-password-dialog"
 import { useLoginForm } from "@/hooks/use-login-form"
 
@@ -45,7 +44,8 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   } = useLoginForm(onSuccess)
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <>
+      <form onSubmit={handleSubmit} className="space-y-4">
       <EmailInputField
         value={email}
         onChange={handleEmailChange}
@@ -70,24 +70,24 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <Checkbox
-            className="cursor-pointer"
+          <input
             id="rememberMe"
+            type="checkbox"
             checked={rememberMe}
-            onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+            onChange={(event) => setRememberMe(event.target.checked)}
+            className="h-4 w-4 cursor-pointer accent-green-600"
           />
           <Label htmlFor="rememberMe" className="text-sm text-muted-foreground">
             Recordarme
           </Label>
         </div>
-        <Button 
+        <button
           type="button"
-          variant="link" 
-          className="text-sm text-green-600 hover:text-green-500 p-0 cursor-pointer"
+          className="text-sm text-green-600 hover:text-green-500 p-0 cursor-pointer underline-offset-4 hover:underline"
           onClick={() => setResetPasswordOpen(true)}
         >
           ¿Olvidaste tu contraseña?
-        </Button>
+        </button>
       </div>
 
       {/* Turnstile Captcha */}
@@ -175,7 +175,9 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         Iniciar Sesión
       </Button>
 
+      </form>
+
       <ResetPasswordDialog open={resetPasswordOpen} onOpenChange={setResetPasswordOpen} />
-    </form>
+    </>
   )
 }
