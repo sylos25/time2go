@@ -38,8 +38,8 @@ export default async function RootLayout({
   const htmlClassName = initialTheme === "dark" ? "dark" : undefined
 
   return (
-    <html lang="es" className={htmlClassName} style={{ colorScheme: initialTheme }}>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="es" className={htmlClassName} style={{ colorScheme: initialTheme }} suppressHydrationWarning>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} suppressHydrationWarning>
         <SecurityProvider>
           {children}
           <DeferredGlobalUI />
