@@ -1,11 +1,12 @@
 import pool from "@/lib/db"
 
+import type { PoolClient } from "pg"
 import type {
   OrganizadorEventoRow,
   OrganizadorRow,
 } from "@/app/api/organizador/[id]/lib/organizador-types"
 
-export async function findOrganizadorById(client: Awaited<ReturnType<typeof pool.connect>>, organizadorId: number) {
+export async function findOrganizadorById(client: PoolClient, organizadorId: number) {
   const result = await client.query<OrganizadorRow>(
     `SELECT
        u.id_usuario,
@@ -38,7 +39,7 @@ export async function findOrganizadorById(client: Awaited<ReturnType<typeof pool
   return result.rows?.[0] ?? null
 }
 
-export async function listOrganizadorEventos(client: Awaited<ReturnType<typeof pool.connect>>, organizadorId: number) {
+export async function listOrganizadorEventos(client: PoolClient, organizadorId: number) {
   const result = await client.query<OrganizadorEventoRow>(
     `SELECT
        e.id_evento,
