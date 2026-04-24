@@ -104,10 +104,7 @@ export default function SecurityProvider({ children }: { children: React.ReactNo
   }, [])
 
   useEffect(() => {
-    const isLocal =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1" ||
-      window.location.hostname.startsWith("192.168.")
+    const isLocal = true; // Desactivado temporalmente
 
     if (isLocal) return
 
