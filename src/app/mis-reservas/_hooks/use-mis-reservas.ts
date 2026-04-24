@@ -25,7 +25,7 @@ export function useMisReservas() {
         const meJson = await meRes.json().catch(() => ({}));
         const role = Number(meJson?.user?.id_rol || 0);
         if (!meRes.ok || role !== 1) {
-          router.replace("/eventos");
+          window.location.replace("/eventos");
           return;
         }
 

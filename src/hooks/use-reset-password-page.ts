@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
-import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime"
 
 import {
   PASSWORD_MAX_LENGTH,
   validatePasswordPolicy,
 } from "@/lib/password-policy"
 
-export function useResetPasswordPage(token: string, router: AppRouterInstance) {
+export function useResetPasswordPage(token: string) {
   const [loadingToken, setLoadingToken] = useState(true)
   const [tokenError, setTokenError] = useState<string | null>(null)
   const [newPassword, setNewPassword] = useState("")
@@ -101,7 +100,7 @@ export function useResetPasswordPage(token: string, router: AppRouterInstance) {
       setConfirmPassword("")
 
       setTimeout(() => {
-        router.push("/auth")
+        window.location.assign("/auth")
       }, 2500)
     } catch (err) {
       console.error("Reset password confirmation error:", err)
@@ -109,7 +108,7 @@ export function useResetPasswordPage(token: string, router: AppRouterInstance) {
     } finally {
       setSubmitting(false)
     }
-  }, [confirmPassword, newPassword, passwordErrors, router, token])
+  }, [confirmPassword, newPassword, passwordErrors, token])
 
   return {
     loadingToken,

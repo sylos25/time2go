@@ -1,6 +1,6 @@
 "use client"
 
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -14,7 +14,6 @@ import { StatusMessage } from "@/components/shared/password/status-message"
 import { useResetPasswordPage } from "@/hooks/use-reset-password-page"
 
 export default function ResetPasswordPage() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams?.get("token") ?? ""
   const {
@@ -33,7 +32,7 @@ export default function ResetPasswordPage() {
     setShowPassword,
     setShowConfirmPassword,
     handleSubmit,
-  } = useResetPasswordPage(token, router)
+  } = useResetPasswordPage(token)
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

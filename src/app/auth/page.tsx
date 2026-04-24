@@ -9,6 +9,13 @@ import { GoogleLoginButton } from "@/components/google-login-button"
 import { RegisterForm } from "@/components/register-form"
 import { CheckCircle } from "lucide-react"
 
+function getSafeRedirectPath(rawRedirect: string | null): string {
+  if (!rawRedirect) return "/"
+  if (!rawRedirect.startsWith("/")) return "/"
+  if (rawRedirect.startsWith("//")) return "/"
+  return rawRedirect
+}
+
 export default function AuthPage() {
   return (
     <Suspense fallback={<main className="relative min-h-screen overflow-hidden bg-background" />}>
@@ -27,6 +34,7 @@ function AuthPageContent() {
   const stepParam = searchParams?.get("step")
   const step: "choice" | "login" | "register" =
     stepParam === "login" || stepParam === "register" ? stepParam : "choice"
+  const postLoginRedirect = getSafeRedirectPath(searchParams?.get("redirect"))
 
   useEffect(() => {
     if (searchParams?.get("registered") !== "true") return
@@ -44,7 +52,7 @@ function AuthPageContent() {
 
   
   const handleLoginSuccess = () => {
-    router.push("/")
+    window.location.assign(postLoginRedirect)
   }
 
   const handleRegisterSuccess = () => {

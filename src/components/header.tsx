@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -37,7 +36,6 @@ export function Header({
 }: HeaderProps): JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false)
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
-  const router = useRouter()
   const { user, performLogout, sessionResolved } = useHeaderSession()
 
   const loggedIn = Boolean(user) || (isLoggedIn && !sessionResolved)
@@ -73,7 +71,7 @@ export function Header({
       setMenuOpen(false)
       return
     }
-    router.push("/auth")
+    window.location.assign("/auth")
     setMenuOpen(false)
   }
 

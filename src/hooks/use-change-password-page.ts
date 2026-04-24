@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react"
-import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime"
 
 import {
   PASSWORD_MAX_LENGTH,
@@ -22,7 +21,7 @@ type UserData = {
   fecha_registro?: string
 }
 
-export function useChangePasswordPage(router: AppRouterInstance) {
+export function useChangePasswordPage() {
   const [user, setUser] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -54,7 +53,7 @@ export function useChangePasswordPage(router: AppRouterInstance) {
 
       if (!response.ok) {
         if (response.status === 401) {
-          router.push("/auth")
+          window.location.assign("/auth")
           return
         }
         throw new Error("No se pudo cargar los datos del usuario")
@@ -73,7 +72,7 @@ export function useChangePasswordPage(router: AppRouterInstance) {
     } finally {
       setLoading(false)
     }
-  }, [router])
+  }, [])
 
   useEffect(() => {
     void fetchUserData()

@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
 import {
   Database, Server, Terminal, ExternalLink,
   ChevronDown, ChevronRight, Lock, BookOpen,
@@ -11,7 +10,6 @@ import {
 
 // ── Guard de acceso (solo servidor vía /api/me; coherente con middleware) ────
 function useAdminGuard() {
-  const router = useRouter()
   const [allowed, setAllowed] = useState<boolean | null>(null)
 
   useEffect(() => {
@@ -19,21 +17,21 @@ function useAdminGuard() {
       try {
         const res = await fetch("/api/me", { credentials: "include" })
         if (!res.ok) {
-          router.replace("/auth")
+          window.location.replace("/auth")
           return
         }
         const data = await res.json()
         if (!data?.ok || Number(data.user?.id_rol) !== 4) {
-          router.replace("/")
+          window.location.replace("/")
           return
         }
         setAllowed(true)
       } catch {
-        router.replace("/auth")
+        window.location.replace("/auth")
       }
     }
     void check()
-  }, [router])
+  }, [])
 
   return { allowed }
 }

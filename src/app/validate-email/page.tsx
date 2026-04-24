@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense, useEffect, useState } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 
@@ -15,7 +15,6 @@ export default function ValidateEmailPage() {
 
 function ValidateEmailPageContent() {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const token = searchParams?.get("token")
   const hasToken = Boolean(token)
   const [status, setStatus] = useState<"loading" | "success" | "error">(hasToken ? "loading" : "error")
@@ -40,7 +39,7 @@ function ValidateEmailPageContent() {
           
           // Redirigir al login después de 3 segundos
           setTimeout(() => {
-            router.push("/auth")
+            window.location.assign("/auth")
           }, 3000)
         }
       } catch (error) {
@@ -51,7 +50,7 @@ function ValidateEmailPageContent() {
     }
 
     validateEmail()
-  }, [hasToken, token, router])
+  }, [hasToken, token])
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">

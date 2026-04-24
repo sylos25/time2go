@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { generateReservaPdf } from "../_lib/reserva-detalle-pdf";
 import { getReservaDerived, normalizeReservaDetalle, type ReservaDetalle } from "../_lib/reserva-detalle";
 import type { ReservaDetalleApiResponse } from "@/types/reservas";
@@ -15,7 +14,6 @@ type UseReservaDetalleParams = {
 };
 
 export function useReservaDetalle({ reservaIdParam }: UseReservaDetalleParams) {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reserva, setReserva] = useState<ReservaDetalle | null>(null);
@@ -69,7 +67,7 @@ export function useReservaDetalle({ reservaIdParam }: UseReservaDetalleParams) {
   const derived = useMemo(() => getReservaDerived(reserva), [reserva]);
 
   const handleBack = () => {
-    router.push("/mis-reservas");
+    window.location.assign("/mis-reservas");
   };
 
   const handleDownloadPdf = async () => {

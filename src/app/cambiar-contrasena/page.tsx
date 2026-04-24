@@ -1,6 +1,5 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
@@ -20,7 +19,6 @@ import { useChangePasswordPage } from "@/hooks/use-change-password-page"
 import { PASSWORD_MIN_LENGTH, validatePasswordPolicy } from "@/lib/password-policy"
 
 export default function CambiarContrasenaPage() {
-  const router = useRouter()
   const {
     user,
     loading,
@@ -38,7 +36,7 @@ export default function CambiarContrasenaPage() {
     setConfirmPassword,
     togglePasswordVisibility,
     handleSubmit,
-  } = useChangePasswordPage(router)
+  } = useChangePasswordPage()
   const passwordValidation = validatePasswordPolicy(newPassword)
 
   if (loading) {

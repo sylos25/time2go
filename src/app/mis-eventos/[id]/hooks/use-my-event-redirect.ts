@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 
 function normalizeId(param: string | string[] | undefined): number {
   const rawId = Array.isArray(param) ? param[0] : param
@@ -9,14 +9,13 @@ function normalizeId(param: string | string[] | undefined): number {
 }
 
 export function useMyEventRedirect() {
-  const router = useRouter()
   const params = useParams<{ id?: string | string[] }>()
 
   const id = useMemo(() => normalizeId(params?.id), [params?.id])
 
   useEffect(() => {
     if (!id) {
-      router.replace("/mis-eventos")
+      window.location.replace("/mis-eventos")
       return
     }
 
@@ -24,8 +23,8 @@ export function useMyEventRedirect() {
       sessionStorage.setItem("creator-event-view", String(id))
     }
 
-    router.replace(`/eventos/${id}`)
-  }, [id, router])
+    window.location.replace(`/eventos/${id}`)
+  }, [id])
 
   return { id }
 }
