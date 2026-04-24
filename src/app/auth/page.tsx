@@ -37,6 +37,34 @@ function AuthPageContent() {
   const postLoginRedirect = getSafeRedirectPath(searchParams?.get("redirect"))
 
   useEffect(() => {
+    let cancelled = false
+
+    const redirectIfAuthenticated = async () => {
+      try {
+        const response = await fetch("/api/me", { credentials: "include" })
+        const data = await response.json().catch(() => ({}))
+        if (!cancelled && response.ok && data?.ok) {
+          window.location.assign(postLoginRedirect)
+        }
+      } catch {
+        // Ignorar: si falla esta comprobación no bloqueamos el login
+      }
+    }
+
+    const onUserLogin = () => {
+      window.location.assign(postLoginRedirect)
+    }
+
+    window.addEventListener("user:login", onUserLogin)
+    void redirectIfAuthenticated()
+
+    return () => {
+      cancelled = true
+      window.removeEventListener("user:login", onUserLogin)
+    }
+  }, [postLoginRedirect])
+
+  useEffect(() => {
     if (searchParams?.get("registered") !== "true") return
     const showTimer = window.setTimeout(() => {
       setShowRegistrationSuccess(true)
