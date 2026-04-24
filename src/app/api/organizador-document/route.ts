@@ -179,13 +179,10 @@ export async function POST(req: Request) {
     await client.query("COMMIT")
 
     const amount = Number(selectedPlan.precio_cop).toFixed(2)
-    const responseUrl = encodeURIComponent(
+    const responseUrl =
       process.env.EPAYCO_RESPONSE_URL ||
-      `${SITE_URL}/perfil?pago=resultado&ref=${encodeURIComponent(paymentReference)}`,
-    )
-    const confirmationUrl = encodeURIComponent(
-      process.env.EPAYCO_CONFIRMATION_URL || `${SITE_URL}/api/epayco/webhook`,
-    )
+      `${SITE_URL}/epayco/respuesta?ref=${encodeURIComponent(paymentReference)}`
+    const confirmationUrl = process.env.EPAYCO_CONFIRMATION_URL || `${SITE_URL}/api/epayco/webhook`
 
     // Redirigir a la página intermedia que carga el SDK de ePayco (checkout.js)
     // ePayco NO acepta parámetros GET directos en su URL de checkout
@@ -195,11 +192,18 @@ export async function POST(req: Request) {
     checkoutUrl.searchParams.set("pk", EPAYCO_PUBLIC_KEY)
     checkoutUrl.searchParams.set("test", EPAYCO_TEST_MODE ? "true" : "false")
     checkoutUrl.searchParams.set("plan", String(selectedPlan.id_plan))
+    checkoutUrl.searchParams.set("uid", String(userId))
     checkoutUrl.searchParams.set("planName", selectedPlan.nombre_plan)
     checkoutUrl.searchParams.set("response", responseUrl)
     checkoutUrl.searchParams.set("confirmation", confirmationUrl)
 
-    return NextResponse.json({ ok: true, checkout_url: checkoutUrl.toString(), referencia_pago: paymentReference })
+    return NextResponse.json({
+      ok: true,
+      checkout_url: checkoutUrl.toString(),
+      referencia_pago: paymentReference,
+      response_url: responseUrl,
+      confirmation_url: confirmationUrl,
+    })
   } catch (error) {
     try {
       await client.query("ROLLBACK")

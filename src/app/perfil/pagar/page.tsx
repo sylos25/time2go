@@ -13,6 +13,7 @@ export default function PagarPage() {
   const amount = searchParams.get("amount") ?? "0"
   const pk = searchParams.get("pk") ?? ""
   const test = searchParams.get("test") ?? "true"
+  const userId = searchParams.get("uid") ?? ""
   const planId = searchParams.get("plan") ?? ""
   const planName = searchParams.get("planName") ?? "Plan organizador"
   const responseUrl = searchParams.get("response") ?? "/perfil"
@@ -57,7 +58,8 @@ export default function PagarPage() {
     script.dataset["epaycoResponse"] = decodeURIComponent(responseUrl)
     script.dataset["epaycoConfirmation"] = decodeURIComponent(confirmationUrl)
     script.dataset["epaycoExtra1"] = ref
-    script.dataset["epaycoExtra2"] = planId
+    script.dataset["epaycoExtra2"] = userId
+    script.dataset["epaycoExtra3"] = planId
 
     script.onload = () => {
       setStatus("ready")
@@ -74,7 +76,7 @@ export default function PagarPage() {
     }
 
     container.appendChild(script)
-  }, [hasRequiredParams, pk, ref, amount, test, planId, planName, responseUrl, confirmationUrl])
+  }, [hasRequiredParams, pk, ref, amount, test, userId, planId, planName, responseUrl, confirmationUrl])
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-8 bg-background">

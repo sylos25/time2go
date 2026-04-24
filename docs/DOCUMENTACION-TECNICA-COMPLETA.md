@@ -95,6 +95,9 @@ En `src/lib/token-revocation.ts`:
 
 - `src/app/perfil/pagar/page.tsx` carga `https://checkout.epayco.co/checkout.js`.
 - Configura `ref`, monto, plan y URLs de retorno/confirmación.
+- URL de respuesta canónica: `/epayco/respuesta?ref={referencia_pago}`.
+- URL de confirmación canónica: `/api/epayco/webhook`.
+- Metadatos enviados a ePayco: `x_extra1 = referencia_pago`, `x_extra2 = id_usuario`, `x_extra3 = id_plan`.
 
 ### 5.3 Confirmación servidor
 

@@ -17,6 +17,8 @@ type SitiosMapaDetailsPanelProps = {
   selectedTipoSitio: string
   nombreSitio: string
   direccion: string
+  latitud: string
+  longitud: string
   onSelectedTipoSitioChange: (value: string) => void
   onNombreSitioChange: (value: string) => void
   onDireccionChange: (value: string) => void
@@ -27,6 +29,8 @@ export function SitiosMapaDetailsPanel({
   selectedTipoSitio,
   nombreSitio,
   direccion,
+  latitud,
+  longitud,
   onSelectedTipoSitioChange,
   onNombreSitioChange,
   onDireccionChange,
@@ -73,6 +77,28 @@ export function SitiosMapaDetailsPanel({
             className="border-emerald-200 bg-white focus-visible:ring-emerald-400 dark:border-emerald-700/60 dark:bg-emerald-950/50"
           />
         </FieldGroup>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <FieldGroup label="Latitud" htmlFor="latitud">
+            <Input
+              id="latitud"
+              value={latitud}
+              readOnly
+              placeholder="Selecciona un punto en el mapa"
+              className="border-emerald-200 bg-emerald-50/40 text-emerald-900 focus-visible:ring-emerald-400 dark:border-emerald-700/60 dark:bg-emerald-950/50 dark:text-emerald-100"
+            />
+          </FieldGroup>
+
+          <FieldGroup label="Longitud" htmlFor="longitud">
+            <Input
+              id="longitud"
+              value={longitud}
+              readOnly
+              placeholder="Selecciona un punto en el mapa"
+              className="border-emerald-200 bg-emerald-50/40 text-emerald-900 focus-visible:ring-emerald-400 dark:border-emerald-700/60 dark:bg-emerald-950/50 dark:text-emerald-100"
+            />
+          </FieldGroup>
+        </div>
       </div>
     </SectionCard>
   )

@@ -214,7 +214,8 @@ En cada apartado, **Qué es** resume el producto o estándar; **Rol en Time2Go**
 - **Qué es:** **Pasarela de pagos** colombiana (PSE, tarjetas, billeteras, etc.) orientada a comercio electrónico; expone **checkout** embebido o redirección y **webhooks** para confirmar transacciones en el servidor.
 - **Rol en Time2Go:** Cobrar el proceso de **upgrade a organizador**; el webhook `transaction.updated` actualiza tablas de cambio de rol cuando el pago es válido.
 
-- **Checkout:** `EPAYCO_PUBLIC_KEY`; el monto se toma del plan elegido en `tabla_planes_organizador` (columna `precio_cop`). URL de retorno basada en `NEXT_PUBLIC_SITE_URL`.
+- **Checkout:** `EPAYCO_PUBLIC_KEY`; el monto se toma del plan elegido en `tabla_planes_organizador` (columna `precio_cop`). URL de retorno por defecto: `NEXT_PUBLIC_SITE_URL/epayco/respuesta?ref={referencia_pago}`.
+- **Metadatos:** `x_extra1 = referencia_pago`, `x_extra2 = id_usuario`, `x_extra3 = id_plan` para reconciliar la transacción con la suscripción interna.
 - **Webhook:** `EPAYCO_P_CUST_ID_CLIENTE` para validar firma del evento de confirmación. Actualiza `tabla_cambio_rol_usuario` y, si aprobado, sube rol del usuario.
 
 ### 6.6 Google Sign-In

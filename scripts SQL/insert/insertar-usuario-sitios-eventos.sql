@@ -146,3 +146,26 @@ INSERT INTO tabla_sitios_discapacitados (id_sitios_discapacitados, id_sitio, id_
 				   (2, 2, 2, 'Rampa en la entrada y para acceder entre los pisos de Neomundo'),
 				   (3, 2, 3, 'Señalización para discapacitados en Neomundo'),
 				   (4, 6, 2, 'Rampa de acceso al Parque Temático');
+
+-- Cargar la suscripcion del admin.
+INSERT INTO tabla_suscripciones_organizador (
+    id_usuario, id_plan, referencia_pago, id_transaccion_pago,
+    estado_suscripcion, monto_pago, moneda, fecha_inicio, fecha_fin, json_respuesta_pasarela
+)
+SELECT
+    4,
+    1,
+    'SUSC-U4-20260424-001',
+    'TXN-U4-20260424-001',
+    'activa',
+    29900.00,
+    'COP',
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP + INTERVAL '30 days',
+    '{"pasarela":"epayco","estado":"accepted"}'::jsonb
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM tabla_suscripciones_organizador
+    WHERE id_usuario = 4
+      AND estado_suscripcion = 'activa'
+);

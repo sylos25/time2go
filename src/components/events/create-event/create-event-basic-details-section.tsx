@@ -86,7 +86,7 @@ export function CreateEventBasicDetailsSection({
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="responsable_evento" className="font-semibold text-green-700">
-              Entidad responsable <span className="text-gray-400 font-normal">(opcional)</span>
+              Entidad responsable
             </Label>
             <p className="text-xs text-muted-foreground">Nombre de la entidad jurídica a cargo del desarrollo del evento</p>
             <Input

@@ -107,6 +107,8 @@ export function CreateSiteModal({ open, onOpenChange, onCreated }: CreateSiteMod
                   selectedTipoSitio={selectedTipoSitio}
                   nombreSitio={nombreSitio}
                   direccion={direccion}
+                  latitud={selectedCoords ? selectedCoords.lat.toFixed(8) : ""}
+                  longitud={selectedCoords ? selectedCoords.lng.toFixed(8) : ""}
                   onSelectedTipoSitioChange={setSelectedTipoSitio}
                   onNombreSitioChange={setNombreSitio}
                   onDireccionChange={setDireccion}
