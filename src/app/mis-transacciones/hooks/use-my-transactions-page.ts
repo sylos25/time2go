@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 
 import type {
@@ -59,10 +59,6 @@ export function useMyTransactionsPage() {
     loadTransactions()
   }, [router])
 
-  const goToHome = useCallback(() => {
-    router.push("/")
-  }, [router])
-
   const summaryText = useMemo(
     () => getSummaryText(loading, transacciones.length),
     [loading, transacciones.length]
@@ -73,6 +69,5 @@ export function useMyTransactionsPage() {
     error,
     transacciones,
     summaryText,
-    goToHome,
   }
 }

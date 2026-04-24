@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
 
 import type {
   MisValoracionesMutationResponse,
@@ -16,8 +15,6 @@ import {
 } from "@/app/mis-valoraciones/lib/mis-valoraciones-utils"
 
 export function useMyRatingsPage() {
-  const router = useRouter()
-
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [isLogin, setIsLogin] = useState(true)
 
@@ -207,22 +204,11 @@ export function useMyRatingsPage() {
     }
   }, [confirmId, openAuthModal])
 
-  const goToHome = useCallback(() => {
-    router.push("/")
-  }, [router])
-
-  const goToEvents = useCallback(() => {
-    router.push("/eventos")
-  }, [router])
-
-  const goToEvent = useCallback(
-    (item: Valoracion) => {
-      const pathId = getEventPathId(item)
-      if (!pathId) return
-      router.push(`/eventos/${pathId}`)
-    },
-    [router]
-  )
+  const getEventHref = useCallback((item: Valoracion) => {
+    const pathId = getEventPathId(item)
+    if (!pathId) return null
+    return `/eventos/${pathId}`
+  }, [])
 
   const summaryText = useMemo(() => getSummaryText(loading, valoraciones.length), [loading, valoraciones.length])
   const averageText = useMemo(() => getAverageRating(valoraciones), [valoraciones])
@@ -246,9 +232,7 @@ export function useMyRatingsPage() {
     openAuthModal,
     closeAuthModal,
     toggleAuthMode,
-    goToHome,
-    goToEvents,
-    goToEvent,
+    getEventHref,
     startEdit,
     cancelEdit,
     setEditRating,

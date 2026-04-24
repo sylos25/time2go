@@ -1,4 +1,5 @@
 import { Calendar, MapPin, Ticket } from "lucide-react"
+import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -7,10 +8,11 @@ import type { MyEventItem } from "@/app/mis-eventos/lib/mis-eventos-types"
 
 type MyEventCardProps = {
   event: MyEventItem
-  onOpenEvent: (id: number) => void
+  eventHref: string
+  onBeforeOpenEvent: (id: number) => void
 }
 
-export function MyEventCard({ event, onOpenEvent }: MyEventCardProps) {
+export function MyEventCard({ event, eventHref, onBeforeOpenEvent }: MyEventCardProps) {
   return (
     <Card className="bg-card/90 backdrop-blur-sm border border-border rounded-sm overflow-hidden">
       <CardHeader className="pb-2">
@@ -42,10 +44,12 @@ export function MyEventCard({ event, onOpenEvent }: MyEventCardProps) {
 
         <div className="pt-2 flex gap-2">
           <Button
+            asChild
             className="w-full bg-gradient-to-tr from-green-600 to-lime-500 text-white hover:from-green-500 hover:to-lime-400"
-            onClick={() => onOpenEvent(event.id)}
           >
-            Ver evento
+            <Link href={eventHref} onClick={() => onBeforeOpenEvent(event.id)}>
+              Ver evento
+            </Link>
           </Button>
         </div>
       </CardContent>

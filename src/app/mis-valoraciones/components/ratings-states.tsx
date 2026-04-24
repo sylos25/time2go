@@ -1,4 +1,5 @@
 import { Loader2, Star } from "lucide-react"
+import Link from "next/link"
 
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -7,7 +8,7 @@ type RatingsErrorStateProps = {
 }
 
 type RatingsEmptyStateProps = {
-  onExploreEvents: () => void
+  exploreEventsHref: string
 }
 
 export function RatingsLoadingState() {
@@ -28,7 +29,7 @@ export function RatingsErrorState({ error }: RatingsErrorStateProps) {
   )
 }
 
-export function RatingsEmptyState({ onExploreEvents }: RatingsEmptyStateProps) {
+export function RatingsEmptyState({ exploreEventsHref }: RatingsEmptyStateProps) {
   return (
     <Card className="bg-card/90 backdrop-blur-sm border border-border rounded-sm">
       <CardContent className="p-12 flex flex-col items-center text-center gap-4">
@@ -39,12 +40,12 @@ export function RatingsEmptyState({ onExploreEvents }: RatingsEmptyStateProps) {
             Asiste a un evento y cuentanos tu experiencia calificandolo.
           </p>
         </div>
-        <button
-          onClick={onExploreEvents}
+        <Link
+          href={exploreEventsHref}
           className="px-5 py-2 rounded-sm text-white text-sm font-medium bg-rose-600 hover:bg-rose-500 hover:scale-103 transition-colors cursor-pointer"
         >
           Explorar eventos
-        </button>
+        </Link>
       </CardContent>
     </Card>
   )

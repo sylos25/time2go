@@ -108,9 +108,6 @@ export function useMisReservas() {
     cancellingId,
     reservaToCancel,
     actions: {
-      goToHome: () => router.push("/"),
-      goToEventos: () => router.push("/eventos"),
-      goToReservaDetail: (reservaId: number) => router.push(`/mis-reservas/${reservaId}`),
       openCancelDialog,
       closeCancelDialog,
       confirmCancelReservation,

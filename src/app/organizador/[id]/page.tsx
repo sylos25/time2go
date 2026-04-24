@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
@@ -65,14 +66,14 @@ function slugify(value: string) {
 }
 
 /* ─── EventCard ──────────────────────────────────────────────────── */
-function EventCard({ ev, onClick }: { ev: EventoOrganizador; onClick: () => void }) {
+function EventCard({ ev, href }: { ev: EventoOrganizador; href: string }) {
   const thumb = ev.imagenes?.[0]?.url_imagen_evento;
   const hora = formatTime(ev.hora_inicio);
   const isPast = ev.fecha_inicio && new Date(ev.fecha_inicio) < new Date();
 
   return (
-    <div
-      onClick={onClick}
+    <Link
+      href={href}
       className={`group flex gap-4 rounded-2xl border bg-card p-4 shadow-sm cursor-pointer transition-all hover:shadow-md hover:border-green-300 ${isPast ? "opacity-60" : ""}`}
     >
       {/* Thumbnail */}
@@ -132,13 +133,12 @@ function EventCard({ ev, onClick }: { ev: EventoOrganizador; onClick: () => void
           </span>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
 /* ─── Page ───────────────────────────────────────────────────────── */
 export default function OrganizadorPage() {
-  const router = useRouter();
   const params = useParams();
   const rawId = params?.id;
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
@@ -190,7 +190,9 @@ export default function OrganizadorPage() {
               </div>
               <h2 className="text-xl font-semibold mb-2">Organizador no encontrado</h2>
               <p className="text-muted-foreground mb-4">El perfil que buscas no existe.</p>
-              <Button variant="outline" onClick={() => router.back()}>Volver</Button>
+              <Button asChild variant="outline">
+                <Link href="/eventos">Volver</Link>
+              </Button>
             </CardContent>
           </Card>
         </main>
@@ -205,13 +207,11 @@ export default function OrganizadorPage() {
   const eventosActivos = eventos.filter((e) => !e.fecha_inicio || new Date(e.fecha_inicio) >= new Date());
   const eventosPasados = eventos.filter((e) => e.fecha_inicio && new Date(e.fecha_inicio) < new Date());
 
-  const navigateToEvent = (ev: EventoOrganizador) => {
+  const getEventHref = (ev: EventoOrganizador) => {
     const slug = slugify(ev.nombre_evento);
-    router.push(
-      ev.id_publico_evento
-        ? `/eventos/${slug}?e=${encodeURIComponent(ev.id_publico_evento)}`
-        : `/eventos/${ev.id_evento}`
-    );
+    return ev.id_publico_evento
+      ? `/eventos/${slug}?e=${encodeURIComponent(ev.id_publico_evento)}`
+      : `/eventos/${ev.id_evento}`;
   };
 
   return (
@@ -223,9 +223,11 @@ export default function OrganizadorPage() {
 
           {/* Volver */}
           <div className="mb-6">
-            <Button variant="secondary" size="sm" onClick={() => router.back()} className="bg-card/80 backdrop-blur-sm hover:bg-card shadow-md">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver
+            <Button asChild variant="secondary" size="sm" className="bg-card/80 backdrop-blur-sm hover:bg-card shadow-md">
+              <Link href="/eventos">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Volver
+              </Link>
             </Button>
           </div>
 
@@ -289,7 +291,7 @@ export default function OrganizadorPage() {
                   </h2>
                   <div className="space-y-3">
                     {eventosActivos.map((ev) => (
-                      <EventCard key={ev.id_evento} ev={ev} onClick={() => navigateToEvent(ev)} />
+                      <EventCard key={ev.id_evento} ev={ev} href={getEventHref(ev)} />
                     ))}
                   </div>
                 </section>
@@ -303,7 +305,7 @@ export default function OrganizadorPage() {
                   </h2>
                   <div className="space-y-3">
                     {eventosPasados.map((ev) => (
-                      <EventCard key={ev.id_evento} ev={ev} onClick={() => navigateToEvent(ev)} />
+                      <EventCard key={ev.id_evento} ev={ev} href={getEventHref(ev)} />
                     ))}
                   </div>
                 </section>

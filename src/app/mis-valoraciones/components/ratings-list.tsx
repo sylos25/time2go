@@ -1,4 +1,5 @@
 import { CalendarDays, Check, Loader2, Pencil, Star, Trash2, X } from "lucide-react"
+import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -18,7 +19,7 @@ type RatingsListProps = {
   savingEdit: boolean
   editError: string | null
   editSuccess: string | null
-  onGoToEvent: (item: Valoracion) => void
+  getEventHref: (item: Valoracion) => string | null
   onStartEdit: (item: Valoracion) => void
   onCancelEdit: () => void
   onEditRatingChange: (value: number) => void
@@ -35,7 +36,7 @@ export function RatingsList({
   savingEdit,
   editError,
   editSuccess,
-  onGoToEvent,
+  getEventHref,
   onStartEdit,
   onCancelEdit,
   onEditRatingChange,
@@ -48,6 +49,7 @@ export function RatingsList({
       {valoraciones.map((item) => {
         const isEditing = editingId === item.id_valoracion
 
+        const eventHref = getEventHref(item)
         return (
           <Card
             key={item.id_valoracion}
@@ -72,12 +74,13 @@ export function RatingsList({
                 <div className="flex-1 p-5 flex flex-col gap-3">
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div className="flex-1 min-w-0">
-                      <button
-                        onClick={() => onGoToEvent(item)}
+                      <Link
+                        href={eventHref || "#"}
+                        aria-disabled={!eventHref}
                         className="font-semibold text-foreground text-left hover:text-green-600 transition-colors leading-tight line-clamp-1 w-full"
                       >
                         {item.nombre_evento}
-                      </button>
+                      </Link>
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                         <CalendarDays className="h-3.5 w-3.5 shrink-0" />
                         <span>{formatEventDateTime(item.fecha_inicio, item.hora_inicio)}</span>

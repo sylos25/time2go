@@ -9,7 +9,7 @@ import { useMyEventsPage } from "@/app/mis-eventos/hooks/use-my-events-page"
 import { Card, CardContent } from "@/components/ui/card"
 
 export default function MisEventosPage() {
-  const { loading, error, events, goToHome, goToExploreEvents, openEvent } = useMyEventsPage()
+  const { loading, error, events, beforeOpenEvent } = useMyEventsPage()
   const summaryText =
     events.length === 0
       ? "Aun no has creado ningun evento."
@@ -23,7 +23,7 @@ export default function MisEventosPage() {
             loading={loading}
             count={events.length}
             summaryText={summaryText}
-            onGoHome={goToHome}
+            homeHref="/"
           />
 
           {loading && <MisEventosLoadingState message="Cargando tus eventos..." />}
@@ -35,12 +35,16 @@ export default function MisEventosPage() {
           )}
 
           {!loading && !error && events.length === 0 && (
-            <MyEventsEmptyState onExploreEvents={goToExploreEvents} />
+            <MyEventsEmptyState exploreEventsHref="/eventos" />
           )}
 
           {!loading && !error && events.length > 0 && (
             <div className="mt-6">
-              <MyEventsGrid events={events} onOpenEvent={openEvent} />
+              <MyEventsGrid
+                events={events}
+                getEventHref={(id) => `/eventos/${id}`}
+                onBeforeOpenEvent={beforeOpenEvent}
+              />
             </div>
           )}
         </div>

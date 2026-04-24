@@ -3,14 +3,20 @@ import type { MyEventItem } from "@/app/mis-eventos/lib/mis-eventos-types"
 
 type MyEventsGridProps = {
   events: MyEventItem[]
-  onOpenEvent: (id: number) => void
+  getEventHref: (id: number) => string
+  onBeforeOpenEvent: (id: number) => void
 }
 
-export function MyEventsGrid({ events, onOpenEvent }: MyEventsGridProps) {
+export function MyEventsGrid({ events, getEventHref, onBeforeOpenEvent }: MyEventsGridProps) {
   return (
     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
       {events.map((event) => (
-        <MyEventCard key={event.id} event={event} onOpenEvent={onOpenEvent} />
+        <MyEventCard
+          key={event.id}
+          event={event}
+          eventHref={getEventHref(event.id)}
+          onBeforeOpenEvent={onBeforeOpenEvent}
+        />
       ))}
     </div>
   )

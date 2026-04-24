@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 import {
   Dialog,
   DialogContent,
@@ -13,13 +14,13 @@ import {
 interface CreateEventSuccessDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onGoEvents: () => void
+  eventsHref: string
 }
 
 export function CreateEventSuccessDialog({
   open,
   onOpenChange,
-  onGoEvents,
+  eventsHref,
 }: CreateEventSuccessDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -36,14 +37,8 @@ export function CreateEventSuccessDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Permanecer en el formulario
           </Button>
-          <Button
-            className="bg-gradient-to-tr from-green-700 to-lime-500 text-white"
-            onClick={() => {
-              onOpenChange(false)
-              onGoEvents()
-            }}
-          >
-            Ir a eventos
+          <Button asChild className="bg-gradient-to-tr from-green-700 to-lime-500 text-white">
+            <Link href={eventsHref}>Ir a eventos</Link>
           </Button>
         </DialogFooter>
       </DialogContent>

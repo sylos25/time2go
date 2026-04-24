@@ -1,4 +1,5 @@
 import { CalendarDays, Heart, Loader2, MapPin, Trash2, Users } from "lucide-react"
+import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -9,21 +10,21 @@ import { formatDisplayPrice } from "@/app/mis-favoritos/lib/mis-favoritos-utils"
 type FavoriteEventCardProps = {
   event: FavoriteEvent
   removingId: number | null
-  onOpenDetail: (eventId: number) => void
+  getEventHref: (eventId: number) => string
   onRemoveFavorite: (eventId: number) => void
 }
 
 type FavoriteEventsListProps = {
   favorites: FavoriteEvent[]
   removingId: number | null
-  onOpenDetail: (eventId: number) => void
+  getEventHref: (eventId: number) => string
   onRemoveFavorite: (eventId: number) => void
 }
 
 function FavoriteEventCard({
   event,
   removingId,
-  onOpenDetail,
+  getEventHref,
   onRemoveFavorite,
 }: FavoriteEventCardProps) {
   return (
@@ -43,12 +44,12 @@ function FavoriteEventCard({
           <div className="flex-1 p-5 flex flex-col gap-3">
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div className="flex-1 min-w-0">
-                <button
-                  onClick={() => onOpenDetail(event.id_evento)}
+                <Link
+                  href={getEventHref(event.id_evento)}
                   className="font-semibold text-foreground text-left hover:text-green-600 transition-colors leading-tight line-clamp-1 w-full"
                 >
                   {event.nombre_evento}
-                </button>
+                </Link>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                   <CalendarDays className="h-3.5 w-3.5 shrink-0" />
                   <span>
@@ -84,12 +85,12 @@ function FavoriteEventCard({
             <div className="flex items-center justify-between mt-auto pt-1 flex-wrap gap-2">
               <span className="text-sm font-semibold text-lime-600">{formatDisplayPrice(event.price)}</span>
               <div className="flex gap-2">
-                <button
-                  onClick={() => onOpenDetail(event.id_evento)}
+                <Link
+                  href={getEventHref(event.id_evento)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-medium border border-border text-foreground hover:border-green-500 hover:text-green-600 transition-colors cursor-pointer"
                 >
                   Ver detalle
-                </button>
+                </Link>
                 <button
                   onClick={() => onRemoveFavorite(event.id_evento)}
                   disabled={removingId === event.id_evento}
@@ -114,7 +115,7 @@ function FavoriteEventCard({
 export function FavoriteEventsList({
   favorites,
   removingId,
-  onOpenDetail,
+  getEventHref,
   onRemoveFavorite,
 }: FavoriteEventsListProps) {
   return (
@@ -124,7 +125,7 @@ export function FavoriteEventsList({
           key={event.id_evento}
           event={event}
           removingId={removingId}
-          onOpenDetail={onOpenDetail}
+          getEventHref={getEventHref}
           onRemoveFavorite={onRemoveFavorite}
         />
       ))}

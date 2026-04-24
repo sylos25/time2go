@@ -1,4 +1,5 @@
 import { Heart, Loader2 } from "lucide-react"
+import Link from "next/link"
 
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -7,7 +8,7 @@ type FavoritesErrorStateProps = {
 }
 
 type FavoritesEmptyStateProps = {
-  onExploreEvents: () => void
+  exploreEventsHref: string
 }
 
 export function FavoritesLoadingState() {
@@ -28,7 +29,7 @@ export function FavoritesErrorState({ error }: FavoritesErrorStateProps) {
   )
 }
 
-export function FavoritesEmptyState({ onExploreEvents }: FavoritesEmptyStateProps) {
+export function FavoritesEmptyState({ exploreEventsHref }: FavoritesEmptyStateProps) {
   return (
     <Card className="bg-card/90 backdrop-blur-sm border-border rounded-sm">
       <CardContent className="p-12 flex flex-col items-center text-center gap-4">
@@ -39,12 +40,12 @@ export function FavoritesEmptyState({ onExploreEvents }: FavoritesEmptyStateProp
             Marca con el corazon los eventos que quieres revisar o reservar despues.
           </p>
         </div>
-        <button
-          onClick={onExploreEvents}
+        <Link
+          href={exploreEventsHref}
           className="px-5 py-2 rounded-sm text-white text-sm font-medium bg-rose-600 hover:scale-103 hover:bg-rose-500 transition-all cursor-pointer"
         >
           Explorar eventos
-        </button>
+        </Link>
       </CardContent>
     </Card>
   )

@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   canCancelReservation,
@@ -10,14 +11,14 @@ import {
 type ReservationCardProps = {
   reserva: ReservaItem;
   cancellingId: number | null;
-  onView: (reservaId: number) => void;
+  getViewHref: (reservaId: number) => string;
   onCancel: (reserva: ReservaItem) => void;
 };
 
 export function ReservationCard({
   reserva,
   cancellingId,
-  onView,
+  getViewHref,
   onCancel,
 }: ReservationCardProps) {
   const canCancel = canCancelReservation(reserva);
@@ -55,11 +56,11 @@ export function ReservationCard({
 
         <div className="pt-2 grid grid-cols-2 gap-2">
           <Button
+            asChild
             size="sm"
             className="w-full bg-gradient-to-tr from-green-600 to-lime-500 text-white hover:from-green-500 hover:to-lime-400"
-            onClick={() => onView(Number(reserva.id_reserva_evento))}
           >
-            Ver reserva
+            <Link href={getViewHref(Number(reserva.id_reserva_evento))}>Ver reserva</Link>
           </Button>
           <Button
             variant="outline"

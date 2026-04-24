@@ -2,6 +2,7 @@
 
 import type { RefObject } from "react"
 import { ArrowLeft } from "lucide-react"
+import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 import { TicketSection } from "@/components/events/create-event/ticket-section"
@@ -19,9 +20,9 @@ type CreateEventPageContentProps = {
   imageInputRef: RefObject<HTMLInputElement | null>
   createSiteModalOpen: boolean
   setCreateSiteModalOpen: (value: boolean) => void
-  onBack: () => void
-  onGoHome: () => void
-  onGoEvents: () => void
+  backHref: string
+  homeHref: string
+  eventsHref: string
 }
 
 export function CreateEventPageContent({
@@ -29,9 +30,9 @@ export function CreateEventPageContent({
   imageInputRef,
   createSiteModalOpen,
   setCreateSiteModalOpen,
-  onBack,
-  onGoHome,
-  onGoEvents,
+  backHref,
+  homeHref,
+  eventsHref,
 }: CreateEventPageContentProps) {
   const {
     authorized,
@@ -58,16 +59,14 @@ export function CreateEventPageContent({
       <main className="flex-grow bg-background">
         <div className="pt-24 pb-16">
           {authorized !== true ? (
-            <CreateEventAccessState authorized={authorized} onGoHome={onGoHome} />
+            <CreateEventAccessState authorized={authorized} homeHref={homeHref} />
           ) : (
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-10 mt-8">
               <div className="flex items-center gap-4 mb-10">
-                <Button
-                  onClick={onBack}
-                  variant="ghost"
-                  className="rounded-full h-10 w-10 p-0 hover:bg-gray-200"
-                >
-                  <ArrowLeft className="h-5 w-5" />
+                <Button asChild variant="ghost" className="rounded-full h-10 w-10 p-0 hover:bg-gray-200">
+                  <Link href={backHref}>
+                    <ArrowLeft className="h-5 w-5" />
+                  </Link>
                 </Button>
                 <div className="ml-29 text-center">
                   <h1 className="text-5xl font-bold bg-gradient-to-tr from-fuchsia-700 to-red-600 bg-clip-text text-transparent">
@@ -134,12 +133,12 @@ export function CreateEventPageContent({
                     {isLoading ? "Creando..." : "Crear Evento"}
                   </Button>
                   <Button
-                    onClick={onBack}
+                    asChild
                     variant="outline"
                     disabled={isLoading}
                     className="flex-1 rounded-xl py-5 text-lg hover:scale-103"
                   >
-                    Cancelar
+                    <Link href={backHref}>Cancelar</Link>
                   </Button>
                 </div>
                 {formErrors.general && <p className="text-sm text-red-600">{formErrors.general}</p>}
@@ -152,7 +151,7 @@ export function CreateEventPageContent({
       <CreateEventSuccessDialog
         open={successDialogOpen}
         onOpenChange={setSuccessDialogOpen}
-        onGoEvents={onGoEvents}
+        eventsHref={eventsHref}
       />
 
       <CreateSiteModal

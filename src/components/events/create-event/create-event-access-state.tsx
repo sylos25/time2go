@@ -1,15 +1,16 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 interface CreateEventAccessStateProps {
   authorized: boolean | null
-  onGoHome: () => void
+  homeHref: string
 }
 
 export function CreateEventAccessState({
   authorized,
-  onGoHome,
+  homeHref,
 }: CreateEventAccessStateProps) {
   if (authorized === false) {
     return (
@@ -20,8 +21,8 @@ export function CreateEventAccessState({
             La cuenta actual no tiene permisos para crear eventos. Se requiere una cuenta autorizada para continuar.
           </p>
           <div className="mt-6">
-            <Button onClick={onGoHome} className="bg-lime-600 text-white">
-              Volver al inicio
+            <Button asChild className="bg-lime-600 text-white">
+              <Link href={homeHref}>Volver al inicio</Link>
             </Button>
           </div>
         </div>

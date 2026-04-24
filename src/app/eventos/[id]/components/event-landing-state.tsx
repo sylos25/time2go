@@ -1,4 +1,5 @@
 import { Calendar } from "lucide-react"
+import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -15,10 +16,10 @@ export function EventLandingLoadingState() {
 }
 
 type EventLandingNotFoundStateProps = {
-  onExploreEvents: () => void
+  exploreHref: string
 }
 
-export function EventLandingNotFoundState({ onExploreEvents }: EventLandingNotFoundStateProps) {
+export function EventLandingNotFoundState({ exploreHref }: EventLandingNotFoundStateProps) {
   return (
     <main className="min-h-screen bg-background flex items-center justify-center">
       <Card className="max-w-md w-full mx-4">
@@ -30,8 +31,8 @@ export function EventLandingNotFoundState({ onExploreEvents }: EventLandingNotFo
           <p className="text-muted-foreground mb-4">
             El evento que buscas no existe o ha sido eliminado.
           </p>
-          <Button variant="outline" onClick={onExploreEvents}>
-            Explorar eventos
+          <Button asChild variant="outline">
+            <Link href={exploreHref}>Explorar eventos</Link>
           </Button>
         </CardContent>
       </Card>

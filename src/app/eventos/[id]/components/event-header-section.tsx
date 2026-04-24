@@ -1,4 +1,5 @@
 import { ArrowLeft } from "lucide-react"
+import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 
@@ -8,7 +9,7 @@ type EventHeaderSectionProps = {
   eventName: string
   images: EventImage[]
   selectedImage: number
-  onBack: () => void
+  backHref: string
   onSelectImage: (index: number) => void
   onNextImage: () => void
   onPrevImage: () => void
@@ -18,7 +19,7 @@ export function EventHeaderSection({
   eventName,
   images,
   selectedImage,
-  onBack,
+  backHref,
   onSelectImage,
   onNextImage,
   onPrevImage,
@@ -26,14 +27,11 @@ export function EventHeaderSection({
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24">
       <div className="mb-4">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onBack}
-          className="bg-card/80 backdrop-blur-sm hover:bg-card shadow-md"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Volver
+        <Button asChild variant="secondary" size="sm" className="bg-card/80 backdrop-blur-sm hover:bg-card shadow-md">
+          <Link href={backHref}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver
+          </Link>
         </Button>
       </div>
 
