@@ -74,10 +74,45 @@ const swiperBreakpoints = {
   1280: { slidesPerView: 4 },
 }
 
+function buildCarouselItems(events: FeaturedEvent[], minItems = 8): Array<{ key: string; event: FeaturedEvent }> {
+  if (events.length === 0) return []
+
+  const repeated: FeaturedEvent[] = []
+  let index = 0
+  while (repeated.length < minItems) {
+    repeated.push(events[index % events.length])
+    index += 1
+  }
+
+  return repeated.map((event, itemIndex) => ({
+    key: `${event.id}-${itemIndex}`,
+    event,
+  }))
+}
+
 export function EventsPreview() {
   const [featuredEvents, setFeaturedEvents] = useState<FeaturedEvent[]>([])
   const [landingCategories, setLandingCategories] = useState<LandingCategory[]>([])
   const [loading, setLoading] = useState(true)
+  const [carouselMinItems, setCarouselMinItems] = useState(8)
+
+  useEffect(() => {
+    const resolveMinItems = () => {
+      const width = window.innerWidth
+      if (width >= 1280) return 12
+      if (width >= 1024) return 10
+      if (width >= 640) return 8
+      return 6
+    }
+
+    const onResize = () => {
+      setCarouselMinItems(resolveMinItems())
+    }
+
+    onResize()
+    window.addEventListener("resize", onResize)
+    return () => window.removeEventListener("resize", onResize)
+  }, [])
 
   useEffect(() => {
     const fetchFeaturedEvents = async () => {
@@ -284,44 +319,50 @@ export function EventsPreview() {
     title: string
     events: FeaturedEvent[]
     delay: number
-  }) => (
-    <>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
-        <div className="flex items-center gap-4">
-          {/* Línea decorativa izquierda */}
-          <div className="h-8 w-1.5 rounded-full bg-gradient-to-b from-green-500 to-lime-400 flex-shrink-0" />
-          <div>
-            <h3 className="text-3xl lg:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-green-600 to-lime-500 bg-clip-text text-transparent">
-              {title}
-            </h3>
-            <p className="text-sm text-muted-foreground mt-0.5 font-medium tracking-wide uppercase">
-              Eventos destacados
-            </p>
+  }) => {
+    const carouselItems = buildCarouselItems(events, carouselMinItems)
+
+    return (
+      <>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+          <div className="flex items-center gap-4">
+            {/* Línea decorativa izquierda */}
+            <div className="h-8 w-1.5 rounded-full bg-gradient-to-b from-green-500 to-lime-400 flex-shrink-0" />
+            <div>
+              <h3 className="text-3xl lg:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-green-600 to-lime-500 bg-clip-text text-transparent">
+                {title}
+              </h3>
+              <p className="text-sm text-muted-foreground mt-0.5 font-medium tracking-wide uppercase">
+                Eventos destacados
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="mb-14 px-4 sm:px-6 lg:px-8">
-        <Swiper
-          modules={[Navigation, Pagination, Autoplay]}
-          spaceBetween={20}
-          slidesPerView={1.2}
-          loop={true}
-          navigation={true}
-          pagination={{ clickable: true }}
-          autoplay={{ delay, disableOnInteraction: false }}
-          breakpoints={swiperBreakpoints}
-          className="events-swiper"
-        >
-          {events.map((event) => (
-            <SwiperSlide key={event.id} className="pb-2">
-              <EventCard event={event} />
-            </SwiperSlide>
-          ))}
-        </Swiper>
-      </div>
-    </>
-  )
+        <div className="mb-14 px-4 sm:px-6 lg:px-8">
+          <Swiper
+            modules={[Navigation, Pagination, Autoplay]}
+            spaceBetween={20}
+            slidesPerView={1.2}
+            centeredSlides={true}
+            loop={carouselItems.length > 1}
+            loopAdditionalSlides={carouselItems.length}
+            navigation={true}
+            pagination={{ clickable: true }}
+            autoplay={{ delay, disableOnInteraction: false }}
+            breakpoints={swiperBreakpoints}
+            className="events-swiper"
+          >
+            {carouselItems.map(({ key, event }) => (
+              <SwiperSlide key={key} className="pb-2">
+                <EventCard event={event} />
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        </div>
+      </>
+    )
+  }
 
   return (
     <section className="py-16 lg:py-24 pt-24 overflow-hidden">

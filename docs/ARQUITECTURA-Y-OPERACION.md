@@ -37,7 +37,7 @@ El despliegue previsto es **`next build` + `next start`** (Node). La configuraci
 | Bot / human check | **Cloudflare Turnstile** (`@marsidev/react-turnstile` + verificación servidor) |
 | Redis serverless | **@upstash/redis**; **@upstash/ratelimit** (módulo `login-rate-limit.ts`; ver nota en §7) |
 
-Scripts npm habituales: `npm run dev` (Turbopack), `npm run build`, `npm run start`, `npm run lint`.
+Scripts npm habituales: `npm run dev` (Turbopack), `npm run dev:webpack` (compatibilidad), `npm run build`, `npm run start`, `npm run lint`.
 
 ### 2.1 Piezas del stack: qué son y para qué (resumen)
 
@@ -148,6 +148,8 @@ El cliente además guarda en **`localStorage`**: `token`, `userName`, `userRole`
 
 ### 5.5 Cierre de sesión (`POST /api/logout`)
 
+- Revoca `jti` de access y refresh cuando existen.
+- Invalida la sesión activa (`sid`) en Redis (`active-session`) para evitar refresh residual tras logout.
 - Limpia cookies `token` y `refresh_token` (max-age 0) con mismas opciones de dominio/secure.
 
 ### 5.6 Dos modos de lectura del JWT en API
@@ -376,7 +378,24 @@ El código TypeScript **no** usa ORM; ejecuta SQL con **`pg`** y, en algunos flu
 
 ---
 
-## 14. Dónde profundizar en código
+## 14. Cambios recientes de UX y rendimiento (Abr 2026)
+
+- Auth web:
+  - Conservación de `redirect` al cambiar entre pasos de `/auth` (`choice`, `login`, `register`).
+  - Botón de acceso del header redirige a `/auth?step=login` con `redirect` de la ruta actual.
+- Login modal:
+  - Ajustes de centrado y consistencia visual del título/CTA.
+- Carruseles de destacados:
+  - Inicio centrado (`centeredSlides`) y repetición automática de eventos cuando hay pocos registros.
+  - Relleno dinámico por ancho de pantalla para sostener loop visual.
+- Build/dev:
+  - `npm run dev` usa Turbopack por defecto.
+  - `next.config.ts` activa `experimental.optimizePackageImports` para paquetes pesados UI/data.
+  - `tsconfig.json` reduce patrones `include` globales para disminuir trabajo de type-check.
+
+---
+
+## 15. Dónde profundizar en código
 
 | Tema | Archivos |
 |------|----------|

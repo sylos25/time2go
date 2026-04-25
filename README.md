@@ -59,6 +59,7 @@ El proyecto usa **Turbopack** en `dev` (`next dev --turbopack`). La entrada de l
 | Comando        | Descripción              |
 |----------------|--------------------------|
 | `npm run dev`  | Desarrollo con Turbopack |
+| `npm run dev:webpack` | Desarrollo forzado con Webpack |
 | `npm run build`| Compilación producción   |
 | `npm run start`| Servidor tras `build`    |
 | `npm run lint` | ESLint                   |
@@ -82,10 +83,20 @@ Despliegue habitual: **`next build`** + **`next start`** en un entorno Node (no 
 
 ## Autenticación y sesión (resumen)
 
-- Tras el login, el servidor fija cookies **HttpOnly** (`token`, `refresh_token`). El cliente también guarda el access en **`localStorage`** para enviar `Authorization: Bearer` en muchas peticiones; conviene mitigar **XSS** (CSP, sanitización). Detalle en la doc de arquitectura.
+- Tras el login, el servidor fija cookies **HttpOnly** (`token`, `refresh_token`). El cliente también guarda metadatos de sesión en `localStorage` (`userName`, `userRole`, `accessExpiresAt`) para hidratar UI y refresco controlado; conviene mitigar **XSS** (CSP, sanitización). Detalle en la doc de arquitectura.
 - **`POST /api/refresh`** renueva tokens (con comprobación de `Origin`).
-- **`POST /api/logout`** limpia cookies y el cliente debe limpiar `localStorage`.
+- **`POST /api/logout`** revoca `jti`, limpia cookies y además invalida la sesión activa en Redis para bloquear refrescos residuales.
 - Utilidades de sesión en servidor: p. ej. `src/lib/auth-request.ts`, `src/lib/get-session.ts`.
+
+---
+
+## Notas recientes (Abr 2026)
+
+- Flujo de auth: el parámetro `redirect` ahora se conserva al pasar entre `step=login` y `step=register`, evitando perder el destino original tras autenticación.
+- Header: el botón de acceso envía a `/auth?step=login` con `redirect` de la ruta actual (excepto `/`), mejorando continuidad de navegación.
+- Login modal: ajustes visuales de centrado y coherencia de estilo para título/CTA.
+- Carruseles de eventos destacados: inicio centrado y repetición automática de tarjetas cuando hay pocos eventos (incluido 1), con relleno dinámico según breakpoint.
+- Build/dev: mejoras de tiempo de compilación con `next dev` (Turbopack), `optimizePackageImports` y reducción de alcance de TypeScript en `tsconfig.json`.
 
 ---
 

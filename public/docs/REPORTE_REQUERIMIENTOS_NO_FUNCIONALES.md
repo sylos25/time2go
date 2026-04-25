@@ -1,6 +1,6 @@
 # Reporte de Requerimientos No Funcionales (RNF)
 
-Fecha: 2026-03-27  
+Fecha: 2026-04-25  
 Proyecto: Time2Go (Next.js)
 
 ## 1. Objetivo y alcance
@@ -24,14 +24,15 @@ Principales fortalezas:
 
 - Control de acceso por roles en middleware y APIs.
 - Sesion con cookie HttpOnly + SameSite + expiracion JWT.
+- Revocacion por `jti` + cancelacion de sesion activa (`sid`) en logout.
 - Mitigacion de fuerza bruta en login con limites y bloqueos progresivos.
 - Validaciones de payload y respuestas de error consistentes.
 - Restricciones de tipo/tamano de archivos y sanitizacion de paths.
+- Cabeceras de seguridad HTTP globales (incluyendo CSP) declaradas en `next.config.ts`.
 
 Principales brechas tecnicas detectadas:
 
 - El rate limit de login es en memoria de proceso (no distribuido).
-- Falta de cabeceras de seguridad HTTP explicitas (CSP, HSTS, X-Frame-Options, etc.).
 - Monitoreo y auditoria centralizada no visibles (solo logs por consola).
 - Hay mecanismos de bloqueo de teclado/navegacion que pueden impactar accesibilidad.
 - No se observan SLO/SLA ni objetivos de rendimiento formalizados.
@@ -61,7 +62,14 @@ Principales brechas tecnicas detectadas:
 - Criterio tecnico: El token de sesion debe poder viajar en cookie `HttpOnly` para reducir exposicion en cliente.
 - Evidencia:
   - `src/app/api/login/route.ts` setea cookie `token` con `HttpOnly`, `SameSite=lax`, `Secure` en produccion.
-  - `src/app/api/logout/route.ts` limpia la cookie de sesion.
+  - `src/app/api/logout/route.ts` limpia cookies y revoca la sesion activa para impedir refresh residual.
+
+### RNF-SEC-12: Revocacion e invalidacion de sesion en logout
+- Estado actual: Implementado.
+- Criterio tecnico: Al cerrar sesion debe invalidarse tanto el token como el identificador de sesion activa del usuario.
+- Evidencia:
+  - `src/app/api/logout/route.ts` revoca `jti` de access/refresh y llama `clearActiveSession(...)`.
+  - `src/lib/active-session.ts` elimina keys v2/legacy segun `userId` y `sid`.
   - `src/lib/get-session.ts` y `src/app/api/me/route.ts` soportan lectura desde cookie.
 
 ### RNF-SEC-04: Proteccion anti-fuerza-bruta y antiabuso en login
@@ -256,13 +264,13 @@ Principales brechas tecnicas detectadas:
 Prioridad alta:
 
 1. Migrar rate limit de login a almacenamiento compartido (Redis o similar) para entornos con multiples instancias.
-2. Definir cabeceras de seguridad HTTP globales: CSP, HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy.
-3. Incorporar monitoreo centralizado (logs estructurados, correlacion por request, alertas).
+2. Incorporar monitoreo centralizado (logs estructurados, correlacion por request, alertas).
+3. Definir objetivos operativos medibles (SLO/SLA con umbrales de latencia y disponibilidad).
 
 Prioridad media:
 
 1. Revisar `SecurityProvider` para evitar bloqueos que afecten accesibilidad y usabilidad legitima.
-2. Definir objetivos operativos medibles (SLO de disponibilidad y latencia p95/p99).
+2. Endurecer cabeceras de seguridad en borde (por ejemplo HSTS segun estrategia de dominio/HTTPS).
 3. Ajustar parametros de `pg.Pool` (timeouts, max conexiones, idle timeout) segun carga esperada.
 
 Prioridad baja:

@@ -168,12 +168,14 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         </div>
       )}
 
-      <Button
-        type="submit"
-        className="mx-auto w-full sm:w-80 bg-rose-600 text-white font-medium py-6 rounded-sm text-lg transition-all duration-300 ease-in-out hover:scale-103 hover:bg-rose-500 hover:text-white"
-      >
-        Iniciar Sesión
-      </Button>
+      <div className="flex justify-center">
+        <Button
+          type="submit"
+          className="w-full max-w-80 bg-rose-600 text-white font-medium py-6 rounded-sm text-lg transition-all duration-300 ease-in-out hover:scale-103 hover:bg-rose-500 hover:text-white"
+        >
+          Iniciar Sesión
+        </Button>
+      </div>
 
       </form>
 

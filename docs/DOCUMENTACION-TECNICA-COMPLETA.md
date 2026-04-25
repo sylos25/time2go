@@ -66,6 +66,7 @@ time2go/
 2. Emite par de tokens (`access` + `refresh`) y fija cookies `HttpOnly`.
 3. `POST /api/refresh` rota refresh, revoca `jti` anterior y renueva cookies.
 4. `POST /api/logout` invalida sesión y limpia cookies.
+5. `/auth` preserva `redirect` entre pasos (`choice`/`login`/`register`) para no perder el destino original.
 
 ### 4.2 Redis y seguridad de sesión activa (cambio reciente)
 
@@ -79,6 +80,10 @@ En `src/lib/active-session.ts`:
 En `src/lib/token-revocation.ts`:
 
 - Revocación por `jti` con TTL hasta expiración: `revoked:jti:{jti}`.
+
+En `src/app/api/logout/route.ts` (ajuste reciente):
+
+- Además de revocar `jti` y limpiar cookies, se elimina explícitamente la sesión activa `sid` en Redis con `clearActiveSession(...)`, evitando que un refresh residual mantenga sesión abierta.
 
 ---
 
@@ -172,6 +177,17 @@ Plantilla real: `.env.example`.
   - `docs/DOCUMENTACION-TECNICA-COMPLETA.md`
   - `src/app/docs/page.tsx` (si aplica al contenido visible en `/docs`)
   - `.env.example` (si hay nuevas variables)
+
+### 9.1 Cambios UI/UX y rendimiento (Abr 2026)
+
+- Login modal: alineación y consistencia visual del encabezado/CTA.
+- Header + auth: continuidad de navegación mediante `redirect` preservado.
+- `events-preview`: carruseles centrados y con repetición automática cuando hay pocos eventos (incluyendo único evento), con relleno por breakpoint.
+- Build:
+  - `npm run dev` pasa a Turbopack por defecto (`next dev`).
+  - Nuevo script `npm run dev:webpack` para fallback.
+  - `optimizePackageImports` habilitado en Next para reducir carga de paquetes pesados.
+  - `tsconfig.json` con `include` más acotado para acortar type-check.
 
 ---
 
