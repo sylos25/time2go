@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyToken } from "@/lib/jwt";
 import { revokeTokenJti } from "@/lib/token-revocation";
 import { appendSessionCookies, buildClearedSessionCookies, isTrustedOrigin, readAuthCookies } from "@/lib/auth-session-http";
+import { clearActiveSession } from "@/lib/active-session";
 
 export async function POST(req: Request) {
   if (!isTrustedOrigin(req)) {
@@ -20,6 +21,12 @@ export async function POST(req: Request) {
         typeof accessPayload.exp === "number" ? accessPayload.exp : undefined
       );
     }
+    if (accessPayload?.id_usuario) {
+      await clearActiveSession(
+        String(accessPayload.id_usuario),
+        accessPayload.sid ? String(accessPayload.sid) : undefined
+      );
+    }
   }
 
   if (refreshToken) {
@@ -28,6 +35,12 @@ export async function POST(req: Request) {
       await revokeTokenJti(
         String(refreshPayload.jti),
         typeof refreshPayload.exp === "number" ? refreshPayload.exp : undefined
+      );
+    }
+    if (refreshPayload?.id_usuario) {
+      await clearActiveSession(
+        String(refreshPayload.id_usuario),
+        refreshPayload.sid ? String(refreshPayload.sid) : undefined
       );
     }
   }

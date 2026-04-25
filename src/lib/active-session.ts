@@ -179,3 +179,34 @@ export async function isActiveSessionValid(userId: string, sessionId?: string | 
     return true;
   }
 }
+
+export async function clearActiveSession(userId: string, sessionId?: string | null): Promise<void> {
+  if (!userId) return;
+
+  const redis = getRedisClient();
+  if (!redis) return;
+
+  const key = await keyForUser(userId);
+  if (!key) return;
+
+  try {
+    if (typeof sessionId === "string" && sessionId.length > 0) {
+      const active = await redis.get<string>(key);
+      const legacyKey = legacyKeyForUser(userId);
+      const legacyActive = await redis.get<string>(legacyKey);
+
+      if (active === sessionId) {
+        await redis.del(key);
+      }
+      if (legacyActive === sessionId) {
+        await redis.del(legacyKey);
+      }
+      return;
+    }
+
+    await redis.del(key);
+    await redis.del(legacyKeyForUser(userId));
+  } catch (error) {
+    console.error("[active-session] Failed to clear active session", error);
+  }
+}

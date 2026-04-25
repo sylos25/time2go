@@ -16,6 +16,14 @@ function getSafeRedirectPath(rawRedirect: string | null): string {
   return rawRedirect
 }
 
+function buildAuthStepHref(step: "login" | "register", redirectPath: string): string {
+  const params = new URLSearchParams({ step })
+  if (redirectPath !== "/") {
+    params.set("redirect", redirectPath)
+  }
+  return `/auth?${params.toString()}`
+}
+
 export default function AuthPage() {
   return (
     <Suspense fallback={<main className="relative min-h-screen overflow-hidden bg-background" />}>
@@ -35,6 +43,8 @@ function AuthPageContent() {
   const step: "choice" | "login" | "register" =
     stepParam === "login" || stepParam === "register" ? stepParam : "choice"
   const postLoginRedirect = getSafeRedirectPath(searchParams?.get("redirect"))
+  const loginStepHref = buildAuthStepHref("login", postLoginRedirect)
+  const registerStepHref = buildAuthStepHref("register", postLoginRedirect)
 
   useEffect(() => {
     let cancelled = false
@@ -144,7 +154,7 @@ function AuthPageContent() {
                   asChild
                   className="w-80 bg-rose-600 text-white font-medium py-6 rounded-sm text-lg transition-all duration-300 ease-in-out hover:scale-103 hover:bg-rose-500 hover:text-white"
                 >
-                  <Link href="/auth?step=login">Iniciar Sesión</Link>
+                  <Link href={loginStepHref}>Iniciar Sesión</Link>
                 </Button>
 
                 <Button
@@ -152,7 +162,7 @@ function AuthPageContent() {
                   variant="outline"
                   className="w-80 border-2 border-lime-500 text-lime-600 hover:scale-103 hover:bg-teal-50 hover:text-lime-600 font-medium py-6 rounded-sm text-lg"
                 >
-                  <Link href="/auth?step=register">Crear Cuenta</Link>
+                  <Link href={registerStepHref}>Crear Cuenta</Link>
                 </Button>
               </div>
 

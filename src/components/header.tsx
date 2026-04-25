@@ -71,7 +71,9 @@ export function Header({
       setMenuOpen(false)
       return
     }
-    window.location.assign("/auth")
+    const currentPath = `${window.location.pathname}${window.location.search}`
+    const redirectParam = currentPath && currentPath !== "/" ? `&redirect=${encodeURIComponent(currentPath)}` : ""
+    window.location.assign(`/auth?step=login${redirectParam}`)
     setMenuOpen(false)
   }
 

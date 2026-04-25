@@ -30,6 +30,17 @@ const securityHeaders = [
 
 /** Despliegue habitual: `next build` + `next start`. Export estático requiere `output: "export"` (ver docs de Next.js). */
 const nextConfig: NextConfig = {
+  experimental: {
+    optimizePackageImports: [
+      "lucide-react",
+      "@radix-ui/react-dialog",
+      "@radix-ui/react-dropdown-menu",
+      "@radix-ui/react-tabs",
+      "@radix-ui/react-tooltip",
+      "recharts",
+      "date-fns",
+    ],
+  },
   images: {
     /** Necesario si sirves sin el optimizador de imágenes de Next (p. ej. export estático o CDN propio). */
     unoptimized: true,

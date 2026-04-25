@@ -95,6 +95,8 @@ export default function SitiosMapaPage() {
             selectedTipoSitio={selectedTipoSitio}
             nombreSitio={nombreSitio}
             direccion={direccion}
+            latitud={selectedCoords ? selectedCoords.lat.toFixed(6) : ""}
+            longitud={selectedCoords ? selectedCoords.lng.toFixed(6) : ""}
             onSelectedTipoSitioChange={setSelectedTipoSitio}
             onNombreSitioChange={setNombreSitio}
             onDireccionChange={setDireccion}
