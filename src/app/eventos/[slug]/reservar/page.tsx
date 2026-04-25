@@ -11,23 +11,30 @@ import { ReservationActions } from "../../_shared/reserva-evento/components/rese
 
 export default function ReservarEventoPage() {
   const params = useParams();
-  const eventId = Number(Array.isArray(params?.id) ? params.id[0] : params?.id);
+  const rawSlug = params?.slug;
+  const slug = (Array.isArray(rawSlug) ? rawSlug[0] : rawSlug) ?? "";
+
+  // Parse slug: idPublico (12-char hex) or numeric ID (backward compat)
+  const candidate = slug.substring(0, 12);
+  const isPublicId =
+    /^[0-9a-f]{12}$/i.test(candidate) &&
+    (slug.length === 12 || slug[12] === "-");
+
+  const identifier: string | number = isPublicId ? candidate : Number(slug);
+
   const { loading, saving, event, error, titularForm, titularLockedFields, asistentes, actions } =
     useReservaEvento({
-      identifier: eventId,
+      identifier,
       invalidIdentifierMessage: "Evento inválido.",
-      getEventRequestUrl: (identifier) => `/api/events?id=${Number(identifier)}`,
-      getUnauthorizedRedirect: (identifier) => {
-        const id = Number(identifier);
-        return Number.isFinite(id) && id > 0 ? `/eventos/${id}` : "/eventos";
-      },
-      getCancelRedirect: (identifier) => {
-        const id = Number(identifier);
-        return Number.isFinite(id) && id > 0 ? `/eventos/${id}` : "/eventos";
-      },
-      getReservaEventId: (_, identifier) => {
-        const id = Number(identifier);
-        return Number.isFinite(id) && id > 0 ? id : null;
+      getEventRequestUrl: (id) =>
+        typeof id === "string"
+          ? `/api/events?idPublico=${encodeURIComponent(id)}`
+          : `/api/events?id=${Number(id)}`,
+      getUnauthorizedRedirect: () => "/eventos",
+      getCancelRedirect: () => "/eventos",
+      getReservaEventId: (ev) => {
+        const numId = Number(ev?.id_evento ?? 0);
+        return Number.isFinite(numId) && numId > 0 ? numId : null;
       },
     });
 

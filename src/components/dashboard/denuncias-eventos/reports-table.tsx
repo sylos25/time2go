@@ -3,6 +3,7 @@ import { ExternalLink, Loader2 } from "lucide-react"
 
 import type { DenunciaRow } from "@/lib/dashboard-event-reports"
 import { badgeVariant } from "@/lib/dashboard-event-reports"
+import { buildEventUrl } from "@/lib/event-url"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
@@ -56,7 +57,7 @@ export function ReportsTable({
                 <td className="px-4 py-3">
                   <p className="line-clamp-2 font-medium text-foreground">{denuncia.nombre_evento}</p>
                   <Link
-                    href={`/eventos/${denuncia.id_evento}`}
+                    href={buildEventUrl(denuncia.id_publico_evento, denuncia.nombre_evento, denuncia.id_evento)}
                     className="mt-1 inline-flex items-center gap-1 text-xs text-green-700 hover:underline dark:text-emerald-300"
                     target="_blank"
                     rel="noreferrer"

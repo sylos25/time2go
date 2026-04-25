@@ -2,6 +2,7 @@ import Link from "next/link"
 import { AlertTriangle, ExternalLink, Loader2 } from "lucide-react"
 
 import type { AlertaEvento } from "@/lib/dashboard-event-reports"
+import { buildEventUrl } from "@/lib/event-url"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -102,7 +103,7 @@ export function AlertsPanel({
                   </p>
                 </div>
                 <Link
-                  href={`/eventos/${alerta.id_evento}`}
+                  href={buildEventUrl(alerta.id_publico_evento, alerta.nombre_evento, alerta.id_evento)}
                   className="inline-flex items-center gap-1 text-xs font-medium text-amber-800 hover:underline dark:text-amber-300"
                   target="_blank"
                   rel="noreferrer"

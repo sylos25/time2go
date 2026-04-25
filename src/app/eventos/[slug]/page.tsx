@@ -22,7 +22,8 @@ export default function EventLandingPage() {
   const searchParams = useSearchParams();
 
   const rawId = params?.id;
-  const eventId = Array.isArray(rawId) ? rawId[0] : rawId || "";
+  const rawSlug = params?.slug;
+  const eventSlug = Array.isArray(rawSlug) ? rawSlug[0] : rawSlug || "";
 
   const mineView = (searchParams?.get("mine") || "").toLowerCase() === "true";
   const returnToParam = searchParams?.get("returnTo") || "";
@@ -57,7 +58,7 @@ export default function EventLandingPage() {
     pulepEvento,
     setSelectedImage,
     setShowMap,
-  } = useEventLanding({ eventId, mineView });
+  } = useEventLanding({ slug: eventSlug, mineView });
 
   const calendarCells = useMemo(() => {
     if (!event) return [];

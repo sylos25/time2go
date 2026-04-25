@@ -133,7 +133,7 @@ export function EventoReportarDialog({
   }, [open, isAuthenticated, loadCatalog, loadMyStatus, resetForm]);
 
   const loginRedirectHref = useMemo(() => {
-    const redirect = pathname || `/eventos/${eventId}`;
+    const redirect = pathname || "/eventos";
     return `/auth?redirect=${encodeURIComponent(redirect)}`;
   }, [pathname, eventId]);
 

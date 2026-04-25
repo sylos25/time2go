@@ -229,7 +229,8 @@ export async function sendEventApprovedEmail(
     }
 
     const bannerUrl = "https://res.cloudinary.com/dljthy97e/image/upload/v1770842202/banner_top_azaedp.jpg"
-    const eventUrl = `${baseUrl.replace(/\/$/, "")}/eventos/${eventId}`
+    void eventId
+    const eventUrl = `${baseUrl.replace(/\/$/, "")}/eventos`
     const safeName = sanitizeEmailHtml(eventName)
 
     const mailOptions = {

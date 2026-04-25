@@ -12,6 +12,7 @@ export interface RawMyEventMunicipio {
 
 export interface RawMyEvent {
   id_evento?: number
+  id_publico_evento?: string
   nombre_evento?: string
   fecha_inicio?: string
   hora_inicio?: string
@@ -24,6 +25,7 @@ export interface RawMyEvent {
 
 export interface MyEventItem {
   id: number
+  idPublico: string | null
   title: string
   imageUrl: string
   dateText: string
