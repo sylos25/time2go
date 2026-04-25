@@ -1,4 +1,5 @@
 import type { Valoracion } from "@/app/mis-valoraciones/lib/mis-valoraciones-types"
+import { buildEventUrl } from "@/lib/event-url"
 
 export function normalizeValoracion(value: unknown): Valoracion | null {
   if (!value || typeof value !== "object") return null
@@ -41,9 +42,18 @@ export function getSummaryText(loading: boolean, count: number): string {
   return `Tienes ${count} valoracion${count !== 1 ? "es" : ""} registrada${count !== 1 ? "s" : ""}.`
 }
 
-export function getEventPathId(valoracion: Valoracion): string {
-  if (valoracion.id_publico_evento) return valoracion.id_publico_evento
-  return String(valoracion.id_evento || "")
+export function getEventHref(valoracion: Valoracion): string | null {
+  const fallbackId = Number(valoracion.id_evento || 0)
+  const hasPublicId = Boolean(valoracion.id_publico_evento)
+  if (!hasPublicId && (!Number.isFinite(fallbackId) || fallbackId <= 0)) {
+    return null
+  }
+
+  return buildEventUrl(
+    valoracion.id_publico_evento ?? null,
+    valoracion.nombre_evento ?? "Evento",
+    Number.isFinite(fallbackId) && fallbackId > 0 ? fallbackId : 0
+  )
 }
 
 export function formatEventDateTime(fechaInicio: string, horaInicio?: string): string {

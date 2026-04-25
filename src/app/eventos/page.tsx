@@ -92,9 +92,6 @@ export default function EventosPage() {
             }
             onToggleFavorite={toggleFavorite}
             onShareEvent={handleShareEvent}
-            getViewDetailsHref={(eventId) =>
-              `/eventos/${eventId}?returnTo=${encodeURIComponent("/eventos#eventos-disponibles")}`
-            }
           />
         </div>
       </section>

@@ -9,6 +9,7 @@ import {
   FavoritesLoadingState,
 } from "@/app/mis-favoritos/components/favorites-states"
 import { useFavoritesPage } from "@/app/mis-favoritos/hooks/use-favorites-page"
+import { buildEventUrl } from "@/lib/event-url"
 
 export default function MisFavoritosPage() {
   const {
@@ -54,7 +55,9 @@ export default function MisFavoritosPage() {
             <FavoriteEventsList
               favorites={favoritos}
               removingId={removingId}
-              getEventHref={(eventId) => `/eventos/${eventId}`}
+              getEventHref={(event) =>
+                buildEventUrl(event.id_publico_evento, event.nombre_evento, event.id_evento)
+              }
               onRemoveFavorite={handleRemoveFavorite}
             />
           )}

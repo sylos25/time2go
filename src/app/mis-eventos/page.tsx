@@ -7,6 +7,7 @@ import { MyEventsGrid } from "@/app/mis-eventos/components/my-events-grid"
 import { MyEventsHeader } from "@/app/mis-eventos/components/my-events-header"
 import { useMyEventsPage } from "@/app/mis-eventos/hooks/use-my-events-page"
 import { Card, CardContent } from "@/components/ui/card"
+import { buildEventUrl } from "@/lib/event-url"
 
 export default function MisEventosPage() {
   const { loading, error, events, beforeOpenEvent } = useMyEventsPage()
@@ -42,7 +43,7 @@ export default function MisEventosPage() {
             <div className="mt-6">
               <MyEventsGrid
                 events={events}
-                getEventHref={(id) => `/eventos/${id}`}
+                getEventHref={(event) => buildEventUrl(event.idPublico, event.title, event.id)}
                 onBeforeOpenEvent={beforeOpenEvent}
               />
             </div>

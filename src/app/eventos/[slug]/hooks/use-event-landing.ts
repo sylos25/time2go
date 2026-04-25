@@ -9,11 +9,11 @@ import {
 } from "../lib/event-landing-utils"
 
 type UseEventLandingParams = {
-  eventId: string
+  slug: string
   mineView: boolean
 }
 
-export function useEventLanding({ eventId, mineView }: UseEventLandingParams) {
+export function useEventLanding({ slug, mineView }: UseEventLandingParams) {
   const [event, setEvent] = useState<EventData | null>(null)
   const [loading, setLoading] = useState(true)
   const [creatorMode, setCreatorMode] = useState(false)
@@ -31,21 +31,33 @@ export function useEventLanding({ eventId, mineView }: UseEventLandingParams) {
     async function fetchEvent() {
       setLoading(true)
       try {
-        if (!eventId) {
+        if (!slug) {
           setEvent(null)
           return
         }
 
+        // Parse slug: idPublico (12-char hex) or numeric ID (backward compat)
+        const trimmed = slug.trim()
+        const candidate = trimmed.substring(0, 12)
+        const isPublicId =
+          /^[0-9a-f]{12}$/i.test(candidate) &&
+          (trimmed.length === 12 || trimmed[12] === "-")
+
+        const resolvedIdPublico = isPublicId ? candidate : null
+        const resolvedNumericId = isPublicId ? null : Number(trimmed)
+
+        const creatorKey = resolvedIdPublico ?? String(resolvedNumericId ?? "")
         const creatorFlagFromSession =
           typeof window !== "undefined" &&
-          sessionStorage.getItem("creator-event-view") === String(eventId)
+          sessionStorage.getItem("creator-event-view") === creatorKey
 
         const shouldUseCreatorMode = mineView || creatorFlagFromSession
         setCreatorMode(shouldUseCreatorMode)
 
-        const query = shouldUseCreatorMode
-          ? `/api/events?id=${encodeURIComponent(eventId)}&mine=true`
-          : `/api/events?id=${encodeURIComponent(eventId)}`
+        const baseQuery = resolvedIdPublico
+          ? `/api/events?idPublico=${encodeURIComponent(resolvedIdPublico)}`
+          : `/api/events?id=${encodeURIComponent(String(resolvedNumericId ?? ""))}`
+        const query = shouldUseCreatorMode ? `${baseQuery}&mine=true` : baseQuery
 
         const response = await fetch(query, {
           credentials: "include",
@@ -58,7 +70,7 @@ export function useEventLanding({ eventId, mineView }: UseEventLandingParams) {
           setEvent(null)
         }
 
-        if (creatorFlagFromSession && typeof window !== "undefined") {
+        if (creatorFlagFromSession && typeof window !== "undefined" && creatorKey) {
           sessionStorage.removeItem("creator-event-view")
         }
       } catch (error) {
@@ -69,8 +81,8 @@ export function useEventLanding({ eventId, mineView }: UseEventLandingParams) {
       }
     }
 
-    void fetchEvent()
-  }, [eventId, mineView])
+      void fetchEvent()
+    }, [slug, mineView])
 
   useEffect(() => {
     async function loadEventReservations() {

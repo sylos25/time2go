@@ -1,117 +1,118 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Calendar, MapPin, Users, ArrowRight, Star } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 import Link from "next/link"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useFavorites } from "@/hooks/use-favorites"
 import { Swiper, SwiperSlide } from "swiper/react"
 import { Navigation, Pagination, Autoplay } from "swiper/modules"
 
 import "swiper/css"
 import "swiper/css/navigation"
 import "swiper/css/pagination"
-
-interface FeaturedEvent {
-  id: number
-  categoryId: number
-  title: string
-  description: string
-  date: string
-  location: string
-  attendees: number
-  price: number | string
-  image: string
-  category: string
-  rating?: number | null
-  featuredAt?: string | null
-}
-
-type LandingCategory = {
-  id: number
-  nombre: string
-}
-
-type HomeConfigResponse = {
-  ok: boolean
-  selectedCategories?: LandingCategory[]
-}
-
-type ServerEventImage = {
-  url_imagen_evento?: unknown
-}
-
-type ServerEventPrice = {
-  precio_boleto?: unknown
-  valor?: unknown
-}
-
-type ServerEvent = {
-  estado?: unknown
-  destacado?: unknown
-  id_categoria_evento?: unknown
-  evento_categoria_id?: unknown
-  categoria?: { id_categoria_evento?: unknown; nombre?: unknown }
-  categoria_nombre?: unknown
-  imagenes?: ServerEventImage[]
-  fecha_inicio?: unknown
-  gratis_pago?: unknown
-  valores?: ServerEventPrice[]
-  id_evento?: unknown
-  nombre_evento?: unknown
-  descripcion?: unknown
-  sitio?: { nombre_sitio?: unknown }
-  nombre_sitio?: unknown
-  cupo?: unknown
-  promedio_valoracion?: unknown
-  fecha_destacado?: unknown
-}
+import {
+  extractRawEvents,
+  isFeaturedEventInLanding,
+  mapSelectedCategories,
+  mapServerEventToFeaturedEvent,
+  sortFeaturedEventsByDate,
+  toGridPresentationDataFromFeaturedEvent,
+  type FeaturedEvent,
+  type HomeConfigResponse,
+  type LandingCategory,
+} from "@/components/events/event-presentation-adapters"
+import { EVENT_PRESENTATION_LABELS } from "@/components/events/event-presentation-constants"
+import { EventPresentationCard } from "@/components/events/event-presentation-card"
+import { buildEventUrl } from "@/lib/event-url"
 
 const swiperBreakpoints = {
   640: { slidesPerView: 2 },
   1024: { slidesPerView: 3 },
-  1280: { slidesPerView: 4 },
-}
-
-function buildCarouselItems(events: FeaturedEvent[], minItems = 8): Array<{ key: string; event: FeaturedEvent }> {
-  if (events.length === 0) return []
-
-  const repeated: FeaturedEvent[] = []
-  let index = 0
-  while (repeated.length < minItems) {
-    repeated.push(events[index % events.length])
-    index += 1
-  }
-
-  return repeated.map((event, itemIndex) => ({
-    key: `${event.id}-${itemIndex}`,
-    event,
-  }))
+  1280: { slidesPerView: 3 },
 }
 
 export function EventsPreview() {
   const [featuredEvents, setFeaturedEvents] = useState<FeaturedEvent[]>([])
   const [landingCategories, setLandingCategories] = useState<LandingCategory[]>([])
+  const [selectedImageByEvent, setSelectedImageByEvent] = useState<Record<number, number>>({})
+  const [copiedEventId, setCopiedEventId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
-  const [carouselMinItems, setCarouselMinItems] = useState(8)
 
-  useEffect(() => {
-    const resolveMinItems = () => {
-      const width = window.innerWidth
-      if (width >= 1280) return 12
-      if (width >= 1024) return 10
-      if (width >= 640) return 8
-      return 6
+  const router = useRouter()
+
+  const { favoriteIds, favoritePendingIds, toggleFavorite } = useFavorites(
+    useCallback(() => { router.push("/auth?redirect=/") }, [router])
+  )
+
+  const handleToggleFavorite = useCallback(
+    (eventId: number) => void toggleFavorite(eventId),
+    [toggleFavorite]
+  )
+
+  const handleSelectImage = useCallback((eventId: number, index: number) => {
+    if (!Number.isFinite(eventId) || eventId <= 0 || index < 0) {
+      return
     }
 
-    const onResize = () => {
-      setCarouselMinItems(resolveMinItems())
+    setSelectedImageByEvent((prev) => ({
+      ...prev,
+      [eventId]: index,
+    }))
+  }, [])
+
+
+
+  const handleShareEvent = useCallback(async (event: FeaturedEvent) => {
+    const id = event.id
+    if (!Number.isFinite(id) || id <= 0) {
+      return
     }
 
-    onResize()
-    window.addEventListener("resize", onResize)
-    return () => window.removeEventListener("resize", onResize)
+    const detailPath = buildEventUrl(event.idPublico, event.title, id)
+    const relativePath = `${detailPath}?returnTo=${encodeURIComponent("/#eventos-destacados")}`
+    const shareUrl = `${window.location.origin}${relativePath}`
+    const eventTitle = String(event.title || "Evento en Time2Go")
+
+    try {
+      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+        try {
+          await navigator.share({
+            title: eventTitle,
+            text: `Mira este evento: ${eventTitle}`,
+            url: shareUrl,
+          })
+          return
+        } catch (shareError: unknown) {
+          if ((shareError as { name?: string })?.name === "AbortError") {
+            return
+          }
+        }
+      }
+
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl)
+      } else {
+        const textarea = document.createElement("textarea")
+        textarea.value = shareUrl
+        textarea.setAttribute("readonly", "")
+        textarea.style.position = "fixed"
+        textarea.style.left = "-9999px"
+        document.body.appendChild(textarea)
+        textarea.select()
+        document.execCommand("copy")
+        document.body.removeChild(textarea)
+      }
+
+      setCopiedEventId(id)
+      window.setTimeout(() => {
+        setCopiedEventId((current) => (current === id ? null : current))
+      }, 2000)
+    } catch (error) {
+      console.error("No se pudo copiar el enlace del evento", error)
+      alert("No se pudo copiar el enlace del evento")
+    }
   }, [])
 
   useEffect(() => {
@@ -125,84 +126,16 @@ export function EventsPreview() {
         const data = await eventsRes.json()
         const homeConfigData: HomeConfigResponse = await homeConfigRes.json().catch(() => ({ ok: false }))
 
-        const categories = Array.isArray(homeConfigData.selectedCategories)
-          ? homeConfigData.selectedCategories
-              .map((category) => ({
-                id: Number(category.id),
-                nombre: String(category.nombre || ""),
-              }))
-              .filter((category) => category.id > 0 && category.nombre.length > 0)
-          : []
+        const categories = mapSelectedCategories(homeConfigData)
 
         setLandingCategories(categories)
         const selectedCategoryIds = new Set(categories.map((category) => category.id))
 
-        const rawEvents =
-          data && data.ok && Array.isArray(data.eventos)
-            ? data.eventos
-            : Array.isArray(data)
-              ? data
-              : []
-
-        const destacados = rawEvents
-          .filter((event: ServerEvent) => {
-            if (event?.estado !== true || event?.destacado !== true) {
-              return false
-            }
-
-            if (selectedCategoryIds.size === 0) {
-              return true
-            }
-
-            const eventCategoryId = Number(
-              event?.id_categoria_evento || event?.evento_categoria_id || event?.categoria?.id_categoria_evento || 0
-            )
-
-            return selectedCategoryIds.has(eventCategoryId)
-          })
-          .map((event: ServerEvent) => {
-            const firstImage =
-              event.imagenes && event.imagenes.length
-                ? event.imagenes[0].url_imagen_evento
-                : "/placeholder.svg"
-
-            const date = event.fecha_inicio
-              ? new Date(String(event.fecha_inicio)).toLocaleDateString("es-CO", {
-                  day: "2-digit",
-                  month: "short",
-                })
-              : "Sin fecha"
-
-            let price: number | string = "Gratis"
-            if (event.gratis_pago) {
-              const prices = Array.isArray(event.valores)
-                ? event.valores
-                    .map((value: ServerEventPrice) => Number(value?.precio_boleto ?? value?.valor ?? 0))
-                    .filter((value: number) => Number.isFinite(value) && value > 0)
-                : []
-              price = prices.length ? Math.min(...prices) : 0
-            }
-
-            return {
-              id: Number(event.id_evento),
-              categoryId: Number(event.id_categoria_evento || event.evento_categoria_id || event.categoria?.id_categoria_evento || 0),
-              title: String(event.nombre_evento || "Evento"),
-              description: String(event.descripcion || ""),
-              date,
-              location: String(event.sitio?.nombre_sitio || event.nombre_sitio || "Ubicación por confirmar"),
-              attendees: Number(event.cupo || 0),
-              price,
-              image: firstImage,
-              category: String(event.categoria?.nombre || event.categoria_nombre || "Sin categoría"),
-              rating: Number.isFinite(Number(event.promedio_valoracion)) ? Number(event.promedio_valoracion) : null,
-              featuredAt: event.fecha_destacado ? String(event.fecha_destacado) : null,
-            } as FeaturedEvent
-          })
-          .sort((a: FeaturedEvent, b: FeaturedEvent) => {
-            const featuredA = a.featuredAt ? new Date(a.featuredAt).getTime() : 0
-            const featuredB = b.featuredAt ? new Date(b.featuredAt).getTime() : 0
-            return featuredB - featuredA
-          })
+        const destacados = sortFeaturedEventsByDate(
+          extractRawEvents(data)
+            .filter((event) => isFeaturedEventInLanding(event, selectedCategoryIds))
+            .map((event) => mapServerEventToFeaturedEvent(event))
+        )
 
         setFeaturedEvents(destacados)
       } catch (error) {
@@ -246,62 +179,6 @@ export function EventsPreview() {
       .sort((a, b) => b.events.length - a.events.length)
   }, [featuredByCategory, featuredEvents, landingCategories])
 
-  const EventCard = ({ event }: { event: FeaturedEvent }) => (
-    <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-card/80 backdrop-blur-sm border-border overflow-hidden h-full rounded-sm">
-      <div className="relative">
-        <img
-          src={event.image}
-          alt={event.title}
-          loading="lazy"
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-        <Badge className="absolute top-3 left-3 bg-gradient-to-r from-green-500 to-lime-400 text-white rounded-sm">
-          {event.category}
-        </Badge>
-        {typeof event.rating === "number" && (
-          <div className="absolute top-3 right-3 flex items-center gap-1 bg-card/90 backdrop-blur-sm rounded-sm px-2 py-1">
-            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-            <span className="text-xs font-medium">{event.rating.toFixed(1)}</span>
-          </div>
-        )}
-      </div>
-
-      <CardContent className="p-6">
-        <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-green-600 transition-colors">
-          {event.title}
-        </h3>
-        <p className="text-muted-foreground mb-4 line-clamp-2">{event.description}</p>
-
-        <div className="space-y-2 mb-4">
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4 mr-2 text-green-500" />
-            {event.date}
-          </div>
-          <div className="flex items-center text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4 mr-2 text-green-500" />
-            {event.location}
-          </div>
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Users className="h-4 w-4 mr-2 text-green-500" />
-            {event.attendees.toLocaleString("es-CO")} interesados
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-lime-500 bg-clip-text text-transparent">
-            {typeof event.price === "number" ? `$${event.price}` : event.price}
-          </div>
-          <Button
-            asChild
-            className="bg-gradient-to-r from-green-500 to-lime-400 hover:from-green-600 hover:to-lime-500 text-white group-hover:scale-105 transition-transform rounded-sm"
-          >
-            <Link href={`/eventos?expand=${event.id}`}>Ver detalles</Link>
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  )
-
   const EmptyCarouselSection = ({ title }: { title: string }) => (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
       <div className="rounded-sm border border-border bg-card/70 p-6 text-center text-muted-foreground">
@@ -320,8 +197,6 @@ export function EventsPreview() {
     events: FeaturedEvent[]
     delay: number
   }) => {
-    const carouselItems = buildCarouselItems(events, carouselMinItems)
-
     return (
       <>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
@@ -339,33 +214,67 @@ export function EventsPreview() {
           </div>
         </div>
 
-        <div className="mb-14 px-4 sm:px-6 lg:px-8">
-          <Swiper
-            modules={[Navigation, Pagination, Autoplay]}
-            spaceBetween={20}
-            slidesPerView={1.2}
-            centeredSlides={true}
-            loop={carouselItems.length > 1}
-            loopAdditionalSlides={carouselItems.length}
-            navigation={true}
-            pagination={{ clickable: true }}
-            autoplay={{ delay, disableOnInteraction: false }}
-            breakpoints={swiperBreakpoints}
-            className="events-swiper"
-          >
-            {carouselItems.map(({ key, event }) => (
-              <SwiperSlide key={key} className="pb-2">
-                <EventCard event={event} />
+        <div className="mb-14 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <Swiper
+          modules={[Navigation, Pagination, Autoplay]}
+          spaceBetween={20}
+          slidesPerView={1.2}
+          loop={events.length > 1}
+          centeredSlides={false}
+          centerInsufficientSlides={true}
+          navigation={true}
+          pagination={{ clickable: true }}
+          autoplay={{ delay, disableOnInteraction: false }}
+          breakpoints={swiperBreakpoints}
+          className="events-swiper"
+        >
+          {events.map((event) => {
+            const presentationData = toGridPresentationDataFromFeaturedEvent(event)
+            const detailHref = buildEventUrl(event.idPublico, event.title, event.id)
+
+            const isFavorite = favoriteIds.includes(event.id)
+            const isFavoritePending = favoritePendingIds.includes(event.id)
+            const isLinkCopied = copiedEventId === event.id
+
+            return (
+              <SwiperSlide key={event.id} className="pb-2">
+                <EventPresentationCard
+                  variant="grid"
+                  event={presentationData.event}
+                  detailHref={detailHref}
+                  detailLabel={EVENT_PRESENTATION_LABELS.detail.grid}
+                  secondaryBadgeLabel={presentationData.secondaryBadgeLabel}
+                  topLeftTagLabel={presentationData.topLeftTagLabel}
+                  metaRows={presentationData.metaRows}
+                  imageGallery={presentationData.imageGallery}
+                  selectedImageIndex={selectedImageByEvent[event.id] ?? 0}
+                  onSelectImage={(index) => handleSelectImage(event.id, index)}
+                  favoriteAction={{
+                    isActive: isFavorite,
+                    isPending: isFavoritePending,
+                    onToggle: () => void handleToggleFavorite(event.id),
+                    activeAriaLabel: EVENT_PRESENTATION_LABELS.favorite.remove,
+                    inactiveAriaLabel: EVENT_PRESENTATION_LABELS.favorite.add,
+                  }}
+                  shareAction={{
+                    isCopied: isLinkCopied,
+                    onShare: () => void handleShareEvent(event),
+                    copiedAriaLabel: EVENT_PRESENTATION_LABELS.share.copied,
+                    defaultAriaLabel: EVENT_PRESENTATION_LABELS.share.copy,
+                  }}
+                  priceLabel={presentationData.priceLabel}
+                />
               </SwiperSlide>
-            ))}
-          </Swiper>
-        </div>
-      </>
-    )
+            )
+          })}
+        </Swiper>
+      </div>
+    </>
+  )
   }
 
   return (
-    <section className="py-16 lg:py-24 pt-24 overflow-hidden">
+    <section id="eventos-destacados" className="py-16 lg:py-24 pt-24 overflow-hidden">
       {loading ? (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-center text-muted-foreground">Cargando eventos destacados...</p>
@@ -406,10 +315,11 @@ export function EventsPreview() {
         </div>
       </div>
 
-      <style jsx global>{`
+<style jsx global>{`
         .events-swiper {
           padding-bottom: 50px !important;
-          padding-right: 32px !important;
+          padding-left: 20px !important;
+          padding-right: 20px !important;
         }
 
         .events-swiper .swiper-button-next,

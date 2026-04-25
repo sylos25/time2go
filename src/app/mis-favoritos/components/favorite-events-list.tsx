@@ -10,14 +10,14 @@ import { formatDisplayPrice } from "@/app/mis-favoritos/lib/mis-favoritos-utils"
 type FavoriteEventCardProps = {
   event: FavoriteEvent
   removingId: number | null
-  getEventHref: (eventId: number) => string
+  getEventHref: (event: FavoriteEvent) => string
   onRemoveFavorite: (eventId: number) => void
 }
 
 type FavoriteEventsListProps = {
   favorites: FavoriteEvent[]
   removingId: number | null
-  getEventHref: (eventId: number) => string
+  getEventHref: (event: FavoriteEvent) => string
   onRemoveFavorite: (eventId: number) => void
 }
 
@@ -45,7 +45,7 @@ function FavoriteEventCard({
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div className="flex-1 min-w-0">
                 <Link
-                  href={getEventHref(event.id_evento)}
+                  href={getEventHref(event)}
                   className="font-semibold text-foreground text-left hover:text-green-600 transition-colors leading-tight line-clamp-1 w-full"
                 >
                   {event.nombre_evento}
@@ -86,7 +86,7 @@ function FavoriteEventCard({
               <span className="text-sm font-semibold text-lime-600">{formatDisplayPrice(event.price)}</span>
               <div className="flex gap-2">
                 <Link
-                  href={getEventHref(event.id_evento)}
+                  href={getEventHref(event)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-medium border border-border text-foreground hover:border-green-500 hover:text-green-600 transition-colors cursor-pointer"
                 >
                   Ver detalle

@@ -49,6 +49,7 @@ export function normalizeEvent(event: RawEvent): EventCardItem {
 
   return {
     id_evento: Number(event.id_evento || 0),
+    id_publico_evento: event.id_publico_evento ? String(event.id_publico_evento) : null,
     title: String(event.nombre_evento || ""),
     category: String(event.categoria?.nombre || "Sin categoría"),
     description: String(event.descripcion || ""),

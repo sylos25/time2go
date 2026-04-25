@@ -30,6 +30,7 @@ export interface RawTicketValue {
 
 export interface RawEvent {
   id_evento?: number
+  id_publico_evento?: string | null
   nombre_evento?: string
   descripcion?: string
   fecha_inicio?: string
@@ -50,6 +51,7 @@ export interface RawEvent {
 
 export interface EventCardItem {
   id_evento: number
+  id_publico_evento: string | null
   title: string
   category: string
   description: string

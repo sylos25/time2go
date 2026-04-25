@@ -3,7 +3,7 @@ import type { MyEventItem } from "@/app/mis-eventos/lib/mis-eventos-types"
 
 type MyEventsGridProps = {
   events: MyEventItem[]
-  getEventHref: (id: number) => string
+  getEventHref: (event: MyEventItem) => string
   onBeforeOpenEvent: (id: number) => void
 }
 
@@ -14,7 +14,7 @@ export function MyEventsGrid({ events, getEventHref, onBeforeOpenEvent }: MyEven
         <MyEventCard
           key={event.id}
           event={event}
-          eventHref={getEventHref(event.id)}
+          eventHref={getEventHref(event)}
           onBeforeOpenEvent={onBeforeOpenEvent}
         />
       ))}

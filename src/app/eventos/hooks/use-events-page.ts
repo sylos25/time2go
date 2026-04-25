@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 
+import { useFavorites } from "@/hooks/use-favorites"
+import { buildEventUrl } from "@/lib/event-url"
 import {
   filterAndSortEvents,
   normalizeEvent,
@@ -23,10 +26,19 @@ export function useEventsPage() {
   const [events, setEvents] = useState<EventCardItem[]>([])
   const [categories, setCategories] = useState<CategoriaEvento[]>([])
   const [selectedImageByEvent, setSelectedImageByEvent] = useState<Record<number, number>>({})
-  const [favoriteIds, setFavoriteIds] = useState<number[]>([])
-  const [favoritePendingIds, setFavoritePendingIds] = useState<number[]>([])
+  const router = useRouter()
+
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [isLogin, setIsLogin] = useState(true)
+
+  const { favoriteIds, favoritePendingIds, toggleFavorite } = useFavorites(
+    useCallback(() => { router.push("/auth?redirect=/eventos") }, [router])
+  )
+
+  const openAuthModal = useCallback((loginMode = true) => {
+    setIsLogin(loginMode)
+    setAuthModalOpen(true)
+  }, [])
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedFilterType, setSelectedFilterType] = useState<EventFilterType>("category")
   const [selectedFilterValue, setSelectedFilterValue] = useState(FILTER_DEFAULTS.category)
@@ -81,116 +93,19 @@ export function useEventsPage() {
     }
   }, [])
 
-  const fetchFavoritos = useCallback(async () => {
-    try {
-      const response = await fetch("/api/favoritos", { credentials: "include" })
-      if (response.status === 401) {
-        setFavoriteIds([])
-        return
-      }
 
-      const data = await response.json()
-      if (response.ok && data?.ok && Array.isArray(data.favoritos)) {
-        setFavoriteIds(
-          data.favoritos
-            .map((value: unknown) => Number(value))
-            .filter((value: number) => Number.isFinite(value))
-        )
-        return
-      }
-
-      setFavoriteIds([])
-    } catch (error) {
-      console.error("Error fetching favorites:", error)
-      setFavoriteIds([])
-    }
-  }, [])
 
   useEffect(() => {
     void fetchEventos()
     void fetchCategorias()
   }, [fetchCategorias, fetchEventos])
 
-  useEffect(() => {
-    void fetchFavoritos()
-
-    const onLogin = () => {
-      void fetchFavoritos()
-    }
-
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === "token") {
-        if (event.newValue) {
-          void fetchFavoritos()
-        } else {
-          setFavoriteIds([])
-        }
-      }
-    }
-
-    window.addEventListener("user:login", onLogin)
-    window.addEventListener("storage", onStorage)
-
-    return () => {
-      window.removeEventListener("user:login", onLogin)
-      window.removeEventListener("storage", onStorage)
-    }
-  }, [fetchFavoritos])
-
-  const openAuthModal = useCallback((loginMode = true) => {
-    setIsLogin(loginMode)
-    setAuthModalOpen(true)
-  }, [])
-
-  const toggleFavorite = useCallback(
-    async (eventId: number) => {
-      if (!Number.isFinite(eventId) || eventId <= 0) return
-      if (favoritePendingIds.includes(eventId)) return
-
-      const isFavorite = favoriteIds.includes(eventId)
-      setFavoritePendingIds((prev) => [...prev, eventId])
-      setFavoriteIds((prev) =>
-        isFavorite ? prev.filter((id) => id !== eventId) : [...prev, eventId]
-      )
-
-      try {
-        const response = await fetch(
-          isFavorite ? `/api/favoritos?id_evento=${eventId}` : "/api/favoritos",
-          {
-            method: isFavorite ? "DELETE" : "POST",
-            credentials: "include",
-            headers: isFavorite ? undefined : { "Content-Type": "application/json" },
-            body: isFavorite ? undefined : JSON.stringify({ id_evento: eventId }),
-          }
-        )
-
-        if (response.status === 401) {
-          setFavoriteIds((prev) => prev.filter((id) => id !== eventId))
-          openAuthModal(true)
-          return
-        }
-
-        const data = await response.json()
-        if (!response.ok || !data?.ok) {
-          throw new Error(data?.message || "No se pudo actualizar favoritos")
-        }
-      } catch (error) {
-        console.error("Error updating favorite:", error)
-        setFavoriteIds((prev) =>
-          isFavorite ? [...prev, eventId] : prev.filter((id) => id !== eventId)
-        )
-      } finally {
-        setFavoritePendingIds((prev) => prev.filter((id) => id !== eventId))
-      }
-    },
-    [favoriteIds, favoritePendingIds, openAuthModal]
-  )
-
   const handleShareEvent = useCallback(async (event: EventCardItem) => {
     const id = event.id_evento
     if (!id) return
 
-    const relativePath = `/eventos/${id}?returnTo=${encodeURIComponent("/eventos#eventos-disponibles")}`
+    const detailPath = buildEventUrl(event.id_publico_evento, event.title, id)
+    const relativePath = `${detailPath}?returnTo=${encodeURIComponent("/eventos#eventos-disponibles")}`
     const shareUrl = `${window.location.origin}${relativePath}`
     const eventTitle = String(event.raw?.nombre_evento ?? event.title ?? "Evento en Time2Go")
 

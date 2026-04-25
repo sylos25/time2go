@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { buildEventUrl } from "@/lib/event-url";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
@@ -208,10 +209,7 @@ export default function OrganizadorPage() {
   const eventosPasados = eventos.filter((e) => e.fecha_inicio && new Date(e.fecha_inicio) < new Date());
 
   const getEventHref = (ev: EventoOrganizador) => {
-    const slug = slugify(ev.nombre_evento);
-    return ev.id_publico_evento
-      ? `/eventos/${slug}?e=${encodeURIComponent(ev.id_publico_evento)}`
-      : `/eventos/${ev.id_evento}`;
+    return buildEventUrl(ev.id_publico_evento, ev.nombre_evento, ev.id_evento);
   };
 
   return (

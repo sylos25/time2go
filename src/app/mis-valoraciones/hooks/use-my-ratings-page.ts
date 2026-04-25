@@ -9,7 +9,7 @@ import type {
 } from "@/app/mis-valoraciones/lib/mis-valoraciones-types"
 import {
   getAverageRating,
-  getEventPathId,
+  getEventHref as getEventHrefFromRating,
   getSummaryText,
   normalizeValoraciones,
 } from "@/app/mis-valoraciones/lib/mis-valoraciones-utils"
@@ -205,9 +205,7 @@ export function useMyRatingsPage() {
   }, [confirmId, openAuthModal])
 
   const getEventHref = useCallback((item: Valoracion) => {
-    const pathId = getEventPathId(item)
-    if (!pathId) return null
-    return `/eventos/${pathId}`
+    return getEventHrefFromRating(item)
   }, [])
 
   const summaryText = useMemo(() => getSummaryText(loading, valoraciones.length), [loading, valoraciones.length])
