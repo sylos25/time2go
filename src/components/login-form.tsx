@@ -170,7 +170,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
       <Button
         type="submit"
-        className="w-80 bg-rose-600 text-white font-medium py-6 rounded-sm text-lg transition-all duration-300 ease-in-out hover:scale-103 hover:bg-rose-500 hover:text-white"
+        className="mx-auto w-full sm:w-80 bg-rose-600 text-white font-medium py-6 rounded-sm text-lg transition-all duration-300 ease-in-out hover:scale-103 hover:bg-rose-500 hover:text-white"
       >
         Iniciar Sesión
       </Button>

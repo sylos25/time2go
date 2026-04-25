@@ -44,12 +44,12 @@ export function AuthModal({ isOpen, onClose, isLogin, onToggleMode }: AuthModalP
         }
       }}
     >
-      <DialogContent className="sm:max-w-md rounded-sm max-h-[92vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600 bg-clip-text text-transparent">
+      <DialogContent className="w-[min(92vw,30rem)] rounded-sm max-h-[92vh] overflow-y-auto px-5 py-6 sm:px-7">
+        <DialogHeader className="items-center text-center">
+          <DialogTitle className="text-3xl font-bold leading-tight bg-gradient-to-tr from-green-600 to-lime-500 bg-clip-text text-transparent">
             {isLogin ? "Bienvenido de vuelta" : "Únete a Time2Go"}
           </DialogTitle>
-          <p className="text-center text-muted-foreground mt-2">
+          <p className="mt-1 text-sm text-muted-foreground">
             {isLogin
               ? "Inicia sesión para continuar con tu experiencia"
               : "Crea tu cuenta y descubre eventos increíbles"}
