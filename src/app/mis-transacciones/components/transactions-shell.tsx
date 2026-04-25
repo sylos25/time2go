@@ -6,7 +6,7 @@ import { Header } from "@/components/header"
 export function TransactionsShell({ children }: PropsWithChildren) {
   return (
     <main className="min-h-screen bg-background flex flex-col">
-      <Header onAuthClick={() => {}} />
+      <Header />
       {children}
       <Footer />
     </main>

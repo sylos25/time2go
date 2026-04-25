@@ -23,6 +23,7 @@ type EventsSearchFiltersProps = {
   isSearchFocused: boolean
   topRatedEvents: EventCardItem[]
   categories: CategoriaEvento[]
+  municipalities: string[]
   onSearchChange: (value: string) => void
   onFilterTypeChange: (value: EventFilterType) => void
   onFilterValueChange: (value: string) => void
@@ -37,6 +38,7 @@ export function EventsSearchFilters({
   isSearchFocused,
   topRatedEvents,
   categories,
+  municipalities,
   onSearchChange,
   onFilterTypeChange,
   onFilterValueChange,
@@ -50,11 +52,15 @@ export function EventsSearchFilters({
         ? "Franja horaria"
         : selectedFilterType === "price"
           ? "Orden de precio"
-          : "Tipo de acceso"
+          : selectedFilterType === "location"
+            ? "Municipio"
+            : "Tipo de acceso"
 
   return (
-    <div className="mt-20 bg-card/90 dark:bg-card/80 backdrop-blur-md rounded-3xl p-8 shadow-xl border border-border/70 dark:border-border/50 mb-12 relative">
-      <div className="flex flex-col lg:flex-row gap-4 items-center">
+    <div className="relative z-20 -mb-10 mt-14 rounded-3xl border border-border/70 bg-card/90 p-6 shadow-2xl backdrop-blur-md dark:border-border/50 dark:bg-card/80 lg:p-8">
+      <div className="pointer-events-none absolute -top-5 left-8 h-10 w-10 rounded-full bg-lime-300/30 blur-xl" />
+      <div className="pointer-events-none absolute -bottom-4 right-10 h-12 w-12 rounded-full bg-emerald-400/20 blur-2xl" />
+      <div className="relative flex flex-col items-center gap-4 lg:flex-row">
         <div className="flex-1 relative">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-6 w-6" />
           <Input
@@ -78,6 +84,7 @@ export function EventsSearchFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="category">Por categoría</SelectItem>
+            <SelectItem value="location">Por municipio</SelectItem>
             <SelectItem value="time">Por tiempo</SelectItem>
             <SelectItem value="price">Por dinero</SelectItem>
             <SelectItem value="access">Por acceso</SelectItem>
@@ -121,6 +128,17 @@ export function EventsSearchFilters({
               <>
                 <SelectItem value="gratis">Entrada gratis</SelectItem>
                 <SelectItem value="pago">Entrada de costo ($)</SelectItem>
+              </>
+            )}
+
+            {selectedFilterType === "location" && (
+              <>
+                <SelectItem value="all">Todos los municipios</SelectItem>
+                {municipalities.map((municipality) => (
+                  <SelectItem key={municipality} value={municipality.toLowerCase()}>
+                    {municipality}
+                  </SelectItem>
+                ))}
               </>
             )}
           </SelectContent>

@@ -10,7 +10,7 @@ type MisEventosShellProps = {
 export function MisEventosShell({ children }: MisEventosShellProps) {
   return (
     <main className="min-h-screen bg-background flex flex-col">
-      <Header onAuthClick={() => {}} />
+      <Header />
       <div className="flex-1 w-full">{children}</div>
       <Footer />
     </main>

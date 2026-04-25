@@ -166,7 +166,7 @@ export default function OrganizadorPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Header onAuthClick={() => {}} />
+        <Header />
         <main className="flex-grow flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-green-600" />
@@ -181,7 +181,7 @@ export default function OrganizadorPage() {
   if (notFound || !organizador) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Header onAuthClick={() => {}} />
+        <Header />
         <main className="flex-grow flex items-center justify-center">
           <Card className="max-w-md w-full mx-4">
             <CardContent className="pt-6 text-center">
@@ -216,7 +216,7 @@ export default function OrganizadorPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header onAuthClick={() => {}} />
+      <Header />
 
       <main className="flex-grow bg-background">
         <div className="mx-auto max-w-3xl px-4 pb-16 pt-24 sm:px-6">

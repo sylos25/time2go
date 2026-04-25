@@ -18,7 +18,7 @@ export default function MisReservasPage() {
 
   return (
     <main className="min-h-screen bg-background flex flex-col">
-      <Header onAuthClick={() => {}} />
+      <Header />
       <ReservationCancelDialog
         open={reservaToCancel !== null}
         isCancelling={cancellingId !== null}

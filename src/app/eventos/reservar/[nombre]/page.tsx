@@ -25,7 +25,7 @@ export default function ReservarEventoPorNombrePage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <Header onAuthClick={() => {}} />
+      <Header />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-10">
         <div className="bg-card rounded-2xl shadow-md p-6 space-y-5">
           <div className="flex flex-wrap items-end gap-x-3 gap-y-1">

@@ -103,7 +103,14 @@ export function filterAndSortEvents(
   let result = events.filter((event) => {
     const name = String(event.raw?.nombre_evento || event.title).toLowerCase()
     const description = String(event.raw?.descripcion || event.description).toLowerCase()
-    return name.includes(query) || description.includes(query)
+    const municipality = String(event.raw?.municipio?.nombre_municipio || "").toLowerCase()
+    const location = String(event.location || "").toLowerCase()
+    return (
+      name.includes(query) ||
+      description.includes(query) ||
+      municipality.includes(query) ||
+      location.includes(query)
+    )
   })
 
   if (selectedFilterType === "category") {
@@ -137,6 +144,14 @@ export function filterAndSortEvents(
     } else if (selectedFilterValue === "pago") {
       result = result.filter((event) => !isFreeEvent(event))
     }
+  }
+
+  if (selectedFilterType === "location" && selectedFilterValue !== "all") {
+    const normalizedTarget = selectedFilterValue.trim().toLowerCase()
+    result = result.filter((event) => {
+      const municipality = String(event.raw?.municipio?.nombre_municipio || "").trim().toLowerCase()
+      return municipality === normalizedTarget
+    })
   }
 
   if (selectedFilterType === "price") {

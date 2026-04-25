@@ -16,6 +16,7 @@ const FILTER_DEFAULTS: Record<EventFilterType, string> = {
   time: "diurno",
   price: "asc",
   access: "gratis",
+  location: "all",
 }
 
 export function useEventsPage() {
@@ -238,6 +239,15 @@ export function useEventsPage() {
     [events, searchTerm, selectedFilterType, selectedFilterValue]
   )
 
+  const municipalities = useMemo(() => {
+    const names = new Set<string>()
+    events.forEach((event) => {
+      const municipality = String(event.raw?.municipio?.nombre_municipio || "").trim()
+      if (municipality) names.add(municipality)
+    })
+    return Array.from(names).sort((left, right) => left.localeCompare(right, "es"))
+  }, [events])
+
   const topRatedEvents = useMemo(() => events.slice(0, 3), [events])
 
   const expandedEvent = useMemo(() => {
@@ -261,6 +271,7 @@ export function useEventsPage() {
     copiedEventId,
     filteredEvents,
     topRatedEvents,
+    municipalities,
     expandedEvent,
     setSelectedImageByEvent,
     setAuthModalOpen,

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -34,6 +35,7 @@ export function Header({
   isLoggedIn = false,
   userName = "Usuario",
 }: HeaderProps): JSX.Element {
+  const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
   const { user, performLogout, sessionResolved } = useHeaderSession()
@@ -73,7 +75,7 @@ export function Header({
     }
     const currentPath = `${window.location.pathname}${window.location.search}`
     const redirectParam = currentPath && currentPath !== "/" ? `&redirect=${encodeURIComponent(currentPath)}` : ""
-    window.location.assign(`/auth?step=login${redirectParam}`)
+    router.push(`/auth?step=login${redirectParam}`)
     setMenuOpen(false)
   }
 

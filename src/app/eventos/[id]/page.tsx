@@ -77,7 +77,7 @@ export default function EventLandingPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <Header onAuthClick={() => {}} />
+      <Header />
 
       <EventHeaderSection
         eventName={event.nombre_evento || "Evento"}
