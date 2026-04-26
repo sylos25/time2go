@@ -8,23 +8,33 @@ import {
   normalizeEvent,
 } from "@/app/eventos/lib/events-page-utils"
 import type {
+  DepartmentOption,
+  EventFilters,
+  EventTypeOption,
   CategoriaEvento,
-  EventFilterType,
   EventCardItem,
+  MunicipalityOption,
   RawEvent,
 } from "@/app/eventos/lib/events-page-types"
 
-const FILTER_DEFAULTS: Record<EventFilterType, string> = {
-  category: "all",
-  time: "diurno",
-  price: "asc",
-  access: "gratis",
-  location: "all",
+const DEFAULT_FILTERS: EventFilters = {
+  categoryId: null,
+  eventTypeId: null,
+  departmentId: null,
+  municipalityId: null,
+  startDate: "",
+  endDate: "",
+  priceMode: "all",
+  minPrice: null,
+  maxPrice: null,
+  availability: "all",
 }
 
 export function useEventsPage() {
   const [events, setEvents] = useState<EventCardItem[]>([])
   const [categories, setCategories] = useState<CategoriaEvento[]>([])
+  const [departments, setDepartments] = useState<DepartmentOption[]>([])
+  const [municipalityOptions, setMunicipalityOptions] = useState<MunicipalityOption[]>([])
   const [selectedImageByEvent, setSelectedImageByEvent] = useState<Record<number, number>>({})
   const router = useRouter()
 
@@ -40,15 +50,43 @@ export function useEventsPage() {
     setAuthModalOpen(true)
   }, [])
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedFilterType, setSelectedFilterType] = useState<EventFilterType>("category")
-  const [selectedFilterValue, setSelectedFilterValue] = useState(FILTER_DEFAULTS.category)
+  const [filters, setFilters] = useState<EventFilters>(DEFAULT_FILTERS)
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [expandedEventId, setExpandedEventId] = useState<number | null>(null)
   const [copiedEventId, setCopiedEventId] = useState<number | null>(null)
 
-  const handleFilterTypeChange = useCallback((value: EventFilterType) => {
-    setSelectedFilterType(value)
-    setSelectedFilterValue(FILTER_DEFAULTS[value])
+  const setCategoryFilter = useCallback((categoryId: number | null) => {
+    setFilters((current) => ({
+      ...current,
+      categoryId,
+      eventTypeId: null,
+    }))
+  }, [])
+
+  const setDepartmentFilter = useCallback((departmentId: number | null) => {
+    setFilters((current) => {
+      const municipalityDepartmentId =
+        current.municipalityId === null
+          ? null
+          : municipalityOptions.find(
+              (municipality) => municipality.id_municipio === current.municipalityId
+            )?.id_departamento || null
+
+      const nextMunicipalityId =
+        departmentId !== null && municipalityDepartmentId !== null && municipalityDepartmentId !== departmentId
+          ? null
+          : current.municipalityId
+
+      return {
+        ...current,
+        departmentId,
+        municipalityId: nextMunicipalityId,
+      }
+    })
+  }, [municipalityOptions])
+
+  const clearFilters = useCallback(() => {
+    setFilters(DEFAULT_FILTERS)
   }, [])
 
   const fetchEventos = useCallback(async () => {
@@ -93,12 +131,67 @@ export function useEventsPage() {
     }
   }, [])
 
+  const fetchLocationCatalogs = useCallback(async () => {
+    try {
+      const [departmentsResponse, municipalitiesResponse] = await Promise.all([
+        fetch("/api/departamentos"),
+        fetch("/api/municipios"),
+      ])
+
+      const departmentsData = (await departmentsResponse.json()) as {
+        departamentos?: Array<Record<string, unknown>>
+      }
+      const municipalitiesData = (await municipalitiesResponse.json()) as Array<Record<string, unknown>>
+
+      const normalizedDepartments = Array.isArray(departmentsData?.departamentos)
+        ? departmentsData.departamentos
+            .map((department) => ({
+              id_departamento: Number(department?.id_departamento || 0),
+              nombre_departamento: String(department?.nombre_departamento || "").trim(),
+            }))
+            .filter(
+              (department): department is DepartmentOption =>
+                department.id_departamento > 0 && department.nombre_departamento.length > 0
+            )
+        : []
+
+      const normalizedMunicipalities = Array.isArray(municipalitiesData)
+        ? municipalitiesData
+            .map((municipality) => ({
+              id_municipio: Number(municipality?.id_municipio || 0),
+              nombre_municipio: String(municipality?.nombre_municipio || "").trim(),
+              id_departamento: Number(municipality?.id_departamento || 0),
+            }))
+            .filter(
+              (municipality): municipality is MunicipalityOption =>
+                municipality.id_municipio > 0 &&
+                municipality.id_departamento > 0 &&
+                municipality.nombre_municipio.length > 0
+            )
+        : []
+
+      setDepartments(normalizedDepartments)
+      setMunicipalityOptions(normalizedMunicipalities)
+    } catch (error) {
+      console.error("Error fetching location catalogs:", error)
+      setDepartments([])
+      setMunicipalityOptions([])
+    }
+  }, [])
+
 
 
   useEffect(() => {
-    void fetchEventos()
-    void fetchCategorias()
-  }, [fetchCategorias, fetchEventos])
+    const loadPageData = async () => {
+      await Promise.all([
+        fetchEventos(),
+        fetchCategorias(),
+        fetchLocationCatalogs(),
+      ])
+    }
+
+    void loadPageData()
+  }, [fetchCategorias, fetchEventos, fetchLocationCatalogs])
 
   const handleShareEvent = useCallback(async (event: EventCardItem) => {
     const id = event.id_evento
@@ -150,18 +243,79 @@ export function useEventsPage() {
   }, [])
 
   const filteredEvents = useMemo(
-    () => filterAndSortEvents(events, searchTerm, selectedFilterType, selectedFilterValue),
-    [events, searchTerm, selectedFilterType, selectedFilterValue]
+    () => filterAndSortEvents(events, searchTerm, filters, municipalityOptions),
+    [events, searchTerm, filters, municipalityOptions]
   )
 
-  const municipalities = useMemo(() => {
-    const names = new Set<string>()
+  const eventTypes = useMemo(() => {
+    const uniqueById = new Map<number, EventTypeOption>()
+
     events.forEach((event) => {
-      const municipality = String(event.raw?.municipio?.nombre_municipio || "").trim()
-      if (municipality) names.add(municipality)
+      const typeId = Number(event.raw?.id_tipo_evento || event.raw?.tipo_evento?.id_tipo_evento || 0)
+      const typeName = String(event.raw?.tipo_evento?.nombre || "").trim()
+      if (typeId <= 0 || typeName.length === 0) return
+
+      const categoryId = Number(event.id_categoria_evento || 0)
+      uniqueById.set(typeId, {
+        id_tipo_evento: typeId,
+        nombre: typeName,
+        id_categoria_evento: categoryId > 0 ? categoryId : null,
+      })
     })
-    return Array.from(names).sort((left, right) => left.localeCompare(right, "es"))
+
+    return Array.from(uniqueById.values()).sort((left, right) =>
+      left.nombre.localeCompare(right.nombre, "es")
+    )
   }, [events])
+
+  const municipalities = useMemo(() => {
+    const availableIds = new Set<number>()
+
+    events.forEach((event) => {
+      const municipalityId = Number(event.raw?.municipio?.id_municipio || 0)
+      if (municipalityId > 0) {
+        availableIds.add(municipalityId)
+      }
+    })
+
+    const fromCatalog = municipalityOptions
+      .filter((municipality) => availableIds.has(municipality.id_municipio))
+      .sort((left, right) => left.nombre_municipio.localeCompare(right.nombre_municipio, "es"))
+
+    if (fromCatalog.length > 0) {
+      return fromCatalog
+    }
+
+    const fallbackByName = new Map<string, MunicipalityOption>()
+    events.forEach((event) => {
+      const name = String(event.raw?.municipio?.nombre_municipio || "").trim()
+      if (!name) return
+
+      fallbackByName.set(name.toLowerCase(), {
+        id_municipio: Number(event.raw?.municipio?.id_municipio || 0),
+        nombre_municipio: name,
+        id_departamento: Number(event.raw?.municipio?.id_departamento || 0),
+      })
+    })
+
+    return Array.from(fallbackByName.values()).sort((left, right) =>
+      left.nombre_municipio.localeCompare(right.nombre_municipio, "es")
+    )
+  }, [events, municipalityOptions])
+
+  const availableDepartments = useMemo(() => {
+    const availableDepartmentIds = new Set<number>(
+      municipalities
+        .map((municipality) => municipality.id_departamento)
+        .filter((id) => id > 0)
+    )
+
+    return departments
+      .filter((department) => availableDepartmentIds.has(department.id_departamento))
+      .sort((left, right) =>
+        left.nombre_departamento.localeCompare(right.nombre_departamento, "es")
+      )
+  }, [departments, municipalities])
 
   const topRatedEvents = useMemo(() => events.slice(0, 3), [events])
 
@@ -179,23 +333,26 @@ export function useEventsPage() {
     authModalOpen,
     isLogin,
     searchTerm,
-    selectedFilterType,
-    selectedFilterValue,
+    filters,
     isSearchFocused,
     expandedEventId,
     copiedEventId,
     filteredEvents,
     topRatedEvents,
+    eventTypes,
+    departments: availableDepartments,
     municipalities,
     expandedEvent,
     setSelectedImageByEvent,
     setAuthModalOpen,
     setIsLogin,
     setSearchTerm,
-    setSelectedFilterValue,
+    setFilters,
+    setCategoryFilter,
+    setDepartmentFilter,
+    clearFilters,
     setIsSearchFocused,
     setExpandedEventId,
-    handleFilterTypeChange,
     openAuthModal,
     toggleFavorite,
     handleShareEvent,

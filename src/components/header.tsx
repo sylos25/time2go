@@ -24,14 +24,12 @@ import { MobileNav } from "@/components/header-sections/mobile-nav"
 import type { JSX } from "react"
 
 interface HeaderProps {
-  onAuthClick?: (isLogin: boolean) => void
   /** Solo mientras la primera validación /api/me no termina (p. ej. perfil con sesión por cookie). */
   isLoggedIn?: boolean
   userName?: string
 }
 
 export function Header({
-  onAuthClick,
   isLoggedIn = false,
   userName = "Usuario",
 }: HeaderProps): JSX.Element {
@@ -68,14 +66,9 @@ export function Header({
   ]
 
   const handleJoinClick = () => {
-    if (onAuthClick) {
-      onAuthClick(true)
-      setMenuOpen(false)
-      return
-    }
     const currentPath = `${window.location.pathname}${window.location.search}`
-    const redirectParam = currentPath && currentPath !== "/" ? `&redirect=${encodeURIComponent(currentPath)}` : ""
-    router.push(`/auth?step=login${redirectParam}`)
+    const redirectParam = currentPath && currentPath !== "/" ? `?redirect=${encodeURIComponent(currentPath)}` : ""
+    router.push(`/auth${redirectParam}`)
     setMenuOpen(false)
   }
 

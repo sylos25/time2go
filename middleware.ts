@@ -17,7 +17,11 @@ const ROL_ADMIN = 4;
 // ── Definición de rutas protegidas ───────────────────────────────────────────
 const RUTAS_PROTEGIDAS: { pattern: RegExp; rolesPermitidos: number[] }[] = [
   { pattern: /^\/docs(\/.*)?$/, rolesPermitidos: [ROL_ADMIN] },
-  { pattern: /^\/dashboard(\/.*)?$/, rolesPermitidos: [ROL_MODERADOR, ROL_ADMIN] },
+  {
+    pattern: /^\/dashboard(?:\/(resumen|ingresar-datos|sitios-mapa|usuarios|denuncias-eventos)(?:\/.*)?)?$/,
+    rolesPermitidos: [ROL_MODERADOR, ROL_ADMIN],
+  },
+  { pattern: /^\/dashboard(\/.*)?$/, rolesPermitidos: [ROL_ADMIN] },
   { pattern: /^\/eventos\/crear(\/.*)?$/, rolesPermitidos: [ROL_ORGANIZADOR, ROL_MODERADOR, ROL_ADMIN] },
   { pattern: /^\/mis-eventos(\/.*)?$/, rolesPermitidos: [ROL_ORGANIZADOR, ROL_MODERADOR, ROL_ADMIN] },
   { pattern: /^\/mis-reservas(\/.*)?$/, rolesPermitidos: [ROL_USUARIO] },

@@ -10,6 +10,7 @@ import {
   ChartNoAxesColumn,
   ChevronLeft,
   ChevronRight,
+  Database,
   Home,
   ImageIcon,
   Loader2,
@@ -17,7 +18,6 @@ import {
   MapPin,
   Menu,
   Search,
-  ShieldCheck,
   Flag,
   Users,
 } from "lucide-react"
@@ -137,7 +137,7 @@ export default function DashboardLayout({
       { href: "/dashboard/resumen", name: "Resumen General", icon: Home },
       ...(canManageEvents ? [{ href: "/dashboard/inicio", name: "Personalizar el Inicio", icon: ImageIcon }] : []),
       ...(canManageEvents ? [{ href: "/dashboard/eventos", name: "Gestion de Eventos", icon: Calendar }] : []),
-      { href: "/dashboard/ingresar-datos", name: "Ingresar Datos", icon: MapPin },
+      { href: "/dashboard/ingresar-datos", name: "Ingresar Datos", icon: Database },
       { href: "/dashboard/sitios-mapa", name: "Sitios (Mapa)", icon: MapPin },
       { href: "/dashboard/ver-datos", name: "Ver Datos", icon: Search },
       { href: "/dashboard/usuarios", name: "Usuarios", icon: Users },
@@ -145,7 +145,6 @@ export default function DashboardLayout({
       ...(isAdmin
         ? [{ href: "/dashboard/planes-organizador", name: "Planes y Suscripciones", icon: ChartNoAxesColumn }]
         : []),
-      ...(isAdmin ? [{ href: "/dashboard/administrador", name: "Administrador", icon: ShieldCheck }] : []),
     ],
     [canManageEvents, isAdmin, isModOrAdmin]
   )

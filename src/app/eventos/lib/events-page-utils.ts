@@ -1,6 +1,7 @@
 import type {
+  EventFilters,
   EventCardItem,
-  EventFilterType,
+  MunicipalityOption,
   RawEvent,
   RawTicketValue,
 } from "./events-page-types"
@@ -68,106 +69,175 @@ export function normalizeEvent(event: RawEvent): EventCardItem {
   }
 }
 
+function toTimestamp(dateValue: string | undefined | null, endOfDay = false): number | null {
+  if (!dateValue) return null
+
+  const safe = String(dateValue).trim()
+  if (!safe) return null
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(safe)) {
+    const suffix = endOfDay ? "T23:59:59.999" : "T00:00:00.000"
+    const parsed = Date.parse(`${safe}${suffix}`)
+    return Number.isNaN(parsed) ? null : parsed
+  }
+
+  const parsed = Date.parse(safe)
+  if (Number.isNaN(parsed)) return null
+
+  if (!endOfDay) return parsed
+  const date = new Date(parsed)
+  date.setHours(23, 59, 59, 999)
+  return date.getTime()
+}
+
+function getNumericPrice(event: EventCardItem): number {
+  if (typeof event.price === "number" && Number.isFinite(event.price)) {
+    return Math.max(0, event.price)
+  }
+  return 0
+}
+
+function isFreeEvent(event: EventCardItem): boolean {
+  if (typeof event.price === "string") {
+    return event.price.toLowerCase().includes("gratis")
+  }
+  return getNumericPrice(event) <= 0
+}
+
+function getEventTypeId(event: EventCardItem): number {
+  return Number(event.raw?.id_tipo_evento || event.raw?.tipo_evento?.id_tipo_evento || 0)
+}
+
+function getMunicipalityId(event: EventCardItem): number {
+  return Number(event.raw?.municipio?.id_municipio || 0)
+}
+
+function getDepartmentId(
+  event: EventCardItem,
+  municipalityToDepartmentMap: ReadonlyMap<number, number>
+): number {
+  const direct = Number(
+    event.raw?.municipio?.id_departamento ||
+      event.raw?.municipio?.departamento?.id_departamento ||
+      event.raw?.departamento?.id_departamento ||
+      0
+  )
+
+  if (direct > 0) return direct
+
+  const municipalityId = getMunicipalityId(event)
+  if (municipalityId <= 0) return 0
+
+  return municipalityToDepartmentMap.get(municipalityId) || 0
+}
+
+function inDateRange(event: EventCardItem, startDate: string, endDate: string): boolean {
+  const eventStart = toTimestamp(event.raw?.fecha_inicio || "")
+  if (eventStart === null) return false
+
+  const eventEnd =
+    toTimestamp(event.raw?.fecha_fin || "", true) || toTimestamp(event.raw?.fecha_inicio || "", true)
+  if (eventEnd === null) return false
+
+  const from = toTimestamp(startDate)
+  const to = toTimestamp(endDate, true)
+
+  if (from !== null && eventEnd < from) return false
+  if (to !== null && eventStart > to) return false
+
+  return true
+}
+
 export function filterAndSortEvents(
   events: EventCardItem[],
   searchTerm: string,
-  selectedFilterType: EventFilterType,
-  selectedFilterValue: string
+  filters: EventFilters,
+  municipalities: MunicipalityOption[]
 ): EventCardItem[] {
-  const query = searchTerm.toLowerCase()
+  const query = searchTerm.trim().toLowerCase()
+  const municipalityToDepartmentMap = new Map<number, number>()
 
-  const toMinutes = (value: unknown): number | null => {
-    if (typeof value !== "string") return null
-    const match = value.match(/^(\d{1,2}):(\d{2})/)
-    if (!match) return null
-    const hours = Number(match[1])
-    const minutes = Number(match[2])
-    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null
-    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null
-    return hours * 60 + minutes
-  }
+  municipalities.forEach((municipality) => {
+    municipalityToDepartmentMap.set(
+      municipality.id_municipio,
+      municipality.id_departamento
+    )
+  })
 
-  const isFreeEvent = (event: EventCardItem): boolean => {
-    if (typeof event.price === "string") {
-      return event.price.toLowerCase().includes("gratis")
-    }
-    return Number(event.price) <= 0
-  }
-
-  const toNumericPrice = (event: EventCardItem): number => {
-    if (typeof event.price === "number" && Number.isFinite(event.price)) {
-      return event.price
-    }
-    return 0
-  }
-
-  let result = events.filter((event) => {
+  const result = events.filter((event) => {
     const name = String(event.raw?.nombre_evento || event.title).toLowerCase()
     const description = String(event.raw?.descripcion || event.description).toLowerCase()
     const municipality = String(event.raw?.municipio?.nombre_municipio || "").toLowerCase()
     const location = String(event.location || "").toLowerCase()
-    return (
-      name.includes(query) ||
-      description.includes(query) ||
-      municipality.includes(query) ||
-      location.includes(query)
-    )
+    const typeName = String(event.raw?.tipo_evento?.nombre || "").toLowerCase()
+    const categoryName = String(event.raw?.categoria?.nombre || event.category).toLowerCase()
+
+    if (
+      query.length > 0 &&
+      !name.includes(query) &&
+      !description.includes(query) &&
+      !municipality.includes(query) &&
+      !location.includes(query) &&
+      !typeName.includes(query) &&
+      !categoryName.includes(query)
+    ) {
+      return false
+    }
+
+    if (filters.categoryId !== null && event.id_categoria_evento !== filters.categoryId) {
+      return false
+    }
+
+    if (filters.eventTypeId !== null && getEventTypeId(event) !== filters.eventTypeId) {
+      return false
+    }
+
+    if (filters.departmentId !== null) {
+      const eventDepartment = getDepartmentId(event, municipalityToDepartmentMap)
+      if (eventDepartment !== filters.departmentId) {
+        return false
+      }
+    }
+
+    if (filters.municipalityId !== null && getMunicipalityId(event) !== filters.municipalityId) {
+      return false
+    }
+
+    if (!inDateRange(event, filters.startDate, filters.endDate)) {
+      return false
+    }
+
+    const free = isFreeEvent(event)
+    if (filters.priceMode === "free" && !free) {
+      return false
+    }
+
+    if (filters.priceMode === "paid" && free) {
+      return false
+    }
+
+    const price = getNumericPrice(event)
+    if (filters.minPrice !== null && price < filters.minPrice) {
+      return false
+    }
+
+    if (filters.maxPrice !== null && price > filters.maxPrice) {
+      return false
+    }
+
+    const reservarAnticipado = Boolean(event.raw?.reservar_anticipado)
+    if (filters.availability === "with-reservation" && !reservarAnticipado) {
+      return false
+    }
+
+    if (filters.availability === "without-reservation" && reservarAnticipado) {
+      return false
+    }
+
+    return true
   })
 
-  if (selectedFilterType === "category") {
-    if (selectedFilterValue !== "all") {
-      result = result.filter(
-        (event) => String(event.id_categoria_evento) === selectedFilterValue
-      )
-    }
-  }
-
-  if (selectedFilterType === "time") {
-    result = result.filter((event) => {
-      const startMinutes = toMinutes(event.raw?.hora_inicio)
-      if (startMinutes === null) return false
-
-      if (selectedFilterValue === "diurno") {
-        return startMinutes >= 6 * 60 && startMinutes < 17 * 60
-      }
-
-      if (selectedFilterValue === "nocturno") {
-        return startMinutes >= 17 * 60 || startMinutes < 6 * 60
-      }
-
-      return true
-    })
-  }
-
-  if (selectedFilterType === "access") {
-    if (selectedFilterValue === "gratis") {
-      result = result.filter((event) => isFreeEvent(event))
-    } else if (selectedFilterValue === "pago") {
-      result = result.filter((event) => !isFreeEvent(event))
-    }
-  }
-
-  if (selectedFilterType === "location" && selectedFilterValue !== "all") {
-    const normalizedTarget = selectedFilterValue.trim().toLowerCase()
-    result = result.filter((event) => {
-      const municipality = String(event.raw?.municipio?.nombre_municipio || "").trim().toLowerCase()
-      return municipality === normalizedTarget
-    })
-  }
-
-  if (selectedFilterType === "price") {
-    result = [...result].sort((left, right) => {
-      const leftPrice = toNumericPrice(left)
-      const rightPrice = toNumericPrice(right)
-      return selectedFilterValue === "desc"
-        ? rightPrice - leftPrice
-        : leftPrice - rightPrice
-    })
-
-    return result
-  }
-
-  return [...result].sort((left, right) => {
+  return result.sort((left, right) => {
     const leftTime = Date.parse(String(left.raw?.fecha_inicio || left.date))
     const rightTime = Date.parse(String(right.raw?.fecha_inicio || right.date))
     const safeLeft = Number.isNaN(leftTime) ? 0 : leftTime
