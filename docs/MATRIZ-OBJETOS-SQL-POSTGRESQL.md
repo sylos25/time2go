@@ -2,7 +2,7 @@
 
 Este documento inventaría los objetos PostgreSQL definidos en los scripts de Time2Go y su uso efectivo desde la aplicación. El conteo se hizo sobre objetos únicos, excluyendo duplicados presentes en el consolidado `scripts SQL/insert_fun_triggers.sql`.
 
-## 1. Resumen ejecutivo
+## !1. Resumen ejecutivo
 
 | Tipo de objeto | Cantidad | Observaciones |
 |---|---:|---|
