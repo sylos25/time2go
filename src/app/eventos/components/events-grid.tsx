@@ -41,10 +41,12 @@ export function EventsGrid({
 }: EventsGridProps) {
   if (events.length === 0) {
     return (
-      <div className="text-center py-16">
-        <div className="text-8xl mb-6">🔍</div>
-        <h3 className="text-2xl font-bold text-foreground mb-3">No se encontraron eventos</h3>
-        <p className="text-lg text-muted-foreground">Intenta con otros términos de búsqueda o filtros</p>
+      <div className="rounded-2xl border border-border/60 bg-card/60 px-6 py-16 text-center shadow-sm">
+        <div className="mb-6 text-8xl">🔍</div>
+        <h3 className="mb-3 text-2xl font-bold text-foreground">No se encontraron eventos</h3>
+        <p className="mx-auto max-w-xl text-lg text-muted-foreground">
+          Intenta con otros términos de búsqueda o ajusta los filtros para ampliar resultados.
+        </p>
       </div>
     )
   }

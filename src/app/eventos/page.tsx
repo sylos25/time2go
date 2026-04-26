@@ -43,7 +43,7 @@ export default function EventosPage() {
     <main className="min-h-screen bg-background">
       <Header onAuthClick={openAuthModal} />
 
-      <section className="relative overflow-visible pt-16 pb-8 lg:pt-20">
+      <section className="relative overflow-visible pt-16 pb-10 lg:pt-20 lg:pb-12">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-44 bg-gradient-to-b from-emerald-50/70 to-transparent dark:from-emerald-950/30" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <EventsSearchFilters
@@ -70,10 +70,10 @@ export default function EventosPage() {
         />
       )}
 
-      <section id="eventos-disponibles" className="relative z-10 pb-20">
+      <section id="eventos-disponibles" className="relative z-10 pb-20 pt-8 lg:pt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground">
+          <div className="mb-10 flex items-center justify-between">
+            <h2 className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
               Eventos Disponibles ({filteredEvents.length})
             </h2>
           </div>
