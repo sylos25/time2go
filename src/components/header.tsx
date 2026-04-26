@@ -24,6 +24,7 @@ import { MobileNav } from "@/components/header-sections/mobile-nav"
 import type { JSX } from "react"
 
 interface HeaderProps {
+  onAuthClick?: (isLogin: boolean) => void
   /** Solo mientras la primera validación /api/me no termina (p. ej. perfil con sesión por cookie). */
   isLoggedIn?: boolean
   userName?: string
