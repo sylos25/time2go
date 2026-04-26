@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import {
   DEFAULT_REJECT_FORM,
@@ -23,6 +23,11 @@ type CurrentUser = {
   [key: string]: unknown
 }
 
+export type DashboardEventsNotice = {
+  tone: "success" | "danger"
+  message: string
+}
+
 function toMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback
 }
@@ -44,8 +49,30 @@ export function useDashboardEvents() {
   const [rejectModalOpen, setRejectModalOpen] = useState(false)
   const [rejectSubmitting, setRejectSubmitting] = useState(false)
   const [rejectForm, setRejectForm] = useState<RejectForm>(DEFAULT_REJECT_FORM)
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false)
+  const [actionNotice, setActionNotice] = useState<DashboardEventsNotice | null>(null)
+  const actionNoticeTimeoutRef = useRef<number | null>(null)
 
   const [togglingDestacado, setTogglingDestacado] = useState<number | null>(null)
+
+  const showActionNotice = useCallback((tone: DashboardEventsNotice["tone"], message: string) => {
+    setActionNotice({ tone, message })
+    if (actionNoticeTimeoutRef.current) {
+      window.clearTimeout(actionNoticeTimeoutRef.current)
+    }
+    actionNoticeTimeoutRef.current = window.setTimeout(() => {
+      setActionNotice(null)
+      actionNoticeTimeoutRef.current = null
+    }, 3200)
+  }, [])
+
+  const clearActionNotice = useCallback(() => {
+    if (actionNoticeTimeoutRef.current) {
+      window.clearTimeout(actionNoticeTimeoutRef.current)
+      actionNoticeTimeoutRef.current = null
+    }
+    setActionNotice(null)
+  }, [])
 
   const refreshEvents = useCallback(async () => {
     try {
@@ -106,6 +133,15 @@ export function useDashboardEvents() {
     }
   }, [])
 
+  useEffect(
+    () => () => {
+      if (actionNoticeTimeoutRef.current) {
+        window.clearTimeout(actionNoticeTimeoutRef.current)
+      }
+    },
+    []
+  )
+
   const eventCategoryTabs = useMemo<EventCategoryTab[]>(
     () => buildEventCategoryTabs(eventCategories),
     [eventCategories]
@@ -163,28 +199,32 @@ export function useDashboardEvents() {
 
       setRejectModalOpen(false)
       await refreshEvents()
+      showActionNotice("danger", "Evento rechazado correctamente")
     } catch (error) {
       console.error("Error rechazando evento", error)
       window.alert(toMessage(error, "No se pudo rechazar el evento"))
     } finally {
       setRejectSubmitting(false)
     }
-  }, [refreshEvents, rejectForm])
+  }, [refreshEvents, rejectForm, showActionNotice])
 
   const deleteEvent = useCallback(
     async (eventId: number) => {
-      const confirmed = window.confirm("Estas seguro de desactivar este evento?")
-      if (!confirmed) return
-
+      setDeleteSubmitting(true)
       try {
         await deleteEventById(eventId)
         await refreshEvents()
+        showActionNotice("danger", "Evento desactivado correctamente")
+        return true
       } catch (error) {
         console.error("Error eliminando evento", error)
-          window.alert(toMessage(error, "Error desactivando evento"))
+        window.alert(toMessage(error, "Error desactivando evento"))
+        return false
+      } finally {
+        setDeleteSubmitting(false)
       }
     },
-    [refreshEvents]
+    [refreshEvents, showActionNotice]
   )
 
   const approveEvent = useCallback(
@@ -192,12 +232,13 @@ export function useDashboardEvents() {
       try {
         await approveEventById(eventId)
         await refreshEvents()
+        showActionNotice("success", "Evento validado correctamente")
       } catch (error) {
         console.error("Error validando evento", error)
         window.alert(toMessage(error, "Error validando evento"))
       }
     },
-    [refreshEvents]
+    [refreshEvents, showActionNotice]
   )
 
   const toggleDestacado = useCallback(async (eventId: number, currentValue: boolean) => {
@@ -205,13 +246,14 @@ export function useDashboardEvents() {
     try {
       await toggleDestacadoById(eventId, !currentValue)
       setEvents((prev) => prev.map((eventItem) => (eventItem.id === eventId ? { ...eventItem, destacado: !currentValue } : eventItem)))
+      showActionNotice("success", currentValue ? "Evento removido de destacados" : "Evento destacado correctamente")
     } catch (error) {
       console.error("Error toggling destacado", error)
       window.alert(toMessage(error, "Error al cambiar el estado destacado"))
     } finally {
       setTogglingDestacado(null)
     }
-  }, [])
+  }, [showActionNotice])
 
   const openDocumentInNewTab = useCallback((documentEventId: number) => {
     const proxied = `/api/events/document?id=${encodeURIComponent(String(documentEventId))}`
@@ -238,6 +280,8 @@ export function useDashboardEvents() {
     editModalOpen,
     rejectModalOpen,
     rejectSubmitting,
+    deleteSubmitting,
+    actionNotice,
     rejectForm,
     togglingDestacado,
     eventCategoryTabs,
@@ -248,6 +292,7 @@ export function useDashboardEvents() {
     setEditModalOpen,
     setRejectModalOpen,
     setRejectForm,
+    clearActionNotice,
     refreshEvents,
     goToPreviousEventCategory,
     goToNextEventCategory,

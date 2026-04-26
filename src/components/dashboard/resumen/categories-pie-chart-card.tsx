@@ -7,6 +7,8 @@ type CategoriesPieChartCardProps = {
   isLoading?: boolean
 }
 
+const formatNaturalCount = (value: number) => Math.max(0, Math.round(Number(value || 0)))
+
 export function CategoriesPieChartCard({ data, isLoading = false }: CategoriesPieChartCardProps) {
   return (
     <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
@@ -34,14 +36,17 @@ export function CategoriesPieChartCard({ data, isLoading = false }: CategoriesPi
                 innerRadius={60}
                 outerRadius={90}
                 dataKey="value"
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                labelLine={{ stroke: "#94a3b8", strokeWidth: 1 }}
+                label={false}
+                labelLine={false}
               >
                 {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }} />
+              <Tooltip
+                formatter={(value) => `${formatNaturalCount(Number(value))}`}
+                contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }}
+              />
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-4 space-y-2">
@@ -51,7 +56,7 @@ export function CategoriesPieChartCard({ data, isLoading = false }: CategoriesPi
                   <div className="h-3 w-3 rounded-full" style={{ backgroundColor: category.color }} />
                   <span className="text-foreground">{category.name}</span>
                 </div>
-                <span className="font-semibold text-foreground">{category.value}%</span>
+                <span className="font-semibold text-foreground">{formatNaturalCount(category.value)}</span>
               </div>
             ))}
           </div>

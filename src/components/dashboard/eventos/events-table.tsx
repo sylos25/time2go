@@ -40,8 +40,18 @@ export function EventsTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-lime-200/80 dark:divide-emerald-700/60">
-            {events.map((eventItem) => (
-              <tr key={eventItem.id} className="bg-white/95 transition-colors hover:bg-lime-50/90 dark:bg-emerald-950/25 dark:hover:bg-emerald-900/35">
+            {events.map((eventItem) => {
+              const isEventDisabled = eventItem.status === "hidden"
+
+              return (
+                <tr
+                  key={eventItem.id}
+                  className={`transition-colors ${
+                    isEventDisabled
+                      ? "cursor-not-allowed bg-slate-100/95 grayscale hover:bg-slate-100/95 dark:bg-slate-900/45 dark:hover:bg-slate-900/45"
+                      : "bg-white/95 hover:bg-lime-50/90 dark:bg-emerald-950/25 dark:hover:bg-emerald-900/35"
+                  }`}
+                >
                 <td className="border-r border-lime-200/70 px-6 py-4 dark:border-emerald-700/45">
                   <p className="font-semibold text-green-900 dark:text-emerald-100/90">{eventItem.name}</p>
                   <p className="text-sm text-green-700/80 dark:text-emerald-200/80">{eventItem.category}</p>
@@ -78,7 +88,7 @@ export function EventsTable({
                     role="switch"
                     aria-checked={eventItem.destacado}
                     onClick={() => onToggleDestacado(eventItem.id, eventItem.destacado)}
-                    disabled={togglingDestacado === eventItem.id}
+                    disabled={isEventDisabled || togglingDestacado === eventItem.id}
                     title={eventItem.destacado ? "Quitar de destacados" : "Marcar como destacado"}
                     className={`cursor-pointer relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${eventItem.destacado ? "bg-yellow-400" : "bg-muted"}`}
                   >
@@ -91,14 +101,15 @@ export function EventsTable({
                       onClick={() => onApproveEvent(eventItem.id)}
                       className="rounded-lg p-2 text-green-600 transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
                       title={eventItem.visibility ? "Evento validado" : "Validar evento"}
-                      disabled={eventItem.visibility}
+                      disabled={isEventDisabled || eventItem.visibility}
                     >
                       <CheckCircle className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => onRejectEvent(eventItem.id)}
-                      className="rounded-lg p-2 text-red-500 transition-colors hover:bg-red-50"
+                      className="rounded-lg p-2 text-red-500 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
                       title="Rechazar evento"
+                      disabled={isEventDisabled}
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -106,28 +117,31 @@ export function EventsTable({
                       onClick={() => onDownloadDocument(eventItem)}
                       className="rounded-lg p-2 text-purple-600 transition-colors hover:bg-purple-50 disabled:cursor-not-allowed disabled:opacity-40"
                       title={eventItem.documentos.length > 0 ? "Ver documento PDF" : "Sin documento"}
-                      disabled={eventItem.documentos.length === 0}
+                      disabled={isEventDisabled || eventItem.documentos.length === 0}
                     >
                       <Download className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => onEditEvent(eventItem)}
-                      className="rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50"
+                      className="rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40"
                       title="Editar evento"
+                      disabled={isEventDisabled}
                     >
                       <Edit className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => onDeleteEvent(eventItem.id)}
-                      className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50"
-                        title="Desactivar evento"
+                      className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      title="Desactivar evento"
+                      disabled={isEventDisabled}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </td>
-              </tr>
-            ))}
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>

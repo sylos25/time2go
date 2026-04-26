@@ -1,7 +1,10 @@
 "use client"
 
 import { Loader2 } from "lucide-react"
+import { useState } from "react"
 
+import { EventsActionNotice } from "@/components/dashboard/eventos/events-action-notice"
+import { DeactivateEventDialog } from "@/components/dashboard/eventos/deactivate-event-dialog"
 import { EventsHero } from "@/components/dashboard/eventos/events-hero"
 import { EventsSearch } from "@/components/dashboard/eventos/events-search"
 import { EventsTable } from "@/components/dashboard/eventos/events-table"
@@ -21,6 +24,8 @@ export default function DashboardEventsPage() {
     editModalOpen,
     rejectModalOpen,
     rejectSubmitting,
+    deleteSubmitting,
+    actionNotice,
     rejectForm,
     togglingDestacado,
     eventCategoryTabs,
@@ -30,6 +35,7 @@ export default function DashboardEventsPage() {
     setFilterCategory,
     setRejectModalOpen,
     setRejectForm,
+    clearActionNotice,
     refreshEvents,
     goToPreviousEventCategory,
     goToNextEventCategory,
@@ -42,6 +48,29 @@ export default function DashboardEventsPage() {
     openEditModal,
     closeEditModal,
   } = useDashboardEvents()
+
+  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false)
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(null)
+
+  const openDeactivateDialog = (eventId: number) => {
+    setSelectedEventId(eventId)
+    setDeactivateDialogOpen(true)
+  }
+
+  const closeDeactivateDialog = () => {
+    if (deleteSubmitting) return
+    setDeactivateDialogOpen(false)
+    setSelectedEventId(null)
+  }
+
+  const confirmDeactivateEvent = async () => {
+    if (selectedEventId === null) return
+    const deleted = await deleteEvent(selectedEventId)
+    if (deleted) {
+      setDeactivateDialogOpen(false)
+      setSelectedEventId(null)
+    }
+  }
 
   const handleDownloadDocument = (eventItem: { documentos: Array<{ id_documento_evento: number }> }) => {
     const documents = eventItem.documentos || []
@@ -89,6 +118,8 @@ export default function DashboardEventsPage() {
 
   return (
     <div className="space-y-6">
+      <EventsActionNotice notice={actionNotice} onClose={clearActionNotice} />
+
       <EventsHero
         eventCategoryTabs={eventCategoryTabs}
         activeEventCategoryIndex={activeEventCategoryIndex}
@@ -108,7 +139,14 @@ export default function DashboardEventsPage() {
         onRejectEvent={openRejectModal}
         onDownloadDocument={handleDownloadDocument}
         onEditEvent={openEditModal}
-        onDeleteEvent={deleteEvent}
+        onDeleteEvent={openDeactivateDialog}
+      />
+
+      <DeactivateEventDialog
+        open={deactivateDialogOpen}
+        deleting={deleteSubmitting}
+        onCancel={closeDeactivateDialog}
+        onConfirm={confirmDeactivateEvent}
       />
 
       <RejectEventDialog
