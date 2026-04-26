@@ -131,7 +131,7 @@ export function EventPresentationCard({
                   key={`${image.id}-${index}`}
                   src={image.url || "/placeholder.svg"}
                   alt={image.alt}
-                  onClick={() => onSelectImage(index)}
+                  onClick={() => onSelectImage?.(index)}
                   className={cn(
                     "h-10 w-16 object-cover rounded-md border shadow-sm cursor-pointer transition",
                     safeSelectedIndex === index
