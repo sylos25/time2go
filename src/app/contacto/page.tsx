@@ -25,7 +25,7 @@ export default function ContactoPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <Header onAuthClick={openAuthModal} />
+      <Header />
 
       {/* Formulario de Contacto e Info */}
       <section className="pt-28 lg:pt-32 pb-12">

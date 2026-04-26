@@ -20,7 +20,6 @@ export default function MisFavoritosPage() {
     error,
     removingId,
     summaryText,
-    openAuthModal,
     closeAuthModal,
     toggleAuthMode,
     handleRemoveFavorite,
@@ -30,7 +29,6 @@ export default function MisFavoritosPage() {
     <FavoritesShell
       authModalOpen={authModalOpen}
       isLogin={isLogin}
-      onAuthClick={openAuthModal}
       onCloseAuth={closeAuthModal}
       onToggleAuthMode={toggleAuthMode}
     >

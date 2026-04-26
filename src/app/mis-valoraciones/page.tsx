@@ -28,7 +28,6 @@ export default function MisValoracionesPage() {
     editSuccess,
     summaryText,
     averageText,
-    openAuthModal,
     closeAuthModal,
     toggleAuthMode,
     getEventHref,
@@ -46,7 +45,6 @@ export default function MisValoracionesPage() {
     <RatingsShell
       authModalOpen={authModalOpen}
       isLogin={isLogin}
-      onAuthClick={openAuthModal}
       onCloseAuth={closeAuthModal}
       onToggleAuthMode={toggleAuthMode}
     >

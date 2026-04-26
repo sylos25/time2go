@@ -8,7 +8,6 @@ type FavoritesShellProps = {
   children: ReactNode
   authModalOpen: boolean
   isLogin: boolean
-  onAuthClick: (loginMode?: boolean) => void
   onCloseAuth: () => void
   onToggleAuthMode: () => void
 }
@@ -17,13 +16,12 @@ export function FavoritesShell({
   children,
   authModalOpen,
   isLogin,
-  onAuthClick,
   onCloseAuth,
   onToggleAuthMode,
 }: FavoritesShellProps) {
   return (
     <main className="min-h-screen flex flex-col bg-background">
-      <Header onAuthClick={onAuthClick} />
+      <Header />
       {children}
       <Footer />
       <AuthModal

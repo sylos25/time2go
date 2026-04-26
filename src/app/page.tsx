@@ -19,7 +19,7 @@ export default function HomePage() {
 
   return (
     <main className="flex min-h-screen flex-col bg-background">
-      <Header onAuthClick={openAuthModal} />
+      <Header />
       <div className="flex-1">
         <HeroSection />
         <EventsPreview />
