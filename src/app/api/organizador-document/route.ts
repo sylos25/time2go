@@ -7,7 +7,31 @@ export const runtime = "nodejs"
 const ORGANIZER_ROLE_ID = 2
 const EPAYCO_PUBLIC_KEY = process.env.EPAYCO_PUBLIC_KEY || ""
 const EPAYCO_TEST_MODE = (process.env.EPAYCO_TEST_MODE || "true").toLowerCase() === "true"
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+
+function normalizeBaseUrl(value: string | undefined): string | null {
+  const candidate = value?.trim()
+  if (!candidate) return null
+  return candidate.replace(/\/+$/, "")
+}
+
+function resolveSiteUrl(req: Request): string {
+  const fromEnv =
+    normalizeBaseUrl(process.env.NEXT_PUBLIC_SITE_URL) ||
+    normalizeBaseUrl(process.env.NEXT_PUBLIC_APP_URL) ||
+    normalizeBaseUrl(process.env.APP_URL) ||
+    normalizeBaseUrl(process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : undefined) ||
+    normalizeBaseUrl(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined)
+
+  if (fromEnv) return fromEnv
+
+  try {
+    return new URL(req.url).origin
+  } catch {
+    return "http://localhost:3000"
+  }
+}
 
 type OrganizerPlanRow = {
   id_plan: number
@@ -61,6 +85,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const client = await pool.connect()
+  const siteUrl = resolveSiteUrl(req)
 
   try {
     const userId = await getRequesterIdLenient(req)
@@ -181,12 +206,12 @@ export async function POST(req: Request) {
     const amount = Number(selectedPlan.precio_cop).toFixed(2)
     const responseUrl =
       process.env.EPAYCO_RESPONSE_URL ||
-      `${SITE_URL}/epayco/respuesta?ref=${encodeURIComponent(paymentReference)}`
-    const confirmationUrl = process.env.EPAYCO_CONFIRMATION_URL || `${SITE_URL}/api/epayco/webhook`
+      `${siteUrl}/epayco/respuesta?ref=${encodeURIComponent(paymentReference)}`
+    const confirmationUrl = process.env.EPAYCO_CONFIRMATION_URL || `${siteUrl}/api/epayco/webhook`
 
     // Redirigir a la página intermedia que carga el SDK de ePayco (checkout.js)
     // ePayco NO acepta parámetros GET directos en su URL de checkout
-    const checkoutUrl = new URL(`${SITE_URL}/perfil/pagar`)
+    const checkoutUrl = new URL(`${siteUrl}/perfil/pagar`)
     checkoutUrl.searchParams.set("ref", paymentReference)
     checkoutUrl.searchParams.set("amount", amount)
     checkoutUrl.searchParams.set("pk", EPAYCO_PUBLIC_KEY)
